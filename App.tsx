@@ -25,32 +25,50 @@ import { useAppSelector } from "redux_store/hooks";
 import { isValidAuthState } from "redux_store/slices/auth-slice";
 import useAuth from "shared/hooks/use-auth";
 
-// import { TailwindProvider, useTailwind } from "tailwind-rn";
-// import utilities from "./tailwind.json";
+import { create, TailwindProvider } from "tailwind-rn";
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
+import utilities from "./tailwind.json";
+
+// @ts-ignore
+const tailwind = create(utilities); // ! Do not ask me about this, it's in the docs - https://www.npmjs.com/package/tailwind-rn/v/3.0.1#3-create-a-custom-tailwind-function
+
+function AppNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Makes path /Home/home/feed, not sure how else to do this right now, but required for hidden paths */}
+      <Stack.Screen name="Home" component={DrawerNavigator} />
+      <Stack.Screen name="Success" component={Success} />
+      <Stack.Screen name="Cancel" component={Cancel} />
+    </Stack.Navigator>
+  );
+}
+
 function DrawerNavigator() {
   const authState = useAppSelector((state) => state.auth);
-  // Commented out because it causes white page error in dev
-  //const tailwind = useTailwind();
 
   return (
-    //<View style={styles.root}>
-    //<View style={tailwind("flex-1")}>
     <Drawer.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerRight: () => (
           <Link
-            style={{ marginRight: 15 }}
+            style={tailwind("mr-4")}
             to={{ screen: "Create Post" }}
             accessibilityLabel="Create Post"
           >
-            <FontAwesome name="plus" size={25} />
+            <FontAwesome
+              name="plus"
+              size={25}
+              style={tailwind("text-blue-500")}
+            />
           </Link>
         ),
+        drawerStyle: tailwind("bg-white"),
+        headerStyle: tailwind("bg-blue-500"),
+        headerTintColor: "#000000",
       }}
     >
       <Drawer.Screen name="Home" component={Home} />
@@ -63,41 +81,28 @@ function DrawerNavigator() {
         <Drawer.Screen name="Login" component={Login} />
       )}
     </Drawer.Navigator>
-    //</View>
-    //</View>
-  );
-}
-
-function MainStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DrawerNavigator" component={DrawerNavigator} />
-      <Stack.Screen name="Success" component={Success} />
-      <Stack.Screen name="Cancel" component={Cancel} />
-      <Stack.Screen name="PostDetails" component={PostDetails} />
-    </Stack.Navigator>
   );
 }
 
 export default function App() {
   return (
-    // TODO: TailwindProvider doesn't expect children
-    // <TailwindProvider utilities={utilities}>
-    <Provider store={store}>
-      <Suspense fallback={<Text>Loading app...</Text>}>
-        <AppImpl />
-      </Suspense>
-    </Provider>
-    // </TailwindProvider>
+    // @ts-ignore
+    <TailwindProvider utilities={utilities}>
+      <Provider store={store}>
+        <Suspense fallback={<Text>Loading app...</Text>}>
+          <AppCore />
+        </Suspense>
+      </Provider>
+    </TailwindProvider>
   );
 }
 
-function AppImpl() {
+function AppCore() {
   useAuth();
 
   return (
     <NavigationContainer linking={getLinkingOptions()}>
-      <MainStack />
+      <AppNavigator />
     </NavigationContainer>
   );
 }
@@ -107,32 +112,30 @@ function getLinkingOptions(): LinkingOptions<{}> {
     prefixes: [createURL("/")],
     config: {
       screens: {
-        DrawerNavigator: {
+        Home: {
+          path: "home",
           screens: {
-            Home: {
-              screens: {
-                Feed: "home/feed",
-                Notifications: "home/notifications",
-                ["My Profile"]: "home/my-profile",
-                Settings: "home/settings",
-              },
-            },
-            Donate: "donate",
-            ["Create Post"]: "create-post",
-            // TODO: Change the name to "Switch Accounts" if there is already a token
-            Login: {
-              screens: {
-                ["Sign In"]: "/login/sign-in",
-                ["Sign Up"]: "/login/sign-up",
-              },
-            },
-            Search: {
-              screens: {
-                Home: "/search",
-                User: "/user/:username",
-                Post: "/post/:id",
-              },
-            },
+            Feed: "feed",
+            Notifications: "notifications",
+            "My Profile": "my-profile",
+            Settings: "settings",
+          },
+        },
+        "Create Post": "create-post",
+        Donate: "donate",
+        Login: {
+          path: "login",
+          screens: {
+            "Sign In": "sign-in",
+            "Sign Up": "sign-up",
+          },
+        },
+        Search: {
+          path: "search",
+          screens: {
+            Home: "search",
+            User: "user/:username",
+            Post: "post/:id",
           },
         },
         Success: "success",
