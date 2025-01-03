@@ -1,14 +1,35 @@
-import { View, Text } from "react-native";
+import { StyleSheet } from "react-native";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 
-import globalStyles from "shared/styles";
+import ErrorBoundary from "shared/components/ErrorBoundary";
+import Stripe from "shared/components/payment";
 
-export default function Feed() {
-    return (
-        <View style={globalStyles.container}>
-            <Text>
-              TODO: Add donate page (based on Stripe integration from pre-ReactNative version).
-              See the Stripe React native widget doc: https://docs.stripe.com/sdks/react-native.
-            </Text>
-        </View>
-    )
-}
+// TODO: Show sidebar
+
+// import globalStyles from "shared/styles";
+
+const DonatePage = () => {
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <ErrorBoundary>
+          <Stripe />
+        </ErrorBoundary>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  baseText: {
+    fontWeight: "bold",
+  },
+  innerText: {
+    color: "red",
+  },
+});
+
+export default DonatePage;

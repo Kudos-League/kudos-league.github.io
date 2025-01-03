@@ -1,19 +1,29 @@
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { Dropdown } from 'react-native-element-dropdown';
-import { useController, Control, FieldValues, UseControllerProps, UseFormReturn } from 'react-hook-form';
+import { StyleSheet } from "react-native";
+import { Dropdown } from "react-native-element-dropdown";
+import {
+  useController,
+  FieldValues,
+  UseControllerProps,
+  UseFormReturn,
+} from "react-hook-form";
 
 type Props<T extends FieldValues> = {
   name: string;
   form: UseFormReturn<T>;
   options: { label: string; value: string }[];
+  onValueChange?: (value: string) => void;
 } & UseControllerProps<T>;
-  
-export default function Picker<T extends FieldValues>({ name, options, form }: Props<T>) {
+
+export default function Picker<T extends FieldValues>({
+  name,
+  options,
+  form,
+  onValueChange,
+}: Props<T>) {
   const { field } = useController<T>({
-      control: form.control,
-      name,
-      defaultValue: options[0].value as T[keyof T],
+    control: form.control,
+    name,
+    defaultValue: options[0].value as T[keyof T],
   });
 
   return (
@@ -26,37 +36,26 @@ export default function Picker<T extends FieldValues>({ name, options, form }: P
       labelField="label"
       valueField="value"
       value={field.value}
-      onChange={({value}) => {
-        field.onChange({target: {value}});
+      onChange={({ value }) => {
+        field.onChange(value);
+        if (onValueChange) onValueChange(value);
       }}
     />
   );
-};
-
+}
 
 const styles = StyleSheet.create({
   dropdown: {
     margin: 16,
     height: 50,
-    borderBottomColor: 'gray',
+    borderBottomColor: "gray",
     borderBottomWidth: 0.5,
     flex: 1,
-  },
-  icon: {
-    marginRight: 5,
   },
   placeholderStyle: {
     fontSize: 16,
   },
   selectedTextStyle: {
-    fontSize: 16,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  inputSearchStyle: {
-    height: 40,
     fontSize: 16,
   },
 });

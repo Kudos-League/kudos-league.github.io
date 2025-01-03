@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "es2017",
+    "lib": ["dom", "dom.iterable", "es2017"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -19,19 +15,24 @@
     "jsx": "react-jsx",
     "baseUrl": "./src",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "strictNullChecks": true
+    "plugins": [{ "name": "next" }],
+    "strictNullChecks": true,
+
+    "paths": {
+      "redux_store/*": ["./redux_store/*"],
+      "pages/*": ["./pages/*"],
+      "shared/*": ["./shared/*"],
+      "app/*": ["./app/*"]
+    }
   },
+  "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "nativewind-env.d.ts",
+    "./dist/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ],
-  "extends": "expo/tsconfig.base"
+  "exclude": ["node_modules", "dist"]
 }
