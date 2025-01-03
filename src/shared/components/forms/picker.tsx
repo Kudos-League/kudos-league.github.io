@@ -1,31 +1,20 @@
+import React from "react";
 import { StyleSheet } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
-import {
-  useController,
-  FieldValues,
-  UseControllerProps,
-  UseFormReturn,
-} from "react-hook-form";
 
-type Props<T extends FieldValues> = {
-  name: string;
-  form: UseFormReturn<T>;
+type DropdownPickerProps = {
   options: { label: string; value: string }[];
-  onValueChange?: (value: string) => void;
-} & UseControllerProps<T>;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+};
 
-export default function Picker<T extends FieldValues>({
-  name,
+export default function DropdownPicker({
   options,
-  form,
-  onValueChange,
-}: Props<T>) {
-  const { field } = useController<T>({
-    control: form.control,
-    name,
-    defaultValue: options[0].value as T[keyof T],
-  });
-
+  value,
+  onChange,
+  placeholder = "Select an option",
+}: DropdownPickerProps) {
   return (
     <Dropdown
       style={styles.dropdown}
@@ -35,11 +24,9 @@ export default function Picker<T extends FieldValues>({
       maxHeight={300}
       labelField="label"
       valueField="value"
-      value={field.value}
-      onChange={({ value }) => {
-        field.onChange(value);
-        if (onValueChange) onValueChange(value);
-      }}
+      placeholder={placeholder}
+      value={value}
+      onChange={({ value }) => onChange(value)}
     />
   );
 }
@@ -50,12 +37,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderBottomColor: "gray",
     borderBottomWidth: 0.5,
-    flex: 1,
+    paddingHorizontal: 8,
   },
   placeholderStyle: {
     fontSize: 16,
+    color: "gray",
   },
   selectedTextStyle: {
     fontSize: 16,
+    color: "black",
   },
 });

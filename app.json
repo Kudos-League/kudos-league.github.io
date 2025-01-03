@@ -1,11 +1,11 @@
 {
-  "name": "KudosLeague",
-  "slug": "KudosLeague",
-  "scheme": "https",
-  "userInterfaceStyle": "automatic",
   "expo": {
     "web": {
       "bundler": "webpack"
-    }
+    },
+    "name": "KudosLeague",
+    "slug": "KudosLeague",
+    "scheme": "https",
+    "userInterfaceStyle": "automatic"
   }
 }

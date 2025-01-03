@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { FlatList, Text, View, StyleSheet } from "react-native";
 import PostCard from "./PostCard";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+
+// TODO: Move this to a better location
+type RootStackParamList = {
+  DrawerNavigator: undefined; // Main drawer
+  Success: undefined;
+  Cancel: undefined;
+  PostDetails: { id: string }; // Ensure this exists
+  NotFound: undefined;
+};
+
+type NavigationProps = StackNavigationProp<RootStackParamList, "PostDetails">;
 
 // Example data structure
 // interface Props {
@@ -42,9 +55,14 @@ const usersResponse = [
 ];
 
 export default function PostsContainer() {
+  const navigation = useNavigation<NavigationProps>();
+
   const [users, setUsers] = useState<any>(usersResponse);
   const [loading, setLoading] = useState(false);
 
+  const handlePostPress = (id: string) => {
+    navigation.navigate("PostDetails", { id });
+  };
 
   // Fetch more communities
   const fetchMoreCommunities = () => {
@@ -93,6 +111,7 @@ export default function PostsContainer() {
             type={item.type}
             kudos={Number.parseInt(item.kudos || "-1")}
             tags={item.tags}
+            onPress={() => handlePostPress(item.id)}
           />
         )}
         onEndReached={fetchMoreCommunities}

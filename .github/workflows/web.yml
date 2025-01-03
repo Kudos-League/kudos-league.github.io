@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - stripe # TODO: Remove this
+      - post-details # TODO: Remove this
   workflow_dispatch:
 
 jobs:
@@ -17,7 +18,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          ref: stripe
+          ref: post-details
           fetch-depth: 0
 
       - name: Prepare gh-pages branch

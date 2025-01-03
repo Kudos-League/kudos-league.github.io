@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 
-import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
+import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
 
 import { Button } from "react-native-paper";
 
@@ -13,7 +13,7 @@ import { useAppSelector } from "redux_store/hooks";
 
 export default function CreatePost() {
   const form: UseFormReturn<FormValues> = useForm<FormValues>();
-  const token = useAppSelector(state => state.auth.token);
+  const token = useAppSelector((state) => state.auth.token);
 
   const onInvalid = (e) => {
     console.error(e);
@@ -23,55 +23,79 @@ export default function CreatePost() {
     const request: CreatePostDTO = {
       title: data.title,
       body: data.body,
-      isRequest: data.type === 'request',
+      type: data.type,
+      files: data.files || [],
     };
 
     try {
       if (!token) {
-        // TODO: Block the create page without a token
-        throw new Error('No token. Please register or log in.');
+        throw new Error("No token. Please register or log in.");
       }
       await createPost(request, token);
     } catch (e) {
-      // TODO: Handle error
-      console.error('Error trying to create post:', e);
+      console.error("Error trying to create post:", e);
     }
-  }
+  };
 
   return (
     <View style={globalStyles.container}>
       <View style={globalStyles.formRow}>
         <Text>I want to</Text>
-        <Picker
+        <Input
           name="type"
-          form={form}
+          label="Post Type"
+          type="dropdown"
           options={[
-            { label: 'Get stuff', value: 'request' },
-            { label: 'Give stuff', value: 'offer' },
+            { label: "Get stuff", value: "request" },
+            { label: "Give stuff", value: "gift" },
           ]}
+          form={form}
         />
       </View>
       <View style={globalStyles.formRow}>
         <Input
-            name="title"
-            label="Title"
-            form={form}
-            registerOptions={{required: true}} />
+          name="title"
+          label="Title"
+          form={form}
+          registerOptions={{
+            required: "Title is required",
+            minLength: {
+              value: 3,
+              message: "Title must be at least 3 characters",
+            },
+            maxLength: {
+              value: 60,
+              message: "Title must not exceed 60 characters",
+            },
+          }}
+        />
       </View>
       <View style={globalStyles.formRow}>
         <Input
-            style={{minHeight: 300}}
-            name="body"
-            label="Body"
-            form={form}
-            multiline={true}
-            registerOptions={{required: true}} />
+          name="body"
+          label="Body"
+          form={form}
+          registerOptions={{ required: "Body is required" }}
+          multiline
+        />
+      </View>
+      <View style={globalStyles.formRow}>
+        <Input
+          name="files"
+          label="Attach Files"
+          type="file"
+          form={form}
+          registerOptions={{ required: false }}
+        />
       </View>
       <View style={globalStyles.formRow}>
         <Button
-            onPress={form.handleSubmit(onSubmit, onInvalid)}
-            disabled={!form.formState.isValid}
-            mode='contained'>Submit</Button>
+          onPress={form.handleSubmit(onSubmit, onInvalid)}
+          disabled={!form.formState.isValid}
+          mode="contained"
+        >
+          Submit
+        </Button>
       </View>
     </View>
   );
@@ -80,5 +104,6 @@ export default function CreatePost() {
 type FormValues = {
   title: string;
   body: string;
-  type: 'request'|'offer';
-}
+  type: "request" | "offer";
+  files?: File[];
+};

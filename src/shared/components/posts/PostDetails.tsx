@@ -7,7 +7,10 @@ import Tags from "../Tags";
 
 const PostDetails = () => {
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.header}>
         <Avatar
           src="https://via.placeholder.com/150" // Replace with actual image link
@@ -50,6 +53,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  contentContainer: {
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
   header: {
     flexDirection: "row",

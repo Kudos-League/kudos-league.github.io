@@ -19,10 +19,9 @@
     "strictNullChecks": true,
 
     "paths": {
-      "redux_store/*": ["./redux_store/*"],
-      "pages/*": ["./pages/*"],
-      "shared/*": ["./shared/*"],
-      "app/*": ["./app/*"]
+      "redux_store/*": ["./redux_store/*", "redux_store/*"],
+      "pages/*": ["./pages/*", "pages/*"],
+      "shared/*": ["./shared/*", "shared/*"]
     }
   },
   "extends": "expo/tsconfig.base",

@@ -3,8 +3,9 @@
 export type CreatePostDTO = {
   title: string;
   body: string;
-  isRequest: boolean;
-}
+  type: string;
+  files?: File[];
+};
 
 export type PostDTO = {
   id: number;
@@ -12,28 +13,29 @@ export type PostDTO = {
   title: string;
   body: string;
   isRequest: boolean;
+  images?: string[];
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
 export type UserLoginRequestSchemaDTO = {
   email: string;
   password: string;
-}
+};
 
 export type UserLoginResponseDTO = {
   token: string;
   user: {
     username: string;
   };
-}
+};
 
 export type CreateUserDTO = {
-  username: string,
+  username: string;
   email: string;
   password: string;
-}
+};
 
 export type UserSettingsDTO = {
   about?: string;
-}
+};

@@ -29,6 +29,17 @@ module.exports = async function (env, argv) {
   config.resolve.alias = {
     ...config.resolve.alias,
     "react-native": "react-native-web",
+    "react-native-web": require.resolve("react-native-web"),
+    pages: path.resolve(__dirname, "src/pages"),
+    redux_store: path.resolve(__dirname, "src/redux_store"),
+    shared: path.resolve(__dirname, "src/shared"),
+    "react-native/Libraries/Utilities/Platform":
+      "react-native-web/dist/exports/Platform",
+    "react-native/Libraries/Components/View/View":
+      "react-native-web/dist/exports/View",
+    "react-native/Libraries/Components/ScrollView/ScrollView":
+      "react-native-web/dist/exports/ScrollView",
+    "react-native/Libraries/Image/Image": "react-native-web/dist/exports/Image",
   };
 
   config.plugins.push(
@@ -41,6 +52,10 @@ module.exports = async function (env, argv) {
     ...config.output,
     publicPath: "/",
   };
+
+  if (config.devServer && config.devServer._assetEmittingPreviousFiles) {
+    delete config.devServer._assetEmittingPreviousFiles;
+  }
 
   return config;
 };
