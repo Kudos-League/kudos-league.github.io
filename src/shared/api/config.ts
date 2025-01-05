@@ -7,7 +7,7 @@ export enum Environment {
 const env: Environment = Environment.LOCAL;
 
 export function getEndpointUrl(): string {
-  return process.env.BACKEND_URI || "https://localhost";
+  return process.env.BACKEND_URI || "http://localhost";
   switch (env) {
     case Environment.LOCAL:
       return "http://localhost:3005";

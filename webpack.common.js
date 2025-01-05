@@ -23,6 +23,11 @@ module.exports = async function (env, argv) {
     crypto: require.resolve("crypto-browserify"),
     stream: require.resolve("stream-browserify"),
     buffer: require.resolve("buffer/"),
+    https: require.resolve("https-browserify"),
+    assert: require.resolve("assert"),
+    http: require.resolve("stream-http"),
+    os: require.resolve("os-browserify"),
+    url: require.resolve("url"),
     vm: false,
   };
 
@@ -45,6 +50,13 @@ module.exports = async function (env, argv) {
   config.plugins.push(
     new webpack.IgnorePlugin({
       resourceRegExp: /@stripe\/stripe-react-native/,
+    })
+  );
+
+  config.plugins.push(
+    new webpack.ProvidePlugin({
+      process: "process/browser",
+      Buffer: ["buffer", "Buffer"],
     })
   );
 

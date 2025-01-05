@@ -8,6 +8,12 @@ import {
 } from "./types";
 import axios from "axios";
 
+const instance = axios.create({
+  baseURL: getEndpointUrl(),
+  withCredentials: true,
+  responseType: "json",
+});
+
 /**
  * Converts a DTO object into a FormData object.
  * Supports nested fields and array data types.
@@ -33,7 +39,7 @@ function toFormData(dto: Record<string, any>): FormData {
 /** @throws {AxiosError} */
 export async function createPost(request: CreatePostDTO, token: string) {
   const formData = toFormData(request);
-  const response = await axios.post(`${getEndpointUrl()}/posts`, formData, {
+  const response = await instance.post("/posts", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
@@ -47,17 +53,23 @@ export async function createPost(request: CreatePostDTO, token: string) {
 export async function register(
   request: CreateUserDTO
 ): Promise<{ data: UserLoginResponseDTO }> {
-  return await axios.post(`${getEndpointUrl()}/users/register`, request);
+  return instance.post(`/users/register`, request);
 }
 
 /** @throws {AxiosError} */
 export async function login(
   request: UserLoginRequestSchemaDTO
 ): Promise<{ data: UserLoginResponseDTO }> {
-  return await axios.post(`${getEndpointUrl()}/users/login`, request);
+  return instance.post(`/users/login`, request);
 }
 
 /** @throws {AxiosError} */
-export async function getPosts(): Promise<PostDTO[]> {
-  return await axios.get(`${getEndpointUrl()}/posts`);
+export async function getPosts({
+  includeTags = false,
+  includeSender = false,
+} = {}): Promise<{ data: PostDTO[] }> {
+  const response = await instance.get(
+    `/posts?includeTags=${includeTags}&includeSender=${includeSender}`
+  );
+  return response.data;
 }

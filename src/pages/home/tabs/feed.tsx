@@ -7,22 +7,24 @@ import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
 
 export default function Feed() {
-  const [posts, setPosts] = useState<PostDTO[]|null>(null);
+  const [posts, setPosts] = useState<PostDTO[] | null>(null);
   useEffect(() => {
     let isCancelled = false;
     const fetchPosts = async () => {
-      await getPosts();
+      const posts = await getPosts({ includeSender: true, includeTags: true });
       if (!isCancelled) {
-        setPosts(posts);
+        setPosts(posts.data);
       }
-    }
+    };
     fetchPosts();
-    return () => {isCancelled = true};
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   return (
     <View style={globalStyles.container}>
-      <PostsContainer/>
+      <PostsContainer posts={posts} />
     </View>
   );
 }

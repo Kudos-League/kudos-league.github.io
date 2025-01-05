@@ -1,14 +1,23 @@
 import { Box, Typography, Avatar, Stack } from "@mui/material";
 import { TouchableOpacity } from "react-native";
-import Tags from "../Tags";
+import Tags, { Tag } from "../Tags";
 
 interface Props {
-  username: string;
+  sender: {
+    id: string;
+    email: string;
+    username: string;
+    kudos: number;
+    avatar: string | null;
+  };
+  tags: Tag[];
   title: string;
-  body: string;
   type: string;
-  kudos: number;
-  tags: string[]; // Add tags prop
+  body: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date;
+  rewardOffers: any[]; // TODO
 }
 
 export default function PostCard(props: Props & { onPress: () => void }) {
@@ -29,15 +38,16 @@ export default function PostCard(props: Props & { onPress: () => void }) {
       >
         <Stack spacing={0.5} margin={1}>
           <Avatar
-            alt={props.username}
-            src="https://via.placeholder.com/150"
+            alt={props.sender?.username}
+            src={props.sender?.avatar || "https://via.placeholder.com/150"}
             sx={{ width: 64, height: 64, marginRight: 2 }}
           />
           <Typography variant="body2" sx={{ color: "#ccc" }}>
-            {props.username}
+            {props.sender?.username}
           </Typography>
           <Typography variant="body2" sx={{ color: "#ccc" }}>
-            {props.kudos} kudos
+            {/* TODO: Find out where kudos is, I think it's in rewardOffers, so it'll be 0 if that's empty at least */}
+            {(props as any).kudos} kudos
           </Typography>
         </Stack>
 
@@ -49,7 +59,7 @@ export default function PostCard(props: Props & { onPress: () => void }) {
           <Typography variant="body2" sx={{ color: "#ccc" }}>
             {props.type}
           </Typography>
-          {props.tags && props.tags.length > 0 && <Tags tags={props.tags} />}
+          {props.tags?.length ? <Tags tags={props.tags} /> : null}
           <Typography variant="body2" sx={{ color: "#bbb" }}>
             {props.body}
           </Typography>

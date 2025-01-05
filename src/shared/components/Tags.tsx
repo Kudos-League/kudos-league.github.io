@@ -1,7 +1,14 @@
 import { Box, Chip } from "@mui/material";
 
+export type Tag = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
 interface Props {
-  tags: string[];
+  tags: Tag[];
 }
 
 export default function Tags(props: Props) {
@@ -10,7 +17,7 @@ export default function Tags(props: Props) {
       {props.tags.map((tag, index) => (
         <Chip
           key={index}
-          label={tag}
+          label={tag.name}
           sx={{
             backgroundColor: "#444", // Dark background to match overall theme
             color: "#fff", // Light text for contrast

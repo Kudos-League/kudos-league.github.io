@@ -24,7 +24,8 @@ type NavigationProps = StackNavigationProp<RootStackParamList, "PostDetails">;
 //   kudos: number;
 //   tags: string[]; // Add tags prop
 // }
-const usersResponse = [
+/*
+const posts = [
   {
     id: "1",
     username: "user1",
@@ -53,11 +54,10 @@ const usersResponse = [
     tags: ["typescript", "javascript", "development"],
   },
 ];
+*/
 
-export default function PostsContainer() {
+export default function PostsContainer({ posts }) {
   const navigation = useNavigation<NavigationProps>();
-
-  const [users, setUsers] = useState<any>(usersResponse);
   const [loading, setLoading] = useState(false);
 
   const handlePostPress = (id: string) => {
@@ -70,6 +70,7 @@ export default function PostsContainer() {
 
     setLoading(true);
 
+    /*
     // Simulate API call with a timeout
     setTimeout(() => {
       const newUsers = [
@@ -87,6 +88,7 @@ export default function PostsContainer() {
       setUsers((prevUsers) => [...prevUsers, ...newUsers]);
       setLoading(false);
     }, 1500);
+    */
   };
 
   // interface Props {
@@ -101,7 +103,7 @@ export default function PostsContainer() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={users}
+        data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <PostCard
