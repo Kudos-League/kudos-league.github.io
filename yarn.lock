@@ -10841,6 +10841,7 @@ __metadata:
     react-hook-form: ^7.53.2
     react-native: 0.73.6
     react-native-element-dropdown: ^2.12.2
+    react-native-error-boundary: ^1.2.7
     react-native-gesture-handler: ~2.14.0
     react-native-get-random-values: ~1.8.0
     react-native-paper: ^5.12.5
@@ -13824,6 +13825,20 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 5ed1d909d04f8adb693f382618adcb5878233ae7ca4f94225a789223aca94abd5b56239a19d9c8d3099161c8aaf4d398fdfd54c52815a40a52b3a3dd1e70c698
+  languageName: node
+  linkType: hard
+
+"react-native-error-boundary@npm:^1.2.7":
+  version: 1.2.7
+  resolution: "react-native-error-boundary@npm:1.2.7"
+  peerDependencies:
+    "@types/react-native": ">=0.57.7"
+    react: ">=16.6.0"
+    react-native: ">=0.57.7"
+  peerDependenciesMeta:
+    "@types/react-native":
+      optional: true
+  checksum: 8f3532cffa58b2ecae5271a60f5355be899961f184a683918ad9eda0bd3de9fc760f48031569f39cb6406c532f3a77a39deff19d24ff46b75183e14eae41edad
   languageName: node
   linkType: hard
 

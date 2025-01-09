@@ -14,5 +14,5 @@ module.exports = {
     },
   },
   plugins: [],
-  corePlugins: require("tailwind-rn/unsupported-core-plugins"),
+  // scorePlugins: require("tailwind-rn/unsupported-core-plugins"),
 };

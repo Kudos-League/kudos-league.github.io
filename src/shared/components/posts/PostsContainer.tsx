@@ -3,6 +3,7 @@ import { FlatList, Text, View, StyleSheet } from "react-native";
 import PostCard from "./PostCard";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import Alert from "../Alert";
 
 // TODO: Move this to a better location
 type RootStackParamList = {
@@ -100,6 +101,10 @@ export default function PostsContainer({ posts }) {
   //   tags: string[]; // Add tags prop
   // }
 
+  if (!posts?.length) {
+    return <Alert type="danger" message="No posts found." />;
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -107,12 +112,8 @@ export default function PostsContainer({ posts }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <PostCard
-            username={item.username}
-            title={item.title}
-            body={item.body}
-            type={item.type}
+            {...item}
             kudos={Number.parseInt(item.kudos || "-1")}
-            tags={item.tags}
             onPress={() => handlePostPress(item.id)}
           />
         )}

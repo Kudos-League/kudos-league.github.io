@@ -9,6 +9,7 @@ import {
 } from "@react-navigation/native";
 import { createURL } from "expo-linking";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import ErrorBoundary from "react-native-error-boundary";
 
 import Home from "pages/home/home";
 import CreatePost from "pages/create-post/create-post";
@@ -26,14 +27,12 @@ import { isValidAuthState } from "redux_store/slices/auth-slice";
 import useAuth from "shared/hooks/use-auth";
 
 import { create, TailwindProvider } from "tailwind-rn";
-
-const Drawer = createDrawerNavigator();
-const Stack = createStackNavigator();
+import tailwind from "shared/components/tailwind";
 
 import utilities from "./tailwind.json";
 
-// @ts-ignore
-const tailwind = create(utilities); // ! Do not ask me about this, it's in the docs - https://www.npmjs.com/package/tailwind-rn/v/3.0.1#3-create-a-custom-tailwind-function
+const Drawer = createDrawerNavigator();
+const Stack = createStackNavigator();
 
 function AppNavigator() {
   return (
@@ -84,13 +83,22 @@ function DrawerNavigator() {
   );
 }
 
+function ErrorFallback() {
+  return <Text>Error loading</Text>;
+}
+
 export default function App() {
   return (
     // @ts-ignore
     <TailwindProvider utilities={utilities}>
       <Provider store={store}>
         <Suspense fallback={<Text>Loading app...</Text>}>
-          <AppCore />
+          <ErrorBoundary
+            FallbackComponent={ErrorFallback}
+            onError={console.error}
+          >
+            <AppCore />
+          </ErrorBoundary>
         </Suspense>
       </Provider>
     </TailwindProvider>

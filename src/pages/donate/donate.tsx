@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 
-import ErrorBoundary from "shared/components/ErrorBoundary";
 import Stripe from "shared/components/payment";
 
 // TODO: Show sidebar
@@ -12,9 +11,7 @@ const DonatePage = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <ErrorBoundary>
-          <Stripe />
-        </ErrorBoundary>
+        <Stripe />
       </SafeAreaView>
     </SafeAreaProvider>
   );

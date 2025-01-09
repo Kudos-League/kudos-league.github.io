@@ -10,6 +10,14 @@ interface Props {
     kudos: number;
     avatar: string | null;
   };
+  rewardOffer: {
+    kudos: number;
+    status: string;
+    body: string;
+    kudosFinal: number;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
   tags: Tag[];
   title: string;
   type: string;
@@ -17,6 +25,7 @@ interface Props {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date;
+  kudos: number; // TODO: Get this from post
   rewardOffers: any[]; // TODO
 }
 
@@ -46,8 +55,7 @@ export default function PostCard(props: Props & { onPress: () => void }) {
             {props.sender?.username}
           </Typography>
           <Typography variant="body2" sx={{ color: "#ccc" }}>
-            {/* TODO: Find out where kudos is, I think it's in rewardOffers, so it'll be 0 if that's empty at least */}
-            {(props as any).kudos} kudos
+            {props.rewardOffer?.kudosFinal || 0} kudos
           </Typography>
         </Stack>
 
