@@ -19,7 +19,7 @@ export type PostDTO = {
 };
 
 export type UserLoginRequestSchemaDTO = {
-  email: string;
+  username: string;
   password: string;
 };
 
