@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { getPostDetails } from "shared/api/actions";
 
 const renderTags = (tags) =>
   tags.map((tag, index) => (
@@ -33,22 +34,13 @@ const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
 
-  const [postDetails, setPostDetails] = useState<any>(null);
+  const [postDetails, setPostDetails] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPostDetails = async (postId: string) => {
+  const fetchPostDetails = async (postID: string) => {
     try {
-      console.log(`Fetching post details for ID: ${postId}`);
-      const response = await fetch(
-        `${process.env.BACKEND_URI}/posts/${postId}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await getPostDetails(postID);
       console.log("Fetched post details:", data);
       setPostDetails(data);
       setLoading(false);

@@ -2,34 +2,7 @@ import { Box, Typography, Avatar, Stack } from "@mui/material";
 import { TouchableOpacity } from "react-native";
 import Tags, { Tag } from "../Tags";
 
-interface Props {
-  sender: {
-    id: string;
-    email: string;
-    username: string;
-    kudos: number;
-    avatar: string | null;
-  };
-  rewardOffer: {
-    kudos: number;
-    status: string;
-    body: string;
-    kudosFinal: number;
-    createdAt: Date;
-    updatedAt: Date;
-  } | null;
-  tags: Tag[];
-  title: string;
-  type: string;
-  body: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date;
-  kudos: number; // TODO: Get this from post
-  rewardOffers: any[]; // TODO
-}
-
-export default function PostCard(props: Props & { onPress: () => void }) {
+export default function PostCard(props: Post & { onPress: () => void }) {
   return (
     <TouchableOpacity onPress={props.onPress}>
       <Box

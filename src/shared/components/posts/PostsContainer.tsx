@@ -10,11 +10,11 @@ type RootStackParamList = {
   DrawerNavigator: undefined; // Main drawer
   Success: undefined;
   Cancel: undefined;
-  PostDetails: { id: string }; // Ensure this exists
+  Post: { id: string };
   NotFound: undefined;
 };
 
-type NavigationProps = StackNavigationProp<RootStackParamList, "PostDetails">;
+type NavigationProps = StackNavigationProp<RootStackParamList, "Post">;
 
 // Example data structure
 // interface Props {
@@ -62,7 +62,7 @@ export default function PostsContainer({ posts }) {
   const [loading, setLoading] = useState(false);
 
   const handlePostPress = (id: string) => {
-    navigation.navigate("PostDetails", { id });
+    navigation.navigate("Post", { id });
   };
 
   // Fetch more communities

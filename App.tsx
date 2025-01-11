@@ -13,7 +13,7 @@ import ErrorBoundary from "react-native-error-boundary";
 
 import Home from "pages/home/home";
 import CreatePost from "pages/create-post/create-post";
-import PostDetails from "pages/search/entities/post";
+import Post from "pages/search/entities/post";
 import Donate from "pages/donate/donate";
 import Success from "pages/donate/success";
 import Cancel from "pages/donate/cancel";
@@ -41,6 +41,7 @@ function AppNavigator() {
       <Stack.Screen name="Home" component={DrawerNavigator} />
       <Stack.Screen name="Success" component={Success} />
       <Stack.Screen name="Cancel" component={Cancel} />
+      <Stack.Screen name="Post" component={Post} />
     </Stack.Navigator>
   );
 }

@@ -73,3 +73,9 @@ export async function getPosts({
   );
   return response.data;
 }
+
+/** @throws {AxiosError} */
+export async function getPostDetails(id: string) {
+  const response = await instance.get(`/posts/${id}`);
+  return response.data;
+}
