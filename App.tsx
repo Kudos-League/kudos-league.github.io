@@ -17,16 +17,16 @@ import Post from "pages/search/entities/post";
 import Donate from "pages/donate/donate";
 import Success from "pages/donate/success";
 import Cancel from "pages/donate/cancel";
-import Login from "pages/login/login";
+import SignIn from "pages/login/login";
+import SignUp from "pages/login/tabs/sign-up";
 import Search from "pages/search/search";
+import Profile from "pages/search/entities/user";
 
 import { store } from "redux_store/store";
 import { Provider } from "react-redux";
-import { useAppSelector } from "redux_store/hooks";
-import { isValidAuthState } from "redux_store/slices/auth-slice";
-import useAuth from "shared/hooks/use-auth";
+import { useAuth, AuthProvider } from "shared/hooks/useAuth";
 
-import { create, TailwindProvider } from "tailwind-rn";
+import { TailwindProvider } from "tailwind-rn";
 import tailwind from "shared/components/tailwind";
 
 import utilities from "./tailwind.json";
@@ -37,17 +37,40 @@ const Stack = createStackNavigator();
 function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Makes path /Home/home/feed, not sure how else to do this right now, but required for hidden paths */}
       <Stack.Screen name="Home" component={DrawerNavigator} />
       <Stack.Screen name="Success" component={Success} />
       <Stack.Screen name="Cancel" component={Cancel} />
-      <Stack.Screen name="Post" component={Post} />
+      <Stack.Screen
+        name="Post"
+        component={Post}
+        options={{ headerShown: true }}
+      />
+      <Stack.Screen
+        name="UserProfile"
+        component={Profile}
+        options={{ headerShown: true }}
+      />
+      <Stack.Screen name="Auth" component={AuthStack} />
+    </Stack.Navigator>
+  );
+}
+
+function AuthStack() {
+  const Stack = createStackNavigator();
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SignIn" component={SignIn} />
+      <Stack.Screen
+        name="SignUp"
+        component={SignUp}
+        options={{ headerShown: true }}
+      />
     </Stack.Navigator>
   );
 }
 
 function DrawerNavigator() {
-  const authState = useAppSelector((state) => state.auth);
+  const { isLoggedIn } = useAuth();
 
   return (
     <Drawer.Navigator
@@ -75,10 +98,10 @@ function DrawerNavigator() {
       <Drawer.Screen name="Create Post" component={CreatePost} />
       <Drawer.Screen name="Donate" component={Donate} />
       <Drawer.Screen name="Search" component={Search} />
-      {authState && isValidAuthState(authState) ? (
-        <Drawer.Screen name="Switch Account" component={Login} />
+      {isLoggedIn ? (
+        <Drawer.Screen name="Logout" component={Profile} />
       ) : (
-        <Drawer.Screen name="Login" component={Login} />
+        <Drawer.Screen name="Login" component={AuthStack} />
       )}
     </Drawer.Navigator>
   );
@@ -98,7 +121,9 @@ export default function App() {
             FallbackComponent={ErrorFallback}
             onError={console.error}
           >
-            <AppCore />
+            <AuthProvider>
+              <AppCore />
+            </AuthProvider>
           </ErrorBoundary>
         </Suspense>
       </Provider>
@@ -107,8 +132,6 @@ export default function App() {
 }
 
 function AppCore() {
-  useAuth();
-
   return (
     <NavigationContainer linking={getLinkingOptions()}>
       <AppNavigator />

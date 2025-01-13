@@ -30,3 +30,12 @@ interface Post {
   handshakes: any[]; // TODO
   images: string[]; // TODO
 }
+
+interface UserDTO {
+  id: string;
+  username: string;
+  email: string;
+  avatar?: string | null;
+  kudos: number;
+  isEmailVerified?: boolean;
+}

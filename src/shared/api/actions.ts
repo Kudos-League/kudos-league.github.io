@@ -79,3 +79,20 @@ export async function getPostDetails(id: string) {
   const response = await instance.get(`/posts/${id}`);
   return response.data;
 }
+
+/** @throws {AxiosError} */
+export async function getUserDetails(id: string = "me", token: string) {
+  const response = await instance.get(`/users/${id}`, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function updateUser(request: Partial<UserDTO>) {
+  const response = await instance.put(`/users/me`, request);
+  return response.data;
+}

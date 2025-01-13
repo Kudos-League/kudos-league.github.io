@@ -37,4 +37,13 @@ export default StyleSheet.create({
     lineHeight: 24,
     textAlign: "left",
   },
+  input: {
+    width: "100%",
+    padding: 10,
+    marginVertical: 8,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 4,
+    fontSize: 16,
+  },
 });

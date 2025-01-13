@@ -1,8 +1,26 @@
 import { Box, Typography, Avatar, Stack } from "@mui/material";
 import { TouchableOpacity } from "react-native";
 import Tags, { Tag } from "../Tags";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+
+type RootStackParamList = {
+  Home: undefined;
+  Post: { id: string };
+  UserProfile: { id: string };
+};
+
+type NavigationProps = StackNavigationProp<RootStackParamList, "UserProfile">;
 
 export default function PostCard(props: Post & { onPress: () => void }) {
+  const navigation = useNavigation<NavigationProps>();
+
+  const handleAvatarPress = () => {
+    if (props.sender?.id) {
+      navigation.navigate("UserProfile", { id: props.sender.id });
+    }
+  };
+
   return (
     <TouchableOpacity onPress={props.onPress}>
       <Box
@@ -19,11 +37,13 @@ export default function PostCard(props: Post & { onPress: () => void }) {
         }}
       >
         <Stack spacing={0.5} margin={1}>
-          <Avatar
-            alt={props.sender?.username}
-            src={props.sender?.avatar || "https://via.placeholder.com/150"}
-            sx={{ width: 64, height: 64, marginRight: 2 }}
-          />
+          <TouchableOpacity onPress={handleAvatarPress}>
+            <Avatar
+              alt={props.sender?.username}
+              src={props.sender?.avatar || "https://via.placeholder.com/150"}
+              sx={{ width: 64, height: 64, marginRight: 2 }}
+            />
+          </TouchableOpacity>
           <Typography variant="body2" sx={{ color: "#ccc" }}>
             {props.sender?.username}
           </Typography>
