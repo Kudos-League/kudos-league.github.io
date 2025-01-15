@@ -11,9 +11,12 @@ import {
   Modal,
 } from "react-native";
 import { Button } from "react-native-paper";
-import { getPostDetails } from "shared/api/actions";
+import { getPostDetails, sendMessage } from "shared/api/actions";
 import { Ionicons } from '@expo/vector-icons'; // Import from expo for icons
 import { create } from "tailwind-rn";
+import { SendMessageDTO } from "shared/api/types";
+import { SubmitHandler } from "react-hook-form";
+import { useAppSelector } from "redux_store/hooks";
 
 
 //TODO: Refactor this, looks like shit, also call the API
@@ -98,7 +101,8 @@ const Post = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
-  const [showAllOffers, setShowAllOffers] = useState(false);
+
+  const token = useAppSelector((state) => state.auth.token);
 
   const fetchPostDetails = async (postID: string) => {
     try {
@@ -110,6 +114,12 @@ const Post = () => {
       setLoading(false);
     }
   };
+
+  // const fetchPostMessages = async (postID: string) => {
+  //   try{
+  //     const data = await getPostMessages(postID);
+  //   }
+  // };
 
   useEffect(() => {
     fetchPostDetails(id);
@@ -130,9 +140,41 @@ const handleAcceptHandshake = (index: number) => {
   updatedHandshakes[index].status = "Accepted";
 };
 
+interface FormValuesMessage {
+  content: string;
+  authorID: number;
+  threadID: number;
+  replyToMessageID?: number;
+  handshakeID?: number;
+  readAt?: string;
+}
+
+const onSubmitMessage: SubmitHandler<FormValuesMessage> = async (data) => {
+  const request: SendMessageDTO = {
+    content: data.content,
+    authorID: data.authorID,
+    threadID: data.threadID,
+    replyToMessageID: data.replyToMessageID,
+    handshakeID: data.handshakeID,
+    readAt: data.readAt || new Date().toISOString(),
+  };
+  try {
+    if (!token) {
+      throw new Error("No token. Please register or log in.");
+    }
+    await sendMessage(request, token);
+    console.log("Message sent successfully.");
+  } catch (e) {
+    console.error("Error trying to send message:", e);
+  }
+};
 const createNewMessage = () => {
   // Add your logic to create a new message here
+
+
 };
+
+
 
 
   const displayedMessages = showAllMessages ? mockMessages : mockMessages.slice(0, 3);

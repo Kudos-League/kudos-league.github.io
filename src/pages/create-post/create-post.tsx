@@ -23,6 +23,7 @@ export default function CreatePost() {
     const request: CreatePostDTO = {
       title: data.title,
       body: data.body,
+      tags: data.tags,
       type: data.type,
       files: data.files || [],
     };
@@ -104,6 +105,7 @@ export default function CreatePost() {
 type FormValues = {
   title: string;
   body: string;
+  tags: string[];
   type: "request" | "offer";
   files?: File[];
 };

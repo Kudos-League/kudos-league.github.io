@@ -3,6 +3,7 @@
 export type CreatePostDTO = {
   title: string;
   body: string;
+  tags: string[];
   type: string;
   files?: File[];
 };
@@ -39,3 +40,16 @@ export type CreateUserDTO = {
 export type UserSettingsDTO = {
   about?: string;
 };
+
+export interface MessageDTO {
+  id: number;
+  senderId: number;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  //TODO: Stuff is missing
+}
+
+export interface SendCommentDTO {
+  content: string;
+}

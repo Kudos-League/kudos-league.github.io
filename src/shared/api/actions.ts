@@ -3,6 +3,7 @@ import {
   CreatePostDTO,
   CreateUserDTO,
   PostDTO,
+  SendCommentDTO,
   UserLoginRequestSchemaDTO,
   UserLoginResponseDTO,
 } from "./types";
@@ -94,5 +95,20 @@ export async function getUserDetails(id: string = "me", token: string) {
 /** @throws {AxiosError} */
 export async function updateUser(request: Partial<UserDTO>) {
   const response = await instance.put(`/users/me`, request);
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function sendMessage(
+  request: SendCommentDTO,
+  token: string
+): Promise<{ data: any }> {
+  const response = await instance.post("/messages", request, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   return response.data;
 }
