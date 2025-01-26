@@ -28,5 +28,5 @@ module.exports = {
     },
   },
   plugins: [],
-  corePlugins: require("tailwind-rn/unsupported-core-plugins"), // Fix the typo "scorePlugins"
+  corePlugins: require("tailwind-rn/unsupported-core-plugins"),
 };
