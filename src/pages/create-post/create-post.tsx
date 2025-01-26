@@ -14,6 +14,7 @@ type FormValues = {
   body: string;
   type: "request" | "gift";
   files?: File[];
+  tags: string[];
 };
 
 export default function CreatePost() {
@@ -37,6 +38,7 @@ export default function CreatePost() {
         title: data.title,
         body: data.body,
         type: data.type,
+        tags: data.tags,
         files: data.files || [],
       };
       await addPost(newPost, token!);
