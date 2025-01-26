@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector } from "redux_store/store";
+import { useAppDispatch, useAppSelector } from "redux_store/hooks";
 import { fetchPosts, addNewPost } from "redux_store/slices/posts-slice";
 import { CreatePostDTO } from "shared/api/types";
 

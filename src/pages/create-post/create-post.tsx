@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Modal, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Button } from "react-native-paper";
 import { usePosts } from "shared/hooks/usePosts";
