@@ -121,7 +121,7 @@ export default function PostsContainer({ posts }) {
         onEndReachedThreshold={0.1}
         showsVerticalScrollIndicator={true}
         ListFooterComponent={loading ? <Text>Loading more...</Text> : null}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />} // Add space between each item
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
       />
     </View>
   );
@@ -130,7 +130,7 @@ export default function PostsContainer({ posts }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10, // Add padding to the container for a consistent layout
+    padding: 10,
     width: "100%",
   },
 });
