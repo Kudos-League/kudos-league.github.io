@@ -38,4 +38,5 @@ interface UserDTO {
   avatar?: string | null;
   kudos: number;
   isEmailVerified?: boolean;
+  password?: string | null;
 }
