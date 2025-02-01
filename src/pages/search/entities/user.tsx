@@ -12,9 +12,9 @@ type RootStackParamList = {
 };
 
 export default function User() {
-  const { authState, user: userProfile } = useAuth();
+  const { authState, user: userProfile, token } = useAuth();
   const route = useRoute<RouteProp<RootStackParamList, "UserProfile">>();
-  const targetUserID = route.params?.id;
+  const targetUserID = route.params?.id || userProfile?.id; // if params not provided, assume it's logged in user
   const isLoggedInUser = targetUserID === userProfile?.id;
 
   const [user, setUser] = useState<UserDTO | null>(null);
@@ -59,7 +59,8 @@ export default function User() {
 
     try {
       if (!formState) return;
-      const updatedUser = await updateUser(formState);
+      if (!token) return setError("No token available. Please login.");
+      const updatedUser = await updateUser(formState, "me", token);
       setUser(updatedUser);
     } catch (e) {
       setError("Failed to update user.");

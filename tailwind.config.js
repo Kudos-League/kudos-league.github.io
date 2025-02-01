@@ -1,7 +1,21 @@
 module.exports = {
-  content: ["./src/**/*.{html,js,jsx,ts,tsx}", "./App.tsx"],
+  content: [
+    "./App.tsx",
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./pages/**/*.{js,jsx,ts,tsx}",
+    "./shared/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
     extend: {
+      gap: {
+        DEFAULT: "0",
+        0: "0",
+        1: "4px",
+        2: "8px",
+        3: "12px",
+        4: "16px",
+        5: "20px",
+      },
       colors: {
         blue: {
           500: "#3b82f6",
@@ -14,5 +28,5 @@ module.exports = {
     },
   },
   plugins: [],
-  // scorePlugins: require("tailwind-rn/unsupported-core-plugins"),
+  corePlugins: require("tailwind-rn/unsupported-core-plugins"),
 };

@@ -22,17 +22,6 @@ export default function Profile({
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
-  const handlePasswordUpdate = async () => {
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
-    setFormState((prev) => ({ ...prev, password: newPassword }));
-    await handleUpdate();
-    setNewPassword("");
-    setConfirmPassword("");
-  };
-
   return (
     <View style={globalStyles.container}>
       {error && <Text style={{ color: "red" }}>{error}</Text>}
@@ -67,7 +56,17 @@ export default function Profile({
             <TextInput
               style={globalStyles.input}
               value={confirmPassword}
-              onChangeText={(text) => setConfirmPassword(text)}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (text.length) {
+                  setFormState((prev) => ({
+                    ...prev,
+                    password: newPassword,
+                  }));
+                } else {
+                  setFormState(({ password, ...prev }) => prev);
+                }
+              }}
               placeholder="Confirm New Password"
               secureTextEntry
             />
@@ -76,11 +75,6 @@ export default function Profile({
             title={loading ? "Updating..." : "Update Profile"}
             onPress={handleUpdate}
             disabled={loading}
-          />
-          <Button
-            title={loading ? "Updating Password..." : "Update Password"}
-            onPress={handlePasswordUpdate}
-            disabled={loading || !newPassword || !confirmPassword}
           />
         </>
       ) : (
