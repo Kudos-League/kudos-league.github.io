@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Button } from "react-native-paper";
 import { getPostDetails, sendMessage } from "shared/api/actions";
-import { Ionicons } from "@expo/vector-icons"; // Import from expo for icons
+import { Ionicons } from "@expo/vector-icons";
 import { create } from "tailwind-rn";
 import { CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
@@ -249,7 +249,7 @@ const Post = () => {
     }
   };
   const createNewMessage = () => {
-    // Add your logic to create a new message here
+    // TODO: Add logic
   };
 
   const displayedMessages = showAllMessages
@@ -277,7 +277,6 @@ const Post = () => {
       )}
       {!loading && !error && postDetails && (
         <View>
-          {/* User + Title Section */}
           <View style={styles.userTitleRow}>
             <View style={styles.userProfile}>
               <Image
@@ -314,16 +313,13 @@ const Post = () => {
             </View>
           </View>
 
-          {/* Banner Image */}
           {postDetails.images?.[0] && (
             <Image
               source={{ uri: `${BACKEND_URI}${postDetails.images?.[0]}` }}
               style={styles.bannerImage}
             />
           )}
-          <Text>TESTING WHERE POST IMAGES SHOULD GO</Text>
 
-          {/* Body Section */}
           <View style={styles.descriptionContainer}>
             <Text style={styles.body}>{postDetails.body}</Text>
             {mockOffers[0].kudosFinal && (
@@ -333,7 +329,6 @@ const Post = () => {
             )}
           </View>
 
-          {/* Messages Section */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Comments</Text>
             <ScrollView style={styles.messagesContainer}>
@@ -373,7 +368,6 @@ const Post = () => {
             )}
           </View>
 
-          {/* Handshakes Section */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Handshakes</Text>
             <ScrollView style={styles.handshakesContainer}>
@@ -419,7 +413,6 @@ const Post = () => {
               </TouchableOpacity>
             )}
           </View>
-          {/* Offers Section */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Kudos votation</Text>
             <ScrollView
@@ -447,7 +440,6 @@ const Post = () => {
             </ScrollView>
           </View>
 
-          {/* Image Modal */}
           <Modal
             visible={modalVisible}
             transparent={true}
