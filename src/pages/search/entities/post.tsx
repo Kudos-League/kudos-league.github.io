@@ -1,5 +1,6 @@
 import { useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
+import { BACKEND_URI } from "@env";
 import {
   ScrollView,
   Text,
@@ -12,12 +13,11 @@ import {
 } from "react-native";
 import { Button } from "react-native-paper";
 import { getPostDetails, sendMessage } from "shared/api/actions";
-import { Ionicons } from '@expo/vector-icons'; // Import from expo for icons
+import { Ionicons } from "@expo/vector-icons"; // Import from expo for icons
 import { create } from "tailwind-rn";
-import { SendMessageDTO } from "shared/api/types";
+import { CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
-
 
 //TODO: Refactor this, looks like shit, also call the API
 
@@ -72,22 +72,102 @@ const mockHandshakes = [
 ];
 
 const mockOffers = [
-  { id: "1", sender: { avatar: "https://placehold.co/50", name: "Grace", kudos: 200 }, body: "I offer 200 kudos.", kudosFinal: 250 },
-  { id: "2", sender: { avatar: "https://placehold.co/50", name: "Hank", kudos: 150 }, body: "Let's negotiate.", kudosFinal: null },
-  { id: "3", sender: { avatar: "https://placehold.co/50", name: "Olivia", kudos: 300 }, body: "Great post!", kudosFinal: 350 },
-  { id: "4", sender: { avatar: "https://placehold.co/50", name: "Paul", kudos: 180 }, body: "I'll offer more if needed.", kudosFinal: 200 },
-  { id: "5", sender: { avatar: "https://placehold.co/50", name: "Eve", kudos: 250 }, body: "This is my offer.", kudosFinal: 275 },
-  { id: "6", sender: { avatar: "https://placehold.co/50", name: "Jack", kudos: 220 }, body: "Can we talk?", kudosFinal: null },
-  { id: "7", sender: { avatar: "https://placehold.co/50", name: "Alice", kudos: 190 }, body: "Here’s my final offer.", kudosFinal: 210 },
-  { id: "8", sender: { avatar: "https://placehold.co/50", name: "Frank", kudos: 170 }, body: "I offer 170 kudos.", kudosFinal: null },
-  { id: "9", sender: { avatar: "https://placehold.co/50", name: "Charlie", kudos: 260 }, body: "I can add more if needed.", kudosFinal: 280 },
-  { id: "10", sender: { avatar: "https://placehold.co/50", name: "Sophia", kudos: 240 }, body: "Let's finalize the deal.", kudosFinal: 260 },
-  { id: "11", sender: { avatar: "https://placehold.co/50", name: "Leo", kudos: 210 }, body: "Looking forward to this.", kudosFinal: null },
-  { id: "12", sender: { avatar: "https://placehold.co/50", name: "Mia", kudos: 230 }, body: "This is a great opportunity.", kudosFinal: 250 },
-  { id: "13", sender: { avatar: "https://placehold.co/50", name: "Noah", kudos: 280 }, body: "Can I increase my offer?", kudosFinal: 300 },
-  { id: "14", sender: { avatar: "https://placehold.co/50", name: "Liam", kudos: 270 }, body: "Let’s make this happen.", kudosFinal: null },
-  { id: "15", sender: { avatar: "https://placehold.co/50", name: "Emma", kudos: 250 }, body: "I’m very interested!", kudosFinal: 275 },
-  { id: "16", sender: { avatar: "https://placehold.co/50", name: "Ava", kudos: 290 }, body: "Best offer so far.", kudosFinal: 310 },
+  {
+    id: "1",
+    sender: { avatar: "https://placehold.co/50", name: "Grace", kudos: 200 },
+    body: "I offer 200 kudos.",
+    kudosFinal: 250,
+  },
+  {
+    id: "2",
+    sender: { avatar: "https://placehold.co/50", name: "Hank", kudos: 150 },
+    body: "Let's negotiate.",
+    kudosFinal: null,
+  },
+  {
+    id: "3",
+    sender: { avatar: "https://placehold.co/50", name: "Olivia", kudos: 300 },
+    body: "Great post!",
+    kudosFinal: 350,
+  },
+  {
+    id: "4",
+    sender: { avatar: "https://placehold.co/50", name: "Paul", kudos: 180 },
+    body: "I'll offer more if needed.",
+    kudosFinal: 200,
+  },
+  {
+    id: "5",
+    sender: { avatar: "https://placehold.co/50", name: "Eve", kudos: 250 },
+    body: "This is my offer.",
+    kudosFinal: 275,
+  },
+  {
+    id: "6",
+    sender: { avatar: "https://placehold.co/50", name: "Jack", kudos: 220 },
+    body: "Can we talk?",
+    kudosFinal: null,
+  },
+  {
+    id: "7",
+    sender: { avatar: "https://placehold.co/50", name: "Alice", kudos: 190 },
+    body: "Here’s my final offer.",
+    kudosFinal: 210,
+  },
+  {
+    id: "8",
+    sender: { avatar: "https://placehold.co/50", name: "Frank", kudos: 170 },
+    body: "I offer 170 kudos.",
+    kudosFinal: null,
+  },
+  {
+    id: "9",
+    sender: { avatar: "https://placehold.co/50", name: "Charlie", kudos: 260 },
+    body: "I can add more if needed.",
+    kudosFinal: 280,
+  },
+  {
+    id: "10",
+    sender: { avatar: "https://placehold.co/50", name: "Sophia", kudos: 240 },
+    body: "Let's finalize the deal.",
+    kudosFinal: 260,
+  },
+  {
+    id: "11",
+    sender: { avatar: "https://placehold.co/50", name: "Leo", kudos: 210 },
+    body: "Looking forward to this.",
+    kudosFinal: null,
+  },
+  {
+    id: "12",
+    sender: { avatar: "https://placehold.co/50", name: "Mia", kudos: 230 },
+    body: "This is a great opportunity.",
+    kudosFinal: 250,
+  },
+  {
+    id: "13",
+    sender: { avatar: "https://placehold.co/50", name: "Noah", kudos: 280 },
+    body: "Can I increase my offer?",
+    kudosFinal: 300,
+  },
+  {
+    id: "14",
+    sender: { avatar: "https://placehold.co/50", name: "Liam", kudos: 270 },
+    body: "Let’s make this happen.",
+    kudosFinal: null,
+  },
+  {
+    id: "15",
+    sender: { avatar: "https://placehold.co/50", name: "Emma", kudos: 250 },
+    body: "I’m very interested!",
+    kudosFinal: 275,
+  },
+  {
+    id: "16",
+    sender: { avatar: "https://placehold.co/50", name: "Ava", kudos: 290 },
+    body: "Best offer so far.",
+    kudosFinal: 310,
+  },
 ];
 
 const Post = () => {
@@ -131,64 +211,66 @@ const Post = () => {
   };
 
   const displayedHandshakes = showAllHandshakes
-  ? mockHandshakes
-  : mockHandshakes.slice(0, 2);
-const displayedOffers = mockOffers
+    ? mockHandshakes
+    : mockHandshakes.slice(0, 2);
+  const displayedOffers = mockOffers;
 
-const handleAcceptHandshake = (index: number) => {
-  const updatedHandshakes = [...mockHandshakes];
-  updatedHandshakes[index].status = "Accepted";
-};
-
-interface FormValuesMessage {
-  content: string;
-  authorID: number;
-  threadID: number;
-  replyToMessageID?: number;
-  handshakeID?: number;
-  readAt?: string;
-}
-
-const onSubmitMessage: SubmitHandler<FormValuesMessage> = async (data) => {
-  const request: SendMessageDTO = {
-    content: data.content,
-    authorID: data.authorID,
-    threadID: data.threadID,
-    replyToMessageID: data.replyToMessageID,
-    handshakeID: data.handshakeID,
-    readAt: data.readAt || new Date().toISOString(),
+  const handleAcceptHandshake = (index: number) => {
+    const updatedHandshakes = [...mockHandshakes];
+    updatedHandshakes[index].status = "Accepted";
   };
-  try {
-    if (!token) {
-      throw new Error("No token. Please register or log in.");
-    }
-    await sendMessage(request, token);
-    console.log("Message sent successfully.");
-  } catch (e) {
-    console.error("Error trying to send message:", e);
+
+  interface FormValuesMessage {
+    content: string;
+    authorID: number;
+    threadID: number;
+    replyToMessageID?: number;
+    handshakeID?: number;
+    readAt?: Date;
   }
-};
-const createNewMessage = () => {
-  // Add your logic to create a new message here
 
+  const onSubmitMessage: SubmitHandler<FormValuesMessage> = async (data) => {
+    const request: CreateMessageDTO = {
+      content: data.content,
+      authorID: data.authorID,
+      threadID: data.threadID,
+      replyToMessageID: data.replyToMessageID,
+      handshakeID: data.handshakeID,
+      readAt: data.readAt,
+    };
+    try {
+      if (!token) {
+        throw new Error("No token. Please register or log in.");
+      }
+      await sendMessage(request, token);
+      console.log("Message sent successfully.");
+    } catch (e) {
+      console.error("Error trying to send message:", e);
+    }
+  };
+  const createNewMessage = () => {
+    // Add your logic to create a new message here
+  };
 
-};
-
-
-
-
-  const displayedMessages = showAllMessages ? mockMessages : mockMessages.slice(0, 3);
+  const displayedMessages = showAllMessages
+    ? mockMessages
+    : mockMessages.slice(0, 3);
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      {loading && <ActivityIndicator size="large" color="#4a90e2" style={styles.loader} />}
+      {loading && (
+        <ActivityIndicator size="large" color="#4a90e2" style={styles.loader} />
+      )}
       {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorMessage}>{error}</Text>
-          <TouchableOpacity onPress={() => fetchPostDetails(id)} style={styles.retryButton}>
+          <TouchableOpacity
+            onPress={() => fetchPostDetails(id)}
+            style={styles.retryButton}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -200,16 +282,16 @@ const createNewMessage = () => {
             <View style={styles.userProfile}>
               <Image
                 source={{
-                  uri: postDetails.user?.avatar || "https://placehold.co/50",
+                  uri: postDetails.sender?.avatar || "https://placehold.co/50",
                 }}
                 style={styles.avatar}
               />
               <View style={styles.userInfo}>
                 <Text style={styles.username}>
-                  {postDetails.user?.name || "Anonymous"}
+                  {postDetails.sender?.username || "Anonymous"}
                 </Text>
                 <Text style={styles.kudos}>
-                  Kudos: {postDetails.user?.kudos || 0}
+                  Kudos: {postDetails.sender?.kudos || 0}
                 </Text>
               </View>
             </View>
@@ -233,12 +315,13 @@ const createNewMessage = () => {
           </View>
 
           {/* Banner Image */}
-          <Image
-            source={{
-              uri: postDetails.images?.[0] || "https://placehold.co/800x300",
-            }}
-            style={styles.bannerImage}
-          />
+          {postDetails.images?.[0] && (
+            <Image
+              source={{ uri: `${BACKEND_URI}${postDetails.images?.[0]}` }}
+              style={styles.bannerImage}
+            />
+          )}
+          <Text>TESTING WHERE POST IMAGES SHOULD GO</Text>
 
           {/* Body Section */}
           <View style={styles.descriptionContainer}>
@@ -252,7 +335,7 @@ const createNewMessage = () => {
 
           {/* Messages Section */}
           <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Comments</Text>
+            <Text style={styles.sectionTitle}>Comments</Text>
             <ScrollView style={styles.messagesContainer}>
               {displayedMessages.map((message) => (
                 <View key={message.id} style={styles.message}>
@@ -265,23 +348,26 @@ const createNewMessage = () => {
                       <Text style={styles.username}>{message.user.name}</Text>
                       <Text style={styles.timestamp}>{message.timestamp}</Text>
                     </View>
-                    <Text style={styles.kudos}>Kudos: {message.user.kudos}</Text>
+                    <Text style={styles.kudos}>
+                      Kudos: {message.user.kudos}
+                    </Text>
                     <Text style={styles.messageText}>{message.content}</Text>
                   </View>
                 </View>
               ))}
             </ScrollView>
-              <TouchableOpacity style={styles.createNewButton} onPress={createNewMessage}>
-                <Ionicons name="add" size={24} color="#fff" />
-              </TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.createNewButton}
+              onPress={createNewMessage}
+            >
+              <Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
 
             {mockMessages.length > 3 && !showAllMessages && (
               <TouchableOpacity
                 onPress={() => setShowAllMessages(true)}
                 style={styles.showMoreButton}
               >
-
                 <Text style={styles.showMoreText}>Show more messages</Text>
               </TouchableOpacity>
             )}
@@ -293,11 +379,18 @@ const createNewMessage = () => {
             <ScrollView style={styles.handshakesContainer}>
               {displayedHandshakes.map((handshake, index) => (
                 <View key={handshake.id} style={styles.handshake}>
-                  <Image source={{ uri: handshake.sender.avatar }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: handshake.sender.avatar }}
+                    style={styles.avatar}
+                  />
                   <View style={styles.handshakeContent}>
                     <Text style={styles.username}>{handshake.sender.name}</Text>
-                    <Text style={styles.status}>Status: {handshake.status}</Text>
-                    <Text style={styles.kudos}>Kudos: {handshake.sender.kudos}</Text>
+                    <Text style={styles.status}>
+                      Status: {handshake.status}
+                    </Text>
+                    <Text style={styles.kudos}>
+                      Kudos: {handshake.sender.kudos}
+                    </Text>
                   </View>
                   {handshake.status === "Pending" && (
                     <TouchableOpacity
@@ -310,10 +403,12 @@ const createNewMessage = () => {
                 </View>
               ))}
             </ScrollView>
-              <TouchableOpacity style={styles.createNewButton} onPress={createNewMessage}>
-                <Ionicons name="add" size={24} color="#fff" />
-              </TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.createNewButton}
+              onPress={createNewMessage}
+            >
+              <Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
 
             {mockHandshakes.length > 2 && !showAllHandshakes && (
               <TouchableOpacity
@@ -323,31 +418,50 @@ const createNewMessage = () => {
                 <Text style={styles.showMoreText}>Show more handshakes</Text>
               </TouchableOpacity>
             )}
-          </View>          
+          </View>
           {/* Offers Section */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Kudos votation</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.offersContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={true}
+              style={styles.offersContainer}
+            >
               {displayedOffers.map((offer) => (
                 <TouchableOpacity key={offer.id} style={styles.offerCompact}>
-                  <Image source={{ uri: offer.sender.avatar }} style={styles.avatarSmall} />
+                  <Image
+                    source={{ uri: offer.sender.avatar }}
+                    style={styles.avatarSmall}
+                  />
                   <View style={styles.offerCompactContent}>
                     <Text style={styles.username}>{offer.sender.name}</Text>
-                    <Text style={styles.kudos}>Kudos: {offer.kudos}</Text>
-                    {offer.body && <Text style={styles.offerBody}>{offer.body}</Text>}
+                    <Text style={styles.kudos}>
+                      Kudos: {(offer as any).kudos || 0}
+                    </Text>
+                    {offer.body && (
+                      <Text style={styles.offerBody}>{offer.body}</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
           </View>
 
-
           {/* Image Modal */}
-          <Modal visible={modalVisible} transparent={true} animationType="slide">
+          <Modal
+            visible={modalVisible}
+            transparent={true}
+            animationType="slide"
+          >
             <View style={styles.modalContainer}>
-              <Image source={{ uri: selectedImage }} style={styles.modalImage} />
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+              <Image
+                src={selectedImage || ""}
+                /*style={styles.modalImage}*/
+              />
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                /*style={styles.closeButton}*/
+              >
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
@@ -495,152 +609,151 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   titleContainer: {
-  flex: 1,
-  marginBottom: 10,
-},
-title: {
-  fontSize: 20,
-  fontWeight: "bold",
-  textAlign: "left",
-  marginBottom: 5,
-},
-badgesRow: {
-  flexDirection: "row",
-  marginTop: 5,
-},
-badge: {
-  paddingHorizontal: 10,
-  paddingVertical: 5,
-  borderRadius: 10,
-  color: "#fff",
-  fontSize: 12,
-  marginRight: 10,
-},
-requestBadge: {
-  backgroundColor: "#4a90e2",
-},
-giftBadge: {
-  backgroundColor: "#34c759",
-},
-stateBadge: {
-  backgroundColor: "#666",
-  color: "#fff",
-  paddingHorizontal: 10,
-  paddingVertical: 5,
-  borderRadius: 10,
-  fontSize: 12,
-},
-handshakesContainer: {
-  maxHeight: 300,
-  marginTop: 10,
-},
-handshake: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 15,
-  padding: 10,
-  backgroundColor: "#f9f9f9",
-  borderRadius: 10,
-},
-handshakeContent: {
-  flex: 1,
-  marginLeft: 10,
-},
-acceptButton: {
-  padding: 8,
-  backgroundColor: "#4a90e2",
-  borderRadius: 5,
-  alignItems: "center",
-  justifyContent: "center",
-},
+    flex: 1,
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "left",
+    marginBottom: 5,
+  },
+  badgesRow: {
+    flexDirection: "row",
+    marginTop: 5,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    color: "#fff",
+    fontSize: 12,
+    marginRight: 10,
+  },
+  requestBadge: {
+    backgroundColor: "#4a90e2",
+  },
+  giftBadge: {
+    backgroundColor: "#34c759",
+  },
+  stateBadge: {
+    backgroundColor: "#666",
+    color: "#fff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    fontSize: 12,
+  },
+  handshakesContainer: {
+    maxHeight: 300,
+    marginTop: 10,
+  },
+  handshake: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+  },
+  handshakeContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  acceptButton: {
+    padding: 8,
+    backgroundColor: "#4a90e2",
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-status: {
-  fontSize: 14,
-  color: "#666",
-  marginTop: 5,
-},
-offer: {
-  flexDirection: "row",
-  marginBottom: 15,
-  padding: 10,
-  backgroundColor: "#f9f9f9",
-  borderRadius: 10,
-},
-offerContent: {
-  marginLeft: 10,
-},
-offerBody: {
-  marginTop: 5,
-  fontSize: 12,
-  color: "#666",
-  textAlign: "center",
-},
-finalKudos: {
-  marginTop: 10,
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "#4a90e2",
-}, 
-bannerImage: {
-  width: "100%",
-  height: 200,
-  borderRadius: 10,
-},
-acceptButtonText: {
-  color: "#fff",
-  fontWeight: "bold",
-},
-offersContainer: {
-  maxHeight: 120,
-  marginTop: 10,
-},
-offerCompact: {
-  width: 150,
-  padding: 10,
-  backgroundColor: "#f9f9f9",
-  borderRadius: 10,
-  marginRight: 10,
-  alignItems: "center",
-},
-avatarSmall: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  marginBottom: 5,
-},
-offerCompactContent: {
-  alignItems: "center",
-},
-expandButton: {
-  marginTop: 5,
-  padding: 5,
-  backgroundColor: "#4a90e2",
-  borderRadius: 5,
-},
-expandButtonText: {
-  color: "#fff",
-  fontWeight: "bold",
-  fontSize: 12,
-},
-createNewButton: {
-  alignSelf: "center",    // Centers the button horizontally
-  padding: 10,
-  backgroundColor: "#4a90e2",
-  borderRadius: 50,       // Makes it circular
-  marginBottom: 10
-},
+  status: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 5,
+  },
+  offer: {
+    flexDirection: "row",
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+  },
+  offerContent: {
+    marginLeft: 10,
+  },
+  offerBody: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+  },
+  finalKudos: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4a90e2",
+  },
+  bannerImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+  },
+  acceptButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  offersContainer: {
+    maxHeight: 120,
+    marginTop: 10,
+  },
+  offerCompact: {
+    width: 150,
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    marginRight: 10,
+    alignItems: "center",
+  },
+  avatarSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 5,
+  },
+  offerCompactContent: {
+    alignItems: "center",
+  },
+  expandButton: {
+    marginTop: 5,
+    padding: 5,
+    backgroundColor: "#4a90e2",
+    borderRadius: 5,
+  },
+  expandButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+  createNewButton: {
+    alignSelf: "center", // Centers the button horizontally
+    padding: 10,
+    backgroundColor: "#4a90e2",
+    borderRadius: 50, // Makes it circular
+    marginBottom: 10,
+  },
 
-createNewText: {
-  color: '#fff',
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginLeft: 5,
-},
-headerRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 10,
-},
-
+  createNewText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 });

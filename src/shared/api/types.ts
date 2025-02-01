@@ -43,12 +43,18 @@ export type UserSettingsDTO = {
 
 export interface MessageDTO {
   id: number;
-  senderId: number;
+  authorID: number;
+  threadID: number;
+  replyToMessageID?: number;
+  handshakeID?: number;
   content: string;
   createdAt: Date;
   updatedAt: Date;
+  readAt?: Date;
   //TODO: Stuff is missing
 }
+
+export type CreateMessageDTO = Partial<MessageDTO>;
 
 export interface SendCommentDTO {
   content: string;
