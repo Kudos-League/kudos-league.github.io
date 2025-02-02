@@ -12,7 +12,7 @@
     "start:local": "webpack serve --config webpack.local.js",
     "start:dev": "webpack serve --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
-    "build:web:dev": "webpack --config webpack.dev.js",
+    "build:web:dev": "REACT_APP_BACKEND_URI=http://api-dev.kudosleague.org webpack --config webpack.dev.js",
     "clear-cache": "expo -c"
   },
   "dependencies": {
