@@ -2,7 +2,7 @@ import { StripeProvider, useStripe } from "@stripe/stripe-react-native";
 import { useState, useEffect } from "react";
 import { Button, View, Text, StyleSheet, Alert } from "react-native";
 import { FormProvider, useForm } from "react-hook-form";
-import DonationAmountPicker from "./DonationAmountPicker";
+import DonationAmountPicker from "../DonationAmountPicker";
 
 export default function StripeNative() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();

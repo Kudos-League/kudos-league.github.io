@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Button, View, Text, StyleSheet } from "react-native";
 import { FormProvider, useForm } from "react-hook-form";
-import DonationAmountPicker from "./DonationAmountPicker";
+import DonationAmountPicker from "../DonationAmountPicker";
 
 export default function StripeWeb() {
   const [stripe, setStripe] = useState<Stripe | null>(null);
