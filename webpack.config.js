@@ -1,4 +1,5 @@
 const createExpoWebpackConfigAsync = require("@expo/webpack-config");
+const Dotenv = require("dotenv-webpack");
 const path = require("path");
 
 module.exports = async function (env, argv) {
@@ -21,6 +22,12 @@ module.exports = async function (env, argv) {
       "stubs/AssetRegistry.js"
     ),
   };
+
+  config.plugins.push(
+    new Dotenv({
+      systemvars: true,
+    })
+  );
 
   return config;
 };
