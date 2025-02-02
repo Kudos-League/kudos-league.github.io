@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Button, View, Text, StyleSheet, Alert } from "react-native";
 import { FormProvider, useForm } from "react-hook-form";
 import DonationAmountPicker from "../DonationAmountPicker";
+import { REACT_APP_BACKEND_URI } from "@env";
 
 export default function StripeNative() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -16,7 +17,7 @@ export default function StripeNative() {
   const fetchPaymentSheetParams = async () => {
     try {
       const response = await fetch(
-        `${process.env.BACKEND_URI}/stripe/payment-sheet`,
+        `${REACT_APP_BACKEND_URI}/stripe/payment-sheet`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

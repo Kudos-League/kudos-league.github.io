@@ -1,3 +1,3 @@
 declare module "@env" {
-  export const BACKEND_URI: string;
+  export const REACT_APP_BACKEND_URI: string;
 }
