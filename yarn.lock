@@ -7089,13 +7089,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^16.4.5":
-  version: 16.4.7
-  resolution: "dotenv@npm:16.4.7"
-  checksum: c27419b5875a44addcc56cc69b7dc5b0e6587826ca85d5b355da9303c6fc317fc9989f1f18366a16378c9fdd9532d14117a1abe6029cc719cdbbef6eaef2cea4
-  languageName: node
-  linkType: hard
-
 "dotenv@npm:^8.2.0":
   version: 8.6.0
   resolution: "dotenv@npm:8.6.0"
@@ -10621,7 +10614,6 @@ __metadata:
     react-dom: 18.2.0
     react-hook-form: ^7.53.2
     react-native: ^0.77.0
-    react-native-dotenv: ^3.4.11
     react-native-element-dropdown: ^2.12.2
     react-native-error-boundary: ^1.2.7
     react-native-gesture-handler: ~2.14.0
@@ -13717,17 +13709,6 @@ __metadata:
     react-native-svg:
       optional: true
   checksum: b86b44620c8d572e58fb860b14dc271e492d76f1050fe649b59c5451fe96ceaf81fb472f0ff37ca29c83f022d07b428be5f57ffd50a68678fb8145c11b03b03e
-  languageName: node
-  linkType: hard
-
-"react-native-dotenv@npm:^3.4.11":
-  version: 3.4.11
-  resolution: "react-native-dotenv@npm:3.4.11"
-  dependencies:
-    dotenv: ^16.4.5
-  peerDependencies:
-    "@babel/runtime": ^7.20.6
-  checksum: 3ebac2c2ed79dd7e4920fd3fc2da9187413b7190231618e4858b46c47833677838b96d531afe7bd5c4b0a60454dba40cb8708722210df5d522e30aefbf41da05
   languageName: node
   linkType: hard
 

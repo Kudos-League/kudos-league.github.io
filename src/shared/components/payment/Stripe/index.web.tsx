@@ -3,7 +3,6 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Button, View, Text, StyleSheet } from "react-native";
 import { FormProvider, useForm } from "react-hook-form";
 import DonationAmountPicker from "../DonationAmountPicker";
-import { REACT_APP_BACKEND_URI } from "@env";
 
 export default function StripeWeb() {
   const [stripe, setStripe] = useState<Stripe | null>(null);
@@ -17,10 +16,10 @@ export default function StripeWeb() {
     try {
       console.log(
         "Attempting to fetch publishable key...",
-        REACT_APP_BACKEND_URI
+        process.env.REACT_APP_BACKEND_URI
       );
       const response = await fetch(
-        `${REACT_APP_BACKEND_URI}/stripe/publishable-key`
+        `${process.env.REACT_APP_BACKEND_URI}/stripe/publishable-key`
       );
 
       if (!response.ok) {

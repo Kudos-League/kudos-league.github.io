@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
 import io from "socket.io-client";
-import { REACT_APP_BACKEND_URI } from "@env";
 
 export default function PaymentStatusListener({ onStatusUpdate }) {
   useEffect(() => {
-    const socket = io(`${REACT_APP_BACKEND_URI}/stripe-events`, {
+    const socket = io(`${process.env.REACT_APP_BACKEND_URI}/stripe-events`, {
       transports: ["websocket"],
     });
 

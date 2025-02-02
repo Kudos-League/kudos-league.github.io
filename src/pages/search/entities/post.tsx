@@ -1,6 +1,5 @@
 import { useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import { REACT_APP_BACKEND_URI } from "@env";
 import {
   ScrollView,
   Text,
@@ -316,7 +315,7 @@ const Post = () => {
           {postDetails.images?.[0] && (
             <Image
               source={{
-                uri: `${REACT_APP_BACKEND_URI}${postDetails.images?.[0]}`,
+                uri: `${process.env.REACT_APP_BACKEND_URI}${postDetails.images?.[0]}`,
               }}
               style={styles.bannerImage}
             />
