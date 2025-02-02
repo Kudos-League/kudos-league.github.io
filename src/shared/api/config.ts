@@ -3,11 +3,13 @@ export enum Environment {
   DEV,
 }
 
+import { BACKEND_URI } from "@env";
+
 // TODO: Read this from a flag or environment variable
 const env: Environment = Environment.LOCAL;
 
 export function getEndpointUrl(): string {
-  return process.env.BACKEND_URI || "http://localhost";
+  return BACKEND_URI || "http://localhost";
   switch (env) {
     case Environment.LOCAL:
       return "http://localhost:3005";
