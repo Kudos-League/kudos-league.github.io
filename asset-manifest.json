@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.js": "/static/js/bundle.js",
+    "static/media/MaterialCommunityIcons.ttf": "/static/media/MaterialCommunityIcons.5d42b4e60858731e7b65.ttf",
+    "static/media/Ionicons.ttf": "/static/media/Ionicons.3517aeaa34b2f8cd8eef.ttf",
+    "static/media/FontAwesome.ttf": "/static/media/FontAwesome.1e59d2330b4c6deb84b3.ttf",
+    "index.html": "/index.html",
+    "bundle.js.map": "/static/js/bundle.js.map"
+  },
+  "entrypoints": [
+    "static/js/bundle.js"
+  ]
+}
