@@ -5,18 +5,25 @@ type FilePickerProps = {
   onChange: (files: File[]) => void;
   placeholder?: string;
   selectedFiles?: File[];
+  multiple?: boolean;
 };
 
 export default function FilePicker({
   onChange,
   placeholder = "Choose Files",
   selectedFiles = [],
+  multiple = true,
 }: FilePickerProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    onChange(files);
+
+    if (!multiple && files.length > 1) {
+      onChange([files[0]]);
+    } else {
+      onChange(files);
+    }
   };
 
   const openFilePicker = () => {

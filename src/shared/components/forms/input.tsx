@@ -21,6 +21,7 @@ type Props<T extends FieldValues> = {
   placeholder?: string;
   value?: string;
   keyboardType?: KeyboardTypeOptions;
+  multipleFiles?: boolean;
   multiline?: boolean;
   onValueChange?: (value: string | File[]) => void;
 };
@@ -35,6 +36,7 @@ export default function Input<T extends FieldValues>({
   placeholder,
   value,
   keyboardType,
+  multipleFiles = true,
   multiline,
   onValueChange,
 }: Props<T>) {
@@ -54,6 +56,7 @@ export default function Input<T extends FieldValues>({
     return (
       <FilePicker
         placeholder={placeholder || "Choose Files"}
+        multiple={multipleFiles}
         selectedFiles={field.value as File[]}
         onChange={(files) => {
           field.onChange(files);
