@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthState, updateAuth } from "redux_store/slices/auth-slice";
 import { useAppDispatch } from "redux_store/hooks";
-import { getUserDetails, login } from "shared/api/actions";
+import { getUserDetails, login, register } from "shared/api/actions";
 import { ASYNC_STORAGE_KEY__AUTH_DATA } from "shared/constants";
 import { AxiosError } from "axios";
 import { View, Text } from "react-native";
@@ -14,6 +14,11 @@ type AuthContextType = {
   isLoggedIn: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string
+  ) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,6 +99,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.removeItem(ASYNC_STORAGE_KEY__AUTH_DATA);
   };
 
+  const signUpHandler = async (
+    username: string,
+    email: string,
+    password: string
+  ) => {
+    try {
+      const response = await register({ username, email, password });
+      await loginHandler(username, password);
+    } catch (error) {
+      throw new Error("Sign-up failed. Please try again.");
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -103,6 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user: userProfile,
         login: loginHandler,
         logout: logoutHandler,
+        register: signUpHandler,
       }}
     >
       {children}
