@@ -1,13 +1,16 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
+
+import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
+
 import { Button } from "react-native-paper";
 import { usePosts } from "shared/hooks/usePosts";
 import { useAuth } from "shared/hooks/useAuth";
 import Login from "shared/components/Login";
 import Input from "shared/components/forms/input";
 import globalStyles from "shared/styles";
-import { useNavigation } from "@react-navigation/native";
+import { useAppSelector } from "redux_store/hooks";
+import { useState } from "react";
+import GiftType from "./gift-type";
 
 type FormValues = {
   title: string;
@@ -18,11 +21,12 @@ type FormValues = {
 };
 
 export default function CreatePost() {
-  const form = useForm<FormValues>();
-  const navigation = useNavigation();
-  const { token, isLoggedIn } = useAuth();
-  const { addPost } = usePosts();
-  const [showLoginForm, setShowLoginForm] = useState(false);
+  const form: UseFormReturn<FormValues> = useForm<FormValues>();
+  const token = useAppSelector((state) => state.auth.token);
+  const [tags, setTags] = useState('');
+  const [files, setFiles] = useState([]);
+  const [postType, setPostType] = useState('gift');
+  const [giftType, setGiftType] = useState('Gift');
 
   const onInvalid = (e) => {
     console.error(e);
@@ -55,76 +59,108 @@ export default function CreatePost() {
   };
 
   return (
-    <View style={globalStyles.container}>
-      {showLoginForm ? (
-        <View style={styles.loginWrapper}>
-          <Text style={styles.loginPrompt}>
-            Please log in to create a post.
-          </Text>
-          <Login onSuccess={handleLoginSuccess} />
+    <>
+    <View>
+      <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', rowGap: 10, marginHorizontal: 16, gap: 3, marginTop: 10 }}>
+      <Button 
+      style={{
+        ...globalStyles.button, 
+        backgroundColor: postType === 'gift' ? 'black' : '#c5c5c5',  
+        borderColor: '#444', 
+        borderWidth: 1, 
+        paddingHorizontal: 30
+      }}
+      labelStyle={{ color: postType === 'gift' ? 'white' : 'black' }}  
+      onPress={() => setPostType('gift')}
+      >
+        Give
+      </Button>
+
+      <Button 
+        style={{
+          ...globalStyles.button, 
+          backgroundColor: postType === 'request' ? 'black' : '#c5c5c5',  
+          paddingHorizontal: 30,
+          borderColor: '#444',
+          borderWidth: 1
+        }}
+        labelStyle={{ color: postType === 'request' ? 'white' : 'black' }}  
+        onPress={() => setPostType('request')}
+      >
+        Request
+      </Button>
+
+      <Image
+        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/25/25231.png' }}
+        alt="Add Image"
+        style={{ width: 32, height: 32 }}
+      />
+      </View>
+      <View style={globalStyles.contentContainerWithMargin}>
+        <View style={{width: '90%', marginVertical: 32}}>
+          {postType === 'gift' && (
+            <GiftType selected={giftType} onSelect={setGiftType}/>
+          )}
+          <Text style={{...globalStyles.inputTitle, marginTop: 10}}>Title</Text>
+          <TextInput 
+            value={form.watch("title")} 
+            onChangeText={text => form.setValue("title", text)} 
+            style={globalStyles.inputForm} 
+            onInvalid={onInvalid} 
+            placeholder="Enter title"
+          />
+          
+          <Text style={globalStyles.inputTitle}>Info</Text>
+          <TextInput 
+            value={form.watch("body")} 
+            onChangeText={text => form.setValue("body", text)} 
+            style={globalStyles.inputForm} 
+            multiline 
+            numberOfLines={4} 
+            placeholder="Enter post info"
+          />
+          
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={globalStyles.inputTitle}>Add Images</Text>
+            <TouchableOpacity>
+              <Image
+                source={{ uri: 'https://cdn-icons-png.flaticon.com/512/25/25231.png' }}
+                alt="Add Image"
+                style={{ width: 50, height: 50, marginLeft: 10 }} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={globalStyles.inputTitle}>Tags</Text>
+          <TextInput 
+            value={form.watch("tags")} 
+            onChangeText={text => form.setValue("tags", text)} 
+            style={globalStyles.inputForm} 
+            onInvalid={onInvalid} 
+            placeholder="Enter tags" 
+          />
+          
+          <Text style={globalStyles.inputTitle}>Location</Text>
+          <View>
+            <Image 
+              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/25/25231.png' }} 
+              alt="Location" 
+              style={{ width: 50, height: 50 }} 
+            />
+          </View>
+          
+          <Button 
+            mode="contained" 
+            style={globalStyles.button} 
+            onPress={form.handleSubmit(onSubmit)}
+          >
+            Create
+          </Button>
         </View>
-      ) : (
-        <>
-          <View style={globalStyles.formRow}>
-            <Input
-              name="type"
-              label="Post Type"
-              type="dropdown"
-              options={[
-                { label: "Get stuff", value: "request" },
-                { label: "Give stuff", value: "gift" },
-              ]}
-              form={form}
-            />
-          </View>
-          <View style={globalStyles.formRow}>
-            <Input
-              name="title"
-              label="Title"
-              form={form}
-              registerOptions={{
-                required: "Title is required",
-                minLength: {
-                  value: 3,
-                  message: "Title must be at least 3 characters",
-                },
-                maxLength: {
-                  value: 60,
-                  message: "Title must not exceed 60 characters",
-                },
-              }}
-            />
-          </View>
-          <View style={globalStyles.formRow}>
-            <Input
-              name="body"
-              label="Body"
-              form={form}
-              registerOptions={{ required: "Body is required" }}
-              multiline
-            />
-          </View>
-          <View style={globalStyles.formRow}>
-            <Input
-              name="files"
-              label="Attach Files"
-              type="file"
-              form={form}
-              registerOptions={{ required: false }}
-            />
-          </View>
-          <View style={globalStyles.formRow}>
-            <Button
-              onPress={form.handleSubmit(onSubmit, onInvalid)}
-              disabled={!form.formState.isValid}
-              mode="contained"
-            >
-              Submit
-            </Button>
-          </View>
-        </>
-      )}
+      </View>
     </View>
+  </>
+  
   );
 }
 
