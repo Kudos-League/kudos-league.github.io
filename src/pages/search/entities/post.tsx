@@ -47,128 +47,6 @@ const mockMessages = [
   },
 ];
 
-const mockHandshakes = [
-  {
-    id: "1",
-    sender: { avatar: "https://placehold.co/50", name: "Eve", kudos: 100 },
-    status: "Pending",
-  },
-  {
-    id: "2",
-    sender: { avatar: "https://placehold.co/50", name: "Frank", kudos: 50 },
-    status: "Accepted",
-  },
-  {
-    id: "3",
-    sender: { avatar: "https://placehold.co/50", name: "Ivy", kudos: 70 },
-    status: "Pending",
-  },
-  {
-    id: "4",
-    sender: { avatar: "https://placehold.co/50", name: "Jack", kudos: 90 },
-    status: "Accepted",
-  },
-];
-
-const mockOffers = [
-  {
-    id: "1",
-    sender: { avatar: "https://placehold.co/50", name: "Grace", kudos: 200 },
-    body: "I offer 200 kudos.",
-    kudosFinal: 250,
-  },
-  {
-    id: "2",
-    sender: { avatar: "https://placehold.co/50", name: "Hank", kudos: 150 },
-    body: "Let's negotiate.",
-    kudosFinal: null,
-  },
-  {
-    id: "3",
-    sender: { avatar: "https://placehold.co/50", name: "Olivia", kudos: 300 },
-    body: "Great post!",
-    kudosFinal: 350,
-  },
-  {
-    id: "4",
-    sender: { avatar: "https://placehold.co/50", name: "Paul", kudos: 180 },
-    body: "I'll offer more if needed.",
-    kudosFinal: 200,
-  },
-  {
-    id: "5",
-    sender: { avatar: "https://placehold.co/50", name: "Eve", kudos: 250 },
-    body: "This is my offer.",
-    kudosFinal: 275,
-  },
-  {
-    id: "6",
-    sender: { avatar: "https://placehold.co/50", name: "Jack", kudos: 220 },
-    body: "Can we talk?",
-    kudosFinal: null,
-  },
-  {
-    id: "7",
-    sender: { avatar: "https://placehold.co/50", name: "Alice", kudos: 190 },
-    body: "Here’s my final offer.",
-    kudosFinal: 210,
-  },
-  {
-    id: "8",
-    sender: { avatar: "https://placehold.co/50", name: "Frank", kudos: 170 },
-    body: "I offer 170 kudos.",
-    kudosFinal: null,
-  },
-  {
-    id: "9",
-    sender: { avatar: "https://placehold.co/50", name: "Charlie", kudos: 260 },
-    body: "I can add more if needed.",
-    kudosFinal: 280,
-  },
-  {
-    id: "10",
-    sender: { avatar: "https://placehold.co/50", name: "Sophia", kudos: 240 },
-    body: "Let's finalize the deal.",
-    kudosFinal: 260,
-  },
-  {
-    id: "11",
-    sender: { avatar: "https://placehold.co/50", name: "Leo", kudos: 210 },
-    body: "Looking forward to this.",
-    kudosFinal: null,
-  },
-  {
-    id: "12",
-    sender: { avatar: "https://placehold.co/50", name: "Mia", kudos: 230 },
-    body: "This is a great opportunity.",
-    kudosFinal: 250,
-  },
-  {
-    id: "13",
-    sender: { avatar: "https://placehold.co/50", name: "Noah", kudos: 280 },
-    body: "Can I increase my offer?",
-    kudosFinal: 300,
-  },
-  {
-    id: "14",
-    sender: { avatar: "https://placehold.co/50", name: "Liam", kudos: 270 },
-    body: "Let’s make this happen.",
-    kudosFinal: null,
-  },
-  {
-    id: "15",
-    sender: { avatar: "https://placehold.co/50", name: "Emma", kudos: 250 },
-    body: "I’m very interested!",
-    kudosFinal: 275,
-  },
-  {
-    id: "16",
-    sender: { avatar: "https://placehold.co/50", name: "Ava", kudos: 290 },
-    body: "Best offer so far.",
-    kudosFinal: 310,
-  },
-];
-
 const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
@@ -186,6 +64,7 @@ const Post = () => {
   const fetchPostDetails = async (postID: string) => {
     try {
       const data = await getPostDetails(postID);
+      console.log('post data', data);
       setPostDetails(data);
       setLoading(false);
     } catch (err) {
@@ -210,12 +89,12 @@ const Post = () => {
   };
 
   const displayedHandshakes = showAllHandshakes
-    ? mockHandshakes
-    : mockHandshakes.slice(0, 2);
-  const displayedOffers = mockOffers;
+    ? postDetails?.handshakes
+    : postDetails?.handshakes.slice(0, 2);
+  const displayedOffers = postDetails?.rewardOffers || [];
 
   const handleAcceptHandshake = (index: number) => {
-    const updatedHandshakes = [...mockHandshakes];
+    const updatedHandshakes = [...displayedHandshakes || []];
     updatedHandshakes[index].status = "Accepted";
   };
 
@@ -323,9 +202,9 @@ const Post = () => {
 
           <View style={styles.descriptionContainer}>
             <Text style={styles.body}>{postDetails.body}</Text>
-            {mockOffers[0].kudosFinal && (
+            {displayedOffers[0]?.kudosFinal && (
               <Text style={styles.finalKudos}>
-                Final Kudos: {mockOffers[0].kudosFinal}
+                Final Kudos: {displayedOffers[0]?.kudosFinal}
               </Text>
             )}
           </View>
@@ -372,19 +251,19 @@ const Post = () => {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Handshakes</Text>
             <ScrollView style={styles.handshakesContainer}>
-              {displayedHandshakes.map((handshake, index) => (
+              {displayedHandshakes?.map((handshake, index) => (
                 <View key={handshake.id} style={styles.handshake}>
                   <Image
-                    source={{ uri: handshake.sender.avatar }}
+                    source={{ uri: handshake.sender?.avatar }}
                     style={styles.avatar}
                   />
                   <View style={styles.handshakeContent}>
-                    <Text style={styles.username}>{handshake.sender.name}</Text>
+                    <Text style={styles.username}>{handshake.sender?.username || "Display Name Unavailable"}</Text>
                     <Text style={styles.status}>
                       Status: {handshake.status}
                     </Text>
                     <Text style={styles.kudos}>
-                      Kudos: {handshake.sender.kudos}
+                      Kudos: {handshake.sender?.kudos}
                     </Text>
                   </View>
                   {handshake.status === "Pending" && (
@@ -405,7 +284,7 @@ const Post = () => {
               <Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
 
-            {mockHandshakes.length > 2 && !showAllHandshakes && (
+            {displayedHandshakes?.length && displayedHandshakes.length > 2 && !showAllHandshakes && (
               <TouchableOpacity
                 onPress={() => setShowAllHandshakes(true)}
                 style={styles.showMoreButton}
@@ -424,11 +303,11 @@ const Post = () => {
               {displayedOffers.map((offer) => (
                 <TouchableOpacity key={offer.id} style={styles.offerCompact}>
                   <Image
-                    source={{ uri: offer.sender.avatar }}
+                    source={{ uri: offer.sender?.avatar || "https://placehold.co/50" }}
                     style={styles.avatarSmall}
                   />
                   <View style={styles.offerCompactContent}>
-                    <Text style={styles.username}>{offer.sender.name}</Text>
+                    <Text style={styles.username}>{offer.sender?.username || "Display Name Unavailable"}</Text>
                     <Text style={styles.kudos}>
                       Kudos: {(offer as any).kudos || 0}
                     </Text>
