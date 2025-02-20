@@ -18,35 +18,6 @@ import { CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
 
-//TODO: Refactor this, looks like shit, also call the API
-
-const mockMessages = [
-  {
-    id: "1",
-    user: { avatar: "https://placehold.co/50", name: "Alice", kudos: 120 },
-    content: "This is a great post! Thanks for sharing.",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "2",
-    user: { avatar: "https://placehold.co/50", name: "Bob", kudos: 80 },
-    content: "Can you provide more details about the location?",
-    timestamp: "3 hours ago",
-  },
-  {
-    id: "3",
-    user: { avatar: "https://placehold.co/50", name: "Charlie", kudos: 45 },
-    content: "Interesting offer. I'll think about it.",
-    timestamp: "5 hours ago",
-  },
-  {
-    id: "4",
-    user: { avatar: "https://placehold.co/50", name: "Dave", kudos: 30 },
-    content: "Thanks! Really helpful post.",
-    timestamp: "6 hours ago",
-  },
-];
-
 const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
@@ -131,8 +102,8 @@ const Post = () => {
   };
 
   const displayedMessages = showAllMessages
-    ? mockMessages
-    : mockMessages.slice(0, 3);
+    ? postDetails?.messages
+    : postDetails?.messages.slice(0, 3);
 
   return (
     <ScrollView
@@ -212,19 +183,19 @@ const Post = () => {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Comments</Text>
             <ScrollView style={styles.messagesContainer}>
-              {displayedMessages.map((message) => (
+              {displayedMessages?.map((message) => (
                 <View key={message.id} style={styles.message}>
                   <Image
-                    source={{ uri: message.user.avatar }}
+                    source={{ uri: message.author?.avatar }}
                     style={styles.avatar}
                   />
                   <View style={styles.messageContent}>
                     <View style={styles.messageHeader}>
-                      <Text style={styles.username}>{message.user.name}</Text>
+                      <Text style={styles.username}>{message.author?.username}</Text>
                       <Text style={styles.timestamp}>{message.timestamp}</Text>
                     </View>
                     <Text style={styles.kudos}>
-                      Kudos: {message.user.kudos}
+                      Kudos: {message.author?.kudos}
                     </Text>
                     <Text style={styles.messageText}>{message.content}</Text>
                   </View>
@@ -238,7 +209,7 @@ const Post = () => {
               <Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
 
-            {mockMessages.length > 3 && !showAllMessages && (
+            {displayedMessages?.length && displayedMessages?.length > 3 && !showAllMessages && (
               <TouchableOpacity
                 onPress={() => setShowAllMessages(true)}
                 style={styles.showMoreButton}
