@@ -17,6 +17,7 @@ import { create } from "tailwind-rn";
 import { CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
+import AvatarComponent from "shared/components/Avatar";
 
 const Post = () => {
   const route = useRoute();
@@ -35,7 +36,6 @@ const Post = () => {
   const fetchPostDetails = async (postID: string) => {
     try {
       const data = await getPostDetails(postID);
-      console.log('post data', data);
       setPostDetails(data);
       setLoading(false);
     } catch (err) {
@@ -43,12 +43,6 @@ const Post = () => {
       setLoading(false);
     }
   };
-
-  // const fetchPostMessages = async (postID: string) => {
-  //   try{
-  //     const data = await getPostMessages(postID);
-  //   }
-  // };
 
   useEffect(() => {
     fetchPostDetails(id);
@@ -128,10 +122,9 @@ const Post = () => {
         <View>
           <View style={styles.userTitleRow}>
             <View style={styles.userProfile}>
-              <Image
-                source={{
-                  uri: postDetails.sender?.avatar || "https://placehold.co/50",
-                }}
+              <AvatarComponent
+                username={postDetails.sender?.username || "Anonymous"}
+                avatar={postDetails.sender?.avatar}
                 style={styles.avatar}
               />
               <View style={styles.userInfo}>
@@ -185,8 +178,9 @@ const Post = () => {
             <ScrollView style={styles.messagesContainer}>
               {displayedMessages?.map((message) => (
                 <View key={message.id} style={styles.message}>
-                  <Image
-                    source={{ uri: message.author?.avatar }}
+                  <AvatarComponent
+                    username={message.author?.username || "Anonymous"}
+                    avatar={message.author?.avatar}
                     style={styles.avatar}
                   />
                   <View style={styles.messageContent}>
@@ -224,8 +218,9 @@ const Post = () => {
             <ScrollView style={styles.handshakesContainer}>
               {displayedHandshakes?.map((handshake, index) => (
                 <View key={handshake.id} style={styles.handshake}>
-                  <Image
-                    source={{ uri: handshake.sender?.avatar }}
+                  <AvatarComponent
+                    username={handshake.sender?.username || "Anonymous"}
+                    avatar={handshake.sender?.avatar}
                     style={styles.avatar}
                   />
                   <View style={styles.handshakeContent}>
@@ -273,8 +268,9 @@ const Post = () => {
             >
               {displayedOffers.map((offer) => (
                 <TouchableOpacity key={offer.id} style={styles.offerCompact}>
-                  <Image
-                    source={{ uri: offer.sender?.avatar || "https://placehold.co/50" }}
+                  <AvatarComponent
+                    username={offer.sender?.username || "Anonymous"}
+                    avatar={offer.sender?.avatar}
                     style={styles.avatarSmall}
                   />
                   <View style={styles.offerCompactContent}>

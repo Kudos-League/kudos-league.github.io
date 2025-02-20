@@ -25,37 +25,6 @@ type NavigationProps = StackNavigationProp<RootStackParamList, "Post">;
 //   kudos: number;
 //   tags: string[]; // Add tags prop
 // }
-/*
-const posts = [
-  {
-    id: "1",
-    username: "user1",
-    title: "First Post",
-    body: "This is the body of the first post.",
-    type: "request",
-    kudos: 10,
-    tags: ["intro", "welcome"],
-  },
-  {
-    id: "2",
-    username: "user2",
-    title: "React Tips",
-    body: "Here are some useful tips for working with React.",
-    type: "gift",
-    kudos: 25,
-    tags: ["react", "development", "tips"],
-  },
-  {
-    id: "3",
-    username: "user3",
-    title: "TypeScript in Action",
-    body: "Exploring the benefits of TypeScript in JavaScript development.",
-    type: "request",
-    kudos: 15,
-    tags: ["typescript", "javascript", "development"],
-  },
-];
-*/
 
 export default function PostsContainer({ posts }) {
   const navigation = useNavigation<NavigationProps>();

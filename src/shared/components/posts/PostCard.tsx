@@ -1,8 +1,10 @@
-import { Box, Typography, Avatar, Stack } from "@mui/material";
+import { Box, Typography, Stack } from "@mui/material";
 import { TouchableOpacity } from "react-native";
 import Tags, { Tag } from "../Tags";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { getEndpointUrl } from "shared/api/config";
+import AvatarComponent from "../Avatar";
 
 type RootStackParamList = {
   Home: undefined;
@@ -38,9 +40,9 @@ export default function PostCard(props: Post & { onPress: () => void }) {
       >
         <Stack spacing={0.5} margin={1}>
           <TouchableOpacity onPress={handleAvatarPress}>
-            <Avatar
-              alt={props.sender?.username}
-              src={props.sender?.avatar || "https://via.placeholder.com/150"}
+            <AvatarComponent
+              username={props.sender?.username}
+              avatar={props.sender?.avatar}
               sx={{ width: 64, height: 64, marginRight: 2 }}
             />
           </TouchableOpacity>
