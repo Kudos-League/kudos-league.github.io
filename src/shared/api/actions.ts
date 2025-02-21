@@ -118,6 +118,7 @@ export async function sendMessage(
   request: CreateMessageDTO,
   token: string
 ): Promise<{ data: any }> {
+  if (!token) throw Error("Invalid token");
   const response = await instance.post("/messages", request, {
     headers: {
       "Content-Type": "application/json",
@@ -132,6 +133,7 @@ export async function createRewardOffer(
   request: CreateRewardOfferDTO,
   token: string
 ): Promise<{ data: RewardOfferDTO }> {
+  if (!token) throw Error("Invalid token");
   return instance.post("/reward-offers", request, {
     headers: {
       "Content-Type": "application/json",
@@ -145,6 +147,7 @@ export async function createHandshake(
   request: CreateHandshakeDTO,
   token: string
 ): Promise<{ data: HandshakeDTO }> {
+  if (!token) throw Error("Invalid token");
   return instance.post("/handshakes", request, {
     headers: {
       "Content-Type": "application/json",

@@ -77,8 +77,11 @@ export type RewardOfferDTO = {
 };
 
 export type CreateHandshakeDTO = {
-  postId: number;
-  offerId: number;
+  postID: string;
+  senderID: string;
+  receiverID: string;
+  type: string;
+  status: string;
 };
 
 export type HandshakeDTO = {

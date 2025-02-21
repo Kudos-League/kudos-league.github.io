@@ -11,9 +11,9 @@ import {
   Modal,
   TextInput,
 } from "react-native";
-import { getPostDetails, sendMessage } from "shared/api/actions";
+import { createHandshake, getPostDetails, sendMessage } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
-import { CreateMessageDTO } from "shared/api/types";
+import { CreateHandshakeDTO, CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
@@ -32,6 +32,7 @@ const Post = () => {
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
   const [messageContent, setMessageContent] = useState("");
+  const [creatingHandshake, setCreatingHandshake] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
 
@@ -120,6 +121,43 @@ const Post = () => {
     }
   };
      
+  const handleSubmitHandshake = async () => {
+    if (!token) {
+      console.error("No token. Please register or log in.");
+      return;
+    }
+  
+    if (!postDetails) {
+      console.error("Post details are not loaded.");
+      return;
+    }
+  
+    setCreatingHandshake(true);
+  
+    const handshakeData: CreateHandshakeDTO = {
+      postID: postDetails.id,
+      senderID: user?.id || "0",
+      receiverID: postDetails.sender?.id || "0",
+      type: postDetails.type, // TODO: This might be redundant since the post has the type
+      status: 'new' // TODO: Should be optional
+    };
+  
+    try {
+      const response = await createHandshake(handshakeData, token);
+      const newHandshake = response.data;
+  
+      setPostDetails((prevDetails) => ({
+        ...prevDetails!,
+        handshakes: [...(prevDetails?.handshakes || []), newHandshake],
+      }));
+  
+      console.log("Handshake created successfully:", newHandshake);
+    } catch (error) {
+      console.error("Error creating handshake:", error);
+    } finally {
+      setCreatingHandshake(false);
+    }
+  };
 
   const displayedMessages = showAllMessages
     ? postDetails?.messages
@@ -275,8 +313,16 @@ const Post = () => {
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity style={styles.createNewButton} onPress={handleSubmitMessage}>
-              <Ionicons name="add" size={24} color="#fff" />
+            <TouchableOpacity
+              style={styles.createNewButton}
+              onPress={handleSubmitHandshake}
+              disabled={creatingHandshake}
+            >
+              {creatingHandshake ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="add" size={24} color="#fff" />
+              )}
             </TouchableOpacity>
 
             {displayedHandshakes?.length && displayedHandshakes.length > 2 && !showAllHandshakes && (
