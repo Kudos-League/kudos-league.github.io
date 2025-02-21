@@ -9,19 +9,20 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  TextInput,
 } from "react-native";
-import { Button } from "react-native-paper";
 import { getPostDetails, sendMessage } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
-import { create } from "tailwind-rn";
 import { CreateMessageDTO } from "shared/api/types";
 import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
+import {useAuth} from "shared/hooks/useAuth";
 
 const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
+  const { user } = useAuth();
 
   const [postDetails, setPostDetails] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ const Post = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllMessages, setShowAllMessages] = useState(false);
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
 
   const token = useAppSelector((state) => state.auth.token);
 
@@ -65,35 +67,59 @@ const Post = () => {
 
   interface FormValuesMessage {
     content: string;
-    authorID: number;
-    threadID: number;
-    replyToMessageID?: number;
+    senderID: string;
+    postID: string;
+    // threadID: number;
+    // replyToMessageID?: number;
     handshakeID?: number;
     readAt?: Date;
   }
 
+  const handleSubmitMessage = () => {
+    if (!messageContent.trim()) {
+      console.error("Message content cannot be empty");
+      return;
+    }
+  
+    if (!postDetails) {
+      console.error("Post details are not loaded");
+      return;
+    }
+  
+    const messageData: FormValuesMessage = {
+      content: messageContent,
+      senderID: user?.id|| "0",
+      postID: postDetails?.id || "0",
+    };
+  
+    onSubmitMessage(messageData);
+    setMessageContent("");
+  };  
+
   const onSubmitMessage: SubmitHandler<FormValuesMessage> = async (data) => {
+    if (!token) {
+      console.error("No token. Please register or log in.");
+      return;
+    }
+  
     const request: CreateMessageDTO = {
       content: data.content,
-      authorID: data.authorID,
-      threadID: data.threadID,
-      replyToMessageID: data.replyToMessageID,
-      handshakeID: data.handshakeID,
-      readAt: data.readAt,
+      authorID: data?.senderID,
+      postID: data?.postID,
     };
+  
     try {
-      if (!token) {
-        throw new Error("No token. Please register or log in.");
-      }
-      await sendMessage(request, token);
-      console.log("Message sent successfully.");
+      const response = await sendMessage(request, token);
+  
+      setPostDetails((prevDetails) => ({
+        ...prevDetails!,
+        messages: [...(prevDetails?.messages || []), response],
+      }));
     } catch (e) {
       console.error("Error trying to send message:", e);
     }
   };
-  const createNewMessage = () => {
-    // TODO: Add logic
-  };
+     
 
   const displayedMessages = showAllMessages
     ? postDetails?.messages
@@ -196,12 +222,18 @@ const Post = () => {
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity
-              style={styles.createNewButton}
-              onPress={createNewMessage}
-            >
-              <Ionicons name="add" size={24} color="#fff" />
+            <View style={styles.messageInputContainer}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Type a message..."
+              value={messageContent}
+              onChangeText={setMessageContent}
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={handleSubmitMessage}>
+              <Ionicons name="send" size={24} color="#fff" />
             </TouchableOpacity>
+          </View>
+
 
             {displayedMessages?.length && displayedMessages?.length > 3 && !showAllMessages && (
               <TouchableOpacity
@@ -243,10 +275,7 @@ const Post = () => {
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity
-              style={styles.createNewButton}
-              onPress={createNewMessage}
-            >
+            <TouchableOpacity style={styles.createNewButton} onPress={handleSubmitMessage}>
               <Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
 
@@ -595,4 +624,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  messageInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#fff",
+  },
+  messageInput: {
+    flex: 1,
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginRight: 10,
+    backgroundColor: "#f9f9f9",
+  },
+  sendButton: {
+    backgroundColor: "#4a90e2",
+    borderRadius: 20,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },  
 });

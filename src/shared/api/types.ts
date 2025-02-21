@@ -43,8 +43,8 @@ export type UserSettingsDTO = {
 
 export interface MessageDTO {
   id: number;
-  authorID: number;
-  threadID: number;
+  authorID: string;
+  postID?: string;
   replyToMessageID?: number;
   handshakeID?: number;
   content: string;
@@ -59,3 +59,35 @@ export type CreateMessageDTO = Partial<MessageDTO>;
 export interface SendCommentDTO {
   content: string;
 }
+
+export type CreateRewardOfferDTO = {
+  postId: number;
+  amount: number;
+  currency: string;
+};
+
+export type RewardOfferDTO = {
+  id: number;
+  postId: number;
+  senderId: number;
+  amount: number;
+  currency: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CreateHandshakeDTO = {
+  postId: number;
+  offerId: number;
+};
+
+export type HandshakeDTO = {
+  id: number;
+  postId: number;
+  offerId: number;
+  senderId: number;
+  recipientId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+

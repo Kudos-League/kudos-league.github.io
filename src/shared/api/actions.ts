@@ -1,8 +1,13 @@
 import { getEndpointUrl } from "./config";
 import {
+  CreateHandshakeDTO,
+  CreateMessageDTO,
   CreatePostDTO,
+  CreateRewardOfferDTO,
   CreateUserDTO,
+  HandshakeDTO,
   PostDTO,
+  RewardOfferDTO,
   SendCommentDTO,
   UserLoginRequestSchemaDTO,
   UserLoginResponseDTO,
@@ -110,7 +115,7 @@ export async function updateUser(
 
 /** @throws {AxiosError} */
 export async function sendMessage(
-  request: SendCommentDTO,
+  request: CreateMessageDTO,
   token: string
 ): Promise<{ data: any }> {
   const response = await instance.post("/messages", request, {
@@ -121,4 +126,29 @@ export async function sendMessage(
   });
 
   return response.data;
+}
+
+export async function createRewardOffer(
+  request: CreateRewardOfferDTO,
+  token: string
+): Promise<{ data: RewardOfferDTO }> {
+  return instance.post("/reward-offers", request, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/** @throws {AxiosError} */
+export async function createHandshake(
+  request: CreateHandshakeDTO,
+  token: string
+): Promise<{ data: HandshakeDTO }> {
+  return instance.post("/handshakes", request, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }

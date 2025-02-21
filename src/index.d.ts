@@ -1,5 +1,5 @@
 interface Post {
-  _id: string;
+  id: string;
   sender: {
     id: string;
     email: string;
