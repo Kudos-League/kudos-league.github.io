@@ -16,6 +16,7 @@ interface Post {
     updatedAt: Date;
   } | null;
   tags: Tag[];
+  regionID: string;
   title: string;
   type: string;
   body: string;

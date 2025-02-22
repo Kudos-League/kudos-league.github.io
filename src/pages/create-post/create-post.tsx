@@ -12,6 +12,8 @@ import { useAppSelector } from "redux_store/hooks";
 import { useState } from "react";
 import GiftType from "./gift-type";
 import { useNavigation } from "@react-navigation/native";
+import useLocation from 'shared/hooks/useLocation';
+import Map from 'shared/components/Map';
 
 type FormValues = {
   title: string;
@@ -31,6 +33,9 @@ export default function CreatePost() {
   const [postType, setPostType] = useState("gift");
   const [giftType, setGiftType] = useState("Gift");
   const { addPost } = usePosts();
+  const { location, errorMsg } = useLocation();
+
+  if (errorMsg) console.error('error loading location', errorMsg);
 
   const onInvalid = (e) => {
     console.error(e);
@@ -42,17 +47,21 @@ export default function CreatePost() {
       return;
     }
     try {
+      // TODO: wait for location to be filled before enabling button
       const newPost = {
         title: data.title,
         body: data.body,
-        type: data.type,
-        tags: data.tags,
+        type: data.type || 'request', // TODO: tags and type not being passed in
+        tags: data.tags || [],
         files: data.files || [],
+        location
       };
       await addPost(newPost, token!);
+      // TODO: Doesn't update list of posts
       form.reset();
       navigation.goBack();
     } catch (err) {
+      // TODO: Error message in UI
       console.error("Failed to create post:", err);
     }
   };
@@ -186,13 +195,13 @@ export default function CreatePost() {
 
             <Text style={globalStyles.inputTitle}>Location</Text>
             <View>
-              <Image
-                source={{
-                  uri: "https://cdn-icons-png.flaticon.com/512/25/25231.png",
-                }}
-                alt="Location"
-                style={{ width: 50, height: 50 }}
-              />
+              {location && <Map
+                showAddressBar={true}
+                exactLocation={false}
+                coordinates={location}
+                width={300} 
+                height={300}
+              />}
             </View>
 
             <Button

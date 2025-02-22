@@ -1,13 +1,17 @@
+import Constants from "expo-constants";
+
 export enum Environment {
   LOCAL,
   DEV,
 }
 
+const BACKEND_URI = Constants.expoConfig?.extra?.backendUri ?? 'http://localhost';
+
 // TODO: Read this from a flag or environment variable
 const env: Environment = Environment.LOCAL;
 
 export function getEndpointUrl(): string {
-  return process.env.REACT_APP_BACKEND_URI || "http://localhost";
+  return BACKEND_URI;
   switch (env) {
     case Environment.LOCAL:
       return "http://localhost:3005";

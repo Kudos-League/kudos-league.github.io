@@ -32,6 +32,8 @@ function toFormData(dto: Record<string, any>): FormData {
 
     if (Array.isArray(value)) {
       value.forEach((v) => formData.append(`${key}[]`, v));
+    } else if (value !== null && typeof value === 'object' && !(value instanceof Blob) && !(value instanceof File)) {
+      formData.append(key, JSON.stringify(value));
     } else {
       formData.append(key, value);
     }

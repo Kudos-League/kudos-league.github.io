@@ -2474,6 +2474,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@googlemaps/js-api-loader@npm:^1.13.8":
+  version: 1.16.8
+  resolution: "@googlemaps/js-api-loader@npm:1.16.8"
+  checksum: 10/63771c753630c7c86c48e7e0978e0f2d84ca2ca20d5e0a3c2f9e539bd3adca22316953893e1b90f9fd411a172e73b2742aec1ce27897f108aae5a6245c990c9d
+  languageName: node
+  linkType: hard
+
 "@graphql-typed-document-node/core@npm:^3.1.0":
   version: 3.2.0
   resolution: "@graphql-typed-document-node/core@npm:3.2.0"
@@ -2841,6 +2848,13 @@ __metadata:
   version: 2.0.5
   resolution: "@leichtgewicht/ip-codec@npm:2.0.5"
   checksum: 10/cb98c608392abe59457a14e00134e7dfa57c0c9b459871730cd4e907bb12b834cbd03e08ad8663fea9e486f260da7f1293ccd9af0376bf5524dd8536192f248c
+  languageName: node
+  linkType: hard
+
+"@mapbox/point-geometry@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@mapbox/point-geometry@npm:0.1.0"
+  checksum: 10/f6f78ac8a7f798efb19db6eb1a9e05da7ba942102f5347c1a673d94202d0c606ec3f522efa3e76d583cdca46fb96dde52c3d37234f162d21df42f9e8c4f182bd
   languageName: node
   linkType: hard
 
@@ -3807,6 +3821,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/geojson@npm:^7946.0.13":
+  version: 7946.0.16
+  resolution: "@types/geojson@npm:7946.0.16"
+  checksum: 10/34d07421bdd60e7b99fa265441d17ac6e9aef48e3ce22d04324127d0de1daf7fbaa0bd3be1cece2092eb6995f21da84afa5231e24621a2910ff7340bc98f496f
+  languageName: node
+  linkType: hard
+
 "@types/glob@npm:^7.1.1":
   version: 7.2.0
   resolution: "@types/glob@npm:7.2.0"
@@ -3814,6 +3835,15 @@ __metadata:
     "@types/minimatch": "npm:*"
     "@types/node": "npm:*"
   checksum: 10/6ae717fedfdfdad25f3d5a568323926c64f52ef35897bcac8aca8e19bc50c0bd84630bbd063e5d52078b2137d8e7d3c26eabebd1a2f03ff350fff8a91e79fc19
+  languageName: node
+  linkType: hard
+
+"@types/google-map-react@npm:^2":
+  version: 2.1.10
+  resolution: "@types/google-map-react@npm:2.1.10"
+  dependencies:
+    "@types/react": "npm:*"
+  checksum: 10/df8139e4410fb6fd8396551d4973539d740ba276280ce433970ba65750b44669cf85915f19afbc3f70816c6918e34e8ff9eba805c21d6780a25fa12b3b8816e2
   languageName: node
   linkType: hard
 
@@ -3998,6 +4028,15 @@ __metadata:
   peerDependencies:
     "@types/react": "*"
   checksum: 10/ea14bc84f529a3887f9954b753843820ac8a3c49fcdfec7840657ecc6a8800aad98afdbe4b973eb96c7252286bde38476fcf64b1c09527354a9a9366e516d9a2
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:*":
+  version: 19.0.10
+  resolution: "@types/react@npm:19.0.10"
+  dependencies:
+    csstype: "npm:^3.0.2"
+  checksum: 10/10b592d212ebe4b4e0bd42a95c58af3d8dfcb8b3fa4b412d686c2ff8810d5dd3e3a30ebedb31d7b738e33a39c43503e24fe4e6ca8a21d842870043793f4eda98
   languageName: node
   linkType: hard
 
@@ -7089,6 +7128,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.4.7":
+  version: 16.4.7
+  resolution: "dotenv@npm:16.4.7"
+  checksum: 10/f13bfe97db88f0df4ec505eeffb8925ec51f2d56a3d0b6d916964d8b4af494e6fb1633ba5d09089b552e77ab2a25de58d70259b2c5ed45ec148221835fc99a0c
+  languageName: node
+  linkType: hard
+
 "dotenv@npm:^8.2.0":
   version: 8.6.0
   resolution: "dotenv@npm:8.6.0"
@@ -7548,7 +7594,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter3@npm:^4.0.0":
+"eventemitter3@npm:^4.0.0, eventemitter3@npm:^4.0.4":
   version: 4.0.7
   resolution: "eventemitter3@npm:4.0.7"
   checksum: 10/8030029382404942c01d0037079f1b1bc8fed524b5849c237b80549b01e2fc49709e1d0c557fa65ca4498fc9e24cff1475ef7b855121fcc15f9d61f93e282346
@@ -7726,6 +7772,15 @@ __metadata:
     expo-constants: "npm:~15.4.3"
     invariant: "npm:^2.2.4"
   checksum: 10/30d750881b1003fabff17929e1b6062ed6cd243ca35cedd41082df5fd775d0c457f50e4a9e696dedc53459caac4f26d493a2819cef692633822d893c788e0f06
+  languageName: node
+  linkType: hard
+
+"expo-location@npm:^18.0.7":
+  version: 18.0.7
+  resolution: "expo-location@npm:18.0.7"
+  peerDependencies:
+    expo: "*"
+  checksum: 10/9e475765f0b43a83e2a85f86c814be1d18c575f2ef72eb4fb973955a374577e74b9d77c8ee698ac1c6b9903efb02fbf53b775b754789cc4a496c244679e85c4d
   languageName: node
   linkType: hard
 
@@ -8555,6 +8610,21 @@ __metadata:
     pify: "npm:^2.0.0"
     pinkie-promise: "npm:^2.0.0"
   checksum: 10/18109d6b9d55643d2b98b59c3cfae7073ccfe39829632f353d516cc124d836c2ddebe48a23f04af63d66a621b6d86dd4cbd7e6af906f2458a7fe510ffc4bd424
+  languageName: node
+  linkType: hard
+
+"google-map-react@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "google-map-react@npm:2.2.1"
+  dependencies:
+    "@googlemaps/js-api-loader": "npm:^1.13.8"
+    "@mapbox/point-geometry": "npm:^0.1.0"
+    eventemitter3: "npm:^4.0.4"
+    prop-types: "npm:^15.7.2"
+  peerDependencies:
+    react: ^16.0.0 || ^17.0.0 || ^18.0.0
+    react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0
+  checksum: 10/3e0b8d5560056be2258541c1b0759e0cc4b80946daa5071ac6fb733b38184fb21089c8c75ab252e214c29b1dfea883c8c819003860d7c67ded7b6a432905ca94
   languageName: node
   linkType: hard
 
@@ -10584,6 +10654,7 @@ __metadata:
     "@testing-library/jest-native": "npm:^5.4.3"
     "@testing-library/react": "npm:^16.0.1"
     "@testing-library/react-native": "npm:^12.9.0"
+    "@types/google-map-react": "npm:^2"
     "@types/jest": "npm:^29.5.14"
     "@types/react": "npm:~18.2.45"
     "@types/react-test-renderer": "npm:^18.3.0"
@@ -10594,11 +10665,14 @@ __metadata:
     buffer: "npm:^6.0.3"
     concurrently: "npm:^9.1.0"
     crypto-browserify: "npm:^3.12.1"
+    dotenv: "npm:^16.4.7"
     dotenv-webpack: "npm:^8.1.0"
     expo: "npm:~49.0.0"
     expo-constants: "npm:~15.4.6"
     expo-doctor: "npm:^1.12.4"
     expo-linking: "npm:~6.2.2"
+    expo-location: "npm:^18.0.7"
+    google-map-react: "npm:^2.2.1"
     https-browserify: "npm:^1.0.0"
     jest: "npm:^29.7.0"
     jest-expo: "npm:~50.0.4"
@@ -10618,6 +10692,7 @@ __metadata:
     react-native-error-boundary: "npm:^1.2.7"
     react-native-gesture-handler: "npm:~2.14.0"
     react-native-get-random-values: "npm:~1.8.0"
+    react-native-maps: "npm:^1.20.1"
     react-native-paper: "npm:^5.12.5"
     react-native-reanimated: "npm:~3.6.2"
     react-native-safe-area-context: "npm:4.8.2"
@@ -13762,6 +13837,22 @@ __metadata:
   peerDependencies:
     react-native: ">=0.56"
   checksum: 10/40638a08fc995337912a746bf1070ed19ae3a23284fd56c44b54002951aee1fefda4b7d101c65b3af98b53236ff80729e55e261502b14a8d59588fac6983b682
+  languageName: node
+  linkType: hard
+
+"react-native-maps@npm:^1.20.1":
+  version: 1.20.1
+  resolution: "react-native-maps@npm:1.20.1"
+  dependencies:
+    "@types/geojson": "npm:^7946.0.13"
+  peerDependencies:
+    react: ">= 17.0.1"
+    react-native: ">= 0.64.3"
+    react-native-web: ">= 0.11"
+  peerDependenciesMeta:
+    react-native-web:
+      optional: true
+  checksum: 10/582fbf4d2f210251626e7f8296cf05451453a974b56b6855dae44839c895462781057b0ebcece920cb413e58d2e4c57ec229bd55678da25d5600278317dc3e51
   languageName: node
   linkType: hard
 

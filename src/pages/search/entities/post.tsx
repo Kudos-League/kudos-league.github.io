@@ -18,6 +18,8 @@ import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
 import {useAuth} from "shared/hooks/useAuth";
+import MapDisplay from "shared/components/Map";
+import { getEndpointUrl } from "shared/api/config";
 
 const Post = () => {
   const route = useRoute();
@@ -222,7 +224,7 @@ const Post = () => {
           {postDetails.images?.[0] && (
             <Image
               source={{
-                uri: `${process.env.REACT_APP_BACKEND_URI}${postDetails.images?.[0]}`,
+                uri: `${getEndpointUrl()}${postDetails.images?.[0]}`,
               }}
               style={styles.bannerImage}
             />
@@ -235,6 +237,16 @@ const Post = () => {
                 Final Kudos: {displayedOffers[0]?.kudosFinal}
               </Text>
             )}
+          </View>
+
+          <View style={styles.descriptionContainer}>
+            <MapDisplay
+              showAddressBar={false}
+              regionID={postDetails.regionID}
+              exactLocation={false}
+              width={300}
+              height={300}
+            />
           </View>
 
           <View style={styles.card}>

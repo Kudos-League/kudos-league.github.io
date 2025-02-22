@@ -12,6 +12,8 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import ErrorBoundary from "react-native-error-boundary";
 import { useNavigation } from "@react-navigation/native";
 
+import 'shared/init';
+
 import Home from "pages/home/home";
 import CreatePost from "pages/create-post/create-post";
 import Post from "pages/search/entities/post";
