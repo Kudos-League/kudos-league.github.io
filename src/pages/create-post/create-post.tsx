@@ -1,9 +1,6 @@
 import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
-
 import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
-
 import { Button } from "react-native-paper";
-
 import { CreatePostDTO } from "shared/api/types";
 import { createPost } from "shared/api/actions";
 import Input from "shared/components/forms/input";
@@ -21,7 +18,7 @@ export default function CreatePost() {
   const [postType, setPostType] = useState('gift');
   const [giftType, setGiftType] = useState('Gift');
 
-  const onInvalid = (e) => {
+  const onInvalid = (e) => { //TODO: Handle invalid submission of all the fields
     console.error(e);
   };
 
@@ -57,7 +54,10 @@ export default function CreatePost() {
         paddingHorizontal: 30
       }}
       labelStyle={{ color: postType === 'gift' ? 'white' : 'black' }}  
-      onPress={() => setPostType('gift')}
+      onPress={text => {
+        form.setValue("type", "offer")
+        setPostType('gift')
+       }} 
       >
         Give
       </Button>
@@ -71,7 +71,10 @@ export default function CreatePost() {
           borderWidth: 1
         }}
         labelStyle={{ color: postType === 'request' ? 'white' : 'black' }}  
-        onPress={() => setPostType('request')}
+        onPress={text => {
+          form.setValue("type", "request")
+          setPostType('request')
+        }} 
       >
         Request
       </Button>
@@ -92,7 +95,6 @@ export default function CreatePost() {
             value={form.watch("title")} 
             onChangeText={text => form.setValue("title", text)} 
             style={globalStyles.inputForm} 
-            onInvalid={onInvalid} 
             placeholder="Enter title"
           />
           
@@ -119,10 +121,8 @@ export default function CreatePost() {
           
           <Text style={globalStyles.inputTitle}>Tags</Text>
           <TextInput 
-            value={form.watch("tags")} 
-            onChangeText={text => form.setValue("tags", text)} 
+            onChangeText={text => form.setValue("tags", text.trim().split(','))} 
             style={globalStyles.inputForm} 
-            onInvalid={onInvalid} 
             placeholder="Enter tags" 
           />
           
@@ -135,13 +135,14 @@ export default function CreatePost() {
             />
           </View>
           
-          <Button 
-            mode="contained" 
-            style={globalStyles.button} 
+          <TouchableOpacity 
+            style={{...globalStyles.button, paddingVertical: 10, marginTop: 8}} 
             onPress={form.handleSubmit(onSubmit)}
           >
-            Create
-          </Button>
+            <Text
+            style={{ color: 'white', fontSize: 16}}
+            >Submit</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
