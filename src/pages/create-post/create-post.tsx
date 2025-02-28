@@ -205,54 +205,54 @@ export default function CreatePost() {
             </View>
 
 
-{/* Tags Input Section */}
-<Text style={globalStyles.inputTitle}>Tags</Text>
-<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-  <TextInput
-    ref={inputRef}
-    value={currentTagInput}
-    onChangeText={setCurrentTagInput}
-    style={[globalStyles.inputForm, { flex: 1 }]}
-    placeholder="Enter tag and press Add"
-    onSubmitEditing={
-      handleAddTag
-    }
-    returnKeyType="done"
-  />
-  <Button
-    mode="contained"
-    style={globalStyles.button}
-    onPress={handleAddTag}
-  >
-    Add
-  </Button>
-</View>
+            {/* Tags Input Section */}
+            <Text style={globalStyles.inputTitle}>Tags</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput
+                ref={inputRef}
+                value={currentTagInput}
+                onChangeText={setCurrentTagInput}
+                style={[globalStyles.inputForm, { flex: 1 }]}
+                placeholder="Enter tag and press Add"
+                onSubmitEditing={
+                  handleAddTag
+                }
+                returnKeyType="done"
+              />
+              <Button
+                mode="contained"
+                style={globalStyles.button}
+                onPress={handleAddTag}
+              >
+                Add
+              </Button>
+            </View>
 
-{/* Tags Display */}
-{form.watch("tags")?.length > 0 && (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-    {form.watch("tags").map((tag, index) => (
-      <View 
-        key={index} 
-        style={{ 
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: '#e0e0e0',
-          borderRadius: 16,
-          paddingVertical: 4,
-          paddingHorizontal: 8,
-        }}
-      >
-        <Text style={{ marginRight: 4 }}>{tag}</Text>
-        <TouchableOpacity
-          onPress={() => handleRemoveTag(index)}
-        >
-          <Text style={{ color: 'gray' }}>×</Text>
-        </TouchableOpacity>
-      </View>
-    ))}
-  </View>
-)}
+            {/* Tags Display */}
+            {form.watch("tags")?.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                {form.watch("tags").map((tag, index) => (
+                  <View 
+                    key={index} 
+                    style={{ 
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#e0e0e0',
+                      borderRadius: 16,
+                      paddingVertical: 4,
+                      paddingHorizontal: 8,
+                    }}
+                  >
+                    <Text style={{ marginRight: 4 }}>{tag}</Text>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveTag(index)}
+                    >
+                      <Text style={{ color: 'gray' }}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <Text style={globalStyles.inputTitle}>Location</Text>
             <View>
