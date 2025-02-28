@@ -255,7 +255,7 @@ export default function CreatePost() {
             )}
 
             <Text style={globalStyles.inputTitle}>Location</Text>
-            <View>
+            <View style={{ alignItems: "center" }}>
               {location && <Map
                 showAddressBar={true}
                 exactLocation={false}
