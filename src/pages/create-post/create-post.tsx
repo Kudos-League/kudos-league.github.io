@@ -9,7 +9,7 @@ import Login from "shared/components/Login";
 import Input from "shared/components/forms/input";
 import globalStyles from "shared/styles";
 import { useAppSelector } from "redux_store/hooks";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GiftType from "./gift-type";
 import { useNavigation } from "@react-navigation/native";
 import useLocation from 'shared/hooks/useLocation';
@@ -25,6 +25,7 @@ type FormValues = {
 
 export default function CreatePost() {
   const navigation = useNavigation();
+  const inputRef = useRef<TextInput>(null);
   const form: UseFormReturn<FormValues> = useForm<FormValues>();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const { token, isLoggedIn } = useAuth();
@@ -34,6 +35,25 @@ export default function CreatePost() {
   const [giftType, setGiftType] = useState("Gift");
   const { addPost } = usePosts();
   const { location, errorMsg } = useLocation();
+  const [currentTagInput, setCurrentTagInput] = useState('');
+  const [inputValue, setInputValue] = useState('');
+
+  const handleAddTag = () => {
+    if (currentTagInput.trim()) {
+      const currentTags = form.getValues("tags") || [];
+      const newTags = [...currentTags, currentTagInput.trim()];
+      form.setValue("tags", newTags);
+      setCurrentTagInput('');
+    }
+    inputRef.current?.focus();
+    this.focus(); //HACK: workaround for focus() not working properly with refs
+  };
+  
+  const handleRemoveTag = (index: number) => {
+    const currentTags = form.getValues("tags") || [];
+    const newTags = currentTags.filter((_, i) => i !== index);
+    form.setValue("tags", newTags);
+  };
 
   if (errorMsg) console.error('error loading location', errorMsg);
 
@@ -184,14 +204,55 @@ export default function CreatePost() {
               </View>
             </View>
 
-            <Text style={globalStyles.inputTitle}>Tags</Text>
-            <TextInput
-              // value={form.watch("tags")}
-              // onChangeText={(text) => form.setValue("tags", text)}
-              style={globalStyles.inputForm}
-              // onInvalid={onInvalid}
-              placeholder="Enter tags"
-            />
+
+{/* Tags Input Section */}
+<Text style={globalStyles.inputTitle}>Tags</Text>
+<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  <TextInput
+    ref={inputRef}
+    value={currentTagInput}
+    onChangeText={setCurrentTagInput}
+    style={[globalStyles.inputForm, { flex: 1 }]}
+    placeholder="Enter tag and press Add"
+    onSubmitEditing={
+      handleAddTag
+    }
+    returnKeyType="done"
+  />
+  <Button
+    mode="contained"
+    style={globalStyles.button}
+    onPress={handleAddTag}
+  >
+    Add
+  </Button>
+</View>
+
+{/* Tags Display */}
+{form.watch("tags")?.length > 0 && (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+    {form.watch("tags").map((tag, index) => (
+      <View 
+        key={index} 
+        style={{ 
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#e0e0e0',
+          borderRadius: 16,
+          paddingVertical: 4,
+          paddingHorizontal: 8,
+        }}
+      >
+        <Text style={{ marginRight: 4 }}>{tag}</Text>
+        <TouchableOpacity
+          onPress={() => handleRemoveTag(index)}
+        >
+          <Text style={{ color: 'gray' }}>×</Text>
+        </TouchableOpacity>
+      </View>
+    ))}
+  </View>
+)}
 
             <Text style={globalStyles.inputTitle}>Location</Text>
             <View>
