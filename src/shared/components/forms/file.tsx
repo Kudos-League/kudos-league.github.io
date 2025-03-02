@@ -6,6 +6,7 @@ type FilePickerProps = {
   placeholder?: string;
   selectedFiles?: File[];
   multiple?: boolean;
+  style?: React.CSSProperties;
 };
 
 export default function FilePicker({

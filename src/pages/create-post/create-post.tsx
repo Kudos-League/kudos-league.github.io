@@ -14,6 +14,7 @@ import GiftType from "./gift-type";
 import { useNavigation } from "@react-navigation/native";
 import useLocation from 'shared/hooks/useLocation';
 import Map from 'shared/components/Map';
+import { IconButton, MD3Colors } from 'react-native-paper';
 
 type FormValues = {
   title: string;
@@ -26,6 +27,7 @@ type FormValues = {
 export default function CreatePost() {
   const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
+  const infoModalRef = useRef<View>(null);
   const form: UseFormReturn<FormValues> = useForm<FormValues>();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const { token, isLoggedIn } = useAuth();
@@ -37,6 +39,7 @@ export default function CreatePost() {
   const { location, errorMsg } = useLocation();
   const [currentTagInput, setCurrentTagInput] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const handleAddTag = () => {
     if (currentTagInput.trim()) {
@@ -91,6 +94,14 @@ export default function CreatePost() {
     form.reset();
   };
 
+  const showInformationModal = () => {
+    setShowModal(true);
+    setTimeout(() => {
+      setShowModal(false);
+    }, 3000);
+    setShowModal(false);
+  };
+
   if (showLoginForm) {
     <View style={styles.loginWrapper}>
       <Text style={styles.loginPrompt}>Please log in to create a post.</Text>
@@ -141,13 +152,35 @@ export default function CreatePost() {
             Request
           </Button>
 
-          <Image
-            source={{
-              uri: "https://cdn-icons-png.flaticon.com/512/25/25231.png",
-            }}
-            alt="Add Image"
-            style={{ width: 32, height: 32 }}
+          <IconButton
+            icon="information"
+            onPress={() => showInformationModal()}
+            size={32}
           />
+          {showModal && (
+  <View
+    style={{
+      position: "absolute",
+      top: 50, // Adjust as needed to position below the button
+      left: 0,
+      right: 0,
+      backgroundColor: "white",
+      padding: 16,
+      borderRadius: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 5, // For Android shadow
+      zIndex: 20,
+    }}
+  >
+    <Text style={{ fontSize: 16, color: "#333", textAlign: "center" }}>
+      Please select the type of post you want to create.
+    </Text>
+  </View>
+)}
+
         </View>
         <View style={globalStyles.contentContainerWithMargin}>
           <View style={{ width: "90%", marginVertical: 32 }}>
@@ -182,25 +215,18 @@ export default function CreatePost() {
                 alignItems: "center",
               }}
             >
-              <Text style={globalStyles.inputTitle}>Add Images</Text>
-              <TouchableOpacity>
-                <Image
-                  source={{
-                    uri: "https://cdn-icons-png.flaticon.com/512/25/25231.png",
-                  }}
-                  alt="Add Image"
-                  style={{ width: 50, height: 50, marginLeft: 10 }}
-                />
-              </TouchableOpacity>
+              <View style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', width: '100%' }}>
+                <Text style={{...globalStyles.inputTitle, marginTop: 10}}>Add Images</Text>
 
-              <View style={globalStyles.formRow}>
+                <View style={globalStyles.formRow}>
                 <Input
                   name="files"
                   label="Attach Files"
                   type="file"
                   form={form}
                   registerOptions={{ required: false }}
-                />
+                  />
+                </View>
               </View>
             </View>
 
