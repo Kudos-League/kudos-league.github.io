@@ -40,11 +40,11 @@ export default function PostCard(props: Post & { onPress: () => void }) {
       >
         <Stack spacing={0.5} margin={1}>
           <TouchableOpacity onPress={handleAvatarPress}>
-            <AvatarComponent
+            {props.sender && <AvatarComponent
               username={props.sender?.username}
               avatar={props.sender?.avatar}
               sx={{ width: 64, height: 64, marginRight: 2 }}
-            />
+            />}
           </TouchableOpacity>
           <Typography variant="body2" sx={{ color: "#ccc" }}>
             {props.sender?.username}

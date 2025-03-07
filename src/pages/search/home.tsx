@@ -1,11 +1,17 @@
-import { View, Text } from "react-native";
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import globalStyles from "shared/styles";
+import Home from './search';
+import User from './entities/user';
+import Post from './entities/post';
 
-export default function SignIn() {
+const Stack = createNativeStackNavigator();
+
+export default function Search() {
   return (
-    <View style={globalStyles.container}>
-      <Text>TODO: Add search content (should have options Posts, Users, etc)</Text>
-    </View>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home" component={Home} />
+      <Stack.Screen name="User" component={User} />
+      <Stack.Screen name="Post" component={Post} />
+    </Stack.Navigator>
   );
 }

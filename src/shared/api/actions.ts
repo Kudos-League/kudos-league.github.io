@@ -157,3 +157,22 @@ export async function createHandshake(
     },
   });
 }
+
+/** @throws {AxiosError} */
+export async function searchPosts(query: string, sort?: 'date' | 'tags' | 'location', userLat?: number, userLon?: number) {
+  try {
+    const response = await instance.get('/posts/search', {
+      params: {
+        query,
+        ...(sort && { sort }),
+        ...(userLat && { userLat }),
+        ...(userLon && { userLon }),
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Search API Error:', error);
+    throw error;
+  }
+}

@@ -22,7 +22,7 @@ import Success from "pages/donate/success";
 import Cancel from "pages/donate/cancel";
 import SignIn from "pages/login/login";
 import SignUp from "pages/login/tabs/sign-up";
-import Search from "pages/search/search";
+import Search from "pages/search/home";
 import Profile from "pages/search/entities/user";
 
 import { store } from "redux_store/store";

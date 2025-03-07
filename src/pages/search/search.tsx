@@ -1,17 +1,12 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, Text } from "react-native";
 
-import Home from './home';
-import User from './entities/user';
-import Post from './entities/post';
+import globalStyles from "shared/styles";
+import Search from "shared/components/Search";
 
-const Stack = createNativeStackNavigator();
-
-export default function Search() {
+export default function SignIn() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={Home} />
-      <Stack.Screen name="User" component={User} />
-      <Stack.Screen name="Post" component={Post} />
-    </Stack.Navigator>
+    <View style={globalStyles.container}>
+      <Search />
+    </View>
   );
 }
