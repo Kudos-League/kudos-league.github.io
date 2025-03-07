@@ -24,6 +24,7 @@ import SignIn from "pages/login/login";
 import SignUp from "pages/login/tabs/sign-up";
 import Search from "pages/search/home";
 import Profile from "pages/search/entities/user";
+import ProfilePage from "pages/profile/ProfilePage";
 
 import { store } from "redux_store/store";
 import { Provider } from "react-redux";
@@ -160,6 +161,9 @@ function DrawerNavigator() {
       <Drawer.Screen name="Create Post" component={CreatePost} />
       <Drawer.Screen name="Donate" component={Donate} />
       <Drawer.Screen name="Search" component={Search} />
+      {/* //DEV: */}
+      <Drawer.Screen name="Profile" component={ProfilePage} />
+      {/* //end */}
     </Drawer.Navigator>
   );
 }
