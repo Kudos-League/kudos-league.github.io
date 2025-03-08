@@ -36,7 +36,7 @@ export default function CreatePost() {
   const [postType, setPostType] = useState("gift");
   const [giftType, setGiftType] = useState("Gift");
   const { addPost } = usePosts();
-  const { location, errorMsg } = useLocation();
+  const { location, errorMsg, setLocation } = useLocation();
   const [currentTagInput, setCurrentTagInput] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -288,6 +288,7 @@ export default function CreatePost() {
                 coordinates={location}
                 width={300} 
                 height={300}
+                onLocationSelect={(coords) => setLocation(coords)} 
               />}
             </View>
 

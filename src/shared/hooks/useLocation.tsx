@@ -6,7 +6,13 @@ export interface MapCoordinates {
   longitude: number;
 }
 
-export default function useUserLocation(): { location: MapCoordinates | null; errorMsg: string | null } {
+interface ReturnProps {
+  location: MapCoordinates | null;
+  errorMsg: string | null;
+  setLocation: (location: MapCoordinates) => void;
+}
+
+export default function useUserLocation(): ReturnProps {
   const [location, setLocation] = useState<MapCoordinates | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -49,5 +55,5 @@ export default function useUserLocation(): { location: MapCoordinates | null; er
     }
   }, []);
 
-  return { location, errorMsg };
+  return { location, errorMsg, setLocation };
 }

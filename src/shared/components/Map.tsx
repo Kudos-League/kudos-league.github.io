@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Button, Platform, ViewStyle, ActivityIndicator } from 'react-native';
+import { View, TextInput, StyleSheet, Button, Platform, ViewStyle, ActivityIndicator, DimensionValue } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import Constants from "expo-constants";
+import { getEndpointUrl } from 'shared/api/config';
 
 export interface MapCoordinates {
   latitude: number;
@@ -14,6 +16,7 @@ interface MapComponentPropsBase {
   height?: string | number;
   exactLocation?: boolean;
   regionID?: string;
+  onLocationSelect?: (coords: MapCoordinates) => void;
 }
 
 // Union type remains similar.
@@ -27,7 +30,6 @@ interface MarkerComponentProps {
 }
 
 const GOOGLE_MAPS_KEY = Constants.expoConfig?.extra?.googleMapsKey ?? '';
-const GOOGLE_PLACES_KEY = Constants.expoConfig?.extra?.googlePlacesKey ?? '';
 
 const sampleCoordinates: MapCoordinates = {
   latitude: 38.8951,
@@ -39,7 +41,7 @@ const MarkerComponent: React.FC<MarkerComponentProps> = () => (
 );
 
 async function fetchCoordinatesFromRegionID(regionID: string): Promise<MapCoordinates> {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${regionID}&key=${GOOGLE_PLACES_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${regionID}&key=${GOOGLE_MAPS_KEY}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Error fetching coordinates: ${response.statusText}`);
@@ -60,6 +62,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
   height,
   exactLocation,
   regionID,
+  onLocationSelect
 }) => {
   // Use provided coordinates if available, else fallback.
   const fallbackCoordinates: MapCoordinates =
@@ -69,7 +72,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
       
   // State for the map's coordinates.
   const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates | undefined>(undefined);
-  const [address, setAddress] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // If regionID is provided, fetch its coordinates using our helper.
   useEffect(() => {
@@ -89,13 +92,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
       setMapCoordinates(fallbackCoordinates);
     }
   }, [regionID, fallbackCoordinates]);
-
-  // Placeholder for geocoding API call when the address is submitted.
-  const handleAddressSubmit = async () => {
-    // Replace with your actual geocoding logic.
-    const newCoordinates = sampleCoordinates;
-    setMapCoordinates(newCoordinates);
-  };
 
   if (!mapCoordinates) {
     return (
@@ -118,12 +114,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         longitude: mapCoordinates.longitude + ((Math.random() - 3) * 0.02),
       };
 
-  const region: Region = {
-    latitude: regionCenter.latitude,
-    longitude: regionCenter.longitude,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  };
+    const region: Region = {
+      latitude: regionCenter.latitude,
+      longitude: regionCenter.longitude,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    };
 
   const renderMap = () => {
     if (Platform.OS === 'web') {
@@ -132,12 +128,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : webMapStyle.width;
       const computedHeight =
         height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : webMapStyle.height;
-      const webStyle: React.CSSProperties = {
+      const webStyle = {
         ...webMapStyle,
         width: computedWidth,
         height: computedHeight,
       };
-
+  
       return (
         <div style={webStyle}>
           <GoogleMapReact
@@ -151,32 +147,53 @@ const MapDisplay: React.FC<MapComponentProps> = ({
       );
     } else {
       const nativeStyle: ViewStyle = {
-        ...(typeof width === 'number' ? { width } : {}),
-        ...(typeof height === 'number' ? { height } : {}),
+        width: typeof width === 'number' ? width : (typeof width === 'string' ? width : '100%') as DimensionValue,
+        height: typeof height === 'number' ? height : (typeof height === 'string' ? height : 400) as DimensionValue,
       };
+
       return (
         <MapView style={[styles.map, nativeStyle]} region={region}>
           {exact && <Marker coordinate={mapCoordinates} />}
         </MapView>
       );
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>
       {showAddressBar && (
-        <View style={styles.addressContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter address"
-            value={address}
-            onChangeText={setAddress}
-            onSubmitEditing={handleAddressSubmit}
-          />
-          <Button title="Go" onPress={handleAddressSubmit} />
-        </View>
+        <GooglePlacesAutocomplete
+          placeholder="Search"
+          fetchDetails
+          onPress={(data, details = null) => {
+            const location = details?.geometry.location;
+            if (location) {
+              const newCoords = {
+                latitude: location.lat,
+                longitude: location.lng,
+              };
+              setMapCoordinates(newCoords);
+
+              if (onLocationSelect) {
+                onLocationSelect(newCoords);
+              }
+            }
+          }}
+          query={{
+            key: GOOGLE_MAPS_KEY,
+            language: 'en',
+          }}
+          requestUrl={{
+            useOnPlatform: 'web',
+            url: `${getEndpointUrl()}/maps/proxy`,
+          }}
+          styles={{
+            container: styles.autocompleteContainer,
+            textInput: styles.input,
+          }}
+        />
       )}
-      {renderMap()}
+      {loading ? <ActivityIndicator size="large" style={{ flex: 1 }} /> : renderMap()}
     </View>
   );
 };
@@ -209,6 +226,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   map: { flex: 1 },
+  autocompleteContainer: {
+    position: 'absolute',
+    top: 10,
+    width: '90%',
+    alignSelf: 'center',
+    zIndex: 1000,
+  },
 });
 
 export default MapDisplay;
