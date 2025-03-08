@@ -154,6 +154,17 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
+  }, 
+  logoutButton: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
   backgroundImage: {
     position: 'absolute',

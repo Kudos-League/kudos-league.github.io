@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 
-import Stripe from "shared/components/payment/Stripe";
+import Stripe from "shared/components/payment/Stripe"; //FIXME
 
 // TODO: Show sidebar
 
