@@ -100,6 +100,16 @@ export async function getUserDetails(id: string = "me", token: string) {
 }
 
 /** @throws {AxiosError} */
+export async function getUserPosts(id: string = "me", token: string) {
+  const response = await instance.get(`/users/${id}/posts`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
+
+/** @throws {AxiosError} */
 export async function updateUser(
   request: Partial<UserDTO>,
   id: string = "me",

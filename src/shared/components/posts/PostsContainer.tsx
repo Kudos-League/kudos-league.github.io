@@ -21,7 +21,7 @@ export default function PostsContainer({ posts }) {
   const [loading, setLoading] = useState(false);
 
     //DEV: Velasco's fake data
-    posts = [
+    if (!posts?.length) posts = [
       {
         id: "1",
         title: "TV to give away",

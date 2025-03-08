@@ -1,7 +1,5 @@
-import { UIManager } from 'react-native';
+import { UIManager, Platform } from 'react-native';
 
-if (!UIManager.hasViewManagerConfig) {
-  UIManager.hasViewManagerConfig = (viewName: string) => {
-    return false;
-  };
+if (Platform.OS === 'web' && typeof UIManager.hasViewManagerConfig !== 'function') {
+  UIManager.hasViewManagerConfig = () => false;
 }
