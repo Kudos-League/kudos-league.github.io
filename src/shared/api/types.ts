@@ -52,6 +52,7 @@ export interface MessageDTO {
   updatedAt: Date;
   readAt?: Date;
   //TODO: Stuff is missing
+  author?: UserDTO
 }
 
 export type CreateMessageDTO = Partial<MessageDTO>;

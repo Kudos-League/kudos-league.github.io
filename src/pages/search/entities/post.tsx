@@ -14,12 +14,13 @@ import {
 import { createHandshake, getPostDetails, sendMessage } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
 import { CreateHandshakeDTO, CreateMessageDTO } from "shared/api/types";
-import { SubmitHandler } from "react-hook-form";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
 import {useAuth} from "shared/hooks/useAuth";
 import MapDisplay from "shared/components/Map";
 import { getEndpointUrl } from "shared/api/config";
+import Message from "shared/components/messages/Message";
+import MessageList from "shared/components/messages/MessageList";
 
 const Post = () => {
   const route = useRoute();
@@ -31,9 +32,7 @@ const Post = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [showAllMessages, setShowAllMessages] = useState(false);
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
-  const [messageContent, setMessageContent] = useState("");
   const [creatingHandshake, setCreatingHandshake] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
@@ -53,11 +52,6 @@ const Post = () => {
     fetchPostDetails(id);
   }, [id]);
 
-  const openImageModal = (image: string) => {
-    setSelectedImage(image);
-    setModalVisible(true);
-  };
-
   const displayedHandshakes = showAllHandshakes
     ? postDetails?.handshakes
     : postDetails?.handshakes.slice(0, 2);
@@ -66,61 +60,6 @@ const Post = () => {
   const handleAcceptHandshake = (index: number) => {
     const updatedHandshakes = [...displayedHandshakes || []];
     updatedHandshakes[index].status = "Accepted";
-  };
-
-  interface FormValuesMessage {
-    content: string;
-    senderID: string;
-    postID: string;
-    // threadID: number;
-    // replyToMessageID?: number;
-    handshakeID?: number;
-    readAt?: Date;
-  }
-
-  const handleSubmitMessage = () => {
-    if (!messageContent.trim()) {
-      console.error("Message content cannot be empty");
-      return;
-    }
-  
-    if (!postDetails) {
-      console.error("Post details are not loaded");
-      return;
-    }
-  
-    const messageData: FormValuesMessage = {
-      content: messageContent,
-      senderID: user?.id|| "0",
-      postID: postDetails?.id || "0",
-    };
-  
-    onSubmitMessage(messageData);
-    setMessageContent("");
-  };  
-
-  const onSubmitMessage: SubmitHandler<FormValuesMessage> = async (data) => {
-    if (!token) {
-      console.error("No token. Please register or log in.");
-      return;
-    }
-  
-    const request: CreateMessageDTO = {
-      content: data.content,
-      authorID: data?.senderID,
-      postID: data?.postID,
-    };
-  
-    try {
-      const response = await sendMessage(request, token);
-  
-      setPostDetails((prevDetails) => ({
-        ...prevDetails!,
-        messages: [...(prevDetails?.messages || []), response],
-      }));
-    } catch (e) {
-      console.error("Error trying to send message:", e);
-    }
   };
      
   const handleSubmitHandshake = async () => {
@@ -159,11 +98,7 @@ const Post = () => {
     } finally {
       setCreatingHandshake(false);
     }
-  };
-
-  const displayedMessages = showAllMessages
-    ? postDetails?.messages
-    : postDetails?.messages.slice(0, 3);
+  }; 
 
   return (
     <ScrollView
@@ -250,49 +185,17 @@ const Post = () => {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Comments</Text>
-            <ScrollView style={styles.messagesContainer}>
-              {displayedMessages?.map((message) => (
-                <View key={message.id} style={styles.message}>
-                  <AvatarComponent
-                    username={message.author?.username || "Anonymous"}
-                    avatar={message.author?.avatar}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.messageContent}>
-                    <View style={styles.messageHeader}>
-                      <Text style={styles.username}>{message.author?.username}</Text>
-                      <Text style={styles.timestamp}>{message.timestamp}</Text>
-                    </View>
-                    <Text style={styles.kudos}>
-                      Kudos: {message.author?.kudos}
-                    </Text>
-                    <Text style={styles.messageText}>{message.content}</Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-            <View style={styles.messageInputContainer}>
-            <TextInput
-              style={styles.messageInput}
-              placeholder="Type a message..."
-              value={messageContent}
-              onChangeText={setMessageContent}
+            <MessageList
+              title='Comments'
+              messages={postDetails?.messages || []}
+              callback={(response) => {
+                setPostDetails((prevDetails) => ({
+                  ...prevDetails!,
+                  messages: [...(prevDetails?.messages || []), response],
+                }));
+              }}
+              postID={postDetails.id}
             />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSubmitMessage}>
-              <Ionicons name="send" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-
-            {displayedMessages?.length && displayedMessages?.length > 3 && !showAllMessages && (
-              <TouchableOpacity
-                onPress={() => setShowAllMessages(true)}
-                style={styles.showMoreButton}
-              >
-                <Text style={styles.showMoreText}>Show more messages</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           <View style={styles.card}>
