@@ -6,7 +6,7 @@ import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actio
 import { getEndpointUrl } from 'shared/api/config';
 import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
-import { useWebSocket } from 'shared/hooks/useWebsocket';
+import { useWebSocket } from 'shared/hooks/useWebSocket';
 
 const Chat = ({ onClose }) => {
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);

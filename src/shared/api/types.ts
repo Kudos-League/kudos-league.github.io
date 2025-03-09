@@ -19,6 +19,13 @@ export type PostDTO = {
   updatedAt: Date;
 };
 
+export interface Feat {
+  location: string;
+  date: Date;
+  placement: number;
+  description: string;
+}
+
 export type UserLoginRequestSchemaDTO = {
   username: string;
   password: string;

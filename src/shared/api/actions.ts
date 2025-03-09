@@ -244,3 +244,25 @@ export async function getMessages(channelID: number, token: string): Promise<{ d
 
   return response.data;
 }
+
+/** @throws {AxiosError} */
+export async function createDMChannel(user1ID: number, user2ID: number, token: string) {
+  if (!token) throw Error("Invalid token");
+
+  const response = await instance.post(
+    "/channels",
+    {
+      name: `DM: User ${user1ID} & User ${user2ID}`,
+      channelType: "dm",
+      userIDs: [user1ID, user2ID],
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+}

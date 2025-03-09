@@ -3,8 +3,11 @@ import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, Sty
 import { useForm } from "react-hook-form";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
-import { PostDTO } from "shared/api/types";
+import { Feat, PostDTO } from "shared/api/types";
 import Chat from "./messages/Chat";
+import { useAuth } from "shared/hooks/useAuth";
+import { getEndpointUrl } from "shared/api/config";
+import { createDMChannel } from "shared/api/actions";
 
 type ProfileFormValues = {
   email: string;
@@ -19,41 +22,8 @@ type ProfileProps = {
   posts: PostDTO[];
 };
 
-interface User {
-    id: number;
-    name: string;
-    kudos: number;
-    interests: string[];
-    description: string;
-    profilePicture: string;
-}
-
-interface Post {
-    id: number;
-    title: string;
-    body: string;
-    type: string;
-    images?: string[];
-    kudos?: number;
-    isActive?: boolean;
-    tags?: Array<{ id: string; name: string }>;
-    sender: {
-        id: string;
-        username: string;
-        avatar?: string;
-        kudos: number;
-    };
-}
-
-interface Feat {
-    location: string;
-    date: Date;
-    placement: number;
-    description: string;
-}
-
 interface PostCardProps {
-    post: Post;
+    post: PostDTO;
 }
 
 const PostCard = ({ post }: PostCardProps) => {
@@ -80,19 +50,23 @@ const PostCard = ({ post }: PostCardProps) => {
 };
 
 export default function Profile({
-  user,
+  user: targetUser,
   handleUpdate,
   loading,
   error,
   posts
 }: ProfileProps) {
+  const { user: loggedInUser, isLoggedIn, token } = useAuth();
+  const [editProfile, setEditProfile] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const form = useForm<ProfileFormValues>({
     defaultValues: {
-      email: user.email,
+      email: targetUser.email,
       avatar: [],
     },
   });
+
+  const sameUser = targetUser?.id === loggedInUser?.id; // Determines if the edit profile should be allowed
 
   const onSubmit = async (data: ProfileFormValues) => {
     await handleUpdate(data);
@@ -101,9 +75,9 @@ export default function Profile({
   const [filter, setFilter] = useState("all");
       
   const getUserTitle = () => {
-      if (user.kudos > 10000) {
+      if (targetUser.kudos > 10000) {
           return "Questing Knight";
-      } else if (user.kudos > 5000) {
+      } else if (targetUser.kudos > 5000) {
           return "Pro";
       } else {
           return "Novice";
@@ -133,38 +107,70 @@ export default function Profile({
       ];
   };
 
-  if (!user) {
+  const startDMChat = async () => {
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+  
+    try {
+      await createDMChannel(loggedInUser.id, targetUser.id, token);
+      setIsChatOpen(true);
+    } catch (error) {
+      console.error("Error creating DM channel:", error);
+    }
+  };
+
+  if (!targetUser) {
     return <Text>Loading...</Text>
   }
-  
-  const loggedIn = true;
-  const sameUser = true; // Determines if the edit profile should be allowed
-  const editProfile = false;
+
+  const actionButtons = (
+    <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.actionButton}>
+            <Text>👤</Text>
+        </TouchableOpacity>
+        {!sameUser && isLoggedIn && (
+            <TouchableOpacity style={styles.actionButton} onPress={() => startDMChat()}>
+                <Text>💬</Text>
+            </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.actionButton}>
+            <Text>📊</Text>
+        </TouchableOpacity>
+        {sameUser && (
+            <TouchableOpacity style={styles.actionButton} onPress={() => setEditProfile(!editProfile)}>
+                <Text>⚙️</Text>
+            </TouchableOpacity>
+        )}
+    </View>
+  );
 
   if (editProfile) {
     return (
       <>
-      <Text style={globalStyles.title}>User Profile</Text>
-      <Text style={globalStyles.subtitle}>Username: {user.username}</Text>
-      <Input
-        name="email"
-        label="Email"
-        form={form}
-        registerOptions={{ required: true }}
-      />
-      <Input
-        name="avatar"
-        label="Upload Avatar"
-        type="file"
-        form={form}
-        multipleFiles={false}
-      />
-      <Button
-        title={loading ? "Updating..." : "Update Profile"}
-        onPress={form.handleSubmit(onSubmit)}
-        disabled={loading}
-      />
-    </>
+        {actionButtons}
+        <Text style={globalStyles.title}>User Profile</Text>
+        <Text style={globalStyles.subtitle}>Username: {targetUser.username}</Text>
+        <Input
+            name="email"
+            label="Email"
+            form={form}
+            registerOptions={{ required: true }}
+        />
+        <Input
+            name="avatar"
+            label="Upload Avatar"
+            type="file"
+            form={form}
+            multipleFiles={false}
+        />
+        <Button
+            title={loading ? "Updating..." : "Update Profile"}
+            onPress={form.handleSubmit(onSubmit)}
+            disabled={loading}
+        />
+      </>
     )
   }
   
@@ -172,35 +178,22 @@ export default function Profile({
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-          {user.avatar && <Image source={{ uri: user.avatar }} style={styles.profilePicture} />}
+          {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
           <Text style={styles.userTitle}>{getUserTitle()}</Text>
-          <Text style={styles.userName}>{user.username}</Text>
-          <Text style={styles.userKudos}>{user.kudos.toLocaleString()} Kudos</Text>
+          <Text style={styles.userName}>{targetUser.username}</Text>
+          <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
           
           {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.actionButton}>
-                  <Text>👤</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton} onPress={() => setIsChatOpen(true)}>
-                  <Text>💬</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                  <Text>📊</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                  <Text>⚙️</Text>
-              </TouchableOpacity>
-          </View>
+          {actionButtons}
           
           {/* User Description */}
           {/* TODO: Not a real thing yet */}
-          <Text style={styles.userDescription}>{(user as any).description || 'Test Description'}</Text>
+          <Text style={styles.userDescription}>{(targetUser as any).description || 'Test Description'}</Text>
           
           {/* Interest Tags */}
           <View style={styles.interestContainer}>
             {/* TODO: Not a real thing yet */}
-              {(user as any).interests?.map((interest, index) => (
+              {(targetUser as any).interests?.map((interest, index) => (
                   <View key={index} style={styles.interestPill}>
                       <Text style={styles.interestText}>{interest}</Text>
                   </View>
