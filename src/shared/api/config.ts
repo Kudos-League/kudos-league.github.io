@@ -6,6 +6,7 @@ export enum Environment {
 }
 
 const BACKEND_URI = Constants.expoConfig?.extra?.backendUri ?? 'http://localhost';
+const WSS_URI = Constants.expoConfig?.extra?.wssUri ?? 'ws://localhost';
 
 // TODO: Read this from a flag or environment variable
 const env: Environment = Environment.LOCAL;
@@ -20,4 +21,8 @@ export function getEndpointUrl(): string {
     default:
       throw new Error(`No endpoint specified for environment ${env}`);
   }
+}
+
+export function getWSSURL(): string {
+  return WSS_URI;
 }

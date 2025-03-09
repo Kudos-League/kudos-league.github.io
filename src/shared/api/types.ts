@@ -95,3 +95,11 @@ export type HandshakeDTO = {
   updatedAt: Date;
 };
 
+
+export type ChannelDTO = {
+  id: number;
+  name: string;
+  type: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

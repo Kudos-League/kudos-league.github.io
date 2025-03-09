@@ -4,45 +4,52 @@ import { TextInput, Tooltip } from 'react-native-paper';
 import { useAppSelector } from 'redux_store/hooks';
 import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actions';
 import { getEndpointUrl } from 'shared/api/config';
-import { CreateMessageDTO, MessageDTO } from 'shared/api/types';
+import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
+import { useWebSocket } from 'shared/hooks/useWebsocket';
 
 const Chat = ({ onClose }) => {
-  const [selectedChannel, setSelectedChannel] = useState(null);
+  const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [messageInput, setMessageInput] = useState('');
-  const [channels, setChannels] = useState([]);
+  const [channels, setChannels] = useState<ChannelDTO[]>([]);
   const [loading, setLoading] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
   const { user } = useAuth();
+  const { joinChannel, leaveChannel, messages: socketMessages } = useWebSocket(token);
 
   useEffect(() => {
     fetchChannels();
   }, []);
 
-  // Fetch DM channels and filter out the logged-in user
+  // Merge local messages + WebSocket messages
+  useEffect(() => {
+    if (socketMessages.length > 0) {
+      setMessages((prev) => [...prev, ...socketMessages]);
+    }
+  }, [socketMessages]);
+
+  // Fetch DM channels
   const fetchChannels = async () => {
     if (!token) {
       throw new Error('No token found');
     }
     try {
-      const response = await getUserDetails("me", token, { dmChannels: true });
-
-      // Map channels to only include the OTHER user
+      const response = await getUserDetails('me', token, { dmChannels: true });
       const formattedChannels = response.dmChannels.map((channel) => {
-        const otherUser = channel.users.find((u) => u.id !== user.id); // Get the other user in the DM
+        const otherUser = channel.users.find((u) => u.id !== user.id);
         return otherUser ? { ...channel, otherUser } : null;
       }).filter(Boolean);
 
       setChannels(formattedChannels);
     } catch (error) {
-      console.error("Error fetching channels:", error);
+      console.error('Error fetching channels:', error);
     }
   };
 
   // Select a chat (channel)
-  const selectChannel = async (channel) => {
+  const selectChannel = async (channel: ChannelDTO) => {
     setSelectedChannel(channel);
     setLoading(true);
 
@@ -52,10 +59,14 @@ const Chat = ({ onClose }) => {
 
     try {
       const messagesData = await getMessages(channel.id, token);
-      console.log('messagse', messagesData);
       setMessages(messagesData);
+
+      if (selectedChannel) {
+        leaveChannel(selectedChannel.id);
+      }
+      joinChannel(channel.id);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
@@ -87,11 +98,10 @@ const Chat = ({ onClose }) => {
     } catch (error) {
       console.error("Error sending message:", error);
     }
-  };  
+  };
 
   return (
     <View style={styles.chatContainer}>
-      {/* Left Sidebar: List of DM Users */}
       <View style={styles.leftColumn}>
         <FlatList
           data={channels}
@@ -106,7 +116,6 @@ const Chat = ({ onClose }) => {
         />
       </View>
 
-      {/* Right: Chat Messages */}
       <View style={styles.rightColumn}>
         <View style={styles.chatHeader}>
           {selectedChannel && (
