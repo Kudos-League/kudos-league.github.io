@@ -42,6 +42,18 @@ function toFormData(dto: Record<string, any>): FormData {
   return formData;
 }
 
+/**
+ * Converts an object into a query string for GET requests
+ */
+function toQueryParams(params: Record<string, any>): string {
+  const query = Object.entries(params)
+    .filter(([_, value]) => value !== undefined)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join("&");
+
+  return query ? `?${query}` : "";
+}
+
 // TODO: Type all request/response values if/when we factor API types into a codebase shared by FE/BE
 
 /** @throws {AxiosError} */
@@ -89,8 +101,10 @@ export async function getPostDetails(id: string) {
 }
 
 /** @throws {AxiosError} */
-export async function getUserDetails(id: string = "me", token: string) {
-  const response = await instance.get(`/users/${id}`, {
+export async function getUserDetails(id: string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean } = {}) {
+  const queryString = toQueryParams(options);
+
+  const response = await instance.get(`/users/${id}${queryString}`, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,

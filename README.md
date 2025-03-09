@@ -25,3 +25,10 @@
 - Implement dev environment variables for deployment
 - Implement select donation amount
 - Implement succes & cancel pages
+
+## Running Stuff
+
+If yarn complains, run this:
+```bash
+corepack prepare yarn@stable --activate
+```

@@ -1,81 +1,135 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { TextInput, Tooltip } from 'react-native-paper';
 import { useAppSelector } from 'redux_store/hooks';
+import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actions';
+import { getEndpointUrl } from 'shared/api/config';
+import { CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
 
-const fakeUsers = [
-  { id: 1, name: 'Alice', avatar: 'https://media.discordapp.net/attachments/1318039115207278612/1347761565054664734/79337643af4ad3d7ed3ea88918aab465.png?ex=67ce51c5&is=67cd0045&hm=5bf9565b253475f6f864d319d0a49d711644a8838ffed4cac7394135eb8ba97d&=&format=webp&quality=lossless&width=461&height=461' },
-  { id: 2, name: 'Bob', avatar: 'https://media.discordapp.net/attachments/1318039115207278612/1347761565054664734/79337643af4ad3d7ed3ea88918aab465.png?ex=67ce51c5&is=67cd0045&hm=5bf9565b253475f6f864d319d0a49d711644a8838ffed4cac7394135eb8ba97d&=&format=webp&quality=lossless&width=461&height=461' },
-  { id: 3, name: 'Charlie', avatar: 'https://media.discordapp.net/attachments/1318039115207278612/1347761565054664734/79337643af4ad3d7ed3ea88918aab465.png?ex=67ce51c5&is=67cd0045&hm=5bf9565b253475f6f864d319d0a49d711644a8838ffed4cac7394135eb8ba97d&=&format=webp&quality=lossless&width=461&height=461' },
-];
-
-const fakeMessages = {
-  1: [
-    { id: 1, text: 'Hey!', sender: 'Alice' },
-    { id: 2, text: 'How are you?', sender: 'Alice' },
-  ],
-  2: [
-    { id: 1, text: 'Hello!', sender: 'Bob' },
-  ],
-  3: [
-    { id: 1, text: 'What\'s up?', sender: 'Charlie' },
-  ],
-};
-
 const Chat = ({ onClose }) => {
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedChannel, setSelectedChannel] = useState(null);
+  const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [messageInput, setMessageInput] = useState('');
+  const [channels, setChannels] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
   const { user } = useAuth();
 
-  const sendMessage = () => {
-    if (!messageInput.trim() || !selectedUser) return;
-    fakeMessages[selectedUser.id] = [
-      ...fakeMessages[selectedUser.id],
-      { id: Date.now(), text: messageInput, sender: 'Me' },
-    ];
-    setMessageInput('');
+  useEffect(() => {
+    fetchChannels();
+  }, []);
+
+  // Fetch DM channels and filter out the logged-in user
+  const fetchChannels = async () => {
+    if (!token) {
+      throw new Error('No token found');
+    }
+    try {
+      const response = await getUserDetails("me", token, { dmChannels: true });
+
+      // Map channels to only include the OTHER user
+      const formattedChannels = response.dmChannels.map((channel) => {
+        const otherUser = channel.users.find((u) => u.id !== user.id); // Get the other user in the DM
+        return otherUser ? { ...channel, otherUser } : null;
+      }).filter(Boolean);
+
+      setChannels(formattedChannels);
+    } catch (error) {
+      console.error("Error fetching channels:", error);
+    }
   };
+
+  // Select a chat (channel)
+  const selectChannel = async (channel) => {
+    setSelectedChannel(channel);
+    setLoading(true);
+
+    if (!token) {
+      throw new Error('No token found');
+    }
+
+    try {
+      const messagesData = await getMessages(channel.id, token);
+      console.log('messagse', messagesData);
+      setMessages(messagesData);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Send message in the selected channel
+  const sendMessage = async () => {
+    if (!token) {
+      throw new Error('No token found');
+    }
+  
+    if (!messageInput.trim() || !selectedChannel) return;
+  
+    try {
+      // Get the other user in the DM channel (excluding the logged-in user)
+      const receiver = selectedChannel.users.find(u => u.id !== user.id);
+      if (!receiver) {
+        throw new Error('No valid recipient found');
+      }
+  
+      const newMessage: CreateMessageDTO = {
+        content: messageInput,
+      };
+  
+      const response = await sendDirectMessage(receiver.id, newMessage, token);
+      // TODO: response doesnt return attached user so the username is blank.. also didnt show up on refresh so might be an issue with attaching the user entirely
+      setMessages([...messages, response]);
+      setMessageInput("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };  
 
   return (
     <View style={styles.chatContainer}>
+      {/* Left Sidebar: List of DM Users */}
       <View style={styles.leftColumn}>
         <FlatList
-          data={fakeUsers}
+          data={channels}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <Tooltip
-              title={item.name}
-              enterTouchDelay={0}
-              leaveTouchDelay={50}
-            >
-              <TouchableOpacity onPress={() => setSelectedUser(item)} style={styles.userItem}>
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <Tooltip title={item.otherUser.username}>
+              <TouchableOpacity onPress={() => selectChannel(item)} style={styles.userItem}>
+                <Image source={{ uri: `${getEndpointUrl()}${item.otherUser.avatar}` }} style={styles.avatar} />
               </TouchableOpacity>
             </Tooltip>
           )}
         />
       </View>
 
+      {/* Right: Chat Messages */}
       <View style={styles.rightColumn}>
         <View style={styles.chatHeader}>
-          {selectedUser && <Text style={styles.chatTitle}>{selectedUser.name}</Text>}
+          {selectedChannel && (
+            <Text style={styles.chatTitle}>{selectedChannel.otherUser.username}</Text>
+          )}
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.closeButton}>✖</Text>
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={selectedUser ? fakeMessages[selectedUser.id] : []}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <Text style={styles.message}>{item.sender}: {item.text}</Text>
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color="#4a90e2" />
+        ) : (
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <Text style={styles.message}>{item.author?.username}: {item.content}</Text>
+            )}
+          />
+        )}
 
-        {selectedUser && (
+        {selectedChannel && (
           <View style={styles.inputContainer}>
             <TextInput
               value={messageInput}
@@ -123,7 +177,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    overflow: 'hidden', // Ensure overflow is compatible with ImageStyle
+    overflow: 'hidden',
   },
   rightColumn: {
     flex: 1,
@@ -166,10 +220,6 @@ const styles = StyleSheet.create({
   },
   sendText: {
     color: 'white',
-  },
-  tooltipText: {
-    color: 'white',
-    fontSize: 14,
   },
 });
 
