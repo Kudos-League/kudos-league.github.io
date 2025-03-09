@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet} from "react-native";
 import { useForm } from "react-hook-form";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
 import { PostDTO } from "shared/api/types";
+import Chat from "./messages/Chat";
 
 type ProfileFormValues = {
   email: string;
@@ -85,6 +86,7 @@ export default function Profile({
   error,
   posts
 }: ProfileProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const form = useForm<ProfileFormValues>({
     defaultValues: {
       email: user.email,
@@ -180,7 +182,7 @@ export default function Profile({
               <TouchableOpacity style={styles.actionButton}>
                   <Text>👤</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setIsChatOpen(true)}>
                   <Text>💬</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton}>
@@ -253,6 +255,8 @@ export default function Profile({
               ))
           }
       </View>
+
+      {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
     </ScrollView>
   )
 }

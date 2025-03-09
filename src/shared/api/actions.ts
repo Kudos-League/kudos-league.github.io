@@ -186,3 +186,47 @@ export async function searchPosts(query: string, sort?: 'date' | 'tags' | 'locat
     throw error;
   }
 }
+
+/** @throws {AxiosError} */
+export async function sendDirectMessage(
+  receiverID: number,
+  message: CreateMessageDTO,
+  token: string
+): Promise<{ data: any }> {
+  if (!token) throw Error("Invalid token");
+
+  const response = await instance.post(`/users/${receiverID}/dm`, message, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function getUserDMs(userID: number, token: string): Promise<{ data: any }> {
+  if (!token) throw Error("Invalid token");
+
+  const response = await instance.get(`/users/${userID}/dms`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function getMessages(channelID: number, token: string): Promise<{ data: any }> {
+  if (!token) throw Error("Invalid token");
+
+  const response = await instance.get(`/channels/${channelID}/messages`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}

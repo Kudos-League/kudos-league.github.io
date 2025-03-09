@@ -10,7 +10,8 @@ import { createURL } from "expo-linking";
 import ErrorBoundary from "react-native-error-boundary";
 
 import { store } from "redux_store/store";
-import { Provider } from "react-redux";
+import { Provider as ReduxProvider } from "react-redux";
+import { Provider as PaperProvider } from "react-native-paper";
 import { AuthProvider } from "shared/hooks/useAuth";
 
 import { TailwindProvider } from "tailwind-rn";
@@ -26,18 +27,20 @@ export default function App() {
   return (
     // @ts-ignore
     <TailwindProvider utilities={utilities}>
-      <Provider store={store}>
-        <Suspense fallback={<Text>Loading app...</Text>}>
-          <ErrorBoundary
-            FallbackComponent={ErrorFallback}
-            onError={console.error}
-          >
-            <AuthProvider>
-              <AppCore />
-            </AuthProvider>
-          </ErrorBoundary>
-        </Suspense>
-      </Provider>
+      <ReduxProvider store={store}>
+        <PaperProvider>
+          <Suspense fallback={<Text>Loading app...</Text>}>
+            <ErrorBoundary
+              FallbackComponent={ErrorFallback}
+              onError={console.error}
+            >
+              <AuthProvider>
+                <AppCore />
+              </AuthProvider>
+            </ErrorBoundary>
+          </Suspense>
+        </PaperProvider>
+      </ReduxProvider>
     </TailwindProvider>
   );
 }

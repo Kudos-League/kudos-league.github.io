@@ -3909,6 +3909,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-native-vector-icons@npm:^6.4.6":
+  version: 6.4.18
+  resolution: "@types/react-native-vector-icons@npm:6.4.18"
+  dependencies:
+    "@types/react": "npm:*"
+    "@types/react-native": "npm:^0.70"
+  checksum: 10/1ef458cb5e7a37f41eb400e3153940b1b152e4df76a7c06c7a47c712dbfe46e14b9999f04dde1bd074f338f850e161c6c925174ddea33386b74f8112c940065b
+  languageName: node
+  linkType: hard
+
+"@types/react-native@npm:^0.70":
+  version: 0.70.19
+  resolution: "@types/react-native@npm:0.70.19"
+  dependencies:
+    "@types/react": "npm:*"
+  checksum: 10/43b280990f7a3c45cd707098d686ddbf353270cc463c9bb4306a5f675e3fe84010a32e344274b00b8a11629d73a8df1a1075af267d182a0f7094599616ae622c
+  languageName: node
+  linkType: hard
+
 "@types/react-test-renderer@npm:^18.3.0":
   version: 18.3.1
   resolution: "@types/react-test-renderer@npm:18.3.1"
@@ -8699,7 +8718,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hoist-non-react-statics@npm:^3.3.0, hoist-non-react-statics@npm:^3.3.1":
+"hoist-non-react-statics@npm:^3.3.0, hoist-non-react-statics@npm:^3.3.1, hoist-non-react-statics@npm:^3.3.2":
   version: 3.3.2
   resolution: "hoist-non-react-statics@npm:3.3.2"
   dependencies:
@@ -10577,6 +10596,7 @@ __metadata:
     react-hook-form: "npm:^7.53.2"
     react-native: "npm:^0.77.0"
     react-native-element-dropdown: "npm:^2.12.2"
+    react-native-elements: "npm:^3.4.3"
     react-native-error-boundary: "npm:^1.2.7"
     react-native-gesture-handler: "npm:~2.14.0"
     react-native-get-random-values: "npm:~1.8.0"
@@ -10905,6 +10925,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash.isequal@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "lodash.isequal@npm:4.5.0"
+  checksum: 10/82fc58a83a1555f8df34ca9a2cd300995ff94018ac12cc47c349655f0ae1d4d92ba346db4c19bbfc90510764e0c00ddcc985a358bdcd4b3b965abf8f2a48a214
+  languageName: node
+  linkType: hard
+
 "lodash.memoize@npm:^4.1.2":
   version: 4.1.2
   resolution: "lodash.memoize@npm:4.1.2"
@@ -10926,7 +10953,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.13, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21":
+"lodash@npm:^4.17.13, lodash@npm:^4.17.15, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 10/c08619c038846ea6ac754abd6dd29d2568aa705feb69339e836dfa8d8b09abbb2f859371e86863eda41848221f9af43714491467b5b0299122431e202bb0c532
@@ -12302,6 +12329,15 @@ __metadata:
     is-docker: "npm:^2.1.1"
     is-wsl: "npm:^2.2.0"
   checksum: 10/acd81a1d19879c818acb3af2d2e8e9d81d17b5367561e623248133deb7dd3aefaed527531df2677d3e6aaf0199f84df57b6b2262babff8bf46ea0029aac536c9
+  languageName: node
+  linkType: hard
+
+"opencollective-postinstall@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "opencollective-postinstall@npm:2.0.3"
+  bin:
+    opencollective-postinstall: index.js
+  checksum: 10/69d63778087cd10c9d707d9ed360556780cfdd0cd6241ded0e26632f467f1d5a064f4a9aec19a30c187770c17adba034d988f7684b226f3a73e79f44e73fab0e
   languageName: node
   linkType: hard
 
@@ -13685,6 +13721,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-elements@npm:^3.4.3":
+  version: 3.4.3
+  resolution: "react-native-elements@npm:3.4.3"
+  dependencies:
+    "@types/react-native-vector-icons": "npm:^6.4.6"
+    color: "npm:^3.1.2"
+    deepmerge: "npm:^4.2.2"
+    hoist-non-react-statics: "npm:^3.3.2"
+    lodash.isequal: "npm:^4.5.0"
+    opencollective-postinstall: "npm:^2.0.3"
+    react-native-ratings: "npm:8.0.4"
+    react-native-size-matters: "npm:^0.3.1"
+  peerDependencies:
+    react-native-safe-area-context: ">= 3.0.0"
+    react-native-vector-icons: ">7.0.0"
+  checksum: 10/bae1ac0972c33a2527f88de81716569a4a452e12128a0fffa82ac5b375d3451495244aaaa303c081b41cfa36496653f84febda8a19157dbd8bedc56346851022
+  languageName: node
+  linkType: hard
+
 "react-native-error-boundary@npm:^1.2.7":
   version: 1.2.9
   resolution: "react-native-error-boundary@npm:1.2.9"
@@ -13772,6 +13827,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-ratings@npm:8.0.4":
+  version: 8.0.4
+  resolution: "react-native-ratings@npm:8.0.4"
+  dependencies:
+    lodash: "npm:^4.17.15"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/1f3e7a23509f5a4c3a08aa69534980ea0e3d8d8ae92960d0640884a29495f7add64995635ac48ecbd2dd8703f8cb08f98961684e558acc39440bf858dcbd8c7a
+  languageName: node
+  linkType: hard
+
 "react-native-reanimated@npm:~3.6.2":
   version: 3.6.3
   resolution: "react-native-reanimated@npm:3.6.3"
@@ -13813,6 +13880,15 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/e8b21e8c03bcf65c0a35739a18eaed8888946cd59287631e5dfc3343b8033a2eed59f3f8a1f8014af9e3cbb1e94b85eb0efeb837bc0ceaa50af1436dcda741c5
+  languageName: node
+  linkType: hard
+
+"react-native-size-matters@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "react-native-size-matters@npm:0.3.1"
+  peerDependencies:
+    react-native: "*"
+  checksum: 10/f8fa7f301d97dae96df029771445648b4778562c982b3d0625ae78cb397b35efd0e2b482b240531dad68fde0d18cc23f5181a3904259c6e1ff155823ac34996d
   languageName: node
   linkType: hard
 
