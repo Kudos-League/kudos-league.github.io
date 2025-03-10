@@ -10,6 +10,7 @@ import Search from 'pages/search/home';
 import { useAuth } from 'shared/hooks/useAuth';
 import tailwind from "shared/components/tailwind";
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { getEndpointUrl } from 'shared/api/config';
 
 const Drawer = createDrawerNavigator();
 
@@ -27,7 +28,7 @@ function HeaderRight() {
       >
         <View style={styles.avatarContainer}>
           {user?.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+            <Image source={{ uri: `${getEndpointUrl()}${user.avatar}` }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{user?.username?.charAt(0) || "U"}</Text>
@@ -35,9 +36,6 @@ function HeaderRight() {
           )}
           <View style={styles.statusIndicator} />
         </View>
-        <Text style={tailwind("ml-2 text-gray-700 font-medium")}>
-          {user?.username || "User"}
-        </Text>
       </TouchableOpacity>
 
       {showDropdown && (
@@ -116,10 +114,10 @@ function DrawerNavigator() {
 
 const styles = StyleSheet.create({
   avatarContainer: { position: 'relative', width: 32, height: 32 },
-  avatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: '#E5E7EB' },
+  avatar: { width: 40, height: 40, borderRadius: 16, borderWidth: 1.5, borderColor: '#E5E7EB' },
   avatarPlaceholder: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#F3F4F6' },
   avatarText: { fontSize: 14, fontWeight: 'bold', color: '#6B7280' },
-  statusIndicator: { position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  statusIndicator: { position: 'absolute', bottom: -5, right: -5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', borderWidth: 1.5, borderColor: '#FFFFFF' },
   signInButton: { backgroundColor: '#EBF5FF', borderWidth: 1, borderColor: '#BFDBFE' },
   signUpButton: { backgroundColor: '#3B82F6' },
   header: { elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },

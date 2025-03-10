@@ -11,12 +11,14 @@ import {
   Easing,
   Dimensions
 } from "react-native";
+import { useNavigation } from '@react-navigation/native';
 import { usePosts } from "shared/hooks/usePosts";
 import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
 import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo
 
 export default function Feed() {
+  const navigation = useNavigation();
   const { posts, fetchPosts, loading, error } = usePosts();
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -32,8 +34,7 @@ export default function Feed() {
   }, []);
 
   const handleCreatePost = () => {
-    console.log("Create Post");
-    // You would navigate to create post screen here
+    navigation.navigate("Create Post");
   };
   
   const toggleSearch = () => {

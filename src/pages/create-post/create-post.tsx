@@ -15,6 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import useLocation from 'shared/hooks/useLocation';
 import Map from 'shared/components/Map';
 import { IconButton, MD3Colors } from 'react-native-paper';
+import Autocomplete from "shared/components/Autocomplete";
 
 type FormValues = {
   title: string;
@@ -234,16 +235,13 @@ export default function CreatePost() {
             {/* Tags Input Section */}
             <Text style={globalStyles.inputTitle}>Tags</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TextInput
-                ref={inputRef}
+              <Autocomplete
+                endpoint="/tags/top"
                 value={currentTagInput}
                 onChangeText={setCurrentTagInput}
-                style={[globalStyles.inputForm, { flex: 1 }]}
-                placeholder="Enter tag and press Add"
-                onSubmitEditing={
-                  handleAddTag
-                }
-                returnKeyType="done"
+                onSelect={(item) => setCurrentTagInput(item.name)}
+                onSubmitEditing={handleAddTag}
+                inputStyle={styles.input}
               />
               <Button
                 mode="contained"
@@ -312,6 +310,13 @@ const styles = {
   },
   loginPrompt: {
     marginBottom: 15,
+    fontSize: 16,
+  },
+  input: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
     fontSize: 16,
   },
 };

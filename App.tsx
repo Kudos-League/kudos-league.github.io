@@ -13,6 +13,7 @@ import { store } from "redux_store/store";
 import { Provider as ReduxProvider } from "react-redux";
 import { Provider as PaperProvider } from "react-native-paper";
 import { AuthProvider } from "shared/hooks/useAuth";
+import { Host } from "react-native-portalize";
 
 import { TailwindProvider } from "tailwind-rn";
 
@@ -35,7 +36,9 @@ export default function App() {
               onError={console.error}
             >
               <AuthProvider>
-                <AppCore />
+                <Host>
+                  <AppCore />
+                </Host>
               </AuthProvider>
             </ErrorBoundary>
           </Suspense>

@@ -10603,6 +10603,7 @@ __metadata:
     react-native-google-places-autocomplete: "npm:^2.5.7"
     react-native-maps: "npm:^1.20.1"
     react-native-paper: "npm:^5.12.5"
+    react-native-portalize: "npm:^1.0.7"
     react-native-reanimated: "npm:~3.6.2"
     react-native-safe-area-context: "npm:4.8.2"
     react-native-screens: "npm:~3.29.0"
@@ -13824,6 +13825,16 @@ __metadata:
     react-native-safe-area-context: "*"
     react-native-vector-icons: "*"
   checksum: 10/704a516d06304a2687146a6cc2d3ccd710ee19abc00a00878d28e2a6e64636f9ee1a1831cc6510b43a68abe30425d41a9739a0b325508fcd69db9d1a3a223763
+  languageName: node
+  linkType: hard
+
+"react-native-portalize@npm:^1.0.7":
+  version: 1.0.7
+  resolution: "react-native-portalize@npm:1.0.7"
+  peerDependencies:
+    react: "> 15.0.0"
+    react-native: "> 0.50.0"
+  checksum: 10/21e993ea7aaefb2fa5ce1bec04dce494d3b5a362dabee0ff75c381ee2052b14803058b9d9bac6083e75db80bcddcd53c354cbbcb8e792f6b91801228b7a0cd7e
   languageName: node
   linkType: hard
 
