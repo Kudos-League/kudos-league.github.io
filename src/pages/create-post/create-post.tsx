@@ -1,26 +1,27 @@
-import { View, Text, TouchableOpacity, Image, TextInput } from "react-native";
+import React from 'react';
+import { View, Text, TouchableOpacity, Image, TextInput, Modal, TouchableWithoutFeedback } from 'react-native';
 
-import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
+import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
 
-import { Button } from "react-native-paper";
-import { usePosts } from "shared/hooks/usePosts";
-import { useAuth } from "shared/hooks/useAuth";
-import Login from "shared/components/Login";
-import Input from "shared/components/forms/input";
-import globalStyles from "shared/styles";
-import { useAppSelector } from "redux_store/hooks";
-import { useEffect, useRef, useState } from "react";
-import GiftType from "./gift-type";
-import { useNavigation } from "@react-navigation/native";
+import { Button } from 'react-native-paper';
+import { usePosts } from 'shared/hooks/usePosts';
+import { useAuth } from 'shared/hooks/useAuth';
+import Login from 'shared/components/Login';
+import Input from 'shared/components/forms/input';
+import globalStyles from 'shared/styles';
+import { useAppSelector } from 'redux_store/hooks';
+import { useEffect, useRef, useState } from 'react';
+import GiftType from './gift-type';
+import { useNavigation } from '@react-navigation/native';
 import useLocation from 'shared/hooks/useLocation';
 import Map from 'shared/components/Map';
 import { IconButton, MD3Colors } from 'react-native-paper';
-import Autocomplete from "shared/components/Autocomplete";
+import '../../shared/assets/icons/addImage.png';
 
 type FormValues = {
   title: string;
   body: string;
-  type: "request" | "gift";
+  type: 'request' | 'gift';
   files?: File[];
   tags: string[];
 };
@@ -32,10 +33,10 @@ export default function CreatePost() {
   const form: UseFormReturn<FormValues> = useForm<FormValues>();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const { token, isLoggedIn } = useAuth();
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState('');
   const [files, setFiles] = useState([]);
-  const [postType, setPostType] = useState("gift");
-  const [giftType, setGiftType] = useState("Gift");
+  const [postType, setPostType] = useState('gift');
+  const [giftType, setGiftType] = useState('Gift');
   const { addPost } = usePosts();
   const { location, errorMsg, setLocation } = useLocation();
   const [currentTagInput, setCurrentTagInput] = useState('');
@@ -44,19 +45,19 @@ export default function CreatePost() {
 
   const handleAddTag = () => {
     if (currentTagInput.trim()) {
-      const currentTags = form.getValues("tags") || [];
+      const currentTags = form.getValues('tags') || [];
       const newTags = [...currentTags, currentTagInput.trim()];
-      form.setValue("tags", newTags);
+      form.setValue('tags', newTags);
       setCurrentTagInput('');
     }
     inputRef.current?.focus();
     this.focus(); //HACK: workaround for focus() not working properly with refs
   };
-  
+
   const handleRemoveTag = (index: number) => {
-    const currentTags = form.getValues("tags") || [];
+    const currentTags = form.getValues('tags') || [];
     const newTags = currentTags.filter((_, i) => i !== index);
-    form.setValue("tags", newTags);
+    form.setValue('tags', newTags);
   };
 
   if (errorMsg) console.error('error loading location', errorMsg);
@@ -86,7 +87,7 @@ export default function CreatePost() {
       navigation.goBack();
     } catch (err) {
       // TODO: Error message in UI
-      console.error("Failed to create post:", err);
+      console.error('Failed to create post:', err);
     }
   };
 
@@ -97,9 +98,8 @@ export default function CreatePost() {
 
   const showInformationModal = () => {
     setShowModal(true);
-    setTimeout(() => {
-      setShowModal(false);
-    }, 3000);
+  };
+  const hideInformationModal = () => {
     setShowModal(false);
   };
 
@@ -115,10 +115,10 @@ export default function CreatePost() {
       <View>
         <View
           style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-around",
-            alignItems: "center",
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            alignItems: 'center',
             rowGap: 10,
             marginHorizontal: 16,
             gap: 3,
@@ -128,13 +128,13 @@ export default function CreatePost() {
           <Button
             style={{
               ...globalStyles.button,
-              backgroundColor: postType === "gift" ? "black" : "#c5c5c5",
-              borderColor: "#444",
+              backgroundColor: postType === 'gift' ? 'black' : '#c5c5c5',
+              borderColor: '#444',
               borderWidth: 1,
-              paddingHorizontal: 30,
+              paddingHorizontal: 10,
             }}
-            labelStyle={{ color: postType === "gift" ? "white" : "black" }}
-            onPress={() => setPostType("gift")}
+            labelStyle={{ color: postType === 'gift' ? 'white' : 'black' }}
+            onPress={() => setPostType('gift')}
           >
             Give
           </Button>
@@ -142,13 +142,13 @@ export default function CreatePost() {
           <Button
             style={{
               ...globalStyles.button,
-              backgroundColor: postType === "request" ? "black" : "#c5c5c5",
-              paddingHorizontal: 30,
-              borderColor: "#444",
+              backgroundColor: postType === 'request' ? 'black' : '#c5c5c5',
+              paddingHorizontal: 20,
+              borderColor: '#444',
               borderWidth: 1,
             }}
-            labelStyle={{ color: postType === "request" ? "white" : "black" }}
-            onPress={() => setPostType("request")}
+            labelStyle={{ color: postType === 'request' ? 'white' : 'black' }}
+            onPress={() => setPostType('request')}
           >
             Request
           </Button>
@@ -159,41 +159,38 @@ export default function CreatePost() {
             size={32}
           />
           {showModal && (
-  <View
-    style={{
-      position: "absolute",
-      top: 50, // Adjust as needed to position below the button
-      left: 0,
-      right: 0,
-      backgroundColor: "white",
-      padding: 16,
-      borderRadius: 8,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 5, // For Android shadow
-      zIndex: 20,
-    }}
-  >
-    <Text style={{ fontSize: 16, color: "#333", textAlign: "center" }}>
-      Please select the type of post you want to create.
-    </Text>
-  </View>
-)}
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={showModal}
+              onRequestClose={hideInformationModal}
+            >
+              <TouchableWithoutFeedback onPress={hideInformationModal}>
+                <View style={styles.modalOverlay}>
+                  <View
+                    style={styles.modalContainer}
+                  >
+                    <Text style={styles.modalText}>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam rhoncus lacus at ipsum condimentum condimentum. Curabitur et mi risus. Aliquam nec rutrum ex. Proin in laoreet mauris, non porta mauris. Nam tincidunt, ante nec pulvinar pulvinar, velit justo congue mauris, vel porttitor magna felis non quam. Quisque fermentum orci id tellus laoreet, ut lobortis dolor auctor. Nam massa dui, iaculis tristique euismod eu, auctor at leo. Duis arcu ligula, iaculis at eros vitae, vulputate interdum tellus. Aenean faucibus mauris sed diam dictum bibendum.
+                    </Text>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
+          )}
 
         </View>
         <View style={globalStyles.contentContainerWithMargin}>
-          <View style={{ width: "90%", marginVertical: 32 }}>
-            {postType === "gift" && (
+          <View style={{ width: '90%', marginVertical: 32 }}>
+            {postType === 'gift' && (
               <GiftType selected={giftType} onSelect={setGiftType} />
             )}
             <Text style={{ ...globalStyles.inputTitle, marginTop: 10 }}>
               Title
             </Text>
             <TextInput
-              value={form.watch("title")}
-              onChangeText={(text) => form.setValue("title", text)}
+              value={form.watch('title')}
+              onChangeText={(text) => form.setValue('title', text)}
               style={globalStyles.inputForm}
               //onInvalid={onInvalid}
               placeholder="Enter title"
@@ -201,8 +198,8 @@ export default function CreatePost() {
 
             <Text style={globalStyles.inputTitle}>Info</Text>
             <TextInput
-              value={form.watch("body")}
-              onChangeText={(text) => form.setValue("body", text)}
+              value={form.watch('body')}
+              onChangeText={(text) => form.setValue('body', text)}
               style={globalStyles.inputForm}
               multiline
               numberOfLines={4}
@@ -211,21 +208,22 @@ export default function CreatePost() {
 
             <View
               style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
               }}
             >
               <View style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', width: '100%' }}>
                 <Text style={{...globalStyles.inputTitle, marginTop: 10}}>Add Images</Text>
 
                 <View style={globalStyles.formRow}>
-                <Input
-                  name="files"
-                  label="Attach Files"
-                  type="file"
-                  form={form}
-                  registerOptions={{ required: false }}
+                  <Input
+                    name="files"
+                    placeholder= "../../shared/assets/icons/addImage.png"
+                    label="Attach Files"
+                    type="file-image"
+                    form={form}
+                    registerOptions={{ required: false }}
                   />
                 </View>
               </View>
@@ -234,18 +232,24 @@ export default function CreatePost() {
 
             {/* Tags Input Section */}
             <Text style={globalStyles.inputTitle}>Tags</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Autocomplete
-                endpoint="/tags/top"
+            <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginRight: 4 }}>
+              <TextInput
+                ref={inputRef}
                 value={currentTagInput}
                 onChangeText={setCurrentTagInput}
-                onSelect={(item) => setCurrentTagInput(item.name)}
-                onSubmitEditing={handleAddTag}
-                inputStyle={styles.input}
+                style={[globalStyles.inputForm, { flex: 1, maxWidth: '70%' }]}
+                placeholder="Enter tag and press Add"
+                onSubmitEditing={
+                  handleAddTag
+                }
+                returnKeyType="done"
               />
               <Button
                 mode="contained"
-                style={globalStyles.button}
+                style={[globalStyles.button, {
+                  maxWidth: '30%',
+                  paddingHorizontal: 4,
+                }]}  // Reduce horizontal padding}]}
                 onPress={handleAddTag}
               >
                 Add
@@ -253,12 +257,12 @@ export default function CreatePost() {
             </View>
 
             {/* Tags Display */}
-            {form.watch("tags")?.length > 0 && (
+            {form.watch('tags')?.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                {form.watch("tags").map((tag, index) => (
-                  <View 
-                    key={index} 
-                    style={{ 
+                {form.watch('tags').map((tag, index) => (
+                  <View
+                    key={index}
+                    style={{
                       flexDirection: 'row',
                       alignItems: 'center',
                       backgroundColor: '#e0e0e0',
@@ -279,24 +283,25 @@ export default function CreatePost() {
             )}
 
             <Text style={globalStyles.inputTitle}>Location</Text>
-            <View style={{ alignItems: "center" }}>
+            <View style={{ alignItems: 'center' }}>
               {location && <Map
                 showAddressBar={true}
                 exactLocation={false}
                 coordinates={location}
-                width={300} 
+                width={300}
                 height={300}
-                onLocationSelect={(coords) => setLocation(coords)} 
+                onLocationSelect={(coords) => setLocation(coords)}
               />}
             </View>
 
-            <Button
-              mode="contained"
+            <TouchableOpacity
               style={globalStyles.button}
               onPress={form.handleSubmit(onSubmit)}
             >
-              Create
-            </Button>
+              <Text style={{ color: 'white', paddingVertical: 8 }}>
+                Create
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -312,11 +317,31 @@ const styles = {
     marginBottom: 15,
     fontSize: 16,
   },
-  input: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
+  modalOverlay: {
+    display: 'flex',
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '70%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalText: {
     fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 };

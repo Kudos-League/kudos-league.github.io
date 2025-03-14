@@ -15,7 +15,7 @@ type Props<T extends FieldValues> = {
   name: Path<T>;
   label: string;
   form: UseFormReturn<T>;
-  type?: "text" | "password" | "file" | "dropdown";
+  type?: "text" | "password" | "file" | "dropdown" | "file-image";
   options?: { label: string; value: string }[];
   registerOptions?: RegisterOptions<T>;
   placeholder?: string;
@@ -30,7 +30,7 @@ export default function Input<T extends FieldValues>({
   name,
   label,
   form,
-  type = "text",
+  type,
   options = [],
   registerOptions,
   placeholder,
@@ -52,7 +52,7 @@ export default function Input<T extends FieldValues>({
     defaultValue: defaultValue as PathValue<T, Path<T>>,
   });
 
-  if (type === "file") {
+  if (type === "file" || type === "file-image") {
     return (
       <FilePicker
         placeholder={placeholder || "Choose Files"}
@@ -62,6 +62,7 @@ export default function Input<T extends FieldValues>({
           field.onChange(files);
           if (onValueChange) onValueChange(files);
         }}
+        type={type}
       />
     );
   }

@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 36,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 2,
   },
   toolbarContainer: {
     flexDirection: "row",
