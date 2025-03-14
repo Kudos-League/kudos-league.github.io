@@ -114,7 +114,8 @@ export default function Profile({
     }
   
     try {
-      await createDMChannel(loggedInUser.id, targetUser.id, token);
+      if (loggedInUser) 
+        await createDMChannel(Number.parseInt(loggedInUser.id), Number.parseInt(targetUser.id), token);
       setIsChatOpen(true);
     } catch (error) {
       console.error("Error creating DM channel:", error);

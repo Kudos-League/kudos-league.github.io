@@ -4,7 +4,7 @@ import { useRoute, RouteProp } from "@react-navigation/native";
 
 import globalStyles from "shared/styles";
 import { getUserDetails, getUserPosts, updateUser } from "shared/api/actions";
-import Profile from "shared/components/Profile";
+import Profile from "shared/components/profile";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { PostDTO } from "shared/api/types";
 

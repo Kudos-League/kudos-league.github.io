@@ -15,6 +15,9 @@ export type PostDTO = {
   body: string;
   isRequest: boolean;
   images?: string[];
+  type: "request" | "gift"
+  isActive: boolean;
+  kudos?: number;
   createdAt: Date;
   updatedAt: Date;
 };
