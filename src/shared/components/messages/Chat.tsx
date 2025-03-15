@@ -13,6 +13,7 @@ const Chat = ({ onClose }) => {
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [channels, setChannels] = useState<ChannelDTO[]>([]);
+  const [noDMs, setNoDMs] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
@@ -43,6 +44,11 @@ const Chat = ({ onClose }) => {
       }).filter(Boolean);
 
       setChannels(formattedChannels);
+      if (formattedChannels.length === 0) {
+        setNoDMs(true);
+      } else {
+        setNoDMs(false);
+      }
     } catch (error) {
       console.error('Error fetching channels:', error);
     }
@@ -128,6 +134,8 @@ const Chat = ({ onClose }) => {
 
         {loading ? (
           <ActivityIndicator size="large" color="#4a90e2" />
+        ) : noDMs ? (
+          <Text style={styles.noDmsText}>No DMs available</Text>
         ) : (
           <FlatList
             data={messages}
@@ -229,6 +237,12 @@ const styles = StyleSheet.create({
   },
   sendText: {
     color: 'white',
+  },
+  noDmsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: 'gray',
+    marginTop: 50,
   },
 });
 

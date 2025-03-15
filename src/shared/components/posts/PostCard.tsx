@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import AvatarComponent from "../Avatar";
 import Tags from "../Tags";
+import { getEndpointUrl } from "shared/api/config";
 
 type RootStackParamList = {
   Home: undefined;
@@ -41,6 +42,9 @@ export default function PostCard(props: Post) {
     }
   };
 
+  // The "fake" property is to handle the test data if the db seeding doesn't work
+  const image = (props as any).fake ? (props.images?.[0] || '') : getEndpointUrl() + (props.images?.[0] || '');
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.cardContainer} onPress={props.onPress}>
@@ -67,8 +71,7 @@ export default function PostCard(props: Post) {
           
           {props.images && props.images.length > 0 ? (
             <Image
-              //DEV (UNCOMMENT): source={{ uri: getEndpointUrl() + props.images[0] }}
-              source={{ uri: props.images[0] }}
+              source={{ uri: image }}
               style={styles.image}
               resizeMode="cover"
             />

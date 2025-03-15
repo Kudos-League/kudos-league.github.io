@@ -7,7 +7,7 @@ import Alert from "../Alert";
 
 // TODO: Move this to a better location
 type RootStackParamList = {
-  DrawerNavigator: undefined; // Main drawer
+  DrawerNavigator: undefined;
   Success: undefined;
   Cancel: undefined;
   Post: { id: string };
@@ -23,6 +23,7 @@ export default function PostsContainer({ posts }) {
     //DEV: Velasco's fake data
     if (!posts?.length) posts = [
       {
+        fake: true,
         id: "1",
         title: "TV to give away",
         body: "I have a 42-inch Samsung TV that I no longer need. It's in good condition, just a few years old. First come, first served! Can arrange pickup in downtown area.",
@@ -44,6 +45,7 @@ export default function PostsContainer({ posts }) {
         createdAt: new Date().toISOString()
       },
       {
+        fake: true,
         id: "2",
         title: "baby clothes",
         body: "Giving away gently used baby clothes. Size 3-6 months, both gender neutral and boy clothes. All washed and in good condition, some still have tags!",
@@ -65,6 +67,7 @@ export default function PostsContainer({ posts }) {
         createdAt: new Date(Date.now() - 86400000).toISOString() // 1 day ago
       },
       {
+        fake: true,
         id: "3",
         title: "Who wants my treadmill?",
         body: "Moving out and can't take my treadmill with me. It's a NordicTrack T6.5S, about 2 years old and works perfectly. You'll need to pick it up and it's heavy!",
@@ -86,6 +89,7 @@ export default function PostsContainer({ posts }) {
         createdAt: new Date(Date.now() - 172800000).toISOString() // 2 days ago
       },
       {
+        fake: true,
         id: "4",
         title: "Looking for a dining table",
         body: "Just moved to a new apartment and looking for a dining table for 4-6 people. Would really appreciate if someone has one they don't need anymore!",
@@ -107,6 +111,7 @@ export default function PostsContainer({ posts }) {
         createdAt: new Date(Date.now() - 259200000).toISOString() // 3 days ago
       },
       {
+        fake: true,
         id: "5",
         title: "Offering children's books",
         body: "My kids have outgrown these books. I have about 30 children's books in excellent condition, suitable for ages 3-7. Mix of educational and fun stories.",
@@ -128,6 +133,7 @@ export default function PostsContainer({ posts }) {
         createdAt: new Date(Date.now() - 345600000).toISOString() // 4 days ago
       },
       {
+        fake: true,
         id: "6",
         title: "Kitchen appliances available",
         body: "Downsizing and have several kitchen appliances to give away: blender, toaster, electric kettle, and a rice cooker. All working perfectly, just don't have the space anymore.",

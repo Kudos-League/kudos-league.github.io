@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { usePosts } from "shared/hooks/usePosts";
 import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
-import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Feed() {
   const navigation = useNavigation();

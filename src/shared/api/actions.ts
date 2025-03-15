@@ -266,3 +266,18 @@ export async function createDMChannel(user1ID: number, user2ID: number, token: s
 
   return response.data;
 }
+
+export const getPublicChannels = async (token: string) => {
+  try {
+    const response = await instance.get('/channels', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data
+  } catch (error) {
+    console.error('Error fetching public channels:', error);
+    return [];
+  }
+};

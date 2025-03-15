@@ -55,6 +55,7 @@ export interface MessageDTO {
   id: number;
   authorID: string;
   postID?: string;
+  channelID?: number;
   replyToMessageID?: number;
   handshakeID?: number;
   content: string;
