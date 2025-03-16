@@ -19,6 +19,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Enable Corepack and Set Correct Yarn Version
+        run: |
+          corepack enable
+          corepack prepare yarn@4.5.1 --activate
+          yarn --version
+
       - name: Prepare gh-pages branch
         run: |
           git fetch origin gh-pages
@@ -30,9 +36,6 @@ jobs:
         with:
           node-version: 20.x
           cache: "yarn"
-
-      - name: Install Yarn
-        run: npm install -g yarn
 
       - name: Install Dependencies
         run: |
