@@ -9,7 +9,12 @@ export const useWebSocket = (token: string | null) => {
   const [messages, setMessages] = useState<MessageDTO[]>([]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      console.warn('[WebSocket] No token provided, skipping connection');
+      return;
+    }
+
+    console.log('[WebSocket] Connecting to', getWSSURL());
 
     const newSocket: Socket = io(getWSSURL(), {
       transports: ['websocket'],
@@ -17,33 +22,53 @@ export const useWebSocket = (token: string | null) => {
     });
 
     newSocket.on('connect', () => {
-      console.log('Connected to WebSocket server');
+      console.log('[WebSocket] Connected successfully');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('[WebSocket] Connection error:', error);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.warn('[WebSocket] Disconnected:', reason);
+    });
+
+    newSocket.on('error', (error) => {
+      console.error('[WebSocket] Socket error:', error);
     });
 
     setSocket(newSocket);
 
     return () => {
+      console.log('[WebSocket] Disconnecting...');
       newSocket.disconnect();
     };
   }, [token]);
 
   const joinChannel = (channelID: number) => {
-    if (socket) {
-      socket.emit('joinChannel', { channelID });
-      console.log(`Joined channel ${channelID}`);
-
-      socket.off(Events.MESSAGE_CREATE);
-      socket.on(Events.MESSAGE_CREATE, (newMessage: MessageDTO) => {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-      });
+    if (!socket) {
+      console.warn('[WebSocket] Cannot join channel, socket not initialized');
+      return;
     }
+
+    console.log(`[WebSocket] Joining channel ${channelID}`);
+    socket.emit('joinChannel', { channelID });
+
+    socket.off(Events.MESSAGE_CREATE);
+    socket.on(Events.MESSAGE_CREATE, (newMessage: MessageDTO) => {
+      console.log(`[WebSocket] Received message in channel ${channelID}:`, newMessage);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    });
   };
 
   const leaveChannel = (channelID: number) => {
-    if (socket) {
-      socket.emit('leaveChannel', { channelID });
-      console.log(`Left channel ${channelID}`);
+    if (!socket) {
+      console.warn('[WebSocket] Cannot leave channel, socket not initialized');
+      return;
     }
+
+    console.log(`[WebSocket] Leaving channel ${channelID}`);
+    socket.emit('leaveChannel', { channelID });
   };
 
   return { socket, messages, joinChannel, leaveChannel };
