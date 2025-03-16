@@ -40,7 +40,6 @@ jobs:
       - name: Install Dependencies
         run: |
           yarn install
-          yarn add react-native-web@0.19.13 --legacy-peer-deps
 
       - name: Build the Web App
         run: yarn build:web:dev
