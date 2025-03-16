@@ -19,7 +19,8 @@ export const useWebSocket = (token: string | null, messages: MessageDTO[], setMe
     const newSocket: Socket = io(getWSSURL(), {
       transports: ['websocket', 'polling'],
       query: { token },
-      withCredentials: true
+      withCredentials: true,
+      rejectUnauthorized: false
     });
 
     newSocket.on('connect', () => {
