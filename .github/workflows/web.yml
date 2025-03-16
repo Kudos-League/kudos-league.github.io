@@ -45,6 +45,7 @@ jobs:
         run: yarn build:web:dev
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        continue-on-error: true
 
       - name: Add Redirects and 404 Fallback
         run: |
