@@ -4,9 +4,9 @@ import { getWSSURL } from 'shared/api/config';
 import { Events } from 'shared/constants';
 import { MessageDTO } from 'shared/api/types';
 
-export const useWebSocket = (token: string | null) => {
+export const useWebSocket = (token: string | null, messages: MessageDTO[], setMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>>) => {
+  const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [messages, setMessages] = useState<MessageDTO[]>([]);
 
   useEffect(() => {
     if (!token) {
@@ -17,16 +17,19 @@ export const useWebSocket = (token: string | null) => {
     console.log('[WebSocket] Connecting to', getWSSURL());
 
     const newSocket: Socket = io(getWSSURL(), {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       query: { token },
+      withCredentials: true
     });
 
     newSocket.on('connect', () => {
       console.log('[WebSocket] Connected successfully');
+      setIsConnected(true);
     });
 
     newSocket.on('connect_error', (error) => {
       console.error('[WebSocket] Connection error:', error);
+      setIsConnected(false); 
     });
 
     newSocket.on('disconnect', (reason) => {
@@ -41,18 +44,26 @@ export const useWebSocket = (token: string | null) => {
 
     return () => {
       console.log('[WebSocket] Disconnecting...');
+      setIsConnected(false);
       newSocket.disconnect();
     };
   }, [token]);
 
   const joinChannel = (channelID: number) => {
-    if (!socket) {
-      console.warn('[WebSocket] Cannot join channel, socket not initialized');
+    if (!socket || !isConnected) {
+      console.warn('[WebSocket] Cannot join channel, socket not initialized or not connected');
       return;
     }
 
     console.log(`[WebSocket] Joining channel ${channelID}`);
     socket.emit('joinChannel', { channelID });
+
+    socket.off('joinedChannel'); 
+    socket.on('joinedChannel', (data) => {
+      if (data.channelID === channelID && data.success) {
+        console.log(`[WebSocket] Successfully joined channel ${channelID}`);
+      }
+    });
 
     socket.off(Events.MESSAGE_CREATE);
     socket.on(Events.MESSAGE_CREATE, (newMessage: MessageDTO) => {

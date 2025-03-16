@@ -6,7 +6,7 @@ export enum Environment {
 }
 
 const BACKEND_URI = Constants.expoConfig?.extra?.backendUri ?? 'http://localhost';
-const WSS_URI = Constants.expoConfig?.extra?.wssUri ?? 'ws://localhost';
+const WSS_URI = Constants.expoConfig?.extra?.wssUri ?? 'ws://localhost:3001';
 
 
 export function getEndpointUrl(): string {
@@ -14,5 +14,6 @@ export function getEndpointUrl(): string {
 }
 
 export function getWSSURL(): string {
-  return WSS_URI;
+  const isHttps = BACKEND_URI.startsWith('https://');
+  return isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
 }

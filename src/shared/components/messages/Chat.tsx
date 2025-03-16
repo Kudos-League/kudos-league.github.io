@@ -18,18 +18,11 @@ const Chat = ({ onClose }) => {
 
   const token = useAppSelector((state) => state.auth.token);
   const { user } = useAuth();
-  const { joinChannel, leaveChannel, messages: socketMessages } = useWebSocket(token);
+  const { joinChannel, leaveChannel } = useWebSocket(token, messages, setMessages);
 
   useEffect(() => {
     fetchChannels();
   }, []);
-
-  // Merge local messages + WebSocket messages
-  useEffect(() => {
-    if (socketMessages.length > 0) {
-      setMessages((prev) => [...prev, ...socketMessages]);
-    }
-  }, [socketMessages]);
 
   // Fetch DM channels
   const fetchChannels = async () => {

@@ -7,22 +7,16 @@ import { ChannelDTO, MessageDTO } from 'shared/api/types';
 
 const PublicChat = () => {
   const { token } = useAuth();
-  const { joinChannel, leaveChannel, messages: socketMessages } = useWebSocket(token);
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
   const [channels, setChannels] = useState<ChannelDTO[]>([]);
   const [messages, setMessages] = useState<MessageDTO[]>([]);
+  const { joinChannel, leaveChannel, messages: socketMessages } = useWebSocket(token, messages, setMessages);
   const [messageInput, setMessageInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchChannels();
   }, []);
-
-  useEffect(() => {
-    if (socketMessages.length > 0 && selectedChannel) {
-      setMessages((prev) => [...prev, ...socketMessages]);
-    }
-  }, [socketMessages]);
 
   // Fetch available public channels
   const fetchChannels = async () => {
