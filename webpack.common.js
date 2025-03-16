@@ -2,7 +2,6 @@ const path = require("path");
 const createExpoWebpackConfigAsync = require("@expo/webpack-config");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const webpack = require("webpack");
-const Dotenv = require("dotenv-webpack");
 
 module.exports = async function (env, argv) {
   const mode = argv.mode || "none";
@@ -67,12 +66,6 @@ module.exports = async function (env, argv) {
     new webpack.ProvidePlugin({
       process: "process/browser",
       Buffer: ["buffer", "Buffer"],
-    })
-  );
-
-  config.plugins.push(
-    new Dotenv({
-      systemvars: true,
     })
   );
 
