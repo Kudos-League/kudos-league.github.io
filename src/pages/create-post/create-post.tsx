@@ -30,7 +30,14 @@ export default function CreatePost() {
   const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
   const infoModalRef = useRef<View>(null);
-  const form: UseFormReturn<FormValues> = useForm<FormValues>();
+  const form: UseFormReturn<FormValues> = useForm<FormValues>({
+    defaultValues: {
+      title: '',
+      body: '',
+      tags: []
+    },
+    mode: 'onChange' // Validate on change for immediate feedback
+  });
   const [showLoginForm, setShowLoginForm] = useState(false);
   const { token, isLoggedIn } = useAuth();
   const [tags, setTags] = useState('');
@@ -42,16 +49,57 @@ export default function CreatePost() {
   const [currentTagInput, setCurrentTagInput] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [errors, setErrors] = useState({
+    title: false,
+    body: false,
+  });
+  const [badWordFlag, setBadWordFlag] = useState(false);
+
+  // Track form validity
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  //MOCKUP DATA: =================================================== //would get this from the backend 
+  const badwords = ['badword', 'badword2', 'badword3'];
+  //END OF MOCKUP DATA =============================================
+
+  // Validate form on change
+  // useEffect(() => {
+  //   validateForm();
+  // }, [form.watch('title'), form.watch('body')]);
+
+  // Form validation function
+  const validateForm = () => {
+    const title = form.watch('title') || '';
+    const body = form.watch('body') || '';
+    
+    const newErrors = {
+      title: !title.trim(),
+      body: !body.trim(),
+    };
+    
+    setErrors(newErrors);
+    
+    // Check if the form is valid
+    setIsFormValid(!newErrors.title && !newErrors.body);
+  };
 
   const handleAddTag = () => {
     if (currentTagInput.trim()) {
+      if (badwords.includes(currentTagInput.trim() )){
+        setBadWordFlag(true);
+        return;
+      } else {
+        
       const currentTags = form.getValues('tags') || [];
       const newTags = [...currentTags, currentTagInput.trim()];
       form.setValue('tags', newTags);
       setCurrentTagInput('');
+      setBadWordFlag(false);
     }
     inputRef.current?.focus();
-    this.focus(); //HACK: workaround for focus() not working properly with refs
+    }
+    // Remove the HACK that was causing an error
+    // this.focus(); //HACK: workaround for focus() not working properly with refs
   };
 
   const handleRemoveTag = (index: number) => {
@@ -67,26 +115,31 @@ export default function CreatePost() {
   };
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
+    // Validate form before submission
+    validateForm();
+    
+    if (!isFormValid) {
+      return; // Prevent submission if form is invalid
+    }
+    
     if (!isLoggedIn) {
       setShowLoginForm(true);
       return;
     }
+    
     try {
-      // TODO: wait for location to be filled before enabling button
       const newPost = {
         title: data.title,
         body: data.body,
-        type: data.type || 'request', // TODO: tags and type not being passed in
+        type: data.type || postType, // Now using the postType state
         tags: data.tags || [],
         files: data.files || [],
         location
       };
       await addPost(newPost, token!);
-      // TODO: Doesn't update list of posts
       form.reset();
       navigation.goBack();
     } catch (err) {
-      // TODO: Error message in UI
       console.error('Failed to create post:', err);
     }
   };
@@ -104,10 +157,12 @@ export default function CreatePost() {
   };
 
   if (showLoginForm) {
-    <View style={styles.loginWrapper}>
-      <Text style={styles.loginPrompt}>Please log in to create a post.</Text>
-      <Login onSuccess={handleLoginSuccess} />
-    </View>;
+    return (
+      <View style={styles.loginWrapper}>
+        <Text style={styles.loginPrompt}>Please log in to create a post.</Text>
+        <Login onSuccess={handleLoginSuccess} />
+      </View>
+    );
   }
 
   return (
@@ -186,25 +241,36 @@ export default function CreatePost() {
               <GiftType selected={giftType} onSelect={setGiftType} />
             )}
             <Text style={{ ...globalStyles.inputTitle, marginTop: 10 }}>
-              Title
+              Title <Text style={styles.requiredAsterisk}>*</Text>
             </Text>
             <TextInput
               value={form.watch('title')}
-              onChangeText={(text) => form.setValue('title', text)}
-              style={globalStyles.inputForm}
-              //onInvalid={onInvalid}
+              onChangeText={(text) => {form.setValue('title', text)
+              validateForm();
+              }}
+              style={[globalStyles.inputForm, errors.title && styles.inputError]}
               placeholder="Enter title"
             />
+            {errors.title && (
+              <Text style={styles.errorText}>Title is required</Text>
+            )}
 
-            <Text style={globalStyles.inputTitle}>Info</Text>
+            <Text style={globalStyles.inputTitle}>
+              Info <Text style={styles.requiredAsterisk}>*</Text>
+            </Text>
             <TextInput
               value={form.watch('body')}
-              onChangeText={(text) => form.setValue('body', text)}
-              style={globalStyles.inputForm}
+              onChangeText={(text) => {form.setValue('body', text)
+              validateForm();
+              }}
+              style={[globalStyles.inputForm, errors.body && styles.inputError]}
               multiline
               numberOfLines={4}
               placeholder="Enter post info"
             />
+            {errors.body && (
+              <Text style={styles.errorText}>Info is required</Text>
+            )}
 
             <View
               style={{
@@ -239,9 +305,7 @@ export default function CreatePost() {
                 onChangeText={setCurrentTagInput}
                 style={[globalStyles.inputForm, { flex: 1, maxWidth: '70%' }]}
                 placeholder="Enter tag and press Add"
-                onSubmitEditing={
-                  handleAddTag
-                }
+                onSubmitEditing={handleAddTag}
                 returnKeyType="done"
               />
               <Button
@@ -249,7 +313,7 @@ export default function CreatePost() {
                 style={[globalStyles.button, {
                   maxWidth: '30%',
                   paddingHorizontal: 4,
-                }]}  // Reduce horizontal padding}]}
+                }]}
                 onPress={handleAddTag}
               >
                 Add
@@ -257,6 +321,7 @@ export default function CreatePost() {
             </View>
 
             {/* Tags Display */}
+            {badWordFlag && <Text style={styles.errorText}>Tag contains bad word</Text>}
             {form.watch('tags')?.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
                 {form.watch('tags').map((tag, index) => (
@@ -282,7 +347,9 @@ export default function CreatePost() {
               </View>
             )}
 
-            <Text style={globalStyles.inputTitle}>Location</Text>
+            <Text style={globalStyles.inputTitle}>
+              Location 
+            </Text>
             <View style={{ alignItems: 'center' }}>
               {location && <Map
                 showAddressBar={true}
@@ -295,8 +362,12 @@ export default function CreatePost() {
             </View>
 
             <TouchableOpacity
-              style={globalStyles.button}
+              style={[
+                globalStyles.button, 
+                !isFormValid && styles.disabledButton
+              ]}
               onPress={form.handleSubmit(onSubmit)}
+              disabled={!isFormValid}
             >
               <Text style={{ color: 'white', paddingVertical: 8 }}>
                 Create
@@ -344,4 +415,28 @@ const styles = {
     textAlign: 'center',
     lineHeight: 22,
   },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  inputError: {
+    borderColor: 'red',
+    borderWidth: 1,
+  },
+  requiredAsterisk: {
+    color: 'red',
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#888',
+    opacity: 0.7,
+  },
+  hintText: {
+    color: '#666',
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 4,
+  }
 };

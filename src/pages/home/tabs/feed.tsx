@@ -16,6 +16,7 @@ import { usePosts } from "shared/hooks/usePosts";
 import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
 import { Ionicons } from '@expo/vector-icons';
+import Search from "pages/search/home";
 
 export default function Feed() {
   const navigation = useNavigation();
@@ -118,14 +119,8 @@ export default function Feed() {
         <View style={styles.searchContainer}>
           {searchVisible ? (
             <Animated.View style={[styles.searchInputContainer, { width: searchWidth }]}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search..."
-                value={searchText}
-                onChangeText={setSearchText}
-                autoFocus
-              />
-              <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
+                <Search/>
+                <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </Animated.View>
