@@ -65,14 +65,17 @@ function HeaderRight() {
   ) : (
     <View style={{ display: "flex", flexDirection: "row", gap: 8, marginRight: 16 }}>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Auth", { screen: "SignIn" })}
+        onPress={() =>     navigation.navigate("Home", {
+          screen: "Login" // First ensure we're on the Home screen
+        })}
+
         style={[tailwind("py-1.5 px-3 rounded-md mr-2"), styles.signInButton]}
         activeOpacity={0.8}
       >
         <Text style={tailwind("text-blue-500 font-medium text-sm")}>LOG IN</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Auth", { screen: "SignUp" })}
+        onPress={() => navigation.navigate("Home", { screen: "Register" })}
         style={[tailwind("py-1.5 px-3 rounded-md"), styles.signUpButton]}
         activeOpacity={0.8}
       >
