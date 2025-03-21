@@ -9,9 +9,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
-  TextInput,
 } from "react-native";
-import { createHandshake, getPostDetails, sendMessage } from "shared/api/actions";
+import { createDMChannel, createHandshake, getPostDetails, sendMessage } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
 import { CreateHandshakeDTO, CreateMessageDTO } from "shared/api/types";
 import { useAppSelector } from "redux_store/hooks";
@@ -19,13 +18,13 @@ import AvatarComponent from "shared/components/Avatar";
 import {useAuth} from "shared/hooks/useAuth";
 import MapDisplay from "shared/components/Map";
 import { getEndpointUrl } from "shared/api/config";
-import Message from "shared/components/messages/Message";
 import MessageList from "shared/components/messages/MessageList";
+import Chat from "shared/components/messages/Chat";
 
 const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
 
   const [postDetails, setPostDetails] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +33,7 @@ const Post = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
   const [creatingHandshake, setCreatingHandshake] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const token = useAppSelector((state) => state.auth.token);
 
@@ -60,6 +60,22 @@ const Post = () => {
   const handleAcceptHandshake = (index: number) => {
     const updatedHandshakes = [...displayedHandshakes || []];
     updatedHandshakes[index].status = "Accepted";
+  };
+
+  const startDMChat = async () => {
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+  
+    try {
+      if (user && postDetails?.sender) {
+        await createDMChannel(Number.parseInt(user.id), Number.parseInt(postDetails.sender.id), token);
+      }
+      setIsChatOpen(true);
+    } catch (error) {
+      console.error("Error creating DM channel:", error);
+    }
   };
      
   const handleSubmitHandshake = async () => {
@@ -93,12 +109,14 @@ const Post = () => {
       }));
   
       console.log("Handshake created successfully:", newHandshake);
+
+      await startDMChat();
     } catch (error) {
       console.error("Error creating handshake:", error);
     } finally {
       setCreatingHandshake(false);
     }
-  }; 
+  };
 
   return (
     <ScrollView
@@ -297,6 +315,7 @@ const Post = () => {
           </Modal>
         </View>
       )}
+      {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
     </ScrollView>
   );
 };
