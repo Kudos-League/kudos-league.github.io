@@ -8,6 +8,13 @@ export type CreatePostDTO = {
   files?: File[];
 };
 
+export type LocationDTO = {
+  id: number;
+  name: string;
+  location: string;
+  regionID: string;
+}
+
 export type PostDTO = {
   id: number;
   senderId: string;
@@ -20,6 +27,7 @@ export type PostDTO = {
   kudos?: number;
   createdAt: Date;
   updatedAt: Date;
+  location: LocationDTO;
 };
 
 export interface Feat {

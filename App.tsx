@@ -72,6 +72,7 @@ function getLinkingOptions(): LinkingOptions<{}> {
         },
         "Create Post": "create-post",
         Donate: "donate",
+        Leaderboard: 'leaderboard',
         Login: {
           path: "login",
           screens: {

@@ -10,9 +10,9 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { createDMChannel, createHandshake, getPostDetails, sendMessage } from "shared/api/actions";
+import { createDMChannel, createHandshake, getPostDetails } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
-import { CreateHandshakeDTO, CreateMessageDTO } from "shared/api/types";
+import { CreateHandshakeDTO, PostDTO } from "shared/api/types";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
 import {useAuth} from "shared/hooks/useAuth";
@@ -20,13 +20,14 @@ import MapDisplay from "shared/components/Map";
 import { getEndpointUrl } from "shared/api/config";
 import MessageList from "shared/components/messages/MessageList";
 import Chat from "shared/components/messages/Chat";
+import type { Post as PostType } from "index";
 
 const Post = () => {
   const route = useRoute();
   const { id } = route.params as { id: string };
   const { user, isLoggedIn } = useAuth();
 
-  const [postDetails, setPostDetails] = useState<Post | null>(null);
+  const [postDetails, setPostDetails] = useState<PostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -195,7 +196,7 @@ const Post = () => {
           <View style={styles.descriptionContainer}>
             <MapDisplay
               showAddressBar={false}
-              regionID={postDetails.regionID}
+              regionID={postDetails.location?.regionID}
               exactLocation={false}
               width={300}
               height={300}

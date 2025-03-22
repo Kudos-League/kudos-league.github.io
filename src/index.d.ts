@@ -1,3 +1,5 @@
+import { LocationDTO } from "shared/api/types";
+
 interface Post {
   id: string;
   sender: {
@@ -16,7 +18,7 @@ interface Post {
     updatedAt: Date;
   } | null;
   tags: Tag[];
-  regionID: string;
+  location: LocationDTO;
   title: string;
   type: string;
   body: string;
@@ -40,4 +42,5 @@ interface UserDTO {
   kudos: number;
   isEmailVerified?: boolean;
   password?: string | null;
+  locationID: number | null;
 }
