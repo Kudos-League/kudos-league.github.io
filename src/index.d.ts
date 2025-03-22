@@ -34,6 +34,12 @@ interface Post {
   images: string[]; // TODO
 }
 
+interface Badge {
+  id: number;
+  name: string;
+  image: string;
+}
+
 interface UserDTO {
   id: string;
   username: string;
@@ -43,4 +49,5 @@ interface UserDTO {
   isEmailVerified?: boolean;
   password?: string | null;
   locationID: number | null;
+  badges: Badge[]
 }

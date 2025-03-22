@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet} from "react-native";
 import { useForm } from "react-hook-form";
+import { Tooltip } from "react-native-paper";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
 import { Feat, PostDTO } from "shared/api/types";
@@ -8,6 +9,7 @@ import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
 import { getEndpointUrl } from "shared/api/config";
 import { createDMChannel } from "shared/api/actions";
+import { UserDTO } from "index";
 
 type ProfileFormValues = {
   email: string;
@@ -179,28 +181,41 @@ export default function Profile({
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-          {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
-          <Text style={styles.userTitle}>{getUserTitle()}</Text>
-          <Text style={styles.userName}>{targetUser.username}</Text>
-          <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
+        {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
+        <Text style={styles.userTitle}>{getUserTitle()}</Text>
+        <Text style={styles.userName}>{targetUser.username}</Text>
+        <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
+
+        {/* Badges Section */}
+        {targetUser.badges && targetUser.badges.length > 0 && (
+            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.badgesContainer}>
+                {targetUser.badges.map((badge, index) => (
+                    <Tooltip key={index} title={badge.name} enterTouchDelay={300} leaveTouchDelay={150}>
+                        <View style={styles.badgeItem}>
+                            <Image source={{ uri: `${getEndpointUrl()}${badge.image}` }} style={styles.badgeImage} />
+                        </View>
+                    </Tooltip>
+                ))}
+            </ScrollView>
+        )}
           
-          {/* Action Buttons */}
-          {actionButtons}
-          
-          {/* User Description */}
-          {/* TODO: Not a real thing yet */}
-          <Text style={styles.userDescription}>{(targetUser as any).description || 'Test Description'}</Text>
-          
-          {/* Interest Tags */}
-          <View style={styles.interestContainer}>
-            {/* TODO: Not a real thing yet */}
-              {(targetUser as any).interests?.map((interest, index) => (
-                  <View key={index} style={styles.interestPill}>
-                      <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-              ))}
-          </View>
-      </View>
+        {/* Action Buttons */}
+        {actionButtons}
+        
+        {/* User Description */}
+        {/* TODO: Not a real thing yet */}
+        <Text style={styles.userDescription}>{(targetUser as any).description || 'Test Description'}</Text>
+        
+        {/* Interest Tags */}
+        <View style={styles.interestContainer}>
+        {/* TODO: Not a real thing yet */}
+            {(targetUser as any).interests?.map((interest, index) => (
+                <View key={index} style={styles.interestPill}>
+                    <Text style={styles.interestText}>{interest}</Text>
+                </View>
+            ))}
+        </View>
+    </View>
       
       {/* Achievements Section */}
       <View style={styles.achievementsContainer}>
@@ -453,4 +468,21 @@ const styles = StyleSheet.create({
       color: "#718096",
       marginTop: 10,
   },
+    badgesContainer: {
+        flexDirection: "row",
+        marginTop: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+        backgroundColor: "#F3F4F6",
+        borderRadius: 10,
+    },
+    badgeItem: {
+        marginRight: 10,
+        alignItems: "center",
+    },
+    badgeImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
 });
