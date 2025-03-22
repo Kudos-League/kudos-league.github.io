@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
 import { fetchGlobalLeaderboard, fetchRegionalLeaderboard } from "shared/api/actions";
 import { useAuth } from "shared/hooks/useAuth";
-import { Post } from "index";
+
+type LeaderboardUser = {
+    id: number;
+    username: string;
+    totalKudos: number;
+    location?: { name: string };
+};
 
 export default function Leaderboard() {
     const { user, token } = useAuth();
-    const [leaderboard, setLeaderboard] = useState<Post[]>([]);
+    const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [useRegional, setUseRegional] = useState(false);
@@ -56,11 +62,12 @@ export default function Leaderboard() {
             <FlatList
                 data={leaderboard}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                     <View style={styles.entry}>
-                        <Text style={styles.title}>{item.title}</Text>
-                        <Text>{item.rewardOffers[0].kudos} Kudos</Text>
-                        <Text style={styles.region}>Region: {item.location?.name}</Text>
+                        <Text style={styles.rank}>{index + 1}.</Text>
+                        <Text style={styles.username}>{item.username}</Text>
+                        <Text style={styles.kudos}>{item.totalKudos} Kudos</Text>
+                        {item.location && <Text style={styles.region}>Region: {item.location.name}</Text>}
                     </View>
                 )}
             />
@@ -96,6 +103,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     entry: {
+        flexDirection: "row",
+        alignItems: "center",
         padding: 15,
         backgroundColor: "#FFF",
         borderRadius: 10,
@@ -106,12 +115,22 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-    title: {
+    rank: {
         fontSize: 18,
         fontWeight: "bold",
+        marginRight: 10,
+    },
+    username: {
+        fontSize: 18,
+        fontWeight: "bold",
+        flex: 1,
+    },
+    kudos: {
+        fontSize: 16,
+        color: "#2D3748",
     },
     region: {
-        color: "#555",
         fontSize: 12,
+        color: "#555",
     },
 });
