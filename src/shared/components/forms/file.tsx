@@ -44,7 +44,7 @@ export default function FilePicker({
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
-        <button onClick={openFilePicker}>{placeholder ? require(placeholder) : 'Choose Files'}</button>
+        <button onClick={openFilePicker}>{placeholder || 'Choose Files'}</button>
         {selectedFiles.length > 0 && (
           <Text>
             Selected Files: {selectedFiles.map((file) => file.name).join(', ')}
