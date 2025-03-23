@@ -7,7 +7,6 @@ import {
   CreateRewardOfferDTO,
   CreateUserDTO,
   HandshakeDTO,
-  LeaderboardEntry,
   PostDTO,
   RewardOfferDTO,
   SendCommentDTO,
@@ -291,27 +290,25 @@ export const getPublicChannels = async (token: string) => {
 };
 
 /** @throws {AxiosError} */
-export async function fetchGlobalLeaderboard(token: string): Promise<{ data: LeaderboardEntry[] }> {
-  if (!token) throw Error("Invalid token");
+export async function fetchLeaderboard(
+  token: string,
+  local: boolean,
+  time: string // 'all' | '24h' | 'week' | 'month' | 'year'
+) {
+  if (!token) throw new Error("Invalid token");
 
-  const data = await instance.get("/leaderboard/global", {
+  // Build query string
+  const queryParams = new URLSearchParams();
+  queryParams.append("local", String(local)); 
+  // "true" or "false"
+  queryParams.append("time", time); 
+  // e.g. "all", "24h", "week"
+
+  const res = await instance.get(`/leaderboard?${queryParams.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
-  return data.data;
-}
-
-/** @throws {AxiosError} */
-export async function fetchRegionalLeaderboard(token: string, regionID: number): Promise<{ data: LeaderboardEntry[] }> {
-  if (!token) throw Error("Invalid token");
-
-  const data = await instance.get(`/leaderboard/regional/${regionID}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return data.data;
+  return res.data;
 }
