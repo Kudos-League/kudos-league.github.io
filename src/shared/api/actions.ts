@@ -103,6 +103,12 @@ export async function getPostDetails(id: string) {
 }
 
 /** @throws {AxiosError} */
+export async function getBannedTags() {
+  const response = await instance.get(`/tags/`);
+  return response.data;
+}
+
+/** @throws {AxiosError} */
 export async function getUserDetails(id: string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean } = {}) {
   const queryString = toQueryParams(options);
 
