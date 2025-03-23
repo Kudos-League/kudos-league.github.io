@@ -11367,6 +11367,7 @@ __metadata:
     react-native-gesture-handler: "npm:~2.14.0"
     react-native-get-random-values: "npm:~1.8.0"
     react-native-google-places-autocomplete: "npm:^2.5.7"
+    react-native-image-picker: "npm:^8.2.0"
     react-native-maps: "npm:^1.20.1"
     react-native-paper: "npm:^5.12.5"
     react-native-portalize: "npm:^1.0.7"
@@ -14667,6 +14668,16 @@ __metadata:
   peerDependencies:
     react-native: ">= 0.59"
   checksum: 10/e7a1250ecf24451e291631dfaf58b0e06738b9df60afcbd20e6de82271625a93dc5f30d66c29d3a0204b7a54a5479da2fb33a9b197c8b06c75d8ca1e091ea7cd
+  languageName: node
+  linkType: hard
+
+"react-native-image-picker@npm:^8.2.0":
+  version: 8.2.0
+  resolution: "react-native-image-picker@npm:8.2.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/9dac95436b7ffd714293d0c48b0a2a0520f7c94b3ff18325b5e57c9718f56eca6922836477e07d3c9a2c346a63bb9123d912d9c090495021acf587eb32a1733d
   languageName: node
   linkType: hard
 

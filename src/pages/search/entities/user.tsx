@@ -7,6 +7,7 @@ import { getUserDetails, getUserPosts, updateUser } from "shared/api/actions";
 import Profile from "shared/components/profile";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { PostDTO } from "shared/api/types";
+import { UserDTO } from "index";
 
 type RootStackParamList = {
   UserProfile: { id: string };
@@ -61,14 +62,15 @@ export default function User() {
     fetchUser();
   }, [targetUserID, authState, userProfile]);
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (formData) => {
     setLoading(true);
     setError(null);
 
     try {
       if (!formState) return;
       if (!token) return setError("No token available. Please login.");
-      const updatedUser = await updateUser(formState, "me", token);
+      const state = formData || formState; // TODO: FormState isnt used?
+      const updatedUser = await updateUser(state, "me", token);
       setUser(updatedUser);
     } catch (e) {
       setError("Failed to update user.");
@@ -89,8 +91,6 @@ export default function User() {
     <View style={globalStyles.container}>
       <Profile
         user={user}
-        formState={formState}
-        setFormState={setFormState}
         handleUpdate={handleUpdate}
         loading={loading}
         error={error}

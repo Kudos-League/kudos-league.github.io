@@ -1,3 +1,4 @@
+import { UserDTO } from "index";
 import { getEndpointUrl } from "./config";
 import {
   CreateHandshakeDTO,

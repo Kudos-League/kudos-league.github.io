@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet} from "react-native";
 import { useForm } from "react-hook-form";
+import { launchImageLibrary } from "react-native-image-picker";
 import { Tooltip } from "react-native-paper";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
@@ -18,7 +19,7 @@ type ProfileFormValues = {
 
 type ProfileProps = {
   user: UserDTO;
-  handleUpdate: (data: ProfileFormValues) => Promise<void>;
+  handleUpdate: (data: FormData) => Promise<void>;
   loading: boolean;
   error: string | null;
   posts: PostDTO[];
@@ -61,6 +62,7 @@ export default function Profile({
   const { user: loggedInUser, isLoggedIn, token } = useAuth();
   const [editProfile, setEditProfile] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [filter, setFilter] = useState("all");
   const form = useForm<ProfileFormValues>({
     defaultValues: {
       email: targetUser.email,
@@ -71,10 +73,54 @@ export default function Profile({
   const sameUser = targetUser?.id === loggedInUser?.id; // Determines if the edit profile should be allowed
 
   const onSubmit = async (data: ProfileFormValues) => {
-    await handleUpdate(data);
+    const formData = new FormData();
+    let hasChanges = false;
+  
+    if (data.email !== targetUser.email) {
+      formData.append("email", data.email);
+      hasChanges = true;
+    }
+  
+    if (data.avatar.length > 0) {
+      const avatarFile = data.avatar[0];
+      if (avatarFile.uri !== targetUser.avatar) {
+        const response = await fetch(avatarFile.uri);
+        const blob = await response.blob();
+        formData.append("avatar", blob, "avatar.jpg");
+        hasChanges = true;
+      }
+    } else if (data.avatarUrl && data.avatarUrl !== targetUser.avatar) {
+      formData.append("avatar", data.avatarUrl);
+      hasChanges = true;
+    }
+  
+    if (!hasChanges) {
+      console.log("No changes detected, skipping update.");
+      return;
+    }
+  
+    await handleUpdate(formData);
   };
 
-  const [filter, setFilter] = useState("all");
+  const pickAvatar = () => {
+    const options = {
+      mediaType: "photo",
+      maxWidth: 300,
+      maxHeight: 300,
+      quality: 0.7,
+    };
+  
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log("User cancelled image picker");
+      } else if (response.errorMessage) {
+        console.error("ImagePicker Error:", response.errorMessage);
+      } else if (response.assets && response.assets.length > 0) {
+        const selectedImage = response.assets[0].uri;
+        form.setValue("avatar", [{ uri: selectedImage }]);
+      }
+    });
+  };  
       
   const getUserTitle = () => {
       if (targetUser.kudos > 10000) {
@@ -151,31 +197,66 @@ export default function Profile({
 
   if (editProfile) {
     return (
-      <>
+      <ScrollView style={styles.editContainer}>
         {actionButtons}
-        <Text style={globalStyles.title}>User Profile</Text>
+        <Text style={globalStyles.title}>Edit Profile</Text>
         <Text style={globalStyles.subtitle}>Username: {targetUser.username}</Text>
-        <Input
+  
+        <View style={styles.inputContainer}>
+          <Input
             name="email"
             label="Email"
             form={form}
             registerOptions={{ required: true }}
-        />
-        <Input
-            name="avatar"
-            label="Upload Avatar"
-            type="file"
-            form={form}
-            multipleFiles={false}
-        />
-        <Button
-            title={loading ? "Updating..." : "Update Profile"}
-            onPress={form.handleSubmit(onSubmit)}
-            disabled={loading}
-        />
-      </>
-    )
-  }
+            placeholder="Enter your email"
+          />
+        </View>
+  
+        {/* Avatar Upload & Preview */}
+        <View style={styles.avatarContainer}>
+            <Text style={styles.label}>Avatar</Text>
+
+            {/* Avatar Preview */}
+            {form.watch("avatar")?.length > 0 ? (
+                <Image source={{ uri: form.watch("avatar")[0].uri }} style={styles.avatarPreview} />
+            ) : targetUser.avatar ? (
+                <Image source={{ uri: targetUser.avatar }} style={styles.avatarPreview} />
+            ) : (
+                <Text>No Avatar Selected</Text>
+            )}
+
+            {/* Button to Open Image Picker */}
+            <TouchableOpacity style={styles.uploadButton} onPress={pickAvatar}>
+                <Text style={styles.uploadButtonText}>Select Avatar</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.orText}>OR</Text>
+
+            {/* URL-based Avatar Input */}
+            <Input
+                name="avatarUrl"
+                label="Avatar URL"
+                type="text"
+                form={form}
+                placeholder="Paste an image URL"
+            />
+            </View>
+    
+            {/* Update Profile Button */}
+        <TouchableOpacity
+          style={styles.updateButton}
+          onPress={form.handleSubmit(onSubmit)}
+          disabled={loading}
+        >
+          <Text style={styles.updateButtonText}>
+            {loading ? "Updating..." : "Update Profile"}
+          </Text>
+        </TouchableOpacity>
+  
+        {error && <Text style={styles.errorText}>{error}</Text>}
+      </ScrollView>
+    );
+  }  
   
   return (
     <ScrollView style={styles.container}>
@@ -485,4 +566,61 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
     },
+    editContainer: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: "#fff",
+      },
+      inputContainer: {
+        marginBottom: 15,
+      },
+      updateButton: {
+        backgroundColor: "#3182CE",
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: "center",
+      },
+      updateButtonText: {
+        color: "#FFF",
+        fontSize: 16,
+        fontWeight: "bold",
+      },
+      errorText: {
+        color: "red",
+        marginTop: 10,
+        textAlign: "center",
+      },
+      avatarContainer: {
+        alignItems: "center",
+        marginBottom: 20,
+      },
+      label: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#333",
+        marginBottom: 5,
+      },
+      avatarPreview: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginBottom: 10,
+      },
+      uploadButton: {
+        backgroundColor: "#3182CE",
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        marginBottom: 10,
+      },
+      uploadButtonText: {
+        color: "#FFF",
+        fontSize: 14,
+        fontWeight: "bold",
+      },
+      orText: {
+        fontSize: 14,
+        color: "#888",
+        marginVertical: 10,
+      },
 });
