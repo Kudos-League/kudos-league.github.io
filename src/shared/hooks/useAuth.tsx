@@ -6,6 +6,7 @@ import { getUserDetails, login, register } from "shared/api/actions";
 import { ASYNC_STORAGE_KEY__AUTH_DATA } from "shared/constants";
 import { AxiosError } from "axios";
 import { View, Text } from "react-native";
+import { UserDTO } from "index";
 
 type AuthContextType = {
   token: string | null;
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dispatch = useAppDispatch();
 
-  const token = userProfile ? authState?.token || null : null;
+  const token = authState?.token || null;
 
   useEffect(() => {
     const loadAuthState = async () => {
@@ -48,21 +49,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     loadAuthState();
   }, [dispatch]);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (token) {
-        try {
-          const profile = await getUserDetails(undefined, token);
-          setUserProfile(profile);
-        } catch (error) {
-          console.error("Failed to fetch user profile:", error);
-        }
-      }
-    };
-
-    fetchUser();
-  }, [token]);
 
   const loginHandler = async (username: string, password: string) => {
     setErrorMessage(null);
@@ -88,9 +74,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           : "Login failed. Please try again."
       );
       console.error("Login failed:", error);
+      await AsyncStorage.removeItem(ASYNC_STORAGE_KEY__AUTH_DATA);
+      setAuthState(null);
+      dispatch(updateAuth({} as any));
+  
       throw error;
     }
   };
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (token) {
+        try {
+          const profile = await getUserDetails(undefined, token);
+          setUserProfile(profile);
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
+          await AsyncStorage.removeItem(ASYNC_STORAGE_KEY__AUTH_DATA);
+          setAuthState(null);
+          dispatch(updateAuth({} as any));
+        }
+      }
+    };
+  
+    fetchUser();
+  }, [token]);  
 
   const logoutHandler = async () => {
     setAuthState(null);
