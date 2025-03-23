@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigation } from "@react-navigation/native";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
@@ -24,7 +24,14 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const navigation = useNavigation<any>();
+  useEffect(() => {
+    console.log(`$$$$$$$TOKEN: ${token}`)
+  }, [])
+  useEffect(() => {
+    console.log(`$$$$$$$TOKEN: ${token}`)
+  })
 
+  console.log(`$$$$$$$TOKEN: ${token}`)
   const onSubmit = async (data: FormValues) => {
     setErrorMessage(null);
     try {

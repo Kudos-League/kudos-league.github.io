@@ -64,25 +64,46 @@ function HeaderRight() {
       )}
     </View>
   ) : (
-    <View style={{ display: "flex", flexDirection: "row", gap: 8, marginRight: 16 }}>
-      <TouchableOpacity
-        onPress={() =>     navigation.navigate("Home", {
-          screen: "Login" // First ensure we're on the Home screen
-        })}
-
-        style={[tailwind("py-1.5 px-3 rounded-md mr-2"), styles.signInButton]}
-        activeOpacity={0.8}
-      >
-        <Text style={tailwind("text-blue-500 font-medium text-sm")}>LOG IN</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => navigation.navigate("Home", { screen: "Register" })}
-        style={[tailwind("py-1.5 px-3 rounded-md"), styles.signUpButton]}
-        activeOpacity={0.8}
-      >
-        <Text style={tailwind("text-white font-medium text-sm")}>SIGN UP</Text>
-      </TouchableOpacity>
-    </View>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, gap: 12 }}>
+  <TouchableOpacity
+    onPress={() => navigation.navigate("Home", { screen: "Login" })}
+    style={{
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+      borderRadius: 25,
+      borderWidth: 2,
+      borderColor: '#3b82f6',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+    }}
+    activeOpacity={0.6}
+  >
+    <Text style={{ color: '#3b82f6', fontWeight: '700', textAlign: 'center' }}>LOG IN</Text>
+  </TouchableOpacity>
+  
+  <TouchableOpacity
+    onPress={() => navigation.navigate("Home", { screen: "Register" })}
+    style={{
+      backgroundColor: '#3b82f6',
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+      borderRadius: 25,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      marginRight: 30 
+    }}
+    activeOpacity={0.6}
+  >
+    <Text style={{ color: 'white', fontWeight: '700', textAlign: 'center' }}>SIGN UP</Text>
+  </TouchableOpacity>
+</View>
   );
 }
 
@@ -108,7 +129,7 @@ function DrawerNavigator() {
         drawerInactiveTintColor: "#4B5563",
       })}
     >
-      <Drawer.Screen name="Home" component={Home} options={{ headerTitle: "Kudos League" }} />
+      <Drawer.Screen name="Home" component={Home} options={{ headerTitle: " " }} />
       <Drawer.Screen name="Create Post" component={CreatePost} />
       <Drawer.Screen name="Donate" component={Donate} />
       <Drawer.Screen name="Search" component={Search} />

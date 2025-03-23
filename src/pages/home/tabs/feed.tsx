@@ -16,19 +16,22 @@ import { usePosts } from "shared/hooks/usePosts";
 import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
 import { Ionicons } from '@expo/vector-icons';
-import Search from "pages/search/home";
+import { searchPosts } from "shared/api/actions";
 
 export default function Feed() {
   const navigation = useNavigation();
   const { posts, fetchPosts, loading, error } = usePosts();
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [results, setResults] = useState([]);
+  const [cache, setCache] = useState({});
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("gifts");
   const [sortOption, setSortOption] = useState("Default Sort");
   
   const searchAnimation = useRef(new Animated.Value(0)).current;
   const filterAnimation = useRef(new Animated.Value(0)).current;
+  const debounceTimeout = useRef(null);
   
   useEffect(() => {
     fetchPosts();
@@ -46,8 +49,11 @@ export default function Feed() {
         duration: 300,
         easing: Easing.ease,
         useNativeDriver: false
-      }).start(() => setSearchVisible(false));
-      setSearchText("");
+      }).start(() => {
+        setSearchVisible(false);
+        setSearchText("");
+        setResults([]);
+      });
     } else {
       // Show search
       setSearchVisible(true);
@@ -59,6 +65,44 @@ export default function Feed() {
       }).start();
     }
   };
+  
+  const debouncedSearch = (searchTerm) => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    debounceTimeout.current = setTimeout(() => {
+      fetchResults(searchTerm);
+    }, 300);
+  };
+
+  const fetchResults = async (searchTerm) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setResults([]);
+      return;
+    }
+  
+    if (cache[searchTerm]) {
+      setResults(cache[searchTerm]);
+      return;
+    }
+    
+    try {
+      const response = await searchPosts(searchTerm);
+      setResults(response);
+      setCache((prevCache) => ({ ...prevCache, [searchTerm]: response }));
+    } catch (error) {
+      console.error('Search API Error:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (searchText.length > 2) {
+      debouncedSearch(searchText);
+    } else {
+      setResults([]);
+    }
+  }, [searchText]);
   
   const toggleFilter = () => {
     if (filterVisible) {
@@ -83,13 +127,24 @@ export default function Feed() {
   
   const searchWidth = searchAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [40, Dimensions.get('window').width - 120]
+    outputRange: [40, Math.min(Dimensions.get('window').width - 20, 500)]
   });
   
   const filterHeight = filterAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 120]
   });
+
+  const boldMatch = (text, match) => {
+    const parts = text.split(new RegExp(`(${match})`, 'gi'));
+    return parts.map((part, index) =>
+      part.toLowerCase() === match.toLowerCase() ? (
+        <Text key={index} style={{ fontWeight: 'bold' }}>{part}</Text>
+      ) : (
+        <Text key={index}>{part}</Text>
+      )
+    );
+  };
 
   if (loading) return (
     <SafeAreaView style={globalStyles.container}>
@@ -115,15 +170,35 @@ export default function Feed() {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.toolbarContainer}>
+      <View style={styles.toolbarContainer} onLayout={event => {
+        const {width} = event.nativeEvent.layout;
+        searchAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [40, width - 80]
+        });
+      }}>
         <View style={styles.searchContainer}>
           {searchVisible ? (
-            <Animated.View style={[styles.searchInputContainer, { width: searchWidth }]}>
-                <Search/>
+            <View style={{ position: 'relative' }}>
+              <Animated.View style={[styles.searchInputContainer, { width: searchWidth }]}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search..."
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  autoFocus
+                />
                 <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
-                <Ionicons name="close" size={24} color="black" />
-              </TouchableOpacity>
-            </Animated.View>
+                  <Ionicons name="close" size={24} color="black" />
+                </TouchableOpacity>
+              </Animated.View>
+              
+              {results.length > 0 && (
+                <View style={styles.resultsDropdown}>
+                  <PostsContainer posts={results} />
+                </View>
+              )}
+            </View>
           ) : (
             <TouchableOpacity style={styles.iconButton} onPress={toggleSearch}>
               <Ionicons name="search" size={24} color="black" />
@@ -179,7 +254,9 @@ export default function Feed() {
         </View>
       </Animated.View>
       
-      <PostsContainer posts={posts} />
+      {!searchVisible || results.length === 0 ? (
+        <PostsContainer posts={posts} />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -229,6 +306,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+    zIndex: 10,
   },
   searchInputContainer: {
     flexDirection: "row",
@@ -246,6 +324,21 @@ const styles = StyleSheet.create({
   searchButton: {
     padding: 4,
   },
+  resultsDropdown: {
+    position: 'absolute',
+    top: 45,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    maxHeight: 300,
+    zIndex: 20,
+  },
   iconButton: {
     width: 40,
     height: 40,
@@ -258,6 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 2,
+    zIndex: 5,
   },
   categoryButton: {
     paddingHorizontal: 12,
@@ -281,6 +375,7 @@ const styles = StyleSheet.create({
   sortFilterContainer: {
     flexDirection: "row",
     alignItems: "center",
+    zIndex: 5,
   },
   sortButton: {
     backgroundColor: "#f5f5f5",
@@ -296,6 +391,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     padding: 16,
     overflow: "hidden",
+    zIndex: 5,
   },
   filterTitle: {
     fontWeight: "bold",

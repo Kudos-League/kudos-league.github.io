@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dispatch = useAppDispatch();
 
-  const token = authState?.token || null;
+  const token = userProfile ? authState?.token || null : null;
 
   useEffect(() => {
     const loadAuthState = async () => {
