@@ -41,7 +41,7 @@ interface Badge {
 }
 
 interface UserDTO {
-  id: string;
+  id: number;
   username: string;
   email: string;
   avatar?: string | null;

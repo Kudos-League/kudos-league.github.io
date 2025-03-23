@@ -63,8 +63,8 @@ export type UserSettingsDTO = {
 
 export interface MessageDTO {
   id: number;
-  authorID: string;
-  postID?: string;
+  authorID: number;
+  postID?: number;
   channelID?: number;
   replyToMessageID?: number;
   handshakeID?: number;

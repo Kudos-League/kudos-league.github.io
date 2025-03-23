@@ -13,13 +13,13 @@ interface AlertProps {
   messages: MessageDTO[];
   title?: string;
   callback?: (data: any) => void;
-  postID?: string;
+  postID?: number;
 }
 
 interface FormValuesMessage {
     content: string;
-    senderID: string;
-    postID: string;
+    senderID: number;
+    postID: number;
     // threadID: number;
     // replyToMessageID?: number;
     handshakeID?: number;
@@ -41,8 +41,8 @@ const MessageList: React.FC<AlertProps> = ({ messages, title, callback, postID }
       
         const messageData: FormValuesMessage = {
           content: messageContent,
-          senderID: user?.id|| "0",
-          postID: postID || "0",
+          senderID: user?.id|| 0,
+          postID: postID || 0,
         };
       
         onSubmitMessage(messageData);
