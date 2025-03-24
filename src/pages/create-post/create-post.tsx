@@ -357,7 +357,7 @@ export default function CreatePost() {
                 coordinates={location}
                 width={300}
                 height={300}
-                onLocationSelect={(coords) => setLocation(coords)}
+                onLocationChange={(data) => setLocation(data.coordinates)}
               />}
             </View>
 

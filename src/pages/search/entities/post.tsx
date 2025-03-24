@@ -94,7 +94,7 @@ const Post = () => {
   
     const handshakeData: CreateHandshakeDTO = {
       postID: postDetails.id,
-      senderID: user?.id || "0",
+      senderID: user?.id || 0,
       receiverID: postDetails.sender?.id || "0",
       type: postDetails.type, // TODO: This might be redundant since the post has the type
       status: 'new' // TODO: Should be optional

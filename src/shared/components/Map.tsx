@@ -16,7 +16,13 @@ interface MapComponentPropsBase {
   height?: string | number;
   exactLocation?: boolean;
   regionID?: string;
-  onLocationSelect?: (coords: MapCoordinates) => void;
+  onLocationChange?: (data: LocationData) => void;
+}
+
+interface LocationData {
+  coordinates: MapCoordinates;
+  placeID: string;
+  name?: string;
 }
 
 // Union type remains similar.
@@ -62,7 +68,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
   height,
   exactLocation,
   regionID,
-  onLocationSelect
+  onLocationChange
 }) => {
   // Use provided coordinates if available, else fallback.
   const fallbackCoordinates: MapCoordinates =
@@ -167,6 +173,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
           fetchDetails
           onPress={(data, details = null) => {
             const location = details?.geometry.location;
+            const region = details?.address_components.find(a => a.types.includes('country'));
+
             if (location) {
               const newCoords = {
                 latitude: location.lat,
@@ -174,8 +182,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
               };
               setMapCoordinates(newCoords);
 
-              if (onLocationSelect) {
-                onLocationSelect(newCoords);
+              if (onLocationChange) {
+                onLocationChange({
+                  coordinates: newCoords,
+                  placeID: details.place_id,
+                  name: region?.long_name,
+                });
               }
             }
           }}

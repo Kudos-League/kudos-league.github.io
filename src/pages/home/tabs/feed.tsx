@@ -17,6 +17,7 @@ import PostsContainer from "shared/components/posts/PostsContainer";
 import globalStyles from "shared/styles";
 import { Ionicons } from '@expo/vector-icons';
 import { searchPosts } from "shared/api/actions";
+import CurrentEvent from "shared/components/events/CurrentEvent";
 
 export default function Feed() {
   const navigation = useNavigation();
@@ -160,6 +161,8 @@ export default function Feed() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <CurrentEvent />
+
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>Welcome to Kudos League!</Text>
         <TouchableOpacity 

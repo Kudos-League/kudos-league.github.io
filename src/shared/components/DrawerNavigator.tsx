@@ -12,6 +12,7 @@ import tailwind from "shared/components/tailwind";
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { getEndpointUrl } from 'shared/api/config';
 import Leaderboard from './Leaderboard';
+import CreateEvent from './events/CreateEvent';
 
 const Drawer = createDrawerNavigator();
 
@@ -134,6 +135,7 @@ function DrawerNavigator() {
       <Drawer.Screen name="Donate" component={Donate} />
       <Drawer.Screen name="Search" component={Search} />
       <Drawer.Screen name="Leaderboard" component={Leaderboard} />
+      <Drawer.Screen name="Create Event" component={CreateEvent} />
     </Drawer.Navigator>
   );
 }

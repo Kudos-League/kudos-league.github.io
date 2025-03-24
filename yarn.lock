@@ -6972,6 +6972,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dayjs@npm:^1.11.13":
+  version: 1.11.13
+  resolution: "dayjs@npm:1.11.13"
+  checksum: 10/7374d63ab179b8d909a95e74790def25c8986e329ae989840bacb8b1888be116d20e1c4eee75a69ea0dfbae13172efc50ef85619d304ee7ca3c01d5878b704f5
+  languageName: node
+  linkType: hard
+
 "debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.6.9":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
@@ -11341,6 +11348,7 @@ __metadata:
     concurrently: "npm:^9.1.0"
     cross-env: "npm:^7.0.3"
     crypto-browserify: "npm:^3.12.1"
+    dayjs: "npm:^1.11.13"
     dotenv: "npm:^16.4.7"
     dotenv-webpack: "npm:^8.1.0"
     eslint: "npm:^9.22.0"
@@ -11372,6 +11380,7 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-hook-form: "npm:^7.53.2"
     react-native: "npm:^0.77.0"
+    react-native-date-picker: "npm:^5.0.11"
     react-native-element-dropdown: "npm:^2.12.2"
     react-native-elements: "npm:^3.4.3"
     react-native-error-boundary: "npm:^1.2.7"
@@ -14593,6 +14602,16 @@ __metadata:
     react-native-svg:
       optional: true
   checksum: 10/778520da829b3360e2a233af59c5c10720cf315cc60eac43869865ac2ce21ab09bb4ef483838451e2921e686859129b5aba26d44173a9477a9fa2caea4e8f311
+  languageName: node
+  linkType: hard
+
+"react-native-date-picker@npm:^5.0.11":
+  version: 5.0.11
+  resolution: "react-native-date-picker@npm:5.0.11"
+  peerDependencies:
+    react: ">= 17.0.1"
+    react-native: ">= 0.64.3"
+  checksum: 10/d951e81065cbe4aab5b9d3e23abd389823f38704a63b5fdfe6f7ba4c779b4ce4fede408b76e5d2bc9e459301a85f164036c1c354cbc60b94daec4dfd375e8d3a
   languageName: node
   linkType: hard
 

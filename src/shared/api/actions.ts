@@ -1,11 +1,13 @@
 import { UserDTO } from "index";
 import { getEndpointUrl } from "./config";
 import {
+  CreateEventDTO,
   CreateHandshakeDTO,
   CreateMessageDTO,
   CreatePostDTO,
   CreateRewardOfferDTO,
   CreateUserDTO,
+  EventDTO,
   HandshakeDTO,
   PostDTO,
   RewardOfferDTO,
@@ -311,4 +313,48 @@ export async function fetchLeaderboard(
   });
 
   return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function createEvent(request: CreateEventDTO, token: string): Promise<{ data: EventDTO }> {
+  if (!token) throw Error("Invalid token");
+
+  return instance.post("/events", request, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/** @throws {AxiosError} */
+export async function deleteEvent(eventId: number, token: string): Promise<{ data: EventDTO }> {
+  if (!token) throw Error("Invalid token");
+
+  return instance.delete(`/events/${eventId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/** @throws {AxiosError} */
+export async function joinEvent(eventId: number, token: string): Promise<{ data: { success: boolean } }> {
+  if (!token) throw Error("Invalid token");
+
+  return instance.post(`/events/${eventId}/join`, null, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/** @throws {AxiosError} */
+export async function getEvents(): Promise<{ data: EventDTO[] }> {
+  return instance.get("/events");
+}
+
+/** @throws {AxiosError} */
+export async function getEventDetails(eventId: number): Promise<{ data: EventDTO }> {
+  return instance.get(`/events/${eventId}`);
 }

@@ -11,15 +11,15 @@ export type CreatePostDTO = {
 };
 
 export type LocationDTO = {
-  id: number;
-  name: string;
-  location: string;
-  regionID: string;
+  id?: number;
+  name?: string | null;
+  regionID: string | null;
+  global?: boolean;
 }
 
 export type PostDTO = {
   id: number;
-  senderId: string;
+  senderId: number;
   title: string;
   body: string;
   isRequest: boolean;
@@ -99,8 +99,8 @@ export type RewardOfferDTO = {
 };
 
 export type CreateHandshakeDTO = {
-  postID: string;
-  senderID: string;
+  postID: number;
+  senderID: number;
   receiverID: string;
   type: string;
   status: string;
@@ -124,3 +124,27 @@ export type ChannelDTO = {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type EventDTO = {
+  id: number;
+  title: string;
+  description: string;
+  isGlobal: boolean;
+  locationID: number | null;
+  startTime: string;
+  endTime: string;
+  creatorID: number | null;
+  createdAt: string;
+  updatedAt: string;
+  content?: string;
+};
+
+export type CreateEventDTO = {
+  title: string;
+  description: string;
+  locationID?: string | null;
+  startTime: Date;
+  endTime: Date;
+  content?: string;
+  location: LocationDTO | null;
+};
