@@ -21,6 +21,7 @@ import { getEndpointUrl } from "shared/api/config";
 import MessageList from "shared/components/messages/MessageList";
 import Chat from "shared/components/messages/Chat";
 import type { Post as PostType } from "index";
+import Logger from "../../../Logger";
 
 const Post = () => {
   const route = useRoute();
@@ -59,8 +60,10 @@ const Post = () => {
   const displayedOffers = postDetails?.rewardOffers || [];
 
   const handleAcceptHandshake = (index: number) => {
+    console.log(`Accepted handshake at index ${index}`);
     const updatedHandshakes = [...displayedHandshakes || []];
-    updatedHandshakes[index].status = "Accepted";
+    updatedHandshakes[index].status = "Pending";
+    startDMChat();
   };
 
   const startDMChat = async () => {
@@ -71,7 +74,7 @@ const Post = () => {
   
     try {
       if (user && postDetails?.sender) {
-        await createDMChannel(Number.parseInt(user.id), Number.parseInt(postDetails.sender.id), token);
+        await createDMChannel(user.id, Number.parseInt(postDetails.sender.id), token);
       }
       setIsChatOpen(true);
     } catch (error) {
@@ -93,7 +96,7 @@ const Post = () => {
     setCreatingHandshake(true);
   
     const handshakeData: CreateHandshakeDTO = {
-      postID: postDetails.id,
+      postID: parseInt(postDetails.id),
       senderID: user?.id || 0,
       receiverID: postDetails.sender?.id || "0",
       type: postDetails.type, // TODO: This might be redundant since the post has the type
@@ -111,7 +114,7 @@ const Post = () => {
   
       console.log("Handshake created successfully:", newHandshake);
 
-      await startDMChat();
+
     } catch (error) {
       console.error("Error creating handshake:", error);
     } finally {
@@ -193,10 +196,10 @@ const Post = () => {
             )}
           </View>
 
-          <View style={styles.descriptionContainer}>
+          <View style={styles.mapContainer}>
             <MapDisplay
               showAddressBar={false}
-              regionID={postDetails.location?.regionID}
+              regionID={postDetails.location?.regionID ?? undefined}
               exactLocation={false}
               width={300}
               height={300}
@@ -213,7 +216,7 @@ const Post = () => {
                   messages: [...(prevDetails?.messages || []), response],
                 }));
               }}
-              postID={postDetails.id}
+              postID={parseInt(postDetails.id)}
             />
           </View>
 
@@ -233,10 +236,11 @@ const Post = () => {
                       Status: {handshake.status}
                     </Text>
                     <Text style={styles.kudos}>
-                      Kudos: {handshake.sender?.kudos}
+                      User Kudos: {handshake.sender?.kudos}
                     </Text>
                   </View>
-                  {handshake.status === "Pending" && (
+                  {/* {Logger(`Handshake status: ${handshake.status}, Handshake statis is new? ${handshake.status === "new"}, User?.id = ${user?.id}, Sender?.id = ${postDetails.sender?.id}, Sender?idParsedInt = ${parseInt(postDetails.sender?.id)} user?.id===parseInt(postDetails.sender?.id) = ${user?.id === parseInt(postDetails.sender?.id)}`)} */}
+                  {(handshake.status === "new" && user?.id === parseInt(postDetails.sender?.id)) && ( //TODO: Does id checking work?hIs this secure?
                     <TouchableOpacity
                       onPress={() => handleAcceptHandshake(index)}
                       style={styles.acceptButton}
@@ -432,6 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   descriptionContainer: {
+    display: "flex",
     padding: 16,
     backgroundColor: "#f9f9f9",
     borderRadius: 10,
@@ -441,6 +446,20 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
+  mapContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+
   body: {
     fontSize: 16,
     lineHeight: 24,

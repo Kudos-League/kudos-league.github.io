@@ -13,6 +13,7 @@ import SignUp from "pages/login/tabs/sign-up";
 import Chat from "shared/components/messages/Chat";
 import PublicChat from "shared/components/messages/PublicChat";
 import { useAuth } from "shared/hooks/useAuth";
+import About from "pages/about";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -22,13 +23,13 @@ export default function Home() {
 
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }}>
-      <Tab.Screen
-        name="Feed"
-        options={getTabOptions("history")}
-        component={Feed}
-      />
       {isLoggedIn ? (
         <>
+          <Tab.Screen
+            name="Feed"
+            options={getTabOptions("history")}
+            component={Feed}
+          />
           <Tab.Screen
             name="Public Chats"
             options={getTabOptions("comments")}
@@ -47,6 +48,11 @@ export default function Home() {
         </>
       ) : (
         <>
+          <Tab.Screen
+            name="About"
+            options={getTabOptions("info-circle")}
+            component={About}
+          />
           <Tab.Screen
             name="Login"
             options={getTabOptions("sign-in")}

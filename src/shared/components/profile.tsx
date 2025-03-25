@@ -5,7 +5,7 @@ import { launchImageLibrary } from "react-native-image-picker";
 import { Tooltip } from "react-native-paper";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
-import { Feat, PostDTO } from "shared/api/types";
+import { Feat, HandshakeDTO, PostDTO } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
 import { getEndpointUrl } from "shared/api/config";
@@ -24,6 +24,7 @@ type ProfileProps = {
   loading: boolean;
   error: string | null;
   posts: PostDTO[];
+  handshakes: HandshakeDTO[];
 };
 
 interface PostCardProps {
@@ -53,12 +54,15 @@ const PostCard = ({ post }: PostCardProps) => {
     );
 };
 
+
+
 export default function Profile({
   user: targetUser,
   handleUpdate,
   loading,
   error,
-  posts
+  posts,
+  handshakes
 }: ProfileProps) {
   const { user: loggedInUser, isLoggedIn, token } = useAuth();
   const [editProfile, setEditProfile] = useState(false);
@@ -386,9 +390,16 @@ export default function Profile({
           >
               <Text style={styles.filterText}>ReQuests</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+              style={[styles.filterOption, filter === 'handshakes' && styles.filterSelected]}
+              onPress={() => {setFilter('handshakes')}}
+          >
+              <Text style={styles.filterText}>Handshakes</Text>
+          </TouchableOpacity>
       </View>
       
       {/* Posts Section */}
+      {filter !== 'handshakes' ? (
       <View style={styles.postsContainer}>
           {posts
               .filter(post => filter === 'all' || post.type === filter)
@@ -397,6 +408,15 @@ export default function Profile({
               ))
           }
       </View>
+      ): (
+        <View style={styles.postsContainer}>
+          {handshakes.map(handshake => (
+            // <HandshakeCard key={handshake.id} handshake={handshake} /> //TODO
+            <></>
+          ))
+          }
+        </View>
+      )}
 
       {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
     </ScrollView>

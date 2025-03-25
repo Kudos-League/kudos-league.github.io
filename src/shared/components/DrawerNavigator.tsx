@@ -109,6 +109,7 @@ function HeaderRight() {
 }
 
 function DrawerNavigator() {
+  const { isLoggedIn, user } = useAuth();
   return (
     <Drawer.Navigator
       initialRouteName="Home"
@@ -131,11 +132,15 @@ function DrawerNavigator() {
       })}
     >
       <Drawer.Screen name="Home" component={Home} options={{ headerTitle: " " }} />
-      <Drawer.Screen name="Create Post" component={CreatePost} />
-      <Drawer.Screen name="Donate" component={Donate} />
-      <Drawer.Screen name="Search" component={Search} />
-      <Drawer.Screen name="Leaderboard" component={Leaderboard} />
-      <Drawer.Screen name="Create Event" component={CreateEvent} />
+      {isLoggedIn && 
+      <>
+        <Drawer.Screen name="Create Post" component={CreatePost} />
+        <Drawer.Screen name="Donate" component={Donate} />
+        <Drawer.Screen name="Search" component={Search} />
+        <Drawer.Screen name="Leaderboard" component={Leaderboard} />
+        <Drawer.Screen name="Create Event" component={CreateEvent} />
+      </>
+      }
     </Drawer.Navigator>
   );
 }
