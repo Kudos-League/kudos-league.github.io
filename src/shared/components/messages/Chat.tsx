@@ -350,9 +350,6 @@ const Chat = ({ onClose }) => {
             </View>
             
             <View style={styles.chatHeaderRight}>
-              <IconButton icon="video" color="white" size={24} />
-              <IconButton icon="phone" color="white" size={24} />
-              <IconButton icon="dots-vertical" color="white" size={24} onPress={onClose} />
             </View>
           </View>
           
@@ -370,14 +367,6 @@ const Chat = ({ onClose }) => {
                   <Text style={styles.emptyChat}>
                     No messages yet. Say hello!
                   </Text>
-                }
-                ListHeaderComponent={
-                  <View style={styles.encryptionNotice}>
-                    <IconButton icon="lock" size={16} color="#888" />
-                    <Text style={styles.encryptionText}>
-                      Messages are end-to-end encrypted
-                    </Text>
-                  </View>
                 }
               />
             )}
