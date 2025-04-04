@@ -66,11 +66,6 @@ const Post = () => {
     console.log(`Accepted handshake at index ${index}`);
     const updatedHandshakes = [...displayedHandshakes || []];
     updatedHandshakes[index].status = "Pending";
-    
-    // Open chat with the handshake sender
-    if (displayedHandshakes && displayedHandshakes[index]?.sender?.id) {
-      startDMChat(displayedHandshakes[index]?.sender?.id);
-    }
   };
 
   const startDMChat = async (recipientId: string) => {
