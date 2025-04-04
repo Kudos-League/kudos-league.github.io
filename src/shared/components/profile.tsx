@@ -55,21 +55,42 @@ const PostCard = ({ post }: PostCardProps) => {
     );
 };
 
-const HandshakeCard = ({ handshake }: { handshake: HandshakeDTO }) => {
-    return (
-      <View style={styles.handshakeCard}>
-        <View style={styles.handshakeContent}></View>
+const HandshakeCard = ({ handshake, userId }: { handshake: HandshakeDTO; userId: string }) => {
+  const isSender = handshake.senderId.toString() === userId;
+  
+  return (
+    <View style={styles.handshakeCard}>
+      <View style={styles.handshakeContent}>
+        <View style={styles.handshakeHeader}>
+          <Text style={styles.handshakeTitle}>
+            {isSender ? 'You sent to' : 'Received from'}
+          </Text>
+        </View>
+        
+        <Text style={styles.postReference}>
+          Post ID: {handshake.postId}
+        </Text>
+        
+        <Text style={styles.userReference}>
+          {isSender 
+            ? `To: User ${handshake.recipientId}`
+            : `From: User ${handshake.senderId}`}
+        </Text>
+        
+        <Text style={styles.dateText}>
+          Created: {new Date(handshake.createdAt).toLocaleDateString()}
+        </Text>
       </View>
-            )
-}
-
+    </View>
+  );
+};
 export default function Profile({
   user: targetUser,
   handleUpdate,
   loading,
   error,
-  posts,
-  handshakes
+  posts = [],
+  handshakes = []
 }: ProfileProps) {
   const { user: loggedInUser, isLoggedIn, token } = useAuth();
   const [editProfile, setEditProfile] = useState(false);
@@ -310,13 +331,30 @@ export default function Profile({
               ))
           }
       </View>
-      ): (
-        <View style={styles.postsContainer}>
-          {handshakes.map(handshake => (
-            <HandshakeCard key={handshake.id} handshake={handshake} />
-          ))
-          }
-        </View>
+      ): handshakes.length > 0 ? (
+      <View style={styles.postsContainer}>
+        <Text style={styles.sectionTitle}>Sent Handshakes</Text>
+        {handshakes
+            .filter(h => h.senderId.toString() === targetUser.id.toString())
+            .map(handshake => (
+                <HandshakeCard key={handshake.id} handshake={handshake} userId={targetUser.id.toString()} />
+            ))
+        }
+        
+        <Text style={styles.sectionTitle}>Received Handshakes</Text>
+        {handshakes
+            .filter(h => h.recipientId.toString() === targetUser.id.toString())
+            .map(handshake => (
+                <HandshakeCard key={handshake.id} handshake={handshake} userId={targetUser.id.toString()} />
+            ))
+        }
+        
+        {handshakes.length === 0 && (
+            <Text style={styles.emptyMessage}>No handshakes yet</Text>
+        )}
+      </View>
+      ) : (
+        <Text style={styles.emptyMessage}>No handshakes available</Text>
       )}
 
       {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
@@ -514,6 +552,69 @@ const styles = StyleSheet.create({
       height: 40,
       borderRadius: 20,
   },
+  sectionTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#2D3748',
+  marginTop: 10,
+  marginBottom: 15,
+},
+emptyMessage: {
+  textAlign: 'center',
+  fontSize: 16,
+  color: '#718096',
+  marginTop: 20,
+  marginBottom: 20,
+},
+handshakeCard: {
+  backgroundColor: '#FFF',
+  borderRadius: 10,
+  marginBottom: 15,
+  padding: 15,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 2,
+},
+handshakeContent: {
+  width: '100%',
+},
+handshakeHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 10,
+},
+handshakeTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#2D3748',
+},
+statusPill: {
+  paddingVertical: 4,
+  paddingHorizontal: 10,
+  borderRadius: 15,
+},
+statusText: {
+  color: '#FFF',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+postReference: {
+  fontSize: 15,
+  color: '#4A5568',
+  marginBottom: 5,
+},
+userReference: {
+  fontSize: 14,
+  color: '#718096',
+  marginBottom: 5,
+},
+dateText: {
+  fontSize: 12,
+  color: '#A0AEC0',
+},
   // Edit profile styles
 
 

@@ -6,8 +6,9 @@ import globalStyles from "shared/styles";
 import { getUserDetails, getUserPosts, updateUser } from "shared/api/actions";
 import Profile from "shared/components/profile";
 import { useAuth } from "../../../shared/hooks/useAuth";
-import { PostDTO } from "shared/api/types";
+import { HandshakeDTO, PostDTO } from "shared/api/types";
 import { UserDTO } from "index";
+import { getEndpointUrl } from "shared/api/config"; // Make sure to import this
 
 type RootStackParamList = {
   UserProfile: { id: string };
@@ -21,9 +22,47 @@ export default function User() {
 
   const [user, setUser] = useState<UserDTO | null>(null);
   const [posts, setPosts] = useState<PostDTO[]>([]);
+  const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]); 
   const [formState, setFormState] = useState<Partial<UserDTO>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Function to fetch handshakes
+  const fetchHandshakes = async (userId: string, authToken: string) => {
+    try {
+      // Fetch handshakes where user is the sender
+      const sentResponse = await fetch(`${getEndpointUrl()}/handshakes/by-sender/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+      
+      if (!sentResponse.ok) {
+        throw new Error(`Failed to fetch sent handshakes: ${sentResponse.statusText}`);
+      }
+      
+      const sentHandshakes = await sentResponse.json();
+      
+      // Fetch handshakes where user is the recipient
+      const receivedResponse = await fetch(`${getEndpointUrl()}/handshakes/by-receiver/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+      
+      if (!receivedResponse.ok) {
+        throw new Error(`Failed to fetch received handshakes: ${receivedResponse.statusText}`);
+      }
+      
+      const receivedHandshakes = await receivedResponse.json();
+      
+      // Combine both arrays and set the state
+      setHandshakes([...sentHandshakes, ...receivedHandshakes]);
+    } catch (error) {
+      console.error('Error fetching handshakes:', error);
+      // You can decide if you want to set an error state here or handle silently
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -38,24 +77,33 @@ export default function User() {
           setUser(userProfile);
           setFormState(userProfile || {});
           if (!posts?.length) {
-            const posts = await getUserPosts(targetUserID, authState?.token!);
+            const posts = await getUserPosts(targetUserID.toString(), authState?.token!);
             setPosts(posts);
+          }
+          
+          // Fetch handshakes for the logged-in user
+          if (authState?.token) {
+            await fetchHandshakes(targetUserID.toString(), authState.token);
           }
         } else {
           if (!authState?.token) {
             throw new Error("No token available. Please log in.");
           }
           const fetchedUser = await getUserDetails(
-            targetUserID,
+            targetUserID.toString(),
             authState.token
           );
           setUser(fetchedUser);
           setFormState(fetchedUser);
-          const posts = await getUserPosts(targetUserID, authState.token);
+          const posts = await getUserPosts(targetUserID.toString(), authState.token);
           setPosts(posts);
+          
+          // Fetch handshakes for the viewed user
+          await fetchHandshakes(targetUserID.toString(), authState.token);
         }
       } catch (e) {
         setError("Failed to load user details.");
+        console.error(e);
       }
     };
 
@@ -95,6 +143,7 @@ export default function User() {
         loading={loading}
         error={error}
         posts={posts}
+        handshakes={handshakes}
       />
     </View>
   );

@@ -107,11 +107,13 @@ export type CreateHandshakeDTO = {
 };
 
 export type HandshakeDTO = {
+  receiverID: any;
   id: number;
   postId: number;
   offerId: number;
   senderId: number;
   recipientId: number;
+  status: string;
   createdAt: Date;
   updatedAt: Date;
 };
