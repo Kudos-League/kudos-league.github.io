@@ -22,6 +22,7 @@ import MessageList from "shared/components/messages/MessageList";
 import Chat from "shared/components/messages/Chat";
 import type { Post as PostType } from "index";
 import Logger from "../../../Logger";
+import ChatModal from "shared/components/ChatModal";
 
 const Post = () => {
   const route = useRoute();
@@ -113,7 +114,7 @@ const Post = () => {
       }));
   
       console.log("Handshake created successfully:", newHandshake);
-
+      startDMChat();
 
     } catch (error) {
       console.error("Error creating handshake:", error);
@@ -320,7 +321,9 @@ const Post = () => {
           </Modal>
         </View>
       )}
-      {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
+      {isChatOpen && (
+        <ChatModal isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} recipientID={postDetails?.sender?.id}/>
+      )}
     </ScrollView>
   );
 };
