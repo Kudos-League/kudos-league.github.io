@@ -12,10 +12,10 @@ import {
 } from "react-native";
 import { createDMChannel, createHandshake, getPostDetails } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
-import { CreateHandshakeDTO, PostDTO } from "shared/api/types";
+import { ChannelDTO, CreateHandshakeDTO, PostDTO } from "shared/api/types";
 import { useAppSelector } from "redux_store/hooks";
 import AvatarComponent from "shared/components/Avatar";
-import {useAuth} from "shared/hooks/useAuth";
+import { useAuth } from "shared/hooks/useAuth";
 import MapDisplay from "shared/components/Map";
 import { getEndpointUrl } from "shared/api/config";
 import MessageList from "shared/components/messages/MessageList";
@@ -37,6 +37,8 @@ const Post = () => {
   const [showAllHandshakes, setShowAllHandshakes] = useState(false);
   const [creatingHandshake, setCreatingHandshake] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [pendingRecipientID, setPendingRecipientID] = useState<string | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
 
   const token = useAppSelector((state) => state.auth.token);
 
@@ -64,26 +66,31 @@ const Post = () => {
     console.log(`Accepted handshake at index ${index}`);
     const updatedHandshakes = [...displayedHandshakes || []];
     updatedHandshakes[index].status = "Pending";
-    startDMChat();
+    
+    // Open chat with the handshake sender
+    if (displayedHandshakes && displayedHandshakes[index]?.sender?.id) {
+      startDMChat(displayedHandshakes[index]?.sender?.id);
+    }
   };
 
-  const startDMChat = async () => {
+  const startDMChat = async (recipientId: string) => {
     if (!token) {
       console.error("No token found");
       return;
     }
   
     try {
-      if (user && postDetails?.sender) {
-        await createDMChannel(user.id, Number.parseInt(postDetails.sender.id), token);
+      if (user && recipientId) {
+        // Don't create a DM channel yet, just open the chat modal
+        setIsChatOpen(true);
+        setPendingRecipientID(recipientId);
       }
-      setIsChatOpen(true);
     } catch (error) {
-      console.error("Error creating DM channel:", error);
+      console.error("Error preparing DM chat:", error);
     }
   };
-     
-  const handleSubmitHandshake = async () => {
+
+  const handleSubmitHandshake = () => {
     if (!token) {
       console.error("No token. Please register or log in.");
       return;
@@ -94,17 +101,29 @@ const Post = () => {
       return;
     }
   
+    // Don't create handshake yet, just open chat
+    startDMChat(postDetails.sender?.id || "0");
+  };
+
+  // This function will be called when a channel is created after sending a message
+  const handleChannelCreated = async (channel: ChannelDTO) => {
+    if (!token || !postDetails || !pendingRecipientID) {
+      console.error("Missing required data to create handshake");
+      return;
+    }
+  
     setCreatingHandshake(true);
-  
-    const handshakeData: CreateHandshakeDTO = {
-      postID: parseInt(postDetails.id),
-      senderID: user?.id || 0,
-      receiverID: postDetails.sender?.id || "0",
-      type: postDetails.type, // TODO: This might be redundant since the post has the type
-      status: 'new' // TODO: Should be optional
-    };
-  
+    
     try {
+      // Now create the handshake after successful message and channel creation
+      const handshakeData: CreateHandshakeDTO = {
+        postID: parseInt(postDetails.id),
+        senderID: user?.id || 0,
+        receiverID: pendingRecipientID,
+        type: postDetails.type,
+        status: 'new'
+      };
+  
       const response = await createHandshake(handshakeData, token);
       const newHandshake = response.data;
   
@@ -113,9 +132,11 @@ const Post = () => {
         handshakes: [...(prevDetails?.handshakes || []), newHandshake],
       }));
   
-      console.log("Handshake created successfully:", newHandshake);
-      startDMChat();
-
+      console.log("Handshake created successfully after message sent:", newHandshake);
+      
+      // Clear the pending recipient
+      setPendingRecipientID(null);
+      
     } catch (error) {
       console.error("Error creating handshake:", error);
     } finally {
@@ -240,8 +261,7 @@ const Post = () => {
                       User Kudos: {handshake.sender?.kudos}
                     </Text>
                   </View>
-                  {/* {Logger(`Handshake status: ${handshake.status}, Handshake statis is new? ${handshake.status === "new"}, User?.id = ${user?.id}, Sender?.id = ${postDetails.sender?.id}, Sender?idParsedInt = ${parseInt(postDetails.sender?.id)} user?.id===parseInt(postDetails.sender?.id) = ${user?.id === parseInt(postDetails.sender?.id)}`)} */}
-                  {(handshake.status === "new" && user?.id === parseInt(postDetails.sender?.id)) && ( //TODO: Does id checking work?hIs this secure?
+                  {(handshake.status === "new" && user?.id === parseInt(postDetails.sender?.id)) && (
                     <TouchableOpacity
                       onPress={() => handleAcceptHandshake(index)}
                       style={styles.acceptButton}
@@ -322,7 +342,13 @@ const Post = () => {
         </View>
       )}
       {isChatOpen && (
-        <ChatModal isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} recipientID={postDetails?.sender?.id}/>
+        <ChatModal 
+          isChatOpen={isChatOpen} 
+          setIsChatOpen={setIsChatOpen} 
+          recipientID={pendingRecipientID || ""} 
+          selectedChannel={selectedChannel}
+          onChannelCreated={handleChannelCreated}
+        />
       )}
     </ScrollView>
   );

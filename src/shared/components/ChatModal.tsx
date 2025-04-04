@@ -6,10 +6,12 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  FlatList
+  FlatList,
+  ActivityIndicator
 } from 'react-native';
+import { IconButton } from 'react-native-paper';
 import { useAppSelector } from 'redux_store/hooks';
-import { sendDirectMessage } from 'shared/api/actions';
+import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actions';
 import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
 import { useWebSocket } from 'shared/hooks/useWebSocket';
@@ -25,21 +27,47 @@ interface ChatModalProps {
   setIsChatOpen: (open: boolean) => void;
   recipientID?: string;
   selectedChannel?: ChannelDTO | null;
+  onChannelCreated?: (channel: ChannelDTO) => void; // Optional callback when a new channel is created
 }
 
 const ChatModal: React.FC<ChatModalProps> = ({ 
   isChatOpen, 
   setIsChatOpen, 
   recipientID = "0",
-  selectedChannel
+  selectedChannel: initialSelectedChannel,
+  onChannelCreated
 }) => {
   const [messageInput, setMessageInput] = useState('');
   const [messages, setMessages] = useState<MessageDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(initialSelectedChannel || null);
   
   const flatListRef = useRef<FlatList>(null);
   const token = useAppSelector((state) => state.auth.token);
   const { user } = useAuth();
   const { joinChannel, leaveChannel } = useWebSocket(token, messages, setMessages);
+
+  // Only fetch existing channel when modal opens, don't create one yet
+  useEffect(() => {
+    if (isChatOpen && recipientID && recipientID !== "0") {
+      fetchExistingChannel(recipientID);
+    } else if (isChatOpen && initialSelectedChannel) {
+      setSelectedChannel(initialSelectedChannel);
+      fetchMessages(initialSelectedChannel.id);
+    }
+  }, [isChatOpen, recipientID, initialSelectedChannel]);
+
+  // Join channel only when it's a real channel (not pending)
+  useEffect(() => {
+    if (selectedChannel && selectedChannel.id !== 'pending') {
+      joinChannel(selectedChannel.id);
+      
+      // Clean up on unmount or channel change
+      return () => {
+        leaveChannel(selectedChannel.id);
+      };
+    }
+  }, [selectedChannel]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -48,42 +76,202 @@ const ChatModal: React.FC<ChatModalProps> = ({
     }
   }, [messages]);
 
-  // Send message in the selected channel
+  // Only fetch existing DM channel with recipient, don't create one yet
+  const fetchExistingChannel = async (recipientId: string) => {
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Try to find an existing DM channel with this user
+      const userDetails = await getUserDetails('me', token, { dmChannels: true });
+      
+      let channel = userDetails.dmChannels.find(ch => 
+        ch.users.some(u => u.id === recipientId)
+      );
+      
+      // If an existing channel is found, load its messages
+      if (channel) {
+        // Find the other user in the channel
+        const otherUser = channel.users.find(u => u.id !== user.id);
+        if (otherUser) {
+          // Add otherUser property to match the expected format
+          channel = {
+            ...channel,
+            otherUser
+          };
+        }
+        
+        setSelectedChannel(channel);
+        fetchMessages(channel.id);
+      } else {
+        // Just set recipient ID and wait for first message to create channel
+        // We're not creating a channel yet, just preparing for one to be created
+        setSelectedChannel({
+          id: 'pending', // Temporary ID until channel is created
+          users: [
+            user,
+            { id: recipientId } // We don't have full user details yet
+          ],
+          lastMessage: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as ChannelDTO);
+        
+        // No channel to fetch messages from yet
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching channel:', error);
+      setLoading(false);
+    }
+  };
+
+  // Fetch messages for a channel
+  const fetchMessages = async (channelId: string) => {
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    setLoading(true);
+    
+    try {
+      const messagesData = await getMessages(channelId, token);
+      setMessages(messagesData);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Validate message before sending
+  const validateMessage = (message: string): boolean => {
+    // Basic validation - check if the message is not just whitespace
+    if (!message.trim()) return false;
+    
+    // You can add more validation rules here if needed
+    // For example, check minimum/maximum length
+    if (message.trim().length < 1) return false;
+    if (message.trim().length > 1000) return false;
+    
+    // Check for inappropriate content, spam patterns, etc.
+    // const containsSpam = /buy now|click here/i.test(message);
+    // if (containsSpam) return false;
+    
+    return true;
+  };
+
+  // Send message in the selected channel or create a new one
   const sendMessage = async () => {
     if (!token) {
       throw new Error('No token found');
     }
-  
-    if (!messageInput.trim() || !selectedChannel) return;
-  
+
+    // Validate the message before sending
+    if (!validateMessage(messageInput)) {
+      // Handle invalid message (you could show a warning to the user)
+      console.warn("Message validation failed");
+      return;
+    }
+
     try {
-      // Get the other user in the DM channel (excluding the logged-in user)
-      const receiver = selectedChannel.users.find(u => u.id !== user.id);
-      if (!receiver) {
-        throw new Error('No valid recipient found');
-      }
-  
-      const newMessage: CreateMessageDTO = {
-        content: messageInput,
-      };
-  
-      const response = await sendDirectMessage(receiver.id, newMessage, token);
-      // Adding user info to prevent blank username
-      const messageWithUser = {
-        ...response,
-        author: {
-          ...response.author,
-          username: response.author?.username || user.username,
-          id: response.author?.id || user.id
-        },
-        status: 'sent'
-      };
+      setLoading(true);
       
-      setMessages([...messages, messageWithUser]);
+      if (!selectedChannel || selectedChannel.id === 'pending') {
+        // We're creating a new channel with the first message
+        if (!recipientID || recipientID === "0") {
+          throw new Error('No valid recipient found');
+        }
+        
+        const newMessage: CreateMessageDTO = {
+          content: messageInput,
+        };
+        
+        // This will create a new channel and send the first message
+        const response = await sendDirectMessage(recipientID, newMessage, token);
+        
+        // Update our selected channel with the new real channel
+        if (response.channel) {
+          const newChannel = response.channel;
+          
+          // Find the other user in the channel
+          const otherUser = newChannel.users.find(u => u.id !== user.id);
+          if (otherUser) {
+            // Add otherUser property to match the expected format
+            newChannel.otherUser = otherUser;
+          }
+          
+          setSelectedChannel(newChannel);
+          joinChannel(newChannel.id); // Only join after a message is sent and channel created
+          
+          // Notify parent component that a new channel was created
+          if (onChannelCreated) {
+            onChannelCreated(newChannel);
+          }
+        }
+        
+        // Add the message to our list
+        const messageWithUser = {
+          ...response,
+          author: {
+            ...response.author,
+            username: response.author?.username || user.username,
+            id: response.author?.id || user.id
+          },
+          status: 'sent'
+        };
+        
+        setMessages([messageWithUser]);
+      } else {
+        // Normal case - channel already exists
+        const receiver = selectedChannel.users.find(u => u.id !== user.id);
+        if (!receiver) {
+          throw new Error('No valid recipient found');
+        }
+
+        const newMessage: CreateMessageDTO = {
+          content: messageInput,
+        };
+
+        const response = await sendDirectMessage(receiver.id, newMessage, token);
+        // Adding user info to prevent blank username
+        const messageWithUser = {
+          ...response,
+          author: {
+            ...response.author,
+            username: response.author?.username || user.username,
+            id: response.author?.id || user.id
+          },
+          status: 'sent'
+        };
+        
+        setMessages([...messages, messageWithUser]);
+      }
+      
       setMessageInput("");
     } catch (error) {
       console.error("Error sending message:", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Message status component
+  const MessageStatus = ({ status }: { status: 'sent' | 'delivered' | 'read' }) => {
+    let color = '#999';
+    let name = 'check';
+    
+    if (status === 'delivered') {
+      name = 'check-all';
+    } else if (status === 'read') {
+      name = 'check-all';
+      color = '#34B7F1';
+    }
+    
+    return <IconButton icon={name} size={12} color={color} />;
   };
 
   // Render message item
@@ -106,21 +294,6 @@ const ChatModal: React.FC<ChatModalProps> = ({
         </View>
       </View>
     );
-  };
-
-  // Message status component
-  const MessageStatus = ({ status }: { status: 'sent' | 'delivered' | 'read' }) => {
-    let color = '#999';
-    let name = 'check';
-    
-    if (status === 'delivered') {
-      name = 'check-all';
-    } else if (status === 'read') {
-      name = 'check-all';
-      color = '#34B7F1';
-    }
-    
-    return <IconButton icon={name} size={12} color={color} />;
   };
 
   return (
@@ -168,10 +341,12 @@ const ChatModal: React.FC<ChatModalProps> = ({
           </Text>
           <TouchableOpacity onPress={() => {
             // Leave the channel when closing
-            if (selectedChannel) {
+            if (selectedChannel && selectedChannel.id !== 'pending') {
               leaveChannel(selectedChannel.id);
             }
             setIsChatOpen(false);
+            setSelectedChannel(null);
+            setMessages([]);
           }}>
             <Text style={{ color: 'red' }}>Close</Text>
           </TouchableOpacity>
@@ -188,20 +363,35 @@ const ChatModal: React.FC<ChatModalProps> = ({
         </Text>
 
         {/* Message List */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item, index) => item.id || index.toString()}
-          style={{ 
-            maxHeight: 200, 
-            marginBottom: 15,
-            borderWidth: 1,
-            borderColor: '#E0E0E0',
-            padding: 10,
-            borderRadius: 5
-          }}
-        />
+        {loading ? (
+          <View style={{
+            height: 200,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <ActivityIndicator size="large" color="#007BFF" />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessageItem}
+            keyExtractor={(item, index) => item.id || index.toString()}
+            style={{ 
+              height: 200, 
+              marginBottom: 15,
+              borderWidth: 1,
+              borderColor: '#E0E0E0',
+              padding: 10,
+              borderRadius: 5
+            }}
+            ListEmptyComponent={
+              <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>
+                No messages yet. Start the conversation!
+              </Text>
+            }
+          />
+        )}
 
         {/* Message Input */}
         <View style={{
@@ -225,13 +415,18 @@ const ChatModal: React.FC<ChatModalProps> = ({
           />
           <TouchableOpacity 
             onPress={sendMessage}
+            disabled={!validateMessage(messageInput) || loading}
             style={{
-              backgroundColor: '#007BFF',
+              backgroundColor: validateMessage(messageInput) && !loading ? '#007BFF' : '#CCCCCC',
               padding: 10,
               borderRadius: 5
             }}
           >
-            <Text style={{ color: 'white' }}>Send</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: 'white' }}>Send</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -262,7 +457,7 @@ const styles = {
   },
   messageFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: 5,
   },
