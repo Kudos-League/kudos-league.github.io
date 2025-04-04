@@ -11,6 +11,7 @@ import { useAuth } from "shared/hooks/useAuth";
 import { getEndpointUrl } from "shared/api/config";
 import { createDMChannel } from "shared/api/actions";
 import { UserDTO } from "index";
+import EditProfile from "./edit-profile";
 
 type ProfileFormValues = {
   email: string;
@@ -54,7 +55,13 @@ const PostCard = ({ post }: PostCardProps) => {
     );
 };
 
-
+const HandshakeCard = ({ handshake }: { handshake: HandshakeDTO }) => {
+    return (
+      <View style={styles.handshakeCard}>
+        <View style={styles.handshakeContent}></View>
+      </View>
+            )
+}
 
 export default function Profile({
   user: targetUser,
@@ -128,28 +135,7 @@ export default function Profile({
     }
   };
 
-  const pickAvatar = () => {
-    const options = {
-      mediaType: "photo",
-      maxWidth: 300,
-      maxHeight: 300,
-      quality: 0.7,
-    };
-  
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel) {
-        console.log("User cancelled image picker");
-      } else if (response.errorMessage) {
-        console.error("ImagePicker Error:", response.errorMessage);
-      } else if (response.assets && response.assets.length > 0) {
-        const selectedImage = response.assets[0].uri;
-        form.setValue("avatar", [{ uri: selectedImage }]);
-        setFeedbackMessage("Image selected");
-        setShowFeedback(true);
-        setTimeout(() => setShowFeedback(false), 2000);
-      }
-    });
-  };  
+ 
       
   const getUserTitle = () => {
       if (targetUser.kudos > 10000) {
@@ -224,95 +210,11 @@ export default function Profile({
     </View>
   );
 
-  if (editProfile) {
+  {if (editProfile) {
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.profileHeader}>
-          {/* Back button */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => setEditProfile(false)}
-          >
-            <Text style={styles.backButtonText}>← Back to Profile</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.editTitle}>Edit Profile</Text>
-          
-          {targetUser.avatar && 
-            <Image 
-              source={{ uri: form.watch("avatar")?.length > 0 
-                ? form.watch("avatar")[0].uri 
-                : targetUser.avatar }} 
-              style={styles.profilePicture} 
-            />
-          }
-          
-          <Text style={styles.userName}>{targetUser.username}</Text>
-          <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
-          
-          {/* Feedback message */}
-          {showFeedback && (
-            <View style={styles.feedbackContainer}>
-              <Text style={styles.feedbackText}>{feedbackMessage}</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.editFormContainer}>
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email Address</Text>
-            <Input
-              name="email"
-              form={form}
-              registerOptions={{ required: true }}
-              placeholder="Enter your email"
-            />
-          </View>
-          
-          {/* Avatar Upload & Preview */}
-          <View style={styles.avatarEditContainer}>
-            <Text style={styles.inputLabel}>Profile Picture</Text>
-            
-            {/* Upload Button */}
-            <TouchableOpacity style={styles.uploadButton} onPress={pickAvatar}>
-              <Text style={styles.uploadButtonText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-            
-            <Text style={styles.orText}>OR</Text>
-            
-            {/* URL-based Avatar Input */}
-            <Input
-              name="avatarUrl"
-              form={form}
-              placeholder="Paste an image URL"
-            />
-          </View>
-          
-          {/* Update Profile Button */}
-          <TouchableOpacity
-            style={styles.updateButton}
-            onPress={form.handleSubmit(onSubmit)}
-            disabled={loading}
-          >
-            <Text style={styles.updateButtonText}>
-              {loading ? "Updating..." : "Save Changes"}
-            </Text>
-          </TouchableOpacity>
-          
-          {error && <Text style={styles.errorText}>{error}</Text>}
-          
-          {/* Cancel Button */}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setEditProfile(false)}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    );
-  }  
+      <EditProfile form={form} targetUser={targetUser} setEditProfile={setEditProfile} showFeedback={showFeedback} setFeedbackMessage={setFeedbackMessage} feedbackMessage={feedbackMessage} setShowFeedback={setShowFeedback} loading={loading} onSubmit={onSubmit} error={error}/>
+    )
+  }} 
   
   return (
     <ScrollView style={styles.container}>
@@ -411,8 +313,7 @@ export default function Profile({
       ): (
         <View style={styles.postsContainer}>
           {handshakes.map(handshake => (
-            // <HandshakeCard key={handshake.id} handshake={handshake} /> //TODO
-            <></>
+            <HandshakeCard key={handshake.id} handshake={handshake} />
           ))
           }
         </View>
@@ -424,38 +325,12 @@ export default function Profile({
 }
 
 const styles = StyleSheet.create({
-  container: {
-      flex: 1,
-      backgroundColor: "#f8f9fa",
-  },
-  profileHeader: {
-      alignItems: "center",
-      padding: 20,
-      position: "relative",
-  },
-  profilePicture: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      marginBottom: 5,
-  },
   userTitle: {
       fontSize: 14,
       color: "#666",
       marginBottom: 5,
   },
-  userName: {
-      fontSize: 32,
-      fontWeight: "bold",
-      color: "#2D3748",
-      marginBottom: 5,
-  },
-  userKudos: {
-      fontSize: 18,
-      color: "#718096",
-      marginBottom: 15,
-  },
-  actionButtons: {
+    actionButtons: {
       flexDirection: "row",
       marginBottom: 20,
       width: "80%",
@@ -640,108 +515,6 @@ const styles = StyleSheet.create({
       borderRadius: 20,
   },
   // Edit profile styles
-  backButton: {
-      position: "absolute",
-      top: 10,
-      left: 10,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      backgroundColor: "#E2E8F0",
-      borderRadius: 20,
-      zIndex: 1,
-  },
-  backButtonText: {
-      color: "#2D3748",
-      fontWeight: "600",
-  },
-  editTitle: {
-      fontSize: 24,
-      fontWeight: "bold",
-      color: "#2D3748",
-      marginBottom: 20,
-  },
-  editFormContainer: {
-      backgroundColor: "#fff",
-      borderRadius: 10,
-      paddingHorizontal: 20,
-      paddingVertical: 25,
-      marginHorizontal: 15,
-      marginBottom: 20,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
-  },
-  inputContainer: {
-      marginBottom: 20,
-  },
-  inputLabel: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: "#4A5568",
-      marginBottom: 8,
-  },
-  avatarEditContainer: {
-      marginBottom: 25,
-  },
-  uploadButton: {
-      backgroundColor: "#3182CE",
-      paddingVertical: 12,
-      borderRadius: 8,
-      alignItems: "center",
-      marginTop: 10,
-      marginBottom: 15,
-  },
-  uploadButtonText: {
-      color: "#FFF",
-      fontSize: 16,
-      fontWeight: "600",
-  },
-  orText: {
-      fontSize: 16,
-      color: "#718096",
-      textAlign: "center",
-      marginVertical: 10,
-  },
-  updateButton: {
-      backgroundColor: "#38A169",
-      paddingVertical: 14,
-      borderRadius: 8,
-      alignItems: "center",
-      marginBottom: 15,
-  },
-  updateButtonText: {
-      color: "#FFF",
-      fontSize: 16,
-      fontWeight: "bold",
-  },
-  cancelButton: {
-      borderWidth: 1,
-      borderColor: "#E53E3E",
-      paddingVertical: 14,
-      borderRadius: 8,
-      alignItems: "center",
-  },
-  cancelButtonText: {
-      color: "#E53E3E",
-      fontSize: 16,
-      fontWeight: "600",
-  },
-  errorText: {
-      color: "#E53E3E",
-      marginVertical: 10,
-      textAlign: "center",
-  },
-  feedbackContainer: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      backgroundColor: "#C6F6D5",
-      borderRadius: 20,
-      marginTop: 10,
-  },
-  feedbackText: {
-      color: "#2F855A",
-      fontWeight: "600",
-  },
+
+
 });
