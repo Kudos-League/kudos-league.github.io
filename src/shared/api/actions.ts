@@ -133,6 +133,26 @@ export async function getUserPosts(id: string = "me", token: string) {
 }
 
 /** @throws {AxiosError} */
+export async function getUserHandshakes(id: string = "me", token: string) {
+  // Fetch sent handshakes
+  const sentResponse = await instance.get(`/handshakes/by-sender/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  // Fetch received handshakes
+  const receivedResponse = await instance.get(`/handshakes/by-receiver/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  // Combine both arrays
+  return [...sentResponse.data, ...receivedResponse.data];
+}
+
+/** @throws {AxiosError} */
 export async function updateUser(
   request: Partial<UserDTO>,
   id: string = "me",

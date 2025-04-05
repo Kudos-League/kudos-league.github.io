@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 
 import globalStyles from "shared/styles";
-import { getUserDetails, getUserPosts, updateUser } from "shared/api/actions";
+import { getUserDetails, getUserHandshakes, getUserPosts, updateUser } from "shared/api/actions";
 import Profile from "shared/components/profile";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { HandshakeDTO, PostDTO } from "shared/api/types";
@@ -27,45 +27,10 @@ export default function User() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to fetch handshakes
-  const fetchHandshakes = async (userId: string, authToken: string) => {
-    try {
-      // Fetch handshakes where user is the sender
-      const sentResponse = await fetch(`${getEndpointUrl()}/handshakes/by-sender/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      });
-      
-      if (!sentResponse.ok) {
-        throw new Error(`Failed to fetch sent handshakes: ${sentResponse.statusText}`);
-      }
-      
-      const sentHandshakes = await sentResponse.json();
-      
-      // Fetch handshakes where user is the recipient
-      const receivedResponse = await fetch(`${getEndpointUrl()}/handshakes/by-receiver/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      });
-      
-      if (!receivedResponse.ok) {
-        throw new Error(`Failed to fetch received handshakes: ${receivedResponse.statusText}`);
-      }
-      
-      const receivedHandshakes = await receivedResponse.json();
-      
-      // Combine both arrays and set the state
-      setHandshakes([...sentHandshakes, ...receivedHandshakes]);
-    } catch (error) {
-      console.error('Error fetching handshakes:', error);
-      // You can decide if you want to set an error state here or handle silently
-    }
-  };
-
   useEffect(() => {
+
     const fetchUser = async () => {
+
       setError(null);
       if (!targetUserID) {
         setError("Missing user ID to fetch details.");
@@ -83,7 +48,7 @@ export default function User() {
           
           // Fetch handshakes for the logged-in user
           if (authState?.token) {
-            await fetchHandshakes(targetUserID.toString(), authState.token);
+            await getUserHandshakes(targetUserID.toString(), authState.token);
           }
         } else {
           if (!authState?.token) {
@@ -97,9 +62,9 @@ export default function User() {
           setFormState(fetchedUser);
           const posts = await getUserPosts(targetUserID.toString(), authState.token);
           setPosts(posts);
-          
-          // Fetch handshakes for the viewed user
-          await fetchHandshakes(targetUserID.toString(), authState.token);
+
+          const handshakes = await getUserHandshakes(targetUserID.toString(), authState.token);
+          setHandshakes(handshakes);
         }
       } catch (e) {
         setError("Failed to load user details.");
