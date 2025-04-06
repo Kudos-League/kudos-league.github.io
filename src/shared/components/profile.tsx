@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
+import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useForm } from "react-hook-form";
 import { launchImageLibrary } from "react-native-image-picker";
 import { Tooltip } from "react-native-paper";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
-import { Feat, HandshakeDTO, PostDTO } from "shared/api/types";
+import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
 import { getEndpointUrl } from "shared/api/config";
-import { createDMChannel } from "shared/api/actions";
+import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
 
@@ -55,8 +55,112 @@ const PostCard = ({ post }: PostCardProps) => {
     );
 };
 
-const HandshakeCard = ({ handshake, userId }: { handshake: HandshakeDTO; userId: string }) => {
-  const isSender = handshake.senderId.toString() === userId;
+const Logger = (message: any) => {
+    console.log(message);
+    return null
+}
+
+const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; userId: string; token: string }) => {
+  const isSender = handshake.senderID.toString() === userId;
+  const [kudosValue, setKudosValue] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState(handshake.status);
+  const [processing, setProcessing] = useState(false);
+  
+  const handleAcceptHandshake = async () => {
+    if (status !== 'new' || processing) return;
+    
+    setProcessing(true);
+    
+    try {
+      await updateHandshake(
+        handshake.id,
+        { status: 'accepted' },
+        token
+      );
+      
+      setStatus('accepted');
+      Alert.alert("Success", "Handshake accepted successfully");
+    } catch (error) {
+      console.error("Error accepting handshake:", error);
+      Alert.alert("Error", "Failed to accept handshake. Please try again.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+  
+  const handleSubmitKudos = async () => {
+    if (!kudosValue || isNaN(Number(kudosValue))) {
+      setError("Please enter a valid kudos value");
+      return;
+    }
+    
+    setSubmitting(true);
+    setError(null);
+    
+    try {
+      // Create a reward offer with the kudos value
+      const rewardOfferData: CreateRewardOfferDTO = {
+        postID: handshake.postID,
+        amount: Number(kudosValue),
+        currency: "kudos",
+        kudos: Number(kudosValue)
+      };
+      
+      await createRewardOffer(rewardOfferData, token);
+      
+      // Update handshake status to completed
+      await updateHandshake(
+        handshake.id,
+        { status: 'completed' },
+        token
+      );
+      
+      // Update local status
+      setStatus('completed');
+      
+      // Reset the input field
+      setKudosValue("");
+      
+      // Show success message
+      Alert.alert("Success", "Kudos value submitted successfully");
+    } catch (error) {
+      console.error("Error submitting kudos:", error);
+      setError("Failed to submit kudos. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  // Button style and text based on status
+  const getButtonStyle = () => {
+    switch (status) {
+      case 'new':
+        return processing ? styles.pendingButton : styles.acceptButton;
+      case 'accepted':
+        return styles.acceptedButton;
+      case 'completed':
+        return styles.completedButton;
+      default:
+        return styles.acceptButton;
+    }
+  };
+  
+  const getButtonText = () => {
+    if (processing) return "Pending...";
+    
+    switch (status) {
+      case 'new':
+        return "Accept";
+      case 'accepted':
+        return "Accepted";
+      case 'completed':
+        return "Completed";
+      default:
+        return "Accept";
+    }
+  };
   
   return (
     <View style={styles.handshakeCard}>
@@ -65,25 +169,80 @@ const HandshakeCard = ({ handshake, userId }: { handshake: HandshakeDTO; userId:
           <Text style={styles.handshakeTitle}>
             {isSender ? 'You sent to' : 'Received from'}
           </Text>
+          <View style={[
+            styles.statusPill,
+            status === 'new' ? styles.statusNew : 
+            status === 'accepted' ? styles.statusAccepted : 
+            styles.statusCompleted
+          ]}>
+            <Text style={styles.statusText}>{status}</Text>
+          </View>
         </View>
         
         <Text style={styles.postReference}>
-          Post ID: {handshake.postId}
+          Post Title: {handshake.post.title}
         </Text>
         
         <Text style={styles.userReference}>
-          {isSender 
-            ? `To: User ${handshake.recipientId}`
-            : `From: User ${handshake.senderId}`}
+          {isSender
+            ? `To: User ${handshake.receiverID}`
+            : `From: User ${handshake.senderID}`}
         </Text>
         
         <Text style={styles.dateText}>
           Created: {new Date(handshake.createdAt).toLocaleDateString()}
         </Text>
+        
+        {/* Button to accept handshake (only show if you're the receiver and status is 'new') */}
+        {!isSender && (
+          <TouchableOpacity 
+            style={[styles.handshakeButton, getButtonStyle()]}
+            onPress={handleAcceptHandshake}
+            disabled={status !== 'new' || processing}
+          >
+            {processing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>{getButtonText()}</Text>
+            )}
+          </TouchableOpacity>
+        )}
+        
+        {/* Show kudos input for accepted handshakes */}
+        {status === 'accepted' && (
+          <View style={styles.kudosInputContainer}>
+            <Text style={styles.kudosInputLabel}>Assign Kudos Value:</Text>
+            <TextInput
+              style={styles.kudosInput}
+              value={kudosValue}
+              onChangeText={setKudosValue}
+              placeholder="Enter kudos value"
+              keyboardType="numeric"
+            />
+            <TouchableOpacity 
+              style={styles.kudosSubmitButton}
+              onPress={handleSubmitKudos}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.kudosSubmitText}>Submit</Text>
+              )}
+            </TouchableOpacity>
+            
+            {error && <Text style={styles.errorText}>{error}</Text>}
+          </View>
+        )}
       </View>
     </View>
   );
 };
+
+const additionalStyles = {
+
+};
+
 export default function Profile({
   user: targetUser,
   handleUpdate,
@@ -199,7 +358,7 @@ export default function Profile({
   
     try {
       if (loggedInUser) 
-        await createDMChannel(Number.parseInt(loggedInUser.id), Number.parseInt(targetUser.id), token);
+        await createDMChannel(loggedInUser.id, targetUser.id, token);
       setIsChatOpen(true);
     } catch (error) {
       console.error("Error creating DM channel:", error);
@@ -334,18 +493,28 @@ export default function Profile({
       ): handshakes.length > 0 ? (
       <View style={styles.postsContainer}>
         <Text style={styles.sectionTitle}>Sent Handshakes</Text>
-        {handshakes
-            .filter(h => h.senderId.toString() === targetUser.id.toString())
-            .map(handshake => (
-                <HandshakeCard key={handshake.id} handshake={handshake} userId={targetUser.id.toString()} />
-            ))
+        {
+          handshakes.filter(h => h.senderID.toString() === targetUser.id.toString())
+          .map(handshake => (
+              <HandshakeCard 
+                key={handshake.id} 
+                handshake={handshake} 
+                userId={targetUser.id.toString()} 
+                token={token}
+              />
+          ))
         }
         
         <Text style={styles.sectionTitle}>Received Handshakes</Text>
-        {handshakes
-            .filter(h => h.recipientId.toString() === targetUser.id.toString())
+        {
+          handshakes.filter(h => h.receiverID.toString() === targetUser.id.toString())
             .map(handshake => (
-                <HandshakeCard key={handshake.id} handshake={handshake} userId={targetUser.id.toString()} />
+                <HandshakeCard 
+                  key={handshake.id} 
+                  handshake={handshake} 
+                  userId={targetUser.id.toString()} 
+                  token={token}
+                />
             ))
         }
         
@@ -363,6 +532,63 @@ export default function Profile({
 }
 
 const styles = StyleSheet.create({
+  kudosInputContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  kudosInputLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  kudosInput: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  kudosSubmitButton: {
+    backgroundColor: '#4a90e2',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  kudosSubmitText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 5,
+    fontSize: 12,
+  },
+  statusPill: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+  },
+  statusNew: {
+    backgroundColor: '#f39c12',
+  },
+  statusAccepted: {
+    backgroundColor: '#2ecc71',
+  },
+  statusCompleted: {
+    backgroundColor: '#3498db',
+  },
+  statusText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   userTitle: {
       fontSize: 14,
       color: "#666",
@@ -614,6 +840,29 @@ userReference: {
 dateText: {
   fontSize: 12,
   color: '#A0AEC0',
+},
+handshakeButton: {
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 5,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+acceptButton: {
+  backgroundColor: '#4a90e2',
+},
+pendingButton: {
+  backgroundColor: '#999',
+},
+acceptedButton: {
+  backgroundColor: '#999',
+},
+completedButton: {
+  backgroundColor: '#2ecc71',
+},
+actionButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
 },
   // Edit profile styles
 

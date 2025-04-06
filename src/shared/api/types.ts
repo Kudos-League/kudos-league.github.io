@@ -83,9 +83,10 @@ export interface SendCommentDTO {
 }
 
 export type CreateRewardOfferDTO = {
-  postId: number;
+  postID: number;
   amount: number;
   currency: string;
+  kudos: number;
 };
 
 export type RewardOfferDTO = {
@@ -93,7 +94,7 @@ export type RewardOfferDTO = {
   postId: number;
   senderId: number;
   amount: number;
-  currency: string;
+  currency: string; //TODO: what?
   createdAt: Date;
   updatedAt: Date;
 };
@@ -109,10 +110,10 @@ export type CreateHandshakeDTO = {
 export type HandshakeDTO = {
   receiverID: any;
   id: number;
-  postId: number;
-  offerId: number;
-  senderId: number;
-  recipientId: number;
+  postID: number;
+  offerID: number;
+  senderID: number;
+  recipientID: number;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -125,6 +126,9 @@ export type ChannelDTO = {
   type: string;
   createdAt: Date;
   updatedAt: Date;
+  users?: any[]; // Array of users in the channel
+  otherUser?: any; // The other user in a DM channel
+  lastMessage?: any; // The last message in the channel
 }
 
 export type EventDTO = {

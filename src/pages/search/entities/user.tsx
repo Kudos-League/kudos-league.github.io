@@ -48,7 +48,8 @@ export default function User() {
           
           // Fetch handshakes for the logged-in user
           if (authState?.token) {
-            await getUserHandshakes(targetUserID.toString(), authState.token);
+            const handshakes = await getUserHandshakes(targetUserID.toString(), authState.token);
+            setHandshakes(handshakes);
           }
         } else {
           if (!authState?.token) {

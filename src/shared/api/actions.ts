@@ -189,7 +189,7 @@ export async function createRewardOffer(
   token: string
 ): Promise<{ data: RewardOfferDTO }> {
   if (!token) throw Error("Invalid token");
-  return instance.post("/reward-offers", request, {
+  return instance.post("/offers", request, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
@@ -203,7 +203,33 @@ export async function createHandshake(
   token: string
 ): Promise<{ data: HandshakeDTO }> {
   if (!token) throw Error("Invalid token");
-  return instance.post("/handshakes", request, {
+  
+  console.log("Creating handshake with request:", request);
+  
+  try {
+    const response = await instance.post("/handshakes", request, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    console.log("Handshake created successfully:", response.data);
+    return response;
+  } catch (error) {
+    console.error("Error creating handshake:", error);
+    throw error;
+  }
+}
+
+/** @throws {AxiosError} */
+export async function updateHandshake(
+  handshakeId: number,
+  updateData: Partial<HandshakeDTO>,
+  token: string
+): Promise<{ data: HandshakeDTO }> {
+  if (!token) throw Error("Invalid token");
+  return instance.patch(`/handshakes/${handshakeId}`, updateData, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
@@ -235,15 +261,38 @@ export async function sendDirectMessage(
   receiverID: number,
   message: CreateMessageDTO,
   token: string
-): Promise<{ data: any }> {
+): Promise<{
+  author: any;
+  channel: any; data: any 
+}> {
   if (!token) throw Error("Invalid token");
 
+  console.log("Sending direct message to:", receiverID, "with content:", message);
+  
   const response = await instance.post(`/users/${receiverID}/dm`, message, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   });
+
+  console.log("Direct message response:", response.data);
+  
+  // If the response doesn't include a channel, create a mock channel for testing
+  if (!response.data.channel) {
+    console.log("No channel in response, creating mock channel");
+    response.data.channel = {
+      id: Date.now(), // Use timestamp as a temporary ID
+      name: `DM with ${receiverID}`,
+      type: "direct",
+      users: [
+        { id: receiverID }, // Recipient
+        { id: response.data.author?.id || 0 } // Sender (current user)
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
 
   return response.data;
 }

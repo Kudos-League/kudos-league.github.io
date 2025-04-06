@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { createDMChannel, createHandshake, getPostDetails } from "shared/api/actions";
+import { createDMChannel, createHandshake, getPostDetails, updateHandshake } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
 import { ChannelDTO, CreateHandshakeDTO, PostDTO } from "shared/api/types";
 import { useAppSelector } from "redux_store/hooks";
@@ -62,10 +62,47 @@ const Post = () => {
     : postDetails?.handshakes.slice(0, 2);
   const displayedOffers = postDetails?.rewardOffers || [];
 
-  const handleAcceptHandshake = (index: number) => {
-    console.log(`Accepted handshake at index ${index}`);
-    const updatedHandshakes = [...displayedHandshakes || []];
-    updatedHandshakes[index].status = "Pending";
+  const handleAcceptHandshake = async (index: number) => {
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    try {
+      const handshake = displayedHandshakes?.[index];
+      if (!handshake) {
+        console.error("Handshake not found");
+        return;
+      }
+
+      setLoading(true);
+      
+      // Update handshake status to 'accepted'
+      const response = await updateHandshake(
+        handshake.id,
+        { status: 'accepted' },
+        token
+      );
+
+      // Update the UI with the updated handshake
+      const updatedHandshakes = [...displayedHandshakes || []];
+      updatedHandshakes[index] = response.data;
+      
+      // Update the post details with the updated handshakes
+      setPostDetails((prevDetails) => ({
+        ...prevDetails!,
+        handshakes: updatedHandshakes,
+      }));
+
+      // Open chat with the handshake sender
+      startDMChat(handshake.sender?.id || "0");
+      
+      console.log(`Handshake ${handshake.id} accepted successfully`);
+    } catch (error) {
+      console.error("Error accepting handshake:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startDMChat = async (recipientId: string) => {
@@ -82,6 +119,77 @@ const Post = () => {
       }
     } catch (error) {
       console.error("Error preparing DM chat:", error);
+    }
+  };
+
+  const handleMessageSent = async () => {
+    if (!token || !postDetails) {
+      console.error("Missing required data to create handshake:", { token: !!token, postDetails: !!postDetails });
+      return;
+    }
+    
+    // Get the recipient ID (should be the same as pendingRecipientID)
+    const recipientId = pendingRecipientID;
+    if (!recipientId) {
+      console.error("Could not find recipient ID");
+      return;
+    }
+
+    console.log("Creating handshake from message sent callback with:", { 
+      postID: parseInt(postDetails.id),
+      senderID: user?.id,
+      recipientId,
+      type: postDetails.type
+    });
+    
+    setCreatingHandshake(true);
+    
+    try {
+      // Create the handshake after message is sent
+      const handshakeData: CreateHandshakeDTO = {
+        postID: parseInt(postDetails.id),
+        senderID: user?.id || 0,
+        receiverID: recipientId.toString(),
+        type: postDetails.type,
+        status: 'new'
+      };
+
+      console.log("Sending handshake data:", handshakeData);
+      const response = await createHandshake(handshakeData, token);
+      
+      // Check if response has the expected structure
+      if (!response || !response.data) {
+        console.error("Invalid response from createHandshake:", response);
+        throw new Error("Invalid response from server");
+      }
+      
+      const newHandshake = response.data;
+
+      console.log("Handshake created successfully:", newHandshake);
+      
+      // Update the post details with the new handshake
+      setPostDetails((prevDetails) => ({
+        ...prevDetails!,
+        handshakes: [...(prevDetails?.handshakes || []), newHandshake],
+      }));
+      
+      // Show feedback to the user
+      alert("Handshake created successfully! You can now coordinate the details with the post owner.");
+      
+      // Close the chat after handshake is created
+      setIsChatOpen(false);
+      
+      // Clear the pending recipient
+      setPendingRecipientID(null);
+      
+      // Refresh the post details to show the new handshake
+      fetchPostDetails(id);
+      
+    } catch (error) {
+      console.error("Error creating handshake:", error);
+      alert("Failed to create handshake. Please try again.");
+    } finally {
+      setCreatingHandshake(false);
     }
   };
 
@@ -102,11 +210,25 @@ const Post = () => {
 
   // This function will be called when a channel is created after sending a message
   const handleChannelCreated = async (channel: ChannelDTO) => {
-    if (!token || !postDetails || !pendingRecipientID) {
-      console.error("Missing required data to create handshake");
+    if (!token || !postDetails) {
+      console.error("Missing required data to create handshake:", { token: !!token, postDetails: !!postDetails });
+      return;
+    }
+    
+    // Get the recipient ID from the channel users
+    const recipientId = channel.users?.find(u => u.id !== user?.id)?.id;
+    if (!recipientId) {
+      console.error("Could not find recipient ID in channel users");
       return;
     }
   
+    console.log("Creating handshake with:", { 
+      postID: parseInt(postDetails.id),
+      senderID: user?.id,
+      recipientId,
+      type: postDetails.type
+    });
+    
     setCreatingHandshake(true);
     
     try {
@@ -114,26 +236,42 @@ const Post = () => {
       const handshakeData: CreateHandshakeDTO = {
         postID: parseInt(postDetails.id),
         senderID: user?.id || 0,
-        receiverID: pendingRecipientID,
+        receiverID: recipientId.toString(),
         type: postDetails.type,
         status: 'new'
       };
   
+      console.log("Sending handshake data:", handshakeData);
       const response = await createHandshake(handshakeData, token);
+      
+      // Check if response has the expected structure
+      if (!response || !response.data) {
+        console.error("Invalid response from createHandshake:", response);
+        throw new Error("Invalid response from server");
+      }
+      
       const newHandshake = response.data;
   
+      console.log("Handshake created successfully:", newHandshake);
+      
+      // Update the post details with the new handshake
       setPostDetails((prevDetails) => ({
         ...prevDetails!,
         handshakes: [...(prevDetails?.handshakes || []), newHandshake],
       }));
-  
-      console.log("Handshake created successfully after message sent:", newHandshake);
+      
+      // Show feedback to the user
+      alert("Handshake created successfully! You can now coordinate the details with the post owner.");
       
       // Clear the pending recipient
       setPendingRecipientID(null);
       
+      // Refresh the post details to show the new handshake
+      fetchPostDetails(id);
+      
     } catch (error) {
       console.error("Error creating handshake:", error);
+      alert("Failed to create handshake. Please try again.");
     } finally {
       setCreatingHandshake(false);
     }
@@ -226,7 +364,7 @@ const Post = () => {
           <View style={styles.card}>
             <MessageList
               title='Comments'
-              messages={postDetails?.messages || []}
+              messages={postDetails?.messages || ['']}
               callback={(response) => {
                 setPostDetails((prevDetails) => ({
                   ...prevDetails!,
@@ -343,6 +481,8 @@ const Post = () => {
           recipientID={pendingRecipientID || ""} 
           selectedChannel={selectedChannel}
           onChannelCreated={handleChannelCreated}
+          initialMessage="Hello! I've created a handshake for your post. Let's coordinate the details."
+          onMessageSent={handleMessageSent}
         />
       )}
     </ScrollView>

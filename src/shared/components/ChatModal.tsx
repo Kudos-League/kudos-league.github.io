@@ -28,6 +28,9 @@ interface ChatModalProps {
   recipientID?: string;
   selectedChannel?: ChannelDTO | null;
   onChannelCreated?: (channel: ChannelDTO) => void; // Optional callback when a new channel is created
+  initialMessage?: string; // Pre-populated message
+  simplified?: boolean; // Show a simplified version
+  onMessageSent?: () => void; // New callback for when a message is sent successfully
 }
 
 const ChatModal: React.FC<ChatModalProps> = ({ 
@@ -35,9 +38,12 @@ const ChatModal: React.FC<ChatModalProps> = ({
   setIsChatOpen, 
   recipientID = "0",
   selectedChannel: initialSelectedChannel,
-  onChannelCreated
+  onChannelCreated,
+  initialMessage = "Hello! I'm interested in your post and have created a handshake. Let's coordinate the details.",
+  simplified = false,
+  onMessageSent
 }) => {
-  const [messageInput, setMessageInput] = useState('');
+  const [messageInput, setMessageInput] = useState(initialMessage);
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(initialSelectedChannel || null);
@@ -110,7 +116,9 @@ const ChatModal: React.FC<ChatModalProps> = ({
         // Just set recipient ID and wait for first message to create channel
         // We're not creating a channel yet, just preparing for one to be created
         setSelectedChannel({
-          id: 'pending', // Temporary ID until channel is created
+          id: 0, // Temporary ID until channel is created
+          name: 'Pending Channel', // Default name for the channel
+          type: 'direct', // Default type for the channel
           users: [
             user,
             { id: recipientId } // We don't have full user details yet
@@ -191,14 +199,14 @@ const ChatModal: React.FC<ChatModalProps> = ({
         };
         
         // This will create a new channel and send the first message
-        const response = await sendDirectMessage(recipientID, newMessage, token);
+        const response = await sendDirectMessage(parseInt(recipientID), newMessage, token);
         
         // Update our selected channel with the new real channel
         if (response.channel) {
           const newChannel = response.channel;
           
           // Find the other user in the channel
-          const otherUser = newChannel.users.find(u => u.id !== user.id);
+          const otherUser = user ? newChannel.users?.find(u => u.id !== user.id) : null;
           if (otherUser) {
             // Add otherUser property to match the expected format
             newChannel.otherUser = otherUser;
@@ -209,8 +217,11 @@ const ChatModal: React.FC<ChatModalProps> = ({
           
           // Notify parent component that a new channel was created
           if (onChannelCreated) {
+            console.log("Calling onChannelCreated with channel:", newChannel);
             onChannelCreated(newChannel);
           }
+        } else {
+          console.error("No channel returned from sendDirectMessage");
         }
         
         // Add the message to our list
@@ -218,8 +229,8 @@ const ChatModal: React.FC<ChatModalProps> = ({
           ...response,
           author: {
             ...response.author,
-            username: response.author?.username || user.username,
-            id: response.author?.id || user.id
+            username: response.author?.username || user?.username || 'Unknown User',
+            id: response.author?.id || user?.id || 'unknown'
           },
           status: 'sent'
         };
@@ -227,7 +238,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         setMessages([messageWithUser]);
       } else {
         // Normal case - channel already exists
-        const receiver = selectedChannel.users.find(u => u.id !== user.id);
+        const receiver = user ? selectedChannel?.users?.find(u => u.id !== user.id) : null;
         if (!receiver) {
           throw new Error('No valid recipient found');
         }
@@ -242,8 +253,8 @@ const ChatModal: React.FC<ChatModalProps> = ({
           ...response,
           author: {
             ...response.author,
-            username: response.author?.username || user.username,
-            id: response.author?.id || user.id
+            username: response.author?.username || user?.username || 'Unknown User',
+            id: response.author?.id || user?.id || 'unknown'
           },
           status: 'sent'
         };
@@ -252,6 +263,11 @@ const ChatModal: React.FC<ChatModalProps> = ({
       }
       
       setMessageInput("");
+      
+      // Call the onMessageSent callback if provided
+      if (onMessageSent) {
+        onMessageSent();
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -276,7 +292,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
 
   // Render message item
   const renderMessageItem = ({ item }: { item: MessageDTO }) => {
-    const isOwnMessage = item.author?.id === user.id;
+    const isOwnMessage = user ? item.author?.id === user.id : false;
     
     return (
       <View style={[
