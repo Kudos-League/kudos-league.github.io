@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MessageDTO } from "shared/api/types";
 import AvatarComponent from "../Avatar";
+import { getAvatarURL } from "shared/api/config";
 
 interface AlertProps {
   message: MessageDTO;
@@ -12,7 +13,7 @@ const Message: React.FC<AlertProps> = ({ message }) => {
     <View key={message.id} style={styles.message}>
         {message.author?.avatar && <AvatarComponent
             username={message.author?.username || "Anonymous"}
-            avatar={message.author?.avatar}
+            avatar={getAvatarURL(message.author?.avatar)}
             style={styles.avatar}
         />}
         <View style={styles.messageContent}>

@@ -1,11 +1,13 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
+import * as Linking from 'expo-linking';
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthState, updateAuth } from "redux_store/slices/auth-slice";
 import { useAppDispatch } from "redux_store/hooks";
 import { getUserDetails, login, register } from "shared/api/actions";
 import { ASYNC_STORAGE_KEY__AUTH_DATA } from "shared/constants";
 import { AxiosError } from "axios";
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
 import { UserDTO } from "index";
 
 type AuthContextType = {
@@ -13,6 +15,7 @@ type AuthContextType = {
   authState: AuthState | null;
   user: UserDTO | null;
   isLoggedIn: boolean;
+  loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (
@@ -28,27 +31,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState | null>(null);
   const [userProfile, setUserProfile] = useState<UserDTO | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const dispatch = useAppDispatch();
 
   const token = authState?.token || null;
 
-  useEffect(() => {
-    const loadAuthState = async () => {
-      try {
-        const storedAuthState = await AsyncStorage.getItem(
-          ASYNC_STORAGE_KEY__AUTH_DATA
-        );
-        if (storedAuthState) {
-          const parsedAuthState: AuthState = JSON.parse(storedAuthState);
-          setAuthState(parsedAuthState);
-          dispatch(updateAuth(parsedAuthState));
-        }
-      } catch (error) {
-        console.error("Failed to load auth state:", error);
-      }
+  const storeTokenAndFetchProfile = async (token: string) => {
+    const newAuthState: AuthState = {
+      token,
+      tokenTimestamp: Date.now(),
+      username: '',
     };
-    loadAuthState();
-  }, [dispatch]);
+  
+    setAuthState(newAuthState);
+    dispatch(updateAuth(newAuthState));
+    await AsyncStorage.setItem(ASYNC_STORAGE_KEY__AUTH_DATA, JSON.stringify(newAuthState));
+  
+    const profile = await getUserDetails(undefined, token);
+    setUserProfile(profile);
+  };  
 
   const loginHandler = async (username: string, password: string) => {
     setErrorMessage(null);
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchUser = async () => {
       if (token) {
         try {
-          const profile = await getUserDetails(undefined, token);
+          const profile = await getUserDetails('me', token);
           setUserProfile(profile);
         } catch (error) {
           console.error("Failed to fetch user profile:", error);
@@ -98,7 +99,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   
     fetchUser();
-  }, [token]);  
+  }, [token]);
+
+  // Check on new page load if token is already stored
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const initialUrl = await Linking.getInitialURL();
+        let token: string | null = null;
+  
+        if (initialUrl) {
+          const urlObj = new URL(initialUrl);
+          token = urlObj.searchParams.get("token");
+  
+          if (token && Platform.OS === 'web') {
+            window.history.replaceState({}, '', '/');
+          }
+        }
+  
+        if (!token) {
+          const stored = await AsyncStorage.getItem(ASYNC_STORAGE_KEY__AUTH_DATA);
+          if (stored) {
+            const parsed: AuthState = JSON.parse(stored);
+            token = parsed.token;
+          }
+        }
+  
+        if (token) {
+          await storeTokenAndFetchProfile(token);
+        }
+      } catch (err) {
+        console.error("Failed to initialize auth:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    initializeAuth();
+  
+    const handleDeepLink = async (event: Linking.EventType) => {
+      const urlObj = new URL(event.url);
+      const token = urlObj.searchParams.get("token");
+  
+      if (token) {
+        await storeTokenAndFetchProfile(token);
+      }
+    };
+  
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription.remove();
+  }, []);  
 
   const logoutHandler = async () => {
     setAuthState(null);
@@ -127,6 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authState,
         isLoggedIn: !!userProfile,
         user: userProfile,
+        loading,
         login: loginHandler,
         logout: logoutHandler,
         register: signUpHandler,

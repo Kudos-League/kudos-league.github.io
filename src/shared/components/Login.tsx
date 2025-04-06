@@ -7,6 +7,7 @@ import { useAuth } from "shared/hooks/useAuth";
 import Input from "shared/components/forms/input";
 import { Image } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import DiscordLoginButton from "./DiscordLoginButton";
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -24,14 +25,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const navigation = useNavigation<any>();
-  useEffect(() => {
-    console.log(`$$$$$$$TOKEN: ${token}`)
-  }, [])
-  useEffect(() => {
-    console.log(`$$$$$$$TOKEN: ${token}`)
-  })
 
-  console.log(`$$$$$$$TOKEN: ${token}`)
   const onSubmit = async (data: FormValues) => {
     setErrorMessage(null);
     try {
@@ -138,6 +132,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
             <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
               <Text style={styles.socialButtonText}>f</Text>
             </TouchableOpacity>
+            <DiscordLoginButton />
           </View>
           
           <View style={styles.signUpContainer}>

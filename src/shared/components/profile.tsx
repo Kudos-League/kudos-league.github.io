@@ -8,7 +8,7 @@ import Input from "shared/components/forms/input";
 import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
-import { getEndpointUrl } from "shared/api/config";
+import { getAvatarURL, getEndpointUrl } from "shared/api/config";
 import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
@@ -400,7 +400,7 @@ export default function Profile({
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-        {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
+        {targetUser.avatar && <Image source={{ uri: getAvatarURL(targetUser.avatar) || "" }} style={styles.profilePicture} />}
         <Text style={styles.userTitle}>{getUserTitle()}</Text>
         <Text style={styles.userName}>{targetUser.username}</Text>
         <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>

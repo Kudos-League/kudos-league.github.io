@@ -10,7 +10,7 @@ import Search from 'pages/search/home';
 import { useAuth } from 'shared/hooks/useAuth';
 import tailwind from "shared/components/tailwind";
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { getEndpointUrl } from 'shared/api/config';
+import { getAvatarURL } from 'shared/api/config';
 import Leaderboard from './Leaderboard';
 import CreateEvent from './events/CreateEvent';
 
@@ -30,7 +30,7 @@ function HeaderRight() {
       >
         <View style={styles.avatarContainer}>
           {user?.avatar ? (
-            <Image source={{ uri: `${getEndpointUrl()}${user.avatar}` }} style={styles.avatar} />
+            <Image source={{ uri: getAvatarURL(user.avatar) || "" }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{user?.username?.charAt(0) || "U"}</Text>

@@ -17,3 +17,13 @@ export function getWSSURL(): string {
   const isHttps = BACKEND_URI.startsWith('https://');
   return isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
 }
+
+export function getAvatarURL(avatarPath?: string | null): string | null {
+  if (!avatarPath) return null;
+
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+
+  return `${BACKEND_URI}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+}

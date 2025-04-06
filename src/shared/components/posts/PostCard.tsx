@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import AvatarComponent from "../Avatar";
 import Tags from "../Tags";
-import { getEndpointUrl } from "shared/api/config";
+import { getAvatarURL, getEndpointUrl } from "shared/api/config";
 
 type RootStackParamList = {
   Home: undefined;
@@ -57,7 +57,7 @@ export default function PostCard(props: Post) {
                 {props.sender && (
                   <AvatarComponent
                     username={props.sender.username}
-                    avatar={props.sender.avatar || 'http://via.placeholder.com/150'}
+                    avatar={getAvatarURL(props.sender.avatar) || 'http://via.placeholder.com/150'}
                     sx={{ width: 32, height: 32 }}
                   />
                 )}
