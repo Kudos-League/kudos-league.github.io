@@ -3,6 +3,8 @@ import { ScrollView, View, Text, TextInput, TouchableOpacity, Image } from "reac
 import globalStyles from "shared/styles";
 import Input from "./forms/input";
 import { launchImageLibrary } from "react-native-image-picker";
+import Map from './Map';
+import useLocation from "shared/hooks/useLocation";
 
 interface EditProfileProps {
     form: any;
@@ -28,6 +30,8 @@ const EditProfile = ({ form,
     onSubmit,
     error
  }: EditProfileProps) => {
+  const { location, setLocation } = useLocation();
+  
   const pickAvatar = () => {
     const options = {
       mediaType: "photo",
@@ -114,6 +118,26 @@ const EditProfile = ({ form,
               label="Paste an Image URL"
             />
           </View>
+
+          <Text style={globalStyles.inputTitle}>
+              Location 
+            </Text>
+            <View style={{ alignItems: 'center' }}>
+              <Map
+                showAddressBar={true}
+                exactLocation={false}
+                regionID={targetUser.location?.regionID}
+                coordinates={location}
+                width={300}
+                height={300}
+                onLocationChange={(data) => {
+                  if (data.coordinates) {
+                    setLocation(data.coordinates);
+                    form.setValue("location", { ... data.coordinates, name: data.name });
+                  }
+                }}
+              />
+            </View>
           
           {/* Update Profile Button */}
           <TouchableOpacity

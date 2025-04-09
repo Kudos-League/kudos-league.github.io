@@ -12,11 +12,13 @@ import { getAvatarURL, getEndpointUrl } from "shared/api/config";
 import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
+import { MapCoordinates } from "./Map";
 
 type ProfileFormValues = {
   email: string;
   avatar: File[];
   avatarUrl?: string;
+  location: MapCoordinates
 };
 
 type ProfileProps = {
@@ -262,6 +264,7 @@ export default function Profile({
     defaultValues: {
       email: targetUser.email,
       avatar: [],
+      location: targetUser.location || undefined
     },
   });
 
@@ -270,7 +273,7 @@ export default function Profile({
   const onSubmit = async (data: ProfileFormValues) => {
     const formData = new FormData();
     let hasChanges = false;
-    let changes = [];
+    let changes: string[] = [];
   
     if (data.email !== targetUser.email) {
       formData.append("email", data.email);
@@ -292,6 +295,15 @@ export default function Profile({
       hasChanges = true;
       changes.push("Profile picture updated");
     }
+
+    if (
+      data.location &&
+      JSON.stringify(data.location) !== JSON.stringify(targetUser.location)
+    ) {
+      formData.append("location", JSON.stringify(data.location));
+      hasChanges = true;
+      changes.push("Location updated");
+    }    
   
     if (!hasChanges) {
       setFeedbackMessage("No changes detected");
@@ -315,8 +327,6 @@ export default function Profile({
     }
   };
 
- 
-      
   const getUserTitle = () => {
       if (targetUser.kudos > 10000) {
           return "Questing Knight";

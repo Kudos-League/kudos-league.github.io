@@ -1,4 +1,5 @@
 import { LocationDTO } from "shared/api/types";
+import { MapCoordinates } from "shared/components/Map";
 
 interface Post {
   id: string;
@@ -50,4 +51,5 @@ interface UserDTO {
   password?: string | null;
   locationID: number | null;
   badges: Badge[]
+  location?: MapCoordinates;
 }
