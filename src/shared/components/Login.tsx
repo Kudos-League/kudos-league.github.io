@@ -80,7 +80,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="Username"
               placeholderTextColor="#888"
               onChangeText={value => form.setValue('username', value)}
             />

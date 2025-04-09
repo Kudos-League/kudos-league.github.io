@@ -31,6 +31,21 @@ export type PostDTO = {
   updatedAt: Date;
   location: LocationDTO;
 };
+interface CustomFile extends File {
+  uri: string;
+}
+export type ProfileFormValues = {
+  email: string;
+  avatar: CustomFile[];
+  avatarUrl?: string;
+  description?: string;
+  location?: string;
+  mapCoordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
 
 export interface Feat {
   location: string;
@@ -117,6 +132,7 @@ export type HandshakeDTO = {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  post: PostDTO;
 };
 
 

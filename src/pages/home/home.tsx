@@ -30,11 +30,11 @@ export default function Home() {
             options={getTabOptions("history")}
             component={Feed}
           />
-          <Tab.Screen
+          {/* <Tab.Screen
             name="Public Chats"
             options={getTabOptions("comments")}
             component={PublicChat}
-          />
+          /> */}
           <Tab.Screen
             name="DMs"
             options={getTabOptions("envelope")}

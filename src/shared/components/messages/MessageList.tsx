@@ -14,6 +14,7 @@ interface AlertProps {
   title?: string;
   callback?: (data: any) => void;
   postID?: number;
+  showSendMessage?: boolean; //IMPORTANT: Whether to show the send message input
 }
 
 interface FormValuesMessage {
@@ -26,7 +27,7 @@ interface FormValuesMessage {
     readAt?: Date;
 }
 
-const MessageList: React.FC<AlertProps> = ({ messages, title, callback, postID }) => {
+const MessageList: React.FC<AlertProps> = ({ messages, title, callback, postID, showSendMessage}) => {
     const [showAllMessages, setShowAllMessages] = useState(false);
     const [messageContent, setMessageContent] = useState("");
 
@@ -78,10 +79,15 @@ const MessageList: React.FC<AlertProps> = ({ messages, title, callback, postID }
     <View>
         {title && <Text style={styles.sectionTitle}>{title}</Text>}
         <ScrollView style={styles.messagesContainer}>
+        {messages?.length === 0 && (
+          <Text style={styles.errorMessage}>No comments yet</Text>
+        )}
         {displayedMessages?.map((message) => (
             <Message key={message.id} message={message} />
         ))}
         </ScrollView>
+
+        {showSendMessage && (
         <View style={styles.messageInputContainer}>
             <TextInput
                 style={styles.messageInput}
@@ -93,14 +99,15 @@ const MessageList: React.FC<AlertProps> = ({ messages, title, callback, postID }
                 <Ionicons name="send" size={24} color="#fff" />
             </TouchableOpacity>
         </View>
-        {messages?.length && messages?.length > 3 && !showAllMessages && (
+        )}
+        {(messages?.length && messages?.length > 3 && !showAllMessages) ? (
             <TouchableOpacity
                 onPress={() => setShowAllMessages(true)}
                 style={styles.showMoreButton}
             >
                 <Text style={styles.showMoreText}>Show more messages</Text>
             </TouchableOpacity>
-        )}
+        ) : ''}
     </View>
   );
 };
