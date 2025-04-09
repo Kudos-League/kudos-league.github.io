@@ -352,14 +352,14 @@ export default function CreatePost() {
               Location 
             </Text>
             <View style={{ alignItems: 'center' }}>
-              <Map
+              {location && <Map
                 showAddressBar={true}
                 exactLocation={false}
                 coordinates={location}
                 width={300}
                 height={300}
-                onLocationChange={(data) => data.coordinates && setLocation(data.coordinates)}
-              />
+                onLocationChange={(data) => setLocation(data.coordinates)}
+              />}
             </View>
 
             <TouchableOpacity
