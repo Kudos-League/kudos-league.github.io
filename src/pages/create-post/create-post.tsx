@@ -22,6 +22,7 @@ type FormValues = {
   title: string;
   body: string;
   type: 'request' | 'gift';
+  location: {lat: number, lng: number};
   files?: File[];
   tags: string[];
 };

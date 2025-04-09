@@ -43,7 +43,7 @@ const Post = () => {
   const token = useAppSelector((state) => state.auth.token);
 
   const fetchPostDetails = async (postID: string) => {
-    try {
+      try {
       const data = await getPostDetails(postID);
       setPostDetails(data);
       setLoading(false);
@@ -372,13 +372,16 @@ const Post = () => {
                 }));
               }}
               postID={parseInt(postDetails.id)}
+              showSendMessage={user?.id !== postDetails?.sender?.id}
             />
           </View>
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Handshakes</Text>
+            { displayedHandshakes && displayedHandshakes.length > 0 ? ( // HACK: sometimes you need to compare stuff twice I guess
             <ScrollView style={styles.handshakesContainer}>
-              {displayedHandshakes?.map((handshake, index) => (
+              {displayedHandshakes && displayedHandshakes.length > 0 ? (
+                displayedHandshakes?.map((handshake, index) => (
                 <View key={handshake.id} style={styles.handshake}>
                   <AvatarComponent
                     username={handshake.sender?.username || "Anonymous"}
@@ -403,8 +406,25 @@ const Post = () => {
                     </TouchableOpacity>
                   )}
                 </View>
-              ))}
-            </ScrollView>
+              ))
+              ): (
+              <View>
+                <Text style={styles.errorMessage}>No handshakes yet</Text>
+              </View>
+              )}
+            </ScrollView>)
+            : (
+              <View>
+                <Text style={styles.errorMessage}>No handshakes yet</Text>
+              </View>
+            )}
+
+            <Logger message={(user?.id === postDetails?.sender?.id)} />
+            <Logger message={displayedHandshakes?.map(h => h.sender?.id).includes(user?.id)} />
+            <Logger message={
+              (user?.id === postDetails?.sender?.id && displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id))
+            } />
+            { (user?.id === postDetails?.sender?.id && displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id)) && ( //NO DOUBLE HANDSHAKES BY THE SAME USER!
             <TouchableOpacity
               style={styles.createNewButton}
               onPress={handleSubmitHandshake}
@@ -416,15 +436,16 @@ const Post = () => {
                 <Ionicons name="add" size={24} color="#fff" />
               )}
             </TouchableOpacity>
+            )}
 
-            {displayedHandshakes?.length && displayedHandshakes.length > 2 && !showAllHandshakes && (
+            {(displayedHandshakes?.length && displayedHandshakes.length > 2 && !showAllHandshakes) ? (
               <TouchableOpacity
                 onPress={() => setShowAllHandshakes(true)}
                 style={styles.showMoreButton}
               >
                 <Text style={styles.showMoreText}>Show more handshakes</Text>
               </TouchableOpacity>
-            )}
+            ): ""}
           </View>
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Kudos votation</Text>

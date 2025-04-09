@@ -3,7 +3,7 @@ import { LocationDTO } from "shared/api/types";
 interface Post {
   id: string;
   sender: {
-    id: string;
+    id: string; //TODO: number?
     email: string;
     username: string;
     kudos: number;
