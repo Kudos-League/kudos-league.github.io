@@ -27,8 +27,8 @@ interface LocationData {
 
 // Union type remains similar.
 type MapComponentProps =
-  | ({ showAddressBar: false; coordinates?: MapCoordinates } & MapComponentPropsBase)
-  | ({ showAddressBar: true; coordinates?: MapCoordinates } & MapComponentPropsBase);
+  | ({ showAddressBar: false; coordinates?: MapCoordinates | null } & MapComponentPropsBase)
+  | ({ showAddressBar: true; coordinates?: MapCoordinates | null } & MapComponentPropsBase);
 
 interface MarkerComponentProps {
   lat: number;

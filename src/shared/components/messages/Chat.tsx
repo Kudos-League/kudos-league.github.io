@@ -15,7 +15,7 @@ import {
 import { TextInput, Avatar, IconButton, Surface, Badge } from 'react-native-paper';
 import { useAppSelector } from 'redux_store/hooks';
 import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actions';
-import { getEndpointUrl } from 'shared/api/config';
+import { getAvatarURL, getEndpointUrl } from 'shared/api/config';
 import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
 import { useWebSocket } from 'shared/hooks/useWebSocket';
@@ -272,7 +272,7 @@ const Chat = ({ onClose }) => {
                 >
                   <View style={styles.avatarContainer}>
                     <Avatar.Image 
-                      source={{ uri: `${getEndpointUrl()}${item.otherUser.avatar}` }} 
+                      source={{ uri: getAvatarURL(item.otherUser.avatar) || "" }} 
                       size={50} 
                     />
                     {item.lastMessage?.isUnread && (

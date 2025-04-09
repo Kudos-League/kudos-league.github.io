@@ -10,7 +10,13 @@ import Input from "shared/components/forms/input";
 import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO, ProfileFormValues } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
+<<<<<<< HEAD
 import { getEndpointUrl } from "shared/api/config";
+=======
+import { getAvatarURL, getEndpointUrl } from "shared/api/config";
+// import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
+// import { getEndpointUrl } from "shared/api/config";
+>>>>>>> temp-branch
 import { createDMChannel, createRewardOffer, getUserDetails, getUserSettings, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
@@ -487,6 +493,11 @@ export default function Profile({
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
+<<<<<<< HEAD
+=======
+        {targetUser.avatar && <Image source={{ uri: getAvatarURL(targetUser.avatar) || "" }} style={styles.profilePicture} />}
+        <Text style={styles.userTitle}>{getUserTitle()}</Text>
+>>>>>>> temp-branch
         {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
         <Text style={styles.userTitleStyle}>{getUserTitle()}</Text>
         <Text style={styles.userName}>{targetUser.username}</Text>

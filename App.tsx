@@ -12,7 +12,7 @@ import ErrorBoundary from "react-native-error-boundary";
 import { store } from "redux_store/store";
 import { Provider as ReduxProvider } from "react-redux";
 import { Provider as PaperProvider } from "react-native-paper";
-import { AuthProvider } from "shared/hooks/useAuth";
+import { AuthProvider, useAuth } from "shared/hooks/useAuth";
 import { Host } from "react-native-portalize";
 
 import { TailwindProvider } from "tailwind-rn";
@@ -49,6 +49,12 @@ export default function App() {
 }
 
 function AppCore() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <Text>Loading...</Text>;
+  }
+
   return (
     <NavigationContainer linking={getLinkingOptions()}>
       <AppNavigator />
