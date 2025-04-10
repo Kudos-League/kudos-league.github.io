@@ -84,7 +84,7 @@ const Chat = ({ onClose }) => {
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
-    if (messages.length > 0 && flatListRef.current) {
+    if (messages?.length > 0 && flatListRef.current) {
       flatListRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
@@ -117,7 +117,7 @@ const Chat = ({ onClose }) => {
       }).filter(Boolean);
 
       setChannels(formattedChannels);
-      if (formattedChannels.length === 0) {
+      if (formattedChannels?.length === 0) {
         setNoDMs(true);
       } else {
         setNoDMs(false);
