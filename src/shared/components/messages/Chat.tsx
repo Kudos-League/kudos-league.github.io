@@ -95,7 +95,7 @@ const Chat = ({ onClose }) => {
       throw new Error('No token found');
     }
     try {
-      const response = await getUserDetails('me', token, { dmChannels: true });
+      const response = await getUserDetails(user.id, token, { dmChannels: true });
       const formattedChannels = response.dmChannels.map((channel) => {
         const otherUser = channel.users.find((u) => u.id !== user.id);
         

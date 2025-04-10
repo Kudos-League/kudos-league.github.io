@@ -266,8 +266,6 @@ export async function sendDirectMessage(
   channel: any; data: any 
 }> {
   if (!token) throw Error("Invalid token");
-
-  console.log("Sending direct message to:", receiverID, "with content:", message);
   
   const response = await instance.post(`/users/${receiverID}/dm`, message, {
     headers: {
@@ -275,24 +273,6 @@ export async function sendDirectMessage(
       Authorization: `Bearer ${token}`,
     },
   });
-
-  console.log("Direct message response:", response.data);
-  
-  // If the response doesn't include a channel, create a mock channel for testing
-  if (!response.data.channel) {
-    console.log("No channel in response, creating mock channel");
-    response.data.channel = {
-      id: Date.now(), // Use timestamp as a temporary ID
-      name: `DM with ${receiverID}`,
-      type: "direct",
-      users: [
-        { id: receiverID }, // Recipient
-        { id: response.data.author?.id || 0 } // Sender (current user)
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  }
 
   return response.data;
 }
