@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { TextInput, Avatar, IconButton, Surface, Badge } from 'react-native-paper';
 import { useAppSelector } from 'redux_store/hooks';
-import { getMessages, getUserDetails, sendDirectMessage } from 'shared/api/actions';
+import { getUserDetails, sendDirectMessage } from 'shared/api/actions';
 import { getAvatarURL, getEndpointUrl } from 'shared/api/config';
 import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
@@ -138,9 +138,6 @@ const Chat = ({ onClose }) => {
     }
 
     try {
-      const messagesData = await getMessages(channel.id, token);
-      setMessages(messagesData);
-
       if (selectedChannel) {
         leaveChannel(selectedChannel.id);
       }

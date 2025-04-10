@@ -36,7 +36,7 @@ export const useWebSocket = (
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('[WebSocket] Connection error:', err);
+      if (!pollInterval?.current) console.error('[WebSocket] Connection error:', err);
       setIsConnected(false);
     });
 
@@ -80,7 +80,7 @@ export const useWebSocket = (
         } catch (err) {
           console.error('[Polling] Failed to fetch messages:', err);
         }
-      }, 5000);
+      }, 1000);
 
       return;
     }
@@ -95,6 +95,8 @@ export const useWebSocket = (
       if (data.channelID === channelID && data.success) {
         console.log(`[WebSocket] Successfully joined channel ${channelID}`);
       }
+
+      getMessages(channelID, token).then((list) => list?.length && setMessages(list));
     });
 
     socket.off(Events.MESSAGE_CREATE);

@@ -343,6 +343,8 @@ export async function getMessages(channelID: number, token: string) {
     },
   });
 
+  console.log('fetchMessages', response.data); // TODO: Remove debug
+
   return response.data;
 }
 
