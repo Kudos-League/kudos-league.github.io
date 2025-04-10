@@ -419,12 +419,7 @@ const Post = () => {
               </View>
             )}
 
-            <Logger message={(user?.id === postDetails?.sender?.id)} />
-            <Logger message={displayedHandshakes?.map(h => h.sender?.id).includes(user?.id)} />
-            <Logger message={
-              (user?.id === postDetails?.sender?.id && displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id))
-            } />
-            { (user?.id === postDetails?.sender?.id && displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id)) && ( //NO DOUBLE HANDSHAKES BY THE SAME USER!
+            { (user?.id !== postDetails?.sender?.id && !displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id)) && ( //NO DOUBLE HANDSHAKES BY THE SAME USER!
             <TouchableOpacity
               style={styles.createNewButton}
               onPress={handleSubmitHandshake}
