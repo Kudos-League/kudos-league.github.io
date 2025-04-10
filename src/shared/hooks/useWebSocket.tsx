@@ -76,7 +76,7 @@ export const useWebSocket = (
       pollInterval.current = setInterval(async () => {
         try {
           const freshMessages = await getMessages(channelID, token);
-          setMessages(freshMessages.data);
+          if (freshMessages?.length) setMessages(freshMessages);
         } catch (err) {
           console.error('[Polling] Failed to fetch messages:', err);
         }

@@ -334,7 +334,7 @@ export async function getUserDMs(userID: number, token: string): Promise<{ data:
 }
 
 /** @throws {AxiosError} */
-export async function getMessages(channelID: number, token: string): Promise<{ data: any }> {
+export async function getMessages(channelID: number, token: string) {
   if (!token) throw Error("Invalid token");
 
   const response = await instance.get(`/channels/${channelID}/messages`, {
