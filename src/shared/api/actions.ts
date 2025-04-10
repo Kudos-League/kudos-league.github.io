@@ -132,6 +132,47 @@ export async function getUserPosts(id: string = "me", token: string) {
   return response.data;
 }
 
+
+/** @throws {AxiosError} */
+export async function getUserSettings(token: string) {
+  const response = await instance.get(`/usersettings/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
+
+/**
+ * Update user settings
+ * @param settingsData - User settings data to update
+ * @param token - Authentication token
+ */
+export async function updateUserSettings(settingsData: any, token: string) {
+  if (!token) throw Error("Invalid token");
+  
+  console.log("Updating user settings with data:", settingsData);
+  
+  try {
+    // Convert to FormData since the endpoint expects multipart/form-data
+    const formData = toFormData(settingsData);
+    
+    const response = await instance.put(`/usersettings/me`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    console.log("User settings update response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user settings:", error);
+    throw error;
+  }
+}
+
+
 /** @throws {AxiosError} */
 export async function getUserHandshakes(id: string = "me", token: string) {
   // Fetch sent handshakes
@@ -158,6 +199,7 @@ export async function updateUser(
   id: string = "me",
   token: string
 ) {
+  console.log("############Updating user with request:", request, "id:", id);
   if (!token) throw Error("Invalid token");
   const response = await instance.patch(`/users/${id}`, request, {
     headers: {
@@ -165,6 +207,7 @@ export async function updateUser(
       Authorization: `Bearer ${token}`,
     },
   });
+  console.log("############Updated user with response:", response.data);
   return response.data;
 }
 

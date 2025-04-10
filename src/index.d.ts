@@ -4,7 +4,7 @@ import { MapCoordinates } from "shared/components/Map";
 interface Post {
   id: string;
   sender: {
-    id: string;
+    id: string; //TODO: number?
     email: string;
     username: string;
     kudos: number;

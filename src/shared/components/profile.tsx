@@ -3,16 +3,20 @@ import { View, Text, Button, TextInput, ScrollView, TouchableOpacity, Image, Sty
 import { useForm } from "react-hook-form";
 import { launchImageLibrary } from "react-native-image-picker";
 import { Tooltip } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
-import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO } from "shared/api/types";
+import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO, ProfileFormValues } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
 import { getAvatarURL, getEndpointUrl } from "shared/api/config";
-import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
+// import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
+// import { getEndpointUrl } from "shared/api/config";
+import { createDMChannel, createRewardOffer, getUserDetails, getUserSettings, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
-import { MapCoordinates } from "./Map";
+import Map, { MapCoordinates } from "./Map";
 
 type ProfileFormValues = {
   email: string;
@@ -20,6 +24,8 @@ type ProfileFormValues = {
   avatarUrl?: string;
   location: MapCoordinates
 };
+
+type NavigationProps = StackNavigationProp<RootStackParamList, "Post">;
 
 type ProfileProps = {
   user: UserDTO;
@@ -35,25 +41,33 @@ interface PostCardProps {
 }
 
 const PostCard = ({ post }: PostCardProps) => {
+    const navigation = useNavigation<NavigationProps>();
+    
+    const handlePostPress = () => {
+        navigation.navigate("Post", { id: post.id.toString() });
+    };
+    
     return (
-        <View style={styles.postCard}>
-            <View style={styles.postContent}>
-                <Text style={styles.postTitle}>{post.title}</Text>
-                <View style={[styles.tagPill, styles.tagDark]}>
-                    <Text style={styles.tagText}>{post.type === 'gift' ? 'Gift' : 'ReQuest'}</Text>
+        <TouchableOpacity onPress={handlePostPress}>
+            <View style={styles.postCard}>
+                <View style={styles.postContent}>
+                    <Text style={styles.postTitle}>{post.title}</Text>
+                    <View style={[styles.tagPill, styles.tagDark]}>
+                        <Text style={styles.tagText}>{post.type === 'gift' ? 'Gift' : 'ReQuest'}</Text>
+                    </View>
                 </View>
+                {post.images && post.images.length > 0 ? (
+                    <Image source={{ uri: post.images[0] }} style={styles.postImage} />
+                ) : (
+                    <Text style ={styles.noImageText}>{post.body}</Text>
+                )}
+                {post.isActive ? (
+                    <Text style={styles.kudosText}>Active</Text>
+                ): (
+                    <Text style={styles.kudosText}>{post.kudos} Kudos</Text>
+                )}
             </View>
-            {post.images && post.images.length > 0 ? (
-                <Image source={{ uri: post.images[0] }} style={styles.postImage} />
-            ) : (
-                <Text style ={styles.noImageText}>{post.body}</Text>
-            )}
-            {post.isActive ? (
-                <Text style={styles.kudosText}>Active</Text>
-            ): (
-                <Text style={styles.kudosText}>{post.kudos} Kudos</Text>
-            )}
-        </View>
+        </TouchableOpacity>
     );
 };
 
@@ -63,12 +77,44 @@ const Logger = (message: any) => {
 }
 
 const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; userId: string; token: string }) => {
+  const navigation = useNavigation<NavigationProps>();
   const isSender = handshake.senderID.toString() === userId;
   const [kudosValue, setKudosValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState(handshake.status);
   const [processing, setProcessing] = useState(false);
+  const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
+  const [receiverUser, setReceiverUser] = useState<UserDTO | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!token) return;
+      
+      setLoadingUsers(true);
+      try {
+        // Fetch sender user data
+        const senderResponse = await getUserDetails(handshake.senderID.toString(), token);
+        setSenderUser(senderResponse);
+        
+        // Fetch receiver user data
+        const receiverResponse = await getUserDetails(handshake.receiverID.toString(), token);
+        setReceiverUser(receiverResponse);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [handshake.senderID, handshake.receiverID, token]);
+  
+  const handlePostPress = () => {
+    navigation.navigate("Post", { id: handshake.postID.toString() });
+  };
   
   const handleAcceptHandshake = async () => {
     if (status !== 'new' || processing) return;
@@ -172,23 +218,27 @@ const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; 
             {isSender ? 'You sent to' : 'Received from'}
           </Text>
           <View style={[
-            styles.statusPill,
+            styles.statusPillStyle,
             status === 'new' ? styles.statusNew : 
             status === 'accepted' ? styles.statusAccepted : 
             styles.statusCompleted
           ]}>
-            <Text style={styles.statusText}>{status}</Text>
+            <Text style={styles.statusTextStyle}>{status}</Text>
           </View>
         </View>
         
-        <Text style={styles.postReference}>
-          Post Title: {handshake.post.title}
-        </Text>
+        <TouchableOpacity onPress={handlePostPress}>
+          <Text style={styles.postReference}>
+            Post Title: {handshake.post.title}
+          </Text>
+        </TouchableOpacity>
         
         <Text style={styles.userReference}>
-          {isSender
-            ? `To: User ${handshake.receiverID}`
-            : `From: User ${handshake.senderID}`}
+          {loadingUsers ? (
+            <ActivityIndicator size="small" color="#4a90e2" />
+          ) : isSender
+            ? `To: ${receiverUser?.username || 'Loading...'}`
+            : `From: ${senderUser?.username || 'Loading...'}`}
         </Text>
         
         <Text style={styles.dateText}>
@@ -211,7 +261,7 @@ const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; 
         )}
         
         {/* Show kudos input for accepted handshakes */}
-        {status === 'accepted' && (
+        {status === 'accepted' && ((handshake.post.type === 'request' && isSender) || (handshake.post.type === 'gift' && handshake.senderID.toString() === userId)) && (
           <View style={styles.kudosInputContainer}>
             <Text style={styles.kudosInputLabel}>Assign Kudos Value:</Text>
             <TextInput
@@ -259,7 +309,22 @@ export default function Profile({
   const [filter, setFilter] = useState("all");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
+  const [userSettings, setUserSettings] = useState<any | null>(null);
   
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!token) return;
+      try {
+        const settings = await getUserSettings(token);
+        setUserSettings(settings);
+        console.log("User settings:", settings);
+      } catch (error) {
+        console.error("Error fetching user settings:", error);
+      }
+    };
+    fetchUserSettings();
+  }, [targetUser.id, token]);
+
   const form = useForm<ProfileFormValues>({
     defaultValues: {
       email: targetUser.email,
@@ -368,7 +433,7 @@ export default function Profile({
   
     try {
       if (loggedInUser) 
-        await createDMChannel(loggedInUser.id, targetUser.id, token);
+        await createDMChannel(loggedInUser.id, targetUser.id, token || "");
       setIsChatOpen(true);
     } catch (error) {
       console.error("Error creating DM channel:", error);
@@ -381,17 +446,17 @@ export default function Profile({
 
   const actionButtons = (
     <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.actionButton}>
+        {/* <TouchableOpacity style={styles.actionButton}>
             <Text>👤</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         {!sameUser && isLoggedIn && (
             <TouchableOpacity style={styles.actionButton} onPress={() => startDMChat()}>
                 <Text>💬</Text>
             </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.actionButton}>
+        {/* <TouchableOpacity style={styles.actionButton}>
             <Text>📊</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         {sameUser && (
             <TouchableOpacity style={styles.actionButton} onPress={() => setEditProfile(!editProfile)}>
                 <Text>⚙️</Text>
@@ -400,18 +465,18 @@ export default function Profile({
     </View>
   );
 
-  {if (editProfile) {
+  if (editProfile) {
     return (
       <EditProfile form={form} targetUser={targetUser} setEditProfile={setEditProfile} showFeedback={showFeedback} setFeedbackMessage={setFeedbackMessage} feedbackMessage={feedbackMessage} setShowFeedback={setShowFeedback} loading={loading} onSubmit={onSubmit} error={error}/>
     )
-  }} 
+  }
   
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-        {targetUser.avatar && <Image source={{ uri: getAvatarURL(targetUser.avatar) || "" }} style={styles.profilePicture} />}
-        <Text style={styles.userTitle}>{getUserTitle()}</Text>
+        {targetUser.avatar && <Image source={{ uri: targetUser.avatar }} style={styles.profilePicture} />}
+        <Text style={styles.userTitleStyle}>{getUserTitle()}</Text>
         <Text style={styles.userName}>{targetUser.username}</Text>
         <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
 
@@ -432,15 +497,28 @@ export default function Profile({
         {actionButtons}
         
         {/* User Description */}
-        {/* TODO: Not a real thing yet */}
-        <Text style={styles.userDescription}>{(targetUser as any).description || 'Test Description'}</Text>
+        <Text style={styles.userDescription}>{`${userSettings?.dataValues.about ? userSettings?.dataValues.about : "No bio available"}`}</Text>
+        
+        {/* User Location */}
+        {(targetUser as any).location && (
+          <View style={styles.locationContainer}>
+            <Text style={styles.locationTitle}>Location</Text>
+            <View style={styles.mapContainer}>
+              <Map
+                showAddressBar={false}
+                regionID={targetUser.location?.regionID}
+                exactLocation={false}
+                height={150}
+              />
+            </View>
+          </View>
+        )}
         
         {/* Interest Tags */}
         <View style={styles.interestContainer}>
-        {/* TODO: Not a real thing yet */}
-            {(targetUser as any).interests?.map((interest, index) => (
+            {userSettings?.dataValues.skills?.map((skill, index) => (
                 <View key={index} style={styles.interestPill}>
-                    <Text style={styles.interestText}>{interest}</Text>
+                    <Text style={styles.interestText}>{skill}</Text>
                 </View>
             ))}
         </View>
@@ -510,7 +588,7 @@ export default function Profile({
                 key={handshake.id} 
                 handshake={handshake} 
                 userId={targetUser.id.toString()} 
-                token={token}
+                token={token || ""}
               />
           ))
         }
@@ -523,7 +601,7 @@ export default function Profile({
                   key={handshake.id} 
                   handshake={handshake} 
                   userId={targetUser.id.toString()} 
-                  token={token}
+                  token={token || ""}
                 />
             ))
         }
@@ -580,7 +658,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 12,
   },
-  statusPill: {
+  statusPillStyle: {
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 15,
@@ -594,21 +672,21 @@ const styles = StyleSheet.create({
   statusCompleted: {
     backgroundColor: '#3498db',
   },
-  statusText: {
+  statusTextStyle: {
     color: '#FFF',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  userTitle: {
+  userTitleStyle: {
       fontSize: 14,
       color: "#666",
       marginBottom: 5,
   },
-    actionButtons: {
+  actionButtons: {
       flexDirection: "row",
       marginBottom: 20,
       width: "80%",
-      justifyContent: "space-between",
+      justifyContent: "center",
   },
   actionButton: {
       width: 50,
@@ -789,92 +867,126 @@ const styles = StyleSheet.create({
       borderRadius: 20,
   },
   sectionTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: '#2D3748',
-  marginTop: 10,
-  marginBottom: 15,
-},
-emptyMessage: {
-  textAlign: 'center',
-  fontSize: 16,
-  color: '#718096',
-  marginTop: 20,
-  marginBottom: 20,
-},
-handshakeCard: {
-  backgroundColor: '#FFF',
-  borderRadius: 10,
-  marginBottom: 15,
-  padding: 15,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 2,
-},
-handshakeContent: {
-  width: '100%',
-},
-handshakeHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 10,
-},
-handshakeTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#2D3748',
-},
-statusPill: {
-  paddingVertical: 4,
-  paddingHorizontal: 10,
-  borderRadius: 15,
-},
-statusText: {
-  color: '#FFF',
-  fontSize: 12,
-  fontWeight: 'bold',
-},
-postReference: {
-  fontSize: 15,
-  color: '#4A5568',
-  marginBottom: 5,
-},
-userReference: {
-  fontSize: 14,
-  color: '#718096',
-  marginBottom: 5,
-},
-dateText: {
-  fontSize: 12,
-  color: '#A0AEC0',
-},
-handshakeButton: {
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 5,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-acceptButton: {
-  backgroundColor: '#4a90e2',
-},
-pendingButton: {
-  backgroundColor: '#999',
-},
-acceptedButton: {
-  backgroundColor: '#999',
-},
-completedButton: {
-  backgroundColor: '#2ecc71',
-},
-actionButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-},
-  // Edit profile styles
-
-
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  emptyMessage: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#718096',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  handshakeCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    marginBottom: 15,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  handshakeContent: {
+    width: '100%',
+  },
+  handshakeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  handshakeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2D3748',
+  },
+  postReference: {
+    fontSize: 15,
+    color: '#4A5568',
+    marginBottom: 5,
+  },
+  userReference: {
+    fontSize: 14,
+    color: '#718096',
+    marginBottom: 5,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#A0AEC0',
+  },
+  handshakeButton: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acceptButton: {
+    backgroundColor: '#4a90e2',
+  },
+  pendingButton: {
+    backgroundColor: '#999',
+  },
+  acceptedButton: {
+    backgroundColor: '#999',
+  },
+  completedButton: {
+    backgroundColor: '#2ecc71',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  container: {
+      flex: 1,
+      backgroundColor: "#f8f9fa",
+  },
+  profileHeader: {
+      alignItems: "center",
+      padding: 20,
+      position: "relative",
+  },
+  profilePicture: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      marginBottom: 5,
+  },
+  userName: {
+      fontSize: 32,
+      fontWeight: "bold",
+      color: "#2D3748",
+      marginBottom: 5,
+  },
+  userKudos: {
+      fontSize: 18,
+      color: "#718096",
+      marginBottom: 15,
+  },
+  // Location styles
+  locationContainer: {
+    marginTop: 15,
+    marginBottom: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  locationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4A5568',
+    marginBottom: 10,
+  },
+  mapContainer: {
+    width: '90%',
+    height: 150,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
 });

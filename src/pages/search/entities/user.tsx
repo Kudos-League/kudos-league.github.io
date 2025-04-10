@@ -40,6 +40,7 @@ export default function User() {
       try {
         if (isLoggedInUser) {
           setUser(userProfile);
+          console.log("User profile: ", userProfile);
           setFormState(userProfile || {});
           if (!posts?.length) {
             const posts = await getUserPosts(targetUserID.toString(), authState?.token!);
@@ -84,7 +85,12 @@ export default function User() {
       if (!formState) return;
       if (!token) return setError("No token available. Please login.");
       const state = formData || formState; // TODO: FormState isnt used?
-      const updatedUser = await updateUser(state, "me", token);
+     if (!targetUserID) {
+         setError("User ID not found.");
+         setLoading(false);
+         return;
+      }
+      const updatedUser = await updateUser(state, targetUserID.toString(), token);
       setUser(updatedUser);
     } catch (e) {
       setError("Failed to update user.");
