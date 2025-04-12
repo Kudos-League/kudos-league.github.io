@@ -419,7 +419,7 @@ const Post = () => {
               </View>
             )}
 
-            { (user?.id !== postDetails?.sender?.id && !displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id)) && ( //NO DOUBLE HANDSHAKES BY THE SAME USER!
+            {(user?.id === postDetails?.sender?.id && !displayedHandshakes?.map(h => {h.sender?.id}).includes(user?.id)) && ( //TODO: Check for length and all 3 cases
             <TouchableOpacity
               style={styles.createNewButton}
               onPress={handleSubmitHandshake}

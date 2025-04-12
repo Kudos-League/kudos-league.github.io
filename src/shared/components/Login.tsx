@@ -32,10 +32,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
       await login(data.username, data.password);
       onSuccess?.();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Login failed. Please try again.";
+      const message = error.message
       setErrorMessage(message);
       onError?.(message);
     }
