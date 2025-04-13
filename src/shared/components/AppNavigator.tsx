@@ -17,6 +17,8 @@ import Profile from "pages/search/entities/user";
 import SignIn from "pages/login/login";
 import SignUp from "pages/login/tabs/sign-up";
 
+import EventDetails from "pages/events/event";
+
 // Navigation Constants
 const HEADER_STYLE = {
   backgroundColor: '#ffffff',
@@ -147,6 +149,14 @@ function AppNavigator() {
             title: "Profile",
           }}
         />
+
+      <Stack.Screen
+        name="Event"
+        component={EventDetails}
+        options={{
+          title: "Event Details",
+        }}
+      />
       </Stack.Group>
       
       {/* Authentication Flow */}

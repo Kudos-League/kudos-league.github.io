@@ -343,8 +343,6 @@ export async function getMessages(channelID: number, token: string) {
     },
   });
 
-  console.log('fetchMessages', response.data); // TODO: Remove debug
-
   return response.data;
 }
 
@@ -444,8 +442,26 @@ export async function joinEvent(eventId: number, token: string): Promise<{ data:
 }
 
 /** @throws {AxiosError} */
-export async function getEvents(): Promise<{ data: EventDTO[] }> {
-  return instance.get("/events");
+export async function leaveEvent(eventId: number, token: string): Promise<{ data: { success: boolean } }> {
+  if (!token) throw Error("Invalid token");
+
+  return instance.post(`/events/${eventId}/leave`, null, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/** @throws {AxiosError} */
+export async function getEvents(filters?: {
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  all?: 'true' | 'false';
+}): Promise<EventDTO[]> {
+  const queryString = filters ? toQueryParams(filters) : '';
+  const response = await instance.get(`/events${queryString}`);
+  return response.data;
 }
 
 /** @throws {AxiosError} */

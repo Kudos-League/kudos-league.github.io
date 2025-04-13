@@ -24,7 +24,12 @@ export const useWebSocket = (
       transports: ['websocket', 'polling'],
       query: { token },
       withCredentials: true,
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 2000
     });
 
     setSocket(newSocket);

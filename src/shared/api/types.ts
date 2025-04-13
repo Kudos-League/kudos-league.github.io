@@ -159,6 +159,7 @@ export type EventDTO = {
   createdAt: string;
   updatedAt: string;
   content?: string;
+  participants?: UserDTO[];
 };
 
 export type CreateEventDTO = {

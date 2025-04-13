@@ -3,28 +3,18 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { EventDTO } from 'shared/api/types';
 import { getEvents } from 'shared/api/actions';
 import dayjs from 'dayjs';
+import { useNavigation } from '@react-navigation/native';
 
 export default function CurrentEvent() {
+  const navigation = useNavigation();
   const [events, setEvents] = useState<EventDTO[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<EventDTO[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const fetchAllEvents = async () => {
       try {
         const response = await getEvents();
-        const allEvents = response.data; 
-
-        setEvents(allEvents);
-
-        const now = dayjs();
-        const ongoing = allEvents.filter((evt) => {
-          const start = dayjs(evt.startTime);
-          const end = dayjs(evt.endTime);
-          return now.isAfter(start) && now.isBefore(end);
-        });
-
-        setFilteredEvents(ongoing);
+        setEvents(response);
         setCurrentIndex(0);
       } catch (err) {
         console.warn('Failed to fetch events:', err);
@@ -37,18 +27,18 @@ export default function CurrentEvent() {
   const handleNext = () => {
     setCurrentIndex((prev) => {
       const next = prev + 1;
-      return next >= filteredEvents.length ? 0 : next;
+      return next >= events?.length ? 0 : next;
     });
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) => {
       const next = prev - 1;
-      return next < 0 ? filteredEvents.length - 1 : next;
+      return next < 0 ? events?.length - 1 : next;
     });
   };
 
-  if (!filteredEvents.length) {
+  if (!events?.length) {
     return (
       <View style={styles.noEventContainer}>
         <Text style={styles.noEventText}>No current events right now.</Text>
@@ -56,7 +46,7 @@ export default function CurrentEvent() {
     );
   }
 
-  const currentEvent = filteredEvents[currentIndex];
+  const currentEvent = events?.[currentIndex];
 
   return (
     <View style={styles.container}>
@@ -67,7 +57,9 @@ export default function CurrentEvent() {
         </TouchableOpacity>
 
         <View style={styles.eventCard}>
-          <Text style={styles.eventTitle}>{currentEvent.title}</Text>
+          <TouchableOpacity style={styles.eventCard} onPress={() => navigation.navigate('Event', { id: currentEvent.id })}>
+            <Text style={styles.eventTitle}>{currentEvent.title}</Text>
+          </TouchableOpacity>
           <Text style={styles.eventDescription}>{currentEvent.description}</Text>
           <Text style={styles.eventDates}>
             {dayjs(currentEvent.startTime).format('MMM D, YYYY h:mm A')} -{' '}
