@@ -1,6 +1,7 @@
 // TODO: Replace all these types with shared types if/when we factor API types into a codebase shared by FE/BE
 
 import { UserDTO } from "index";
+import { MapCoordinates } from "shared/components/Map";
 
 export type CreatePostDTO = {
   title: string;
@@ -35,11 +36,12 @@ interface CustomFile extends File {
   uri: string;
 }
 export type ProfileFormValues = {
-  email: string;
-  avatar: CustomFile[];
-  avatarUrl?: string;
   description?: string;
-  location?: string;
+  email: string;
+  avatar: File[];
+  avatarUrl?: string;
+  location: MapCoordinates
+  tags?: string;
   mapCoordinates?: {
     latitude: number;
     longitude: number;

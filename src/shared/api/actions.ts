@@ -347,6 +347,7 @@ export async function getMessages(channelID: number, token: string) {
 /** @throws {AxiosError} */
 export async function createDMChannel(user1ID: number, user2ID: number, token: string) {
   if (!token) throw Error("Invalid token");
+  console.log("Creating DM channel with user IDs:", user1ID, user2ID);
 
   const response = await instance.post(
     "/channels",
@@ -362,6 +363,8 @@ export async function createDMChannel(user1ID: number, user2ID: number, token: s
       },
     }
   );
+
+  console.log("DM channel created successfully:", response.data);
 
   return response.data;
 }
