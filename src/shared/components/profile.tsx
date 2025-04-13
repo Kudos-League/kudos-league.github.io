@@ -16,14 +16,7 @@ import { getAvatarURL, getEndpointUrl } from "shared/api/config";
 import { createDMChannel, createRewardOffer, getUserDetails, getUserSettings, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
-import Map, { MapCoordinates } from "./Map";
-
-type ProfileFormValues = {
-  email: string;
-  avatar: File[];
-  avatarUrl?: string;
-  location: MapCoordinates
-};
+import Map from "./Map";
 
 type NavigationProps = StackNavigationProp<RootStackParamList, "Post">;
 
@@ -310,6 +303,7 @@ export default function Profile({
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [userSettings, setUserSettings] = useState<any | null>(null);
+  const navigator = useNavigation<any>();
   
   useEffect(() => {
     const fetchUserSettings = async () => {
@@ -317,6 +311,7 @@ export default function Profile({
       try {
         const settings = await getUserSettings(token);
         setUserSettings(settings);
+        console.log("User settings:", settings);
       } catch (error) {
         console.error("Error fetching user settings:", error);
       }
@@ -343,6 +338,12 @@ export default function Profile({
       formData.append("email", data.email);
       hasChanges = true;
       changes.push("Email updated");
+    }
+
+    if (data.tags && data.tags.length > 0) {
+      formData.append("tags", JSON.stringify(data.tags.split(",").map((tag: string) => tag.trim())));
+      hasChanges = true;
+      changes.push("Tags updated");
     }
   
     if (data.avatar.length > 0) {
@@ -429,13 +430,24 @@ export default function Profile({
       console.error("No token found");
       return;
     }
-  
+
     try {
-      if (loggedInUser) 
-        await createDMChannel(loggedInUser.id, targetUser.id, token || "");
-      setIsChatOpen(true);
+      // Show loading state
+      // setLoading(true);
+      console.log("loading channel");
+      
+      if (loggedInUser) {
+        // First create the channel
+        const channel = await createDMChannel(loggedInUser.id, targetUser.id, token || "");
+        
+        // Then navigate with complete channel data
+        navigator.navigate("Chat");
+      }
     } catch (error) {
       console.error("Error creating DM channel:", error);
+    } finally {
+      // setLoading(false);
+      console.log("Channel creation ended");
     }
   };
 
@@ -613,7 +625,7 @@ export default function Profile({
         <Text style={styles.emptyMessage}>No handshakes available</Text>
       )}
 
-      {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />}
+      {/* {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />} */}
     </ScrollView>
   );
 }

@@ -147,6 +147,20 @@ const EditProfile = ({ form,
           </Text>
         </View>
 
+        {/* Tags Input */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Tags</Text>
+          <Input
+            name="tags"
+            form={form}
+            placeholder="Enter tags semarated by commas" 
+            label="tags"
+          />
+          <Text style={styles.inputHelp}>
+            Add tags to your profile so we can know about your interests. Use commas to separate multiple tags.
+          </Text>
+        </View>
+
         
         {/* Avatar Upload & Preview */}
         <View style={styles.avatarEditContainer}>
