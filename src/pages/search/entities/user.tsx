@@ -40,7 +40,6 @@ export default function User() {
       try {
         if (isLoggedInUser) {
           setUser(userProfile);
-          console.log("User profile: ", userProfile);
           setFormState(userProfile || {});
           if (!posts?.length) {
             const posts = await getUserPosts(targetUserID.toString(), authState?.token!);

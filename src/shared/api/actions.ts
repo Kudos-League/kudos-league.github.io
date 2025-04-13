@@ -199,7 +199,6 @@ export async function updateUser(
   id: string = "me",
   token: string
 ) {
-  console.log("############Updating user with request:", request, "id:", id);
   if (!token) throw Error("Invalid token");
   const response = await instance.patch(`/users/${id}`, request, {
     headers: {
@@ -207,7 +206,6 @@ export async function updateUser(
       Authorization: `Bearer ${token}`,
     },
   });
-  console.log("############Updated user with response:", response.data);
   return response.data;
 }
 

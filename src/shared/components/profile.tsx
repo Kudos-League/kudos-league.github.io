@@ -317,7 +317,6 @@ export default function Profile({
       try {
         const settings = await getUserSettings(token);
         setUserSettings(settings);
-        console.log("User settings:", settings);
       } catch (error) {
         console.error("Error fetching user settings:", error);
       }

@@ -3,12 +3,8 @@ import { Avatar as PaperAvatar } from 'react-native-paper';
 import { getAvatarURL } from "shared/api/config";
 
 export default function AvatarComponent({ avatar, username, sx, style, size }: { avatar: string | null | undefined, username: string | null, sx?: any, style?: any, size?: number}) {
-    console.log('AvatarComponent.avatar', avatar);
-
     if (!avatar) avatar = "https://via.placeholder.com/150"
     else avatar = getAvatarURL(avatar);
-
-    console.log('AvatarComponent.avatar (resolved)', avatar);
 
     if (size) {
         return (
