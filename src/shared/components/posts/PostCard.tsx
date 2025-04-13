@@ -57,7 +57,7 @@ export default function PostCard(props: Post) {
                 {props.sender && (
                   <AvatarComponent
                     username={props.sender.username}
-                    avatar={getAvatarURL(props.sender.avatar) || 'http://via.placeholder.com/150'}
+                    avatar={props.sender.avatar}
                     sx={{ width: 32, height: 32 }}
                   />
                 )}

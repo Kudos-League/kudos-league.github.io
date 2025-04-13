@@ -4,6 +4,7 @@ import Input from "./forms/input";
 import { launchImageLibrary } from "react-native-image-picker";
 import Map from './Map';
 import useLocation from "shared/hooks/useLocation";
+import AvatarComponent from "./Avatar";
 
 interface EditProfileProps {
   form: any;
@@ -100,13 +101,12 @@ const EditProfile = ({ form,
         </TouchableOpacity>
         
         <Text style={styles.editTitle}>Edit Profile</Text>
-        
-        {getAvatarUrl() && 
-          <Image 
-            source={{ uri: getAvatarUrl() }} 
-            style={styles.profilePicture} 
-          />
-        }
+
+        <AvatarComponent
+          username={targetUser.username}
+          avatar={targetUser.avatar}
+          style={styles.profilePicture}
+        />
         
         <Text style={styles.userName}>{targetUser.username}</Text>
         <Text style={styles.userKudos}>{targetUser.kudos.toLocaleString()} Kudos</Text>
@@ -150,8 +150,6 @@ const EditProfile = ({ form,
         
         {/* Avatar Upload & Preview */}
         <View style={styles.avatarEditContainer}>
-          <Text style={styles.inputLabel}>Profile Picture</Text>
-          
           {/* Avatar Upload & Preview */}
           <View style={globalStyles.avatarEditContainer}>
             <Text style={globalStyles.inputLabel}>Profile Picture</Text>

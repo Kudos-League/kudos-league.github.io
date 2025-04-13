@@ -13,6 +13,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { getAvatarURL } from 'shared/api/config';
 import Leaderboard from './Leaderboard';
 import CreateEvent from './events/CreateEvent';
+import AvatarComponent from './Avatar';
 
 const Drawer = createDrawerNavigator();
 
@@ -30,7 +31,11 @@ function HeaderRight() {
       >
         <View style={styles.avatarContainer}>
           {user?.avatar ? (
-            <Image source={{ uri: getAvatarURL(user.avatar) || "" }} style={styles.avatar} />
+            <AvatarComponent
+              username={user.username}
+              avatar={user.avatar}
+              style={styles.avatar}
+            />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{user?.username?.charAt(0) || "U"}</Text>

@@ -13,7 +13,7 @@ const Message: React.FC<AlertProps> = ({ message }) => {
     <View key={message.id} style={styles.message}>
         {message.author?.avatar && <AvatarComponent
             username={message.author?.username || "Anonymous"}
-            avatar={getAvatarURL(message.author?.avatar)}
+            avatar={message.author?.avatar}
             style={styles.avatar}
         />}
         <View style={styles.messageContent}>

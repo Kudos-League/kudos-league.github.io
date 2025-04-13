@@ -19,6 +19,7 @@ import { getAvatarURL, getEndpointUrl } from 'shared/api/config';
 import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
 import { useWebSocket } from 'shared/hooks/useWebSocket';
+import AvatarComponent from '../Avatar';
 
 // Message time formatter
 const formatMessageTime = (timestamp: string) => {
@@ -268,10 +269,12 @@ const Chat = ({ onClose }) => {
                   style={styles.channelItem}
                 >
                   <View style={styles.avatarContainer}>
-                    <Avatar.Image 
-                      source={{ uri: getAvatarURL(item.otherUser.avatar) || "" }} 
-                      size={50} 
+                    <AvatarComponent
+                      username={item.otherUser.username}
+                      avatar={item.otherUser.avatar}
+                      size={50}
                     />
+
                     {item.lastMessage?.isUnread && (
                       <Badge style={styles.unreadBadge}>1</Badge>
                     )}

@@ -1,11 +1,28 @@
 import { Avatar } from "@mui/material";
+import { Avatar as PaperAvatar } from 'react-native-paper';
 import { getAvatarURL } from "shared/api/config";
 
-export default function AvatarComponent({ avatar, username, sx, style }: { avatar: string | null, username: string | null, sx?: any, style?: any}) {
+export default function AvatarComponent({ avatar, username, sx, style, size }: { avatar: string | null | undefined, username: string | null, sx?: any, style?: any, size?: number}) {
+    console.log('AvatarComponent.avatar', avatar);
+
+    if (!avatar) avatar = "https://via.placeholder.com/150"
+    else avatar = getAvatarURL(avatar);
+
+    console.log('AvatarComponent.avatar (resolved)', avatar);
+
+    if (size) {
+        return (
+            <PaperAvatar.Image 
+                source={{ uri: avatar! }}
+                size={size}
+                style={style}
+            />
+        )
+    }
     return (
         <Avatar
             alt={username || "Display Name Unavailable"}
-            src={getAvatarURL(avatar) || "https://via.placeholder.com/150"}
+            src={avatar!}
             sx={sx}
             style={style}
         />
