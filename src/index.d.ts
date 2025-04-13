@@ -1,4 +1,4 @@
-import { LocationDTO } from "shared/api/types";
+import { CategoryDTO, LocationDTO } from "shared/api/types";
 import { MapCoordinates } from "shared/components/Map";
 
 interface Post {
@@ -33,6 +33,7 @@ interface Post {
   location: any; // TODO
   handshakes: any[]; // TODO
   images: string[]; // TODO
+  category: CategoryDTO;
 }
 
 interface Badge {

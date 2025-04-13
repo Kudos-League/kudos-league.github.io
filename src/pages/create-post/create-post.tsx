@@ -1,22 +1,22 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, TextInput, Modal, TouchableWithoutFeedback } from 'react-native';
-
+import { View, Text, TouchableOpacity, TextInput, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
-
 import { Button } from 'react-native-paper';
 import { usePosts } from 'shared/hooks/usePosts';
 import { useAuth } from 'shared/hooks/useAuth';
 import Login from 'shared/components/Login';
 import Input from 'shared/components/forms/input';
 import globalStyles from 'shared/styles';
-import { useAppSelector } from 'redux_store/hooks';
 import { useEffect, useRef, useState } from 'react';
 import GiftType from './gift-type';
 import { useNavigation } from '@react-navigation/native';
 import useLocation from 'shared/hooks/useLocation';
 import Map from 'shared/components/Map';
-import { IconButton, MD3Colors } from 'react-native-paper';
+import { IconButton } from 'react-native-paper';
+import { Picker } from '@react-native-picker/picker';
+import { getCategories } from 'shared/api/actions';
+
 import '../../shared/assets/icons/addImage.png';
+import { CategoryDTO } from 'shared/api/types';
 
 type FormValues = {
   title: string;
@@ -25,6 +25,7 @@ type FormValues = {
   location: {lat: number, lng: number};
   files?: File[];
   tags: string[];
+  categoryID: number;
 };
 
 export default function CreatePost() {
@@ -55,6 +56,7 @@ export default function CreatePost() {
     body: false,
   });
   const [badWordFlag, setBadWordFlag] = useState(false);
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
 
   // Track form validity
   const [isFormValid, setIsFormValid] = useState(false);
@@ -67,6 +69,12 @@ export default function CreatePost() {
   // useEffect(() => {
   //   validateForm();
   // }, [form.watch('title'), form.watch('body')]);
+
+  useEffect(() => {
+    getCategories()
+      .then(setCategories)
+      .catch((err) => console.error("Failed to load categories", err));
+  }, []);  
 
   // Form validation function
   const validateForm = () => {
@@ -135,6 +143,7 @@ export default function CreatePost() {
         type: data.type || postType, // Now using the postType state
         tags: data.tags || [],
         files: data.files || [],
+        categoryID: data.categoryID,
         location
       };
       await addPost(newPost, token!);
@@ -272,6 +281,19 @@ export default function CreatePost() {
             {errors.body && (
               <Text style={styles.errorText}>Info is required</Text>
             )}
+
+          <Text style={globalStyles.inputTitle}>Category</Text>
+          <View style={[globalStyles.inputForm, { padding: 8 }]}>
+            <Picker
+              selectedValue={form.watch('categoryID')}
+              onValueChange={(value) => form.setValue('categoryID', value)}
+            >
+              <Picker.Item label="Select a category" value={undefined} />
+              {categories.map((cat) => (
+                <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+              ))}
+            </Picker>
+          </View>
 
             <View
               style={{

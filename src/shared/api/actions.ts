@@ -1,6 +1,7 @@
 import { UserDTO } from "index";
 import { getEndpointUrl } from "./config";
 import {
+  CategoryDTO,
   CreateEventDTO,
   CreateHandshakeDTO,
   CreateMessageDTO,
@@ -468,4 +469,10 @@ export async function getEvents(filters?: {
 /** @throws {AxiosError} */
 export async function getEventDetails(eventId: number): Promise<{ data: EventDTO }> {
   return instance.get(`/events/${eventId}`);
+}
+
+/** @throws {AxiosError} */
+export async function getCategories(): Promise<CategoryDTO[]> {
+  const response = await instance.get('/categories');
+  return response.data;
 }

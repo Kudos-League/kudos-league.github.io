@@ -317,6 +317,12 @@ const Post = () => {
 
             <View style={styles.titleContainer}>
               <Text style={styles.title}>{postDetails.title}</Text>
+              {postDetails.category?.name && (
+                <Text style={styles.categoryText}>
+                  Category: {postDetails.category.name}
+                </Text>
+              )}
+
               <View style={styles.badgesRow}>
                 <Text
                   style={[
@@ -791,7 +797,12 @@ const styles = StyleSheet.create({
     borderRadius: 50, // Makes it circular
     marginBottom: 10,
   },
-
+  categoryText: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 4,
+    fontStyle: "italic",
+  },  
   createNewText: {
     color: "#fff",
     fontSize: 16,

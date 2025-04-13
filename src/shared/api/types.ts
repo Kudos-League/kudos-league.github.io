@@ -9,6 +9,7 @@ export type CreatePostDTO = {
   tags: string[];
   type: string;
   files?: File[];
+  categoryID: number;
 };
 
 export type LocationDTO = {
@@ -31,6 +32,7 @@ export type PostDTO = {
   createdAt: Date;
   updatedAt: Date;
   location: LocationDTO;
+  category: CategoryDTO;
 };
 interface CustomFile extends File {
   uri: string;
@@ -173,3 +175,10 @@ export type CreateEventDTO = {
   content?: string;
   location: LocationDTO | null;
 };
+
+export type CategoryDTO = {
+  id: number;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
