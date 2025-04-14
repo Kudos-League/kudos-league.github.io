@@ -51,6 +51,7 @@ interface UserDTO {
   isEmailVerified?: boolean;
   password?: string | null;
   locationID: number | null;
+  tags: Tag[];
   badges: Badge[]
   location?: MapCoordinates;
 }

@@ -13,7 +13,7 @@ import { useAuth } from "shared/hooks/useAuth";
 import { getAvatarURL, getEndpointUrl } from "shared/api/config";
 // import { createDMChannel, createRewardOffer, updateHandshake } from "shared/api/actions";
 // import { getEndpointUrl } from "shared/api/config";
-import { createDMChannel, createRewardOffer, getUserDetails, getUserSettings, updateHandshake } from "shared/api/actions";
+import { addTagToUser, createDMChannel, createRewardOffer, getUserDetails, getUserSettings, updateHandshake } from "shared/api/actions";
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
 import Map from "./Map";
@@ -118,7 +118,7 @@ const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; 
       await updateHandshake(
         handshake.id,
         { status: 'accepted' },
-        token
+        token || ""
       );
       
       setStatus('accepted');
@@ -155,7 +155,7 @@ const HandshakeCard = ({ handshake, userId, token }: { handshake: HandshakeDTO; 
       await updateHandshake(
         handshake.id,
         { status: 'completed' },
-        token
+        token || ""
       );
       
       // Update local status
@@ -341,9 +341,24 @@ export default function Profile({
     }
 
     if (data.tags && data.tags.length > 0) {
-      formData.append("tags", JSON.stringify(data.tags.split(",").map((tag: string) => tag.trim())));
-      hasChanges = true;
-      changes.push("Tags updated");
+      try {
+        const tagArray = data.tags.split(",").map((tag) => tag.trim());
+        
+        // Add each tag individually using the dedicated endpoint
+        for (const tagName of tagArray) {
+          await addTagToUser(
+            tagName, // Send the tag as a CreateTagDTO object with a name property
+            "me",
+            token || ""
+          );
+        }
+        
+        hasChanges = true;
+        changes.push("Tags updated");
+      } catch (error) {
+        console.error("Error adding tags:", error);
+        // Handle error as appropriate
+      }
     }
   
     if (data.avatar.length > 0) {
@@ -527,9 +542,9 @@ export default function Profile({
         
         {/* Interest Tags */}
         <View style={styles.interestContainer}>
-            {userSettings?.dataValues.skills?.map((skill, index) => (
+            {targetUser.tags?.map((tag, index) => (
                 <View key={index} style={styles.interestPill}>
-                    <Text style={styles.interestText}>{skill}</Text>
+                    <Text style={styles.interestText}>{tag.name}</Text>
                 </View>
             ))}
         </View>

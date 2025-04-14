@@ -15,6 +15,7 @@ import {
   SendCommentDTO,
   UserLoginRequestSchemaDTO,
   UserLoginResponseDTO,
+  UserTagRequestDTO,
 } from "./types";
 import axios from "axios";
 
@@ -207,6 +208,36 @@ export async function updateUser(
       Authorization: `Bearer ${token}`,
     },
   });
+  return response.data;
+}
+
+/**
+ * Adds a tag to a user
+ * @param userId The ID of the user (defaults to "me" for the current user)
+ * @param tag The tag to add
+ * @param token Authentication token
+ * @returns The updated user data
+ * @throws {AxiosError}
+ */
+
+export async function addTagToUser(
+  tagName: string,
+  userId: string = "me",
+  token: string
+) {
+  if (!token) throw new Error("Invalid token");
+  
+  // Ensure we're sending a properly formatted JSON object
+  const response = await instance.post(`/users/${userId}/tags`, 
+    { name: tagName, description: "" }, // Make sure this is a proper JSON object
+    {
+      headers: {
+        "Content-Type": "application/json", // Explicitly set content type
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  
   return response.data;
 }
 

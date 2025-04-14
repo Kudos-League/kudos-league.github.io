@@ -76,9 +76,6 @@ export type CreateUserDTO = {
   password: string;
 };
 
-export type UserSettingsDTO = {
-  about?: string;
-};
 
 export interface MessageDTO {
   id: number;
@@ -181,4 +178,37 @@ export type CategoryDTO = {
   name: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserTagDTO {
+  name: string;
+  description?: string;
+  userCount?: number;
+  postCount?: number;
+  users?: string[];
+  posts?: string[];
+}
+
+export interface UserTagRequestDTO {
+  name: string;
+  description?: string;
+}
+
+export interface UserSettingsDTO {
+  userID: number;
+  skills: string[];
+  about: string;
+  tags: string[];
+  blockedUsers: number[];
+  invitationToken: string;
+  invitationCreatedAt: string;
+  invitationSentAt: string;
+  invitationAcceptedAt: string;
+  invitationLimit: number;
+  invitedByType: string;
+  invitedByID: number;
+  invitationsCount: number;
+  id: number;
+  createdAt: string;
+  updatedAt: string;
 }
