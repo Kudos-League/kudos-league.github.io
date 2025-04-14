@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Switch } fro
 import { Picker } from '@react-native-picker/picker';
 import { fetchLeaderboard } from "shared/api/actions";
 import { useAuth } from "shared/hooks/useAuth";
+import AvatarComponent from "./Avatar";
 
 type LeaderboardUser = {
   id: number;
@@ -120,10 +121,7 @@ export default function Leaderboard() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item, index }) => (
             <View style={styles.entry}>
-              <Image 
-                source={{ uri: item.avatar || 'https://via.placeholder.com/50' }} 
-                style={styles.avatar} 
-              />
+              <AvatarComponent avatar={item.avatar} style={styles.avatar} username={item.username} />
               <View style={styles.userInfo}>
                 <Text style={styles.username}>{item.username}</Text>
                 <Text style={styles.location}>{item.location?.name || "Unknown"}</Text>
