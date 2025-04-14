@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.js": "/static/js/bundle.js",
+    "static/js/vendors-node_modules_expo-location_build_index_js.chunk.js": "/static/js/vendors-node_modules_expo-location_build_index_js.chunk.js",
+    "static/media/MaterialCommunityIcons.ttf": "/static/media/MaterialCommunityIcons.5d42b4e60858731e7b65.ttf",
+    "static/media/Ionicons.ttf": "/static/media/Ionicons.3517aeaa34b2f8cd8eef.ttf",
+    "static/media/MaterialIcons.ttf": "/static/media/MaterialIcons.120b4c7bbd155bd0a04d.ttf",
+    "static/media/login_background.jpg": "/static/media/login_background.6299d20e45bf79d7170a.jpg",
+    "static/media/FontAwesome.ttf": "/static/media/FontAwesome.1e59d2330b4c6deb84b3.ttf",
+    "static/media/addImage.png": "/static/media/addImage.a39f2e6d2be03dc78668.png",
+    "index.html": "/index.html",
+    "static/media/powered_by_google_on_white.png": "/static/media/powered_by_google_on_white.f241a554561961c8f6bb.png",
+    "bundle.js.map": "/static/js/bundle.js.map",
+    "vendors-node_modules_expo-location_build_index_js.chunk.js.map": "/static/js/vendors-node_modules_expo-location_build_index_js.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/js/bundle.js"
+  ]
+}
