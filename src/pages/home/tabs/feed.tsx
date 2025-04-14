@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -18,17 +18,27 @@ import globalStyles from "shared/styles";
 import { Ionicons } from '@expo/vector-icons';
 import { searchPosts } from "shared/api/actions";
 import CurrentEvent from "shared/components/events/CurrentEvent";
+import { PostDTO } from "shared/api/types";
+
+interface TypeOfOrdering {
+  type: "date" | "distance" | "kudos";
+  order: "asc" | "desc";
+}
+
+type PostFilterType = "gifts" | "requests";
 
 export default function Feed() {
   const navigation = useNavigation();
   const { posts, fetchPosts, loading, error } = usePosts();
+  const [orderedPosts, setOrderedPosts] = useState<PostDTO[]>([]);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState([]);
   const [cache, setCache] = useState({});
   const [filterVisible, setFilterVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("gifts");
-  const [sortOption, setSortOption] = useState("Default Sort");
+  const [activeTab, setActiveTab] = useState<PostFilterType>("gifts");
+  const [sortOption, setSortOption] = useState("Sort by date");
+  const [typeOfOrdering, setTypeOfOrdering] = useState<TypeOfOrdering>({ type: "date", order: "desc" });
   
   const searchAnimation = useRef(new Animated.Value(0)).current;
   const filterAnimation = useRef(new Animated.Value(0)).current;
@@ -38,10 +48,58 @@ export default function Feed() {
     fetchPosts();
   }, []);
 
+  // Memoized filter and sort function 
+  const filterAndOrderPosts = useCallback((posts: PostDTO[], orderingType: TypeOfOrdering, filterType: PostFilterType) => {
+    if (!posts || posts.length === 0) {
+      return [];
+    }
+
+    // First filter the posts by type
+    let filteredPosts = [...posts];
+    if (filterType === "gifts") {
+      filteredPosts = filteredPosts.filter((post) => post.type === "gift");
+    } else if (filterType === "requests") {
+      filteredPosts = filteredPosts.filter((post) => post.type === "request");
+    }
+
+    // Then sort the filtered posts
+    let sortedPosts = [...filteredPosts];
+    if (orderingType.type === "date") {
+      sortedPosts.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return orderingType.order === "desc" ? dateB - dateA : dateA - dateB;
+      });
+    } else if (orderingType.type === "distance") {
+      sortedPosts.sort((a, b) => {
+        const distanceA = getDistanceBetweenLocations(a.location, null);
+        const distanceB = getDistanceBetweenLocations(b.location, null);
+        return orderingType.order === "desc" ? distanceB - distanceA : distanceA - distanceB;
+      });
+    } else if (orderingType.type === "kudos") {
+      sortedPosts.sort((a, b) => {
+        const kudosA = a.kudos || 0;
+        const kudosB = b.kudos || 0;
+        return orderingType.order === "desc" ? kudosB - kudosA : kudosA - kudosB;
+      });
+    }
+
+    return sortedPosts;
+  }, []);
+
+  // Apply filters and sorting whenever posts, activeTab, or typeOfOrdering changes
+  useEffect(() => {
+    if (posts && posts.length > 0) {
+      const filtered = filterAndOrderPosts(posts, typeOfOrdering, activeTab);
+      setOrderedPosts(filtered);
+    }
+  }, [posts, activeTab, typeOfOrdering, filterAndOrderPosts]);
+
   const handleCreatePost = () => {
     navigation.navigate("Create Post");
   };
-  
+
+  // Toggle visibility of search bar
   const toggleSearch = () => {
     if (searchVisible) {
       // Hide search
@@ -104,6 +162,12 @@ export default function Feed() {
       setResults([]);
     }
   }, [searchText]);
+
+  function getDistanceBetweenLocations(location1, location2) {
+    // Placeholder function to calculate distance between two locations
+    // Replace with actual distance calculation logic
+    return Math.random() * 100; // Random distance for demonstration
+  }
   
   const toggleFilter = () => {
     if (filterVisible) {
@@ -135,6 +199,17 @@ export default function Feed() {
     inputRange: [0, 1],
     outputRange: [0, 120]
   });
+
+  // Toggle between default sort and sort by distance
+  const toggleSortOption = () => {
+    if (sortOption === "Sort by date") {
+      setSortOption("Sort by Distance");
+      setTypeOfOrdering({ type: "distance", order: "asc" });
+    } else {
+      setSortOption("Sort by date");
+      setTypeOfOrdering({ type: "date", order: "desc" });
+    }
+  };
 
   const boldMatch = (text, match) => {
     const parts = text.split(new RegExp(`(${match})`, 'gi'));
@@ -232,7 +307,10 @@ export default function Feed() {
         </View>
         
         <View style={styles.sortFilterContainer}>
-          <TouchableOpacity style={styles.sortButton} onPress={() => setSortOption(sortOption === "Default Sort" ? "Sort by Distance" : "Default Sort")}>
+          <TouchableOpacity 
+            style={styles.sortButton} 
+            onPress={toggleSortOption}
+          >
             <Text style={styles.sortButtonText}>{sortOption}</Text>
           </TouchableOpacity>
           
@@ -245,20 +323,38 @@ export default function Feed() {
       <Animated.View style={[styles.filterContainer, { height: filterHeight, opacity: filterAnimation }]}>
         <Text style={styles.filterTitle}>Filter Options</Text>
         <View style={styles.filterOptions}>
-          <TouchableOpacity style={styles.filterOption}>
+          <TouchableOpacity 
+            style={[
+              styles.filterOption,
+              typeOfOrdering.type === "date" && typeOfOrdering.order === "desc" && styles.activeFilterOption
+            ]} 
+            onPress={() => setTypeOfOrdering({ type: "date", order: "desc" })}
+          >
             <Text>Date (Newest)</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterOption}>
-            <Text>Distance (Closest)</Text>
+          <TouchableOpacity 
+            style={[
+              styles.filterOption,
+              typeOfOrdering.type === "date" && typeOfOrdering.order === "asc" && styles.activeFilterOption
+            ]} 
+            onPress={() => setTypeOfOrdering({ type: "date", order: "asc" })}
+          >
+            <Text>Date (Oldest)</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterOption}>
-            <Text>Kudos (Highest)</Text>
+          <TouchableOpacity 
+            style={[
+              styles.filterOption,
+              typeOfOrdering.type === "distance" && typeOfOrdering.order === "asc" && styles.activeFilterOption
+            ]} 
+            onPress={() => setTypeOfOrdering({ type: "distance", order: "asc" })}
+          >
+            <Text>Distance (Closest)</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
       
       {!searchVisible || results.length === 0 ? (
-        <PostsContainer posts={posts} />
+        <PostsContainer posts={orderedPosts} />
       ) : null}
     </SafeAreaView>
   );
@@ -412,4 +508,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
+  activeFilterOption: {
+    backgroundColor: "#e0e0e0",
+    borderWidth: 1,
+    borderColor: "#000",
+  }
 });
