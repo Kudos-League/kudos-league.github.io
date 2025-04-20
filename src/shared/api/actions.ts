@@ -31,21 +31,21 @@ const instance = axios.create({
  * Supports nested fields and array data types.
  */
 function toFormData(dto: Record<string, any>): FormData {
-  const formData = new FormData();
+  const fd = new FormData();
 
   for (const key in dto) {
-    const value = dto[key];
+    const val = dto[key];
 
-    if (Array.isArray(value)) {
-      value.forEach((v) => formData.append(`${key}[]`, v));
-    } else if (value !== null && typeof value === 'object' && !(value instanceof Blob) && !(value instanceof File)) {
-      formData.append(key, JSON.stringify(value));
-    } else {
-      formData.append(key, value);
+    if (Array.isArray(val) && val.length && (val[0] instanceof File || val[0] instanceof Blob)) {
+      val.forEach(f => fd.append(key, f));
+    } else if (val !== null && typeof val === 'object' && !(val instanceof File) && !(val instanceof Blob)) {
+      fd.append(key, JSON.stringify(val));
+    } else if (val !== undefined) {
+      fd.append(key, val);
     }
   }
 
-  return formData;
+  return fd;
 }
 
 /**

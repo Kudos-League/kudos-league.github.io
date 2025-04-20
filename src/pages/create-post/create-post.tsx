@@ -29,6 +29,24 @@ type FormValues = {
   categoryID: number;
 };
 
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_COUNT = 5;
+
+function validateFiles(files?: File[]): string | null {
+  if (!files || files.length === 0) return null;
+
+  if (files.length > MAX_FILE_COUNT) {
+    return `You can only upload up to ${MAX_FILE_COUNT} file${MAX_FILE_COUNT > 1 ? 's' : ''}.`;
+  }
+
+  const tooLarge = files.find(file => file.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+  if (tooLarge) {
+    return `Each file must be under ${MAX_FILE_SIZE_MB}MB.`;
+  }
+
+  return null;
+}
+
 export default function CreatePost() {
   const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
@@ -59,6 +77,7 @@ export default function CreatePost() {
   });
   const [badWordFlag, setBadWordFlag] = useState(false);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   // Track form validity
   const [isFormValid, setIsFormValid] = useState(false);
@@ -139,35 +158,49 @@ export default function CreatePost() {
   };
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    // Validate form before submission
     validateForm();
-    
-    if (!isFormValid) {
-      return; // Prevent submission if form is invalid
-    }
-    
+  
+    if (!isFormValid) return;
     if (!isLoggedIn) {
       setShowLoginForm(true);
       return;
     }
-    
+
+    const fileError = validateFiles(data.files);
+    if (fileError) {
+      setServerError(fileError);
+      return;
+    }  
+  
     try {
+      setServerError(null);
+  
       const newPost = {
         title: data.title,
         body: data.body,
         type: data.type || postType,
         tags: data.tags || [],
-        files: data.files || [],
+        files: Array.isArray(data.files) ? data.files : [data.files],
         categoryID: data.categoryID,
         location
       };
-      await addPost(newPost, token!);
+  
+      await addPost(newPost, token!).unwrap();
+  
       form.reset();
-      navigation.goBack(); // TODO: Only on success
-    } catch (err) {
+      navigation.goBack();
+    } catch (err: any) {
       console.error('Failed to create post:', err);
+  
+      if (err?.response?.status === 413) {
+        setServerError("The files you uploaded are too large. Please reduce the file size and try again.");
+      } else if (err?.response?.data?.message) {
+        setServerError(err.response.data.message);
+      } else {
+        setServerError("An unexpected error occurred while creating the post.");
+      }
     }
-  };
+  };  
 
   const handleLoginSuccess = () => {
     setShowLoginForm(false);
@@ -405,6 +438,12 @@ export default function CreatePost() {
                 }}
               />
             </View>
+
+            {serverError && (
+              <Text style={styles.errorText}>
+                {serverError}
+              </Text>
+            )}
 
             <TouchableOpacity
               style={[

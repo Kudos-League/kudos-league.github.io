@@ -59,13 +59,14 @@ export default function Input<T extends FieldValues>({
         multiple={multipleFiles}
         selectedFiles={field.value as File[]}
         onChange={(files) => {
-          field.onChange(files);
-          if (onValueChange) onValueChange(files);
+          const normalized = Array.isArray(files) ? files : files ? [files] : [];
+          field.onChange(normalized);
+          if (onValueChange) onValueChange(normalized);
         }}
         type={type}
       />
     );
-  }
+  }  
 
   if (type === "dropdown") {
     return (
