@@ -63,16 +63,14 @@ const TagInput: React.FC<TagInputProps> = ({ onTagsChange, initialTags = [] }) =
   }, [currentTagInput]);
 
   useEffect(() => {
-    // Notify parent component when tags change
     onTagsChange(selectedTags);
-  }, [selectedTags, onTagsChange]);
+  }, [selectedTags]);
 
   const handleAddTag = () => {
     if (currentTagInput.trim() === '') return;
     
-    // Add tag as a new custom tag
     const newTag: Tag = {
-      id: `new-${Date.now()}`, // Temporary ID, backend will assign real one
+      id: `new-${Date.now()}`,
       name: currentTagInput.trim(),
     };
     

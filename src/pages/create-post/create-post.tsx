@@ -6,7 +6,7 @@ import { useAuth } from 'shared/hooks/useAuth';
 import Login from 'shared/components/Login';
 import Input from 'shared/components/forms/input';
 import globalStyles from 'shared/styles';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import GiftType from './gift-type';
 import { useNavigation } from '@react-navigation/native';
 import useLocation from 'shared/hooks/useLocation';
@@ -132,18 +132,18 @@ export default function CreatePost() {
     // this.focus(); //HACK: workaround for focus() not working properly with refs
   };
 
-  const handleTagsChange = (tags: { id: string; name: string; }[]) => {
-  // Convert tag objects to string array for the form
-  const tagNames = tags.map(tag => tag.name);
-  form.setValue('tags', tagNames);
-  
-  // Check for bad words in tags
-  const hasBadWord = tagNames.some(tag => 
-    badwords.includes(tag.toLowerCase().trim())
+  const handleTagsChange = useCallback(
+    (tags: { id: string; name: string }[]) => {
+      const tagNames = tags.map(t => t.name);
+      form.setValue('tags', tagNames);
+
+      const hasBadWord = tagNames.some(t =>
+        badwords.includes(t.toLowerCase().trim())
+      );
+      setBadWordFlag(hasBadWord);
+    },
+    [form, badwords]
   );
-  
-  setBadWordFlag(hasBadWord);
-};
 
   const handleRemoveTag = (index: number) => {
     const currentTags = form.getValues('tags') || [];
@@ -174,15 +174,26 @@ export default function CreatePost() {
   
     try {
       setServerError(null);
+
+      function isFile(obj: any): obj is File {
+        return obj && typeof obj === 'object' && typeof obj.name === 'string' && typeof obj.size === 'number';
+      }
+      
+      function isBlob(obj: any): obj is Blob {
+        return obj && typeof obj === 'object' && typeof obj.size === 'number' && typeof obj.type === 'string';
+      }
   
+      const cleanedFiles =
+        (Array.isArray(data.files) ? data.files : [data.files]).filter(f => f && (isFile(f) || isBlob(f)));  
+
       const newPost = {
         title: data.title,
-        body: data.body,
-        type: data.type || postType,
-        tags: data.tags || [],
-        files: Array.isArray(data.files) ? data.files : [data.files],
+        body:  data.body,
+        type:  data.type || postType,
+        tags:  data.tags || [],
+        ...(cleanedFiles.length ? { files: cleanedFiles } : {}),
         categoryID: data.categoryID,
-        location
+        location,
       };
   
       await addPost(newPost, token!).unwrap();
@@ -398,30 +409,6 @@ export default function CreatePost() {
 
             {/* Tags Display */}
             {badWordFlag && <Text style={styles.errorText}>Tag contains bad word</Text>}
-            {form.watch('tags')?.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                {form.watch('tags').map((tag, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: '#e0e0e0',
-                      borderRadius: 16,
-                      paddingVertical: 4,
-                      paddingHorizontal: 8,
-                    }}
-                  >
-                    <Text style={{ marginRight: 4 }}>{tag}</Text>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveTag(index)}
-                    >
-                      <Text style={{ color: 'gray' }}>×</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
 
             <Text style={globalStyles.inputTitle}>
               Location 
