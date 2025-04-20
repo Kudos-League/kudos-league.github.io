@@ -16,7 +16,7 @@ import { Picker } from '@react-native-picker/picker';
 import { getCategories } from 'shared/api/actions';
 
 import '../../shared/assets/icons/addImage.png';
-import { CategoryDTO } from 'shared/api/types';
+import { CategoryDTO, LocationDTO } from 'shared/api/types';
 
 type FormValues = {
   title: string;
@@ -47,7 +47,8 @@ export default function CreatePost() {
   const [postType, setPostType] = useState('gift');
   const [giftType, setGiftType] = useState('Gift');
   const { addPost } = usePosts();
-  const { location, errorMsg, setLocation } = useLocation();
+  const [location, setLocation] = useState<LocationDTO | null>(null);
+  const { location: assumedLocation, errorMsg } = useLocation();
   const [currentTagInput, setCurrentTagInput] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -140,7 +141,7 @@ export default function CreatePost() {
       const newPost = {
         title: data.title,
         body: data.body,
-        type: data.type || postType, // Now using the postType state
+        type: data.type || postType,
         tags: data.tags || [],
         files: data.files || [],
         categoryID: data.categoryID,
@@ -148,7 +149,7 @@ export default function CreatePost() {
       };
       await addPost(newPost, token!);
       form.reset();
-      navigation.goBack();
+      navigation.goBack(); // TODO: Only on success
     } catch (err) {
       console.error('Failed to create post:', err);
     }
@@ -286,7 +287,7 @@ export default function CreatePost() {
           <View style={[globalStyles.inputForm, { padding: 8 }]}>
             <Picker
               selectedValue={form.watch('categoryID')}
-              onValueChange={(value) => form.setValue('categoryID', value)}
+              onValueChange={(value) => form.setValue('categoryID', Number(value))}
             >
               <Picker.Item label="Select a category" value={undefined} />
               {categories.map((cat) => (
@@ -377,10 +378,12 @@ export default function CreatePost() {
               <Map
                 showAddressBar={true}
                 exactLocation={false}
-                coordinates={location}
+                coordinates={assumedLocation}
                 width={300}
                 height={300}
-                onLocationChange={(data) => data.coordinates && setLocation(data.coordinates)}
+                onLocationChange={(data) => {
+                  data && setLocation({ regionID: data.placeID, name: data.name });
+                }}
               />
             </View>
 
