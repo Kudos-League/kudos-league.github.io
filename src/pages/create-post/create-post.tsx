@@ -17,6 +17,7 @@ import { getCategories } from 'shared/api/actions';
 
 import '../../shared/assets/icons/addImage.png';
 import { CategoryDTO, LocationDTO } from 'shared/api/types';
+import TagInput from 'shared/components/TagInput';
 
 type FormValues = {
   title: string;
@@ -111,6 +112,19 @@ export default function CreatePost() {
     // Remove the HACK that was causing an error
     // this.focus(); //HACK: workaround for focus() not working properly with refs
   };
+
+  const handleTagsChange = (tags: { id: string; name: string; }[]) => {
+  // Convert tag objects to string array for the form
+  const tagNames = tags.map(tag => tag.name);
+  form.setValue('tags', tagNames);
+  
+  // Check for bad words in tags
+  const hasBadWord = tagNames.some(tag => 
+    badwords.includes(tag.toLowerCase().trim())
+  );
+  
+  setBadWordFlag(hasBadWord);
+};
 
   const handleRemoveTag = (index: number) => {
     const currentTags = form.getValues('tags') || [];
@@ -320,7 +334,7 @@ export default function CreatePost() {
             </View>
 
 
-            {/* Tags Input Section */}
+            {/* Tags Input Section
             <Text style={globalStyles.inputTitle}>Tags</Text>
             <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', marginRight: 4 }}>
               <TextInput
@@ -342,7 +356,12 @@ export default function CreatePost() {
               >
                 Add
               </Button>
-            </View>
+            </View> */}
+
+            <TagInput
+              onTagsChange={handleTagsChange}
+              initialTags={form.watch('tags')}
+            />
 
             {/* Tags Display */}
             {badWordFlag && <Text style={styles.errorText}>Tag contains bad word</Text>}

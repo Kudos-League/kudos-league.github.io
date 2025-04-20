@@ -13,6 +13,7 @@ import {
   PostDTO,
   RewardOfferDTO,
   SendCommentDTO,
+  TopTagDTO,
   UserLoginRequestSchemaDTO,
   UserLoginResponseDTO,
   UserTagRequestDTO,
@@ -506,4 +507,16 @@ export async function getEventDetails(eventId: number): Promise<{ data: EventDTO
 export async function getCategories(): Promise<CategoryDTO[]> {
   const response = await instance.get('/categories');
   return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function getTopTags(query: string, token: string): Promise<{ data: TopTagDTO[] }> {
+  if (!token) throw Error("Invalid token");
+
+  return instance.get("/tags/top", {
+    params: { q: query },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }

@@ -212,3 +212,9 @@ export interface UserSettingsDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TopTagDTO {
+  id: string;
+  name: string;
+  count: number;
+}
