@@ -106,17 +106,18 @@ const TagInput: React.FC<TagInputProps> = ({ onTagsChange, initialTags = [] }) =
           returnKeyType="done"
           onSubmitEditing={handleAddTag}
         />
-        <Button
-          mode="contained"
+        <TouchableOpacity
           style={[globalStyles.button, {
-            maxWidth: '30%',
-            paddingHorizontal: 4,
+            paddingVertical: 8,
+            paddingHorizontal: 32,
           }]}
           onPress={handleAddTag}
           disabled={currentTagInput.trim() === ''}
         >
-          Add
-        </Button>
+          <Text style={{ color: 'white', fontWeight: '700', textAlign: 'center' }}>
+             Add
+          </Text>
+        </TouchableOpacity>
       </View>
       
       {/* Tag Suggestions */}

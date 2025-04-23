@@ -410,7 +410,7 @@ export default function CreatePost() {
             {/* Tags Display */}
             {badWordFlag && <Text style={styles.errorText}>Tag contains bad word</Text>}
 
-            <Text style={globalStyles.inputTitle}>
+            <Text style={{ ...globalStyles.inputTitle, marginTop: 10, marginBottom: 10 }}>
               Location 
             </Text>
             <View style={{ alignItems: 'center' }}>
@@ -433,9 +433,10 @@ export default function CreatePost() {
             )}
 
             <TouchableOpacity
+              className="mt-3"
               style={[
                 globalStyles.button, 
-                !isFormValid && styles.disabledButton
+                !isFormValid && styles.disabledButton,
               ]}
               onPress={form.handleSubmit(onSubmit)}
               disabled={!isFormValid}
