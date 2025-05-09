@@ -196,6 +196,25 @@ export async function getUserHandshakes(id: string = "me", token: string) {
   return [...sentResponse.data, ...receivedResponse.data];
 }
 
+export async function getUserEvents( 
+  id: string,
+  token: string,
+  filters?: {
+    startDate?: string;
+    endDate?: string;
+    location?: string;
+    all?: 'true' | 'false';
+  },): Promise<EventDTO[]> {
+  const queryString = filters ? toQueryParams(filters) : '';
+  const response = await instance.get(`/events${queryString}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const userEvents = response.data.filter((event: EventDTO) => event.creatorID && event.creatorID.toString() === id);
+  return userEvents;
+}
+
 /** @throws {AxiosError} */
 export async function updateUser(
   request: Partial<UserDTO>,

@@ -156,7 +156,8 @@ export const NavigationService = {
 
   navigateToEvent: (eventId: string) => {
     if (isNavigationReady()) {
-      navigationRef.current?.navigate('Event', { eventId });
+      const id = eventId;
+      navigationRef.current?.navigate('Event', { id });
     }
   },
 

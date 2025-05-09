@@ -3,10 +3,10 @@ import { View, Text } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 
 import globalStyles from "shared/styles";
-import { getUserDetails, getUserHandshakes, getUserPosts, updateUser } from "shared/api/actions";
+import { getUserDetails, getUserEvents, getUserHandshakes, getUserPosts, updateUser } from "shared/api/actions";
 import Profile from "shared/components/profile";
 import { useAuth } from "../../../shared/hooks/useAuth";
-import { HandshakeDTO, PostDTO } from "shared/api/types";
+import { EventDTO, HandshakeDTO, PostDTO } from "shared/api/types";
 import { UserDTO } from "index";
 import { getEndpointUrl } from "shared/api/config"; // Make sure to import this
 
@@ -23,6 +23,7 @@ export default function User() {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [posts, setPosts] = useState<PostDTO[]>([]);
   const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]); 
+  const [events, setEvents] = useState<EventDTO[]>([]); // TODO: Define the type for events
   const [formState, setFormState] = useState<Partial<UserDTO>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,8 @@ export default function User() {
           if (authState?.token) {
             const handshakes = await getUserHandshakes(targetUserID.toString(), authState.token);
             setHandshakes(handshakes);
+            const events = await getUserEvents(targetUserID.toString(), authState.token); //TODO: Do something with events that have already passed the deadline
+            setEvents(events);
           }
         } else {
           if (!authState?.token) {
@@ -66,6 +69,9 @@ export default function User() {
 
           const handshakes = await getUserHandshakes(targetUserID.toString(), authState.token);
           setHandshakes(handshakes);
+
+          const events = await getUserEvents(targetUserID.toString(), authState.token);
+          setEvents(events);
         }
       } catch (e) {
         setError("Failed to load user details.");
@@ -115,6 +121,7 @@ export default function User() {
         error={error}
         posts={posts}
         handshakes={handshakes}
+        events={events}
       />
     </View>
   );

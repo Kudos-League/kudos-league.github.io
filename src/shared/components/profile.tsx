@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import globalStyles from "shared/styles";
 import Input from "shared/components/forms/input";
-import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO, ProfileFormValues } from "shared/api/types";
+import { Feat, HandshakeDTO, PostDTO, CreateRewardOfferDTO, ProfileFormValues, EventDTO } from "shared/api/types";
 import Chat from "./messages/Chat";
 import { useAuth } from "shared/hooks/useAuth";
 import { getAvatarURL, getEndpointUrl } from "shared/api/config";
@@ -28,6 +28,7 @@ type ProfileProps = {
   error: string | null;
   posts: PostDTO[];
   handshakes: HandshakeDTO[];
+  events: EventDTO[];
 };
 
 interface PostCardProps {
@@ -295,8 +296,10 @@ export default function Profile({
   loading,
   error,
   posts = [],
-  handshakes = []
+  handshakes = [],
+  events = []
 }: ProfileProps) {
+
   const { user: loggedInUser, isLoggedIn, token } = useAuth();
   const [editProfile, setEditProfile] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -593,10 +596,17 @@ export default function Profile({
           >
               <Text style={styles.filterText}>Handshakes</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+              style={[styles.filterOption, filter === 'events' && styles.filterSelected]}
+              onPress={() => {setFilter('events')}}
+          >
+              <Text style={styles.filterText}>Events</Text>
+          </TouchableOpacity>
       </View>
       
       {/* Posts Section */}
-      {filter !== 'handshakes' ? (
+      {/*TODO: HORRIBLE way of handling this, find a better strategy, maybe a function can deal with it */}
+      {filter !== 'handshakes' && filter !== 'events' ? (
       <View style={styles.postsContainer}>
           {posts
               .filter(post => filter === 'all' || post.type === filter)
@@ -605,7 +615,7 @@ export default function Profile({
               ))
           }
       </View>
-      ): handshakes.length > 0 ? (
+      ): filter === 'handshakes' && handshakes.length > 0 ? (
       <View style={styles.postsContainer}>
         <Text style={styles.sectionTitle}>Sent Handshakes</Text>
         {
@@ -637,9 +647,22 @@ export default function Profile({
             <Text style={styles.emptyMessage}>No handshakes yet</Text>
         )}
       </View>
-      ) : (
+      ) : filter !== 'events' ? (
         <Text style={styles.emptyMessage}>No handshakes available</Text>
+      ) : events.length > 0 ?(
+        <View style={styles.postsContainer}>
+          {events.map(event => (
+            <TouchableOpacity key={event.id} style={styles.postCard} onPress={() => NavigationService.navigateToEvent(event.id.toString())}>
+              <Text style={styles.postTitle}>{event.title}</Text>
+              <Text style={styles.postContent}>{event.description}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.emptyMessage}>No events available</Text>
       )}
+      
+      {/* Feedback Message */}
 
       {/* {isChatOpen && <Chat onClose={() => setIsChatOpen(false)} />} */}
     </ScrollView>
