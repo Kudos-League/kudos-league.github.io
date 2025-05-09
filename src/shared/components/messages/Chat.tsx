@@ -20,6 +20,8 @@ import { ChannelDTO, CreateMessageDTO, MessageDTO } from 'shared/api/types';
 import { useAuth } from 'shared/hooks/useAuth';
 import { useWebSocket } from 'shared/hooks/useWebSocket';
 import AvatarComponent from '../Avatar';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
 
 // Message time formatter
 const formatMessageTime = (timestamp: string) => {
@@ -78,6 +80,21 @@ const Chat = ({ onClose }) => {
   const token = useAppSelector((state) => state.auth.token);
   const { user } = useAuth();
   const { joinChannel, leaveChannel } = useWebSocket(token, messages, setMessages);
+
+  type RootStackParamList = {
+    Home: undefined;
+    Post: { id: string };
+    UserProfile: { id: string };
+  };
+
+  type NavigationProps = StackNavigationProp<RootStackParamList, "UserProfile">;
+  const navigation = useNavigation<NavigationProps>();
+
+  const handleAvatarPress = (userId) => {
+    if (userId) {
+      navigation.navigate("UserProfile", { id: userId });
+    }
+  };
 
   useEffect(() => {
     fetchChannels();
@@ -268,7 +285,6 @@ const Chat = ({ onClose }) => {
                   onPress={() => selectChannel(item)} 
                   style={styles.channelItem}
                 >
-                  <View style={styles.avatarContainer}>
                     <AvatarComponent
                       username={item.otherUser.username}
                       avatar={item.otherUser.avatar}
@@ -278,7 +294,6 @@ const Chat = ({ onClose }) => {
                     {item.lastMessage?.isUnread && (
                       <Badge style={styles.unreadBadge}>1</Badge>
                     )}
-                  </View>
                   
                   <View style={styles.channelInfo}>
                     <View style={styles.channelHeader}>
@@ -332,19 +347,25 @@ const Chat = ({ onClose }) => {
                 onPress={goBackToChannels} 
               />
               
+
               {selectedChannel && (
                 <>
-                  <Avatar.Image 
-                    source={{ uri: `${getEndpointUrl()}${selectedChannel.otherUser.avatar}` }}
-                    size={40}
-                    style={styles.chatHeaderAvatar}
-                  />
-                  <View>
-                    <Text style={styles.chatHeaderUsername}>
-                      {selectedChannel.otherUser.username}
-                    </Text>
-                    <Text style={styles.chatHeaderStatus}>online</Text>
-                  </View>
+                  <TouchableOpacity onPress={() => handleAvatarPress(selectedChannel?.otherUser.id)}>
+                    <AvatarComponent
+                      username={selectedChannel?.otherUser.username}
+                      avatar={selectedChannel?.otherUser.avatar}
+                      size={40}
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => handleAvatarPress(selectedChannel?.otherUser.id)}>
+                    <View>
+                      <Text style={styles.chatHeaderUsername}>
+                        {selectedChannel.otherUser.username}
+                      </Text>
+                      <Text style={styles.chatHeaderStatus}>online</Text>
+                    </View>
+                  </TouchableOpacity>
                 </>
               )}
             </View>

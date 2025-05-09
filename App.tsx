@@ -19,6 +19,7 @@ import { TailwindProvider } from "tailwind-rn";
 
 import utilities from "./tailwind.json";
 import AppNavigator from "shared/components/AppNavigator";
+import { navigationRef } from './src/navigation';
 
 function ErrorFallback() {
   return <Text>Error loading</Text>;
@@ -56,7 +57,7 @@ function AppCore() {
   }
 
   return (
-    <NavigationContainer linking={getLinkingOptions()}>
+    <NavigationContainer linking={getLinkingOptions()} ref={navigationRef}>
       <AppNavigator />
     </NavigationContainer>
   );

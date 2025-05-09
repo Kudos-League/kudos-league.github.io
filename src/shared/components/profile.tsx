@@ -17,6 +17,7 @@ import { addTagToUser, createDMChannel, createRewardOffer, getUserDetails, getUs
 import { UserDTO } from "index";
 import EditProfile from "./edit-profile";
 import Map from "./Map";
+import NavigationService from "../../navigation";
 
 type NavigationProps = StackNavigationProp<RootStackParamList, "Post">;
 
@@ -456,7 +457,7 @@ export default function Profile({
         const channel = await createDMChannel(loggedInUser.id, targetUser.id, token || "");
         
         // Then navigate with complete channel data
-        navigator.navigate("Chat");
+        NavigationService.navigateToChat();
       }
     } catch (error) {
       console.error("Error creating DM channel:", error);

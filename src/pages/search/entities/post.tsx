@@ -1,4 +1,4 @@
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import {
   ScrollView,
@@ -23,6 +23,7 @@ import Chat from "shared/components/messages/Chat";
 import type { Post as PostType } from "index";
 import Logger from "../../../Logger";
 import ChatModal from "shared/components/ChatModal";
+import { StackNavigationProp } from "@react-navigation/stack";
 
 const Post = () => {
   const route = useRoute();
@@ -39,8 +40,23 @@ const Post = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [pendingRecipientID, setPendingRecipientID] = useState<string | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
-
   const token = useAppSelector((state) => state.auth.token);
+
+  type RootStackParamList = {
+    Home: undefined;
+    Post: { id: string };
+    UserProfile: { id: string };
+  };
+
+  type NavigationProps = StackNavigationProp<RootStackParamList, "UserProfile">;
+
+  const navigation = useNavigation<NavigationProps>();
+
+  const handleAvatarPress = () => {
+    if (postDetails?.sender?.id) {
+      navigation.navigate("UserProfile", { id: postDetails.sender.id });
+    }
+  };
 
   const fetchPostDetails = async (postID: string) => {
       try {
@@ -52,6 +68,9 @@ const Post = () => {
       setLoading(false);
     }
   };
+
+
+
 
   useEffect(() => {
     fetchPostDetails(id);
@@ -300,11 +319,16 @@ const Post = () => {
         <View>
           <View style={styles.userTitleRow}>
             <View style={styles.userProfile}>
-              <AvatarComponent
-                username={postDetails.sender?.username || "Anonymous"}
-                avatar={postDetails.sender?.avatar}
-                style={styles.avatar}
-              />
+              <TouchableOpacity
+                onPress={() => {
+                  handleAvatarPress();
+                }}
+              >
+                <AvatarComponent
+                  username={postDetails.sender?.username || "Anonymous"}
+                  avatar={postDetails.sender?.avatar}
+                  style={styles.avatar}
+                />
               <View style={styles.userInfo}>
                 <Text style={styles.username}>
                   {postDetails.sender?.username || "Anonymous"}
@@ -313,6 +337,8 @@ const Post = () => {
                   Kudos: {postDetails.sender?.kudos || 0}
                 </Text>
               </View>
+
+              </TouchableOpacity>
             </View>
 
             <View style={styles.titleContainer}>

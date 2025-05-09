@@ -4,6 +4,8 @@ import { Picker } from '@react-native-picker/picker';
 import { fetchLeaderboard } from "shared/api/actions";
 import { useAuth } from "shared/hooks/useAuth";
 import AvatarComponent from "./Avatar";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
 
 type LeaderboardUser = {
   id: number;
@@ -28,6 +30,21 @@ export default function Leaderboard() {
   const [timeFilter, setTimeFilter] = useState("all");
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
 
+  type RootStackParamList = {
+    Home: undefined;
+    Post: { id: string };
+    UserProfile: { id: string };
+  };
+
+  type NavigationProps = StackNavigationProp<RootStackParamList, "UserProfile">;
+  const navigation = useNavigation<NavigationProps>();
+
+  const handleAvatarPress = (userId) => {
+    if (userId) {
+      navigation.navigate("UserProfile", { id: userId });
+    }
+  };
+
   useEffect(() => {
     loadLeaderboard();
   }, [useLocal, timeFilter]);
@@ -51,6 +68,8 @@ export default function Leaderboard() {
       setLoading(false);
     }
   }
+
+
 
   const getTimeFilterLabel = () => {
     const filter = TIME_FILTERS.find(f => f.value === timeFilter);
@@ -120,14 +139,15 @@ export default function Leaderboard() {
           data={leaderboard}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item, index }) => (
-            <View style={styles.entry}>
+            <TouchableOpacity onPress={() => handleAvatarPress(item.id)} style={styles.entry}>
               <AvatarComponent avatar={item.avatar} style={styles.avatar} username={item.username} />
+
               <View style={styles.userInfo}>
                 <Text style={styles.username}>{item.username}</Text>
                 <Text style={styles.location}>{item.location?.name || "Unknown"}</Text>
               </View>
               <Text style={styles.kudos}>{item.totalKudos.toLocaleString()} Kudos</Text>
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={styles.listContent}
         />

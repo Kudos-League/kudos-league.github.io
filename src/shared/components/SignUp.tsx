@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useAuth } from "shared/hooks/useAuth";
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import NavigationService from "../../navigation";
 
 type SignUpFormProps = {
   onSuccess?: () => void;
@@ -274,7 +275,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             
             <View style={styles.loginContainer}>
               <Text style={styles.haveAccountText}>Already have an account?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
+              <TouchableOpacity 
+                onPress={() => NavigationService.navigateToLogin}>
                 <Text style={styles.loginText}>LOG IN</Text>
               </TouchableOpacity>
             </View>
@@ -349,7 +351,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             
             <View style={styles.loginContainer}>
               <Text style={styles.haveAccountText}>Already have an account?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
+              <TouchableOpacity onPress={NavigationService.navigateToLogin}>
                 <Text style={styles.loginText}>LOG IN</Text>
               </TouchableOpacity>
             </View>

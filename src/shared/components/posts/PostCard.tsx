@@ -52,21 +52,23 @@ export default function PostCard(props: Post) {
           <View style={styles.mainContent}>
             <Text style={styles.title}>{props.title}</Text>
             
-            <View style={styles.userInfoContainer}>
-              <TouchableOpacity onPress={handleAvatarPress}>
-                {props.sender && (
-                  <AvatarComponent
-                    username={props.sender.username}
-                    avatar={props.sender.avatar}
-                    sx={{ width: 32, height: 32 }}
-                  />
-                )}
-              </TouchableOpacity>
-              <View>
-                <Text style={styles.username}>{props.sender?.username}</Text>
-                <Text style={styles.kudos}>{props.sender?.kudos|| 0} Kudos</Text>
+
+            <TouchableOpacity onPress={handleAvatarPress}>
+              <View style={styles.userInfoContainer}>
+                  {props.sender && (
+                    <AvatarComponent
+                      username={props.sender.username}
+                      avatar={props.sender.avatar}
+                      sx={{ width: 32, height: 32 }}
+                    />
+                  )}
+                <View>
+                  <Text style={styles.username}>{props.sender?.username}</Text>
+                  <Text style={styles.kudos}>{props.sender?.kudos|| 0} Kudos</Text>
+                </View>
+
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
           
           {props.images && props.images.length > 0 ? (
