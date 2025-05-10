@@ -321,16 +321,6 @@ const Chat = ({ onClose }) => {
               )}
             />
           )}
-          
-          <View style={styles.fab}>
-            <IconButton
-              icon="message-plus"
-              color="white"
-              size={24}
-              style={styles.fabIcon}
-              onPress={() => {}}
-            />
-          </View>
         </View>
       ) : (
         // Individual Chat Screen
@@ -349,7 +339,7 @@ const Chat = ({ onClose }) => {
               
 
               {selectedChannel && (
-                <>
+                <View style={styles.chatHeaderAvatar}>
                   <TouchableOpacity onPress={() => handleAvatarPress(selectedChannel?.otherUser.id)}>
                     <AvatarComponent
                       username={selectedChannel?.otherUser.username}
@@ -366,7 +356,7 @@ const Chat = ({ onClose }) => {
                       <Text style={styles.chatHeaderStatus}>online</Text>
                     </View>
                   </TouchableOpacity>
-                </>
+                </View>
               )}
             </View>
             
@@ -395,7 +385,6 @@ const Chat = ({ onClose }) => {
           
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
-              <IconButton icon="emoticon" color="#505050" size={24} />
               <TextInput
                 value={messageInput}
                 onChangeText={setMessageInput}
@@ -405,8 +394,6 @@ const Chat = ({ onClose }) => {
                 mode="flat"
                 underlineColor="transparent"
               />
-              <IconButton icon="paperclip" color="#505050" size={24} />
-              <IconButton icon="camera" color="#505050" size={24} />
             </View>
             
             <TouchableOpacity 
@@ -415,7 +402,7 @@ const Chat = ({ onClose }) => {
               disabled={!messageInput.trim()}
             >
               <IconButton
-                icon={messageInput.trim() ? "send" : "microphone"}
+                icon={messageInput.trim() ? "send" : "send"}
                 color="white"
                 size={24}
               />
@@ -430,13 +417,13 @@ const Chat = ({ onClose }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA', // Softer background
   },
   channelsContainer: {
     flex: 1,
   },
   header: {
-    backgroundColor: 'rgb(57, 86, 255)',
+    backgroundColor: '#7FB2EF', // Softer blue instead of bright green
     padding: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -444,7 +431,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   headerTitle: {
-    color: 'white',
+    color: '#F8F9FA',
     fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
@@ -452,10 +439,10 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA',
   },
   searchInput: {
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA',
     fontSize: 16,
   },
   loader: {
@@ -464,15 +451,16 @@ const styles = StyleSheet.create({
   noDmsText: {
     textAlign: 'center',
     fontSize: 16,
-    color: 'gray',
+    color: '#6C757D', // Softer gray
     marginTop: 50,
   },
   channelItem: {
     flexDirection: 'row',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E9ECEF', // Lighter border
     alignItems: 'center',
+    gap: 8
   },
   avatarContainer: {
     position: 'relative',
@@ -482,7 +470,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: -5,
-    backgroundColor: 'rgb(57, 86, 255)',
+    backgroundColor: '#7FB2EF', // Softer notification color
   },
   channelInfo: {
     flex: 1,
@@ -497,18 +485,19 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 17,
     fontWeight: 'bold',
+    color: '#212529', // Dark but not pure black
   },
   timestamp: {
     fontSize: 12,
-    color: '#999',
+    color: '#6C757D',
   },
   lastMessage: {
     fontSize: 14,
-    color: '#999',
+    color: '#6C757D',
     maxWidth: '90%',
   },
   unreadMessage: {
-    color: '#000',
+    color: '#212529',
     fontWeight: 'bold',
   },
   fab: {
@@ -517,7 +506,8 @@ const styles = StyleSheet.create({
     bottom: 20,
   },
   fabIcon: {
-    backgroundColor: '',
+    backgroundColor: '#7FB2EF', // Match header color
+    // Match header color
   },
   
   // Chat screen styles
@@ -525,7 +515,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatHeader: {
-    backgroundColor: 'rgb(120, 140, 255)',
+    backgroundColor: '#5F92CF', // Match header color
     padding: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -538,15 +528,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatHeaderAvatar: {
-    marginRight: 10,
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 12,
   },
   chatHeaderUsername: {
-    color: 'white',
+    color: '#F8F9FA',
     fontSize: 18,
     fontWeight: 'bold',
   },
   chatHeaderStatus: {
-    color: '#E5E5E5',
+    color: '#DEE2E6',
     fontSize: 12,
   },
   chatHeaderRight: {
@@ -554,7 +546,7 @@ const styles = StyleSheet.create({
   },
   chatBackground: {
     flex: 1,
-    backgroundColor: '#E5DDD5',
+    backgroundColor: '#EDF2F7', // Softer chat background
   },
   messagesContainer: {
     padding: 10,
@@ -568,16 +560,17 @@ const styles = StyleSheet.create({
   },
   ownMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#DCF8C6',
+    backgroundColor: '#DBE4FF', // Soft blue for own messages
     borderTopRightRadius: 0,
   },
   otherMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA',
     borderTopLeftRadius: 0,
   },
   messageText: {
     fontSize: 16,
+    color: '#343A40', // Softer than black
   },
   messageFooter: {
     flexDirection: 'row',
@@ -587,11 +580,11 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 11,
-    color: '#999',
+    color: '#6C757D',
   },
   emptyChat: {
     textAlign: 'center',
-    color: '#888',
+    color: '#6C757D',
     marginTop: 50,
   },
   dateSeparator: {
@@ -602,12 +595,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
-    backgroundColor: 'rgba(225, 245, 254, 0.8)',
+    backgroundColor: 'rgba(222, 226, 230, 0.8)', // Softer date pill
     elevation: 1,
   },
   dateText: {
     fontSize: 12,
-    color: 'rgb(120, 140, 255)',
+    color: '#7FB2EF', // Match header color
   },
   encryptionNotice: {
     flexDirection: 'row',
@@ -617,30 +610,30 @@ const styles = StyleSheet.create({
   },
   encryptionText: {
     fontSize: 12,
-    color: '#888',
+    color: '#6C757D',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 5,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#E9ECEF', // Softer input area
   },
   inputWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA',
     borderRadius: 25,
     marginRight: 5,
   },
   input: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#F8F9FA',
     fontSize: 16,
-    maxHeight: 100,
+    maxHeight: 50,
   },
   sendButton: {
-    backgroundColor: 'rgb(57, 86, 255)',
+    backgroundColor: '#8FB2FF', // Match header color
     borderRadius: 30,
     width: 48,
     height: 48,

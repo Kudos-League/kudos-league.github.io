@@ -196,7 +196,7 @@ export default function PostsContainer({ posts }) {
         onEndReached={fetchMoreCommunities}
         onEndReachedThreshold={0.1}
         showsVerticalScrollIndicator={true}
-        ListFooterComponent={loading ? <Text>Loading more...</Text> : null}
+        // ListFooterComponent={loading ? <Text>Loading more...</Text> : null}
         // ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
       />
     </View>

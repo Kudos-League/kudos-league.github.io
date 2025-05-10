@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { searchPosts } from "shared/api/actions";
 import CurrentEvent from "shared/components/events/CurrentEvent";
 import { PostDTO } from "shared/api/types";
+import { Icon, IconButton } from "react-native-paper";
 
 interface TypeOfOrdering {
   type: "date" | "distance" | "kudos";
@@ -240,12 +241,11 @@ export default function Feed() {
 
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>Welcome to Kudos League!</Text>
-        <TouchableOpacity 
-          style={styles.createButton}
-          onPress={handleCreatePost}
-        >
-          <Text style={styles.createButtonText}>+</Text>
-        </TouchableOpacity>
+          <IconButton
+            icon="plus-circle-outline"
+            size={50}
+            onPress={handleCreatePost}
+          />
       </View>
       
       <View style={styles.toolbarContainer} onLayout={event => {

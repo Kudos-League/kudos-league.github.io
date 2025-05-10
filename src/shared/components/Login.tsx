@@ -8,6 +8,7 @@ import Input from "shared/components/forms/input";
 import { Image } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DiscordLoginButton from "./DiscordLoginButton";
+import NavigationService from "../../navigation";
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -134,7 +135,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           
           <View style={styles.signUpContainer}>
             <Text style={styles.noAccountText}>Don't have account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+            <TouchableOpacity onPress={() => NavigationService.navigateToRegister()}>
               <Text style={styles.signUpText}>SIGN UP</Text>
             </TouchableOpacity>
           </View>

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; // Ensure you have this installed
 
 const GiftType = ({ selected, onSelect }) => {
-  const options = ['Gift', 'RAK', 'Donation'];
+  const options = ['Gift', 'Donation'];
 
   return (
     <View style={styles.container}>
