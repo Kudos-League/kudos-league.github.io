@@ -15,6 +15,7 @@ import Leaderboard from './Leaderboard';
 import CreateEvent from './events/CreateEvent';
 import AvatarComponent from './Avatar';
 import Chat from './messages/Chat';
+import AdminDashboard from 'pages/admin/dashboard';
 
 const Drawer = createDrawerNavigator();
 
@@ -158,6 +159,9 @@ function DrawerNavigator() {
         <Drawer.Screen name="Leaderboard" component={Leaderboard} />
         <Drawer.Screen name="Chat" component={Chat} />
         <Drawer.Screen name="Create Event" component={CreateEvent} />
+        {user?.admin && (
+          <Drawer.Screen name="Admin Dashboard" component={AdminDashboard} />
+        )}
       </>
       }
     </Drawer.Navigator>

@@ -101,8 +101,13 @@ export async function getPosts({
 }
 
 /** @throws {AxiosError} */
-export async function getPostDetails(id: string) {
-  const response = await instance.get(`/posts/${id}`);
+export async function getPostDetails(token: string, id: string) {
+  const response = await instance.get(`/posts/${id}`, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 }
 
@@ -538,4 +543,48 @@ export async function getTopTags(query: string, token: string): Promise<{ data: 
       Authorization: `Bearer ${token}`,
     },
   });
+}
+
+/** @throws {AxiosError} */
+export async function getReports(token: string) {
+  const response = await instance.get('/admin/reports', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function likePost(postID: number, like: boolean, token: string) {
+  const response = await instance.put(`/posts/${postID}/like`, { like }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function removeLike(postID: number, token: string) {
+  const response = await instance.delete(`/posts/${postID}/like`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function reportPost(postID: number, reason: string, token: string) {
+  const response = await instance.put(`/posts/${postID}/report`, { reason }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
 }
