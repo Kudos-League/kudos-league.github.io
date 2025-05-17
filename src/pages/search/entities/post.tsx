@@ -9,8 +9,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  TextInput,
 } from "react-native";
-import { createDMChannel, createHandshake, getPostDetails, updateHandshake } from "shared/api/actions";
+import { createDMChannel, createHandshake, getPostDetails, likePost, reportPost, updateHandshake } from "shared/api/actions";
 import { Ionicons } from "@expo/vector-icons";
 import { ChannelDTO, CreateHandshakeDTO, PostDTO } from "shared/api/types";
 import { useAppSelector } from "redux_store/hooks";
@@ -39,7 +40,10 @@ const Post = () => {
   const [creatingHandshake, setCreatingHandshake] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [pendingRecipientID, setPendingRecipientID] = useState<string | null>(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
+  const [liked, setLiked] = useState<null | boolean>(null);
   const token = useAppSelector((state) => state.auth.token);
 
   type RootStackParamList = {
@@ -59,18 +63,24 @@ const Post = () => {
   };
 
   const fetchPostDetails = async (postID: string) => {
+    if (!token) {
+      setError("No token found. Please log in.");
+      setLoading(false);
+      return;
+    }
       try {
-      const data = await getPostDetails(postID);
+      const data = await getPostDetails(token, postID);
       setPostDetails(data);
+
+      const userLike = data.likes?.[0]?.like ?? null;
+      setLiked(userLike);
+
       setLoading(false);
     } catch (err) {
       setError("Failed to load post details. Please try again.");
       setLoading(false);
     }
   };
-
-
-
 
   useEffect(() => {
     fetchPostDetails(id);
@@ -296,6 +306,40 @@ const Post = () => {
     }
   };
 
+  const handleLike = async (likeValue: boolean) => {
+    if (!token || !postDetails) return;
+  
+    try {
+      await likePost(parseInt(postDetails.id), likeValue, token);
+      setLiked(likeValue);
+      setPostDetails(prev => prev ? {
+        ...prev,
+        likes: [{ like: likeValue, userID: user?.id, postID: parseInt(prev.id) }]
+      } : null);
+    } catch (e) {
+      console.error("Failed to like/dislike:", e);
+    }
+  };
+  
+  const handleReport = async () => {
+    if (!token || !postDetails) return;
+  
+    if (!reportReason.trim()) {
+      alert("Please enter a reason for reporting.");
+      return;
+    }
+  
+    try {
+      await reportPost(parseInt(postDetails.id), reportReason.trim(), token);
+      alert("Post reported successfully.");
+      setReportModalVisible(false);
+      setReportReason('');
+    } catch (e) {
+      console.error("Failed to report:", e);
+      alert("Failed to submit report. Try again later.");
+    }
+  };  
+
   return (
     <ScrollView
       style={styles.container}
@@ -362,6 +406,26 @@ const Post = () => {
                 </Text>
                 <Text style={styles.stateBadge}>{postDetails.status}</Text>
               </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 20, marginTop: 8 }}>
+              <TouchableOpacity disabled={liked === true}  onPress={() => handleLike(true)}>
+              <Ionicons
+                name="thumbs-up-outline"
+                size={24}
+                color={liked === true ? "#2ecc71" : "#ccc"}
+              />
+              </TouchableOpacity>
+              <TouchableOpacity disabled={liked === false}  onPress={() => handleLike(false)}>
+              <Ionicons
+                name="thumbs-down-outline"
+                size={24}
+                color={liked === false ? "#e74c3c" : "#ccc"}
+              />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setReportModalVisible(true)}>
+                <Ionicons name="warning-outline" size={24} color="#f0ad4e" />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -533,6 +597,34 @@ const Post = () => {
           onMessageSent={handleMessageSent}
         />
       )}
+      <Modal
+        visible={reportModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setReportModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Report Post</Text>
+            <Text style={{ marginBottom: 10 }}>Why are you reporting this post?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter reason..."
+              multiline
+              value={reportReason}
+              onChangeText={setReportReason}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+              <TouchableOpacity onPress={() => setReportModalVisible(false)} style={[styles.modalButton, { backgroundColor: '#ccc' }]}>
+                <Text>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleReport} style={styles.modalButton}>
+                <Text style={{ color: 'white' }}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -866,5 +958,39 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: "85%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalButton: {
+    padding: 10,
+    backgroundColor: "#4a90e2",
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  input: {
+    height: 100,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    textAlignVertical: "top",
   },  
 });
