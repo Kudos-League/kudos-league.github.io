@@ -588,3 +588,23 @@ export async function reportPost(postID: number, reason: string, token: string) 
 
   return response.data;
 }
+
+/** @throws {AxiosError} */
+export async function deleteReport(reportID: number, token: string) {
+  const response = await instance.delete(`/admin/reports/${reportID}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function updateReportStatus(reportID: number, status: 'ignored' | 'resolved', token: string) {
+  const response = await instance.put(`/admin/reports/${reportID}`, { status }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
