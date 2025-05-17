@@ -40,7 +40,7 @@ function toFormData(dto: Record<string, any>): FormData {
       val.forEach(f => fd.append(key, f));
     } else if (val !== null && typeof val === 'object' && !(val instanceof File) && !(val instanceof Blob)) {
       fd.append(key, JSON.stringify(val));
-    } else if (val !== undefined) {
+    } else if (val !== undefined && val !== null) {
       fd.append(key, val);
     }
   }
