@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -47,70 +47,82 @@ function HeaderRight() {
       </TouchableOpacity>
 
       {showDropdown && (
-        <View style={styles.dropdown}>
-          <TouchableOpacity
-            onPress={() => {
-              setShowDropdown(false);
-              navigation.navigate("UserProfile");
-            }}
-            style={styles.dropdownItem}
-          >
-            <Text style={tailwind("text-gray-700")}>Profile</Text>
-          </TouchableOpacity>
+        <Modal
+          transparent
+          visible={showDropdown}
+          onRequestClose={() => setShowDropdown(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowDropdown(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.dropdown}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowDropdown(false);
+                      navigation.navigate("UserProfile");
+                    }}
+                    style={styles.dropdownItem}
+                  >
+                    <Text style={tailwind("text-gray-700")}>Profile</Text>
+                  </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              setShowDropdown(false);
-              logout();
-            }}
-            style={styles.dropdownItem}
-          >
-            <Text style={tailwind("text-red-500")}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowDropdown(false);
+                      logout();
+                    }}
+                    style={styles.dropdownItem}
+                  >
+                    <Text style={tailwind("text-red-500")}>Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
       )}
     </View>
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, gap: 12 }}>
-  <TouchableOpacity
-    onPress={() => navigation.navigate("Home", { screen: "Login" })}
-    style={{
-      backgroundColor: 'transparent',
-      paddingVertical: 10,
-      paddingHorizontal: 24,
-      borderRadius: 25,
-      borderWidth: 2,
-      borderColor: '#3b82f6',
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-    }}
-    activeOpacity={0.6}
-  >
-    <Text style={{ color: '#3b82f6', fontWeight: '700', textAlign: 'center' }}>LOG IN</Text>
-  </TouchableOpacity>
-  
-  <TouchableOpacity
-    onPress={() => navigation.navigate("Home", { screen: "Register" })}
-    style={{
-      backgroundColor: '#3b82f6',
-      paddingVertical: 10,
-      paddingHorizontal: 24,
-      borderRadius: 25,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      marginRight: 30 
-    }}
-    activeOpacity={0.6}
-  >
-    <Text style={{ color: 'white', fontWeight: '700', textAlign: 'center' }}>SIGN UP</Text>
-  </TouchableOpacity>
-</View>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Home", { screen: "Login" })}
+        style={{
+          backgroundColor: 'transparent',
+          paddingVertical: 10,
+          paddingHorizontal: 24,
+          borderRadius: 25,
+          borderWidth: 2,
+          borderColor: '#3b82f6',
+          elevation: 3,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+        }}
+        activeOpacity={0.6}
+      >
+        <Text style={{ color: '#3b82f6', fontWeight: '700', textAlign: 'center' }}>LOG IN</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Home", { screen: "Register" })}
+        style={{
+          backgroundColor: '#3b82f6',
+          paddingVertical: 10,
+          paddingHorizontal: 24,
+          borderRadius: 25,
+          elevation: 3,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          marginRight: 30 
+        }}
+        activeOpacity={0.6}
+      >
+        <Text style={{ color: 'white', fontWeight: '700', textAlign: 'center' }}>SIGN UP</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -161,7 +173,22 @@ const styles = StyleSheet.create({
   signInButton: { backgroundColor: '#EBF5FF', borderWidth: 1, borderColor: '#BFDBFE' },
   signUpButton: { backgroundColor: '#3B82F6' },
   header: { elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-  dropdown: { position: 'absolute', top: 40, right: 10, backgroundColor: '#FFF', padding: 8, borderRadius: 6, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  dropdown: { 
+    position: 'absolute', 
+    top: 65, 
+    right: 10, 
+    backgroundColor: '#FFF', 
+    padding: 8, 
+    borderRadius: 6, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4, 
+    elevation: 5,
+    minWidth: 120,
+  },
   dropdownItem: { padding: 8 },
 });
 
