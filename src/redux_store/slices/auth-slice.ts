@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AUTH_TOKEN_LIFETIME_MS } from "shared/constants";
+import { AUTH_TOKEN_LIFETIME_MS } from "@/shared/constants";
 
 export type AuthState = {
   token: string|null;

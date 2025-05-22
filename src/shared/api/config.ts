@@ -1,12 +1,10 @@
-import Constants from "expo-constants";
-
 export enum Environment {
   LOCAL,
   DEV,
 }
 
-const BACKEND_URI = Constants.expoConfig?.extra?.backendUri ?? 'http://localhost';
-const WSS_URI = Constants.expoConfig?.extra?.wssUri ?? 'ws://localhost:3001';
+const BACKEND_URI = process.env.REACT_APP_BACKEND_URI ?? 'http://localhost';
+const WSS_URI = process.env.REACT_APP_WSS_URI ?? 'ws://localhost:3001';
 
 
 export function getEndpointUrl(): string {

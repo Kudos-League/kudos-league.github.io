@@ -1,4 +1,4 @@
-import { UserDTO } from "index";
+import { UserDTO } from "@/shared/api/types";
 import { getEndpointUrl } from "./config";
 import {
   CategoryDTO,
@@ -118,7 +118,7 @@ export async function getBannedTags() {
 }
 
 /** @throws {AxiosError} */
-export async function getUserDetails(id: string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean } = {}) {
+export async function getUserDetails(id: number | string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean } = {}) {
   const queryString = toQueryParams(options);
 
   const response = await instance.get(`/users/${id}${queryString}`, {
