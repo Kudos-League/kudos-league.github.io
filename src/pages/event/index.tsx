@@ -6,7 +6,7 @@ import { getAvatarURL } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 
 export default function EventDetailScreen() {
-  const { id } = useParams<{ id: string }>();
+  const { eventId: id } = useParams<{ eventId: string }>();
   const { user, token } = useAuth();
 
   const [event, setEvent] = useState<any>(null);

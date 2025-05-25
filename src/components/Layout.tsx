@@ -34,7 +34,7 @@ const LayoutFooter: React.FC = () => {
         {isLoggedIn ? (
           <>
             <FooterLink to="/" icon={HomeIcon} label="Feed" />
-            <FooterLink to="/chat" icon={EnvelopeIcon} label="DMs" />
+            <FooterLink to="/dms" icon={EnvelopeIcon} label="DMs" />
             <FooterLink to="/user/me" icon={UserCircleIcon} label="My Profile" />
           </>
         ) : (
@@ -68,7 +68,7 @@ const Layout: React.FC = () => {
               <Link to="/leaderboard">Leaderboard</Link>
               <Link to="/chat">Chat</Link>
               <Link to="/create-event">Create Event</Link>
-              {user?.admin && <Link to="/admin-dashboard">Admin Dashboard</Link>}
+              {user?.admin && <Link to="/admin">Admin Dashboard</Link>}
             </>
           )}
         </nav>

@@ -84,7 +84,7 @@ export default function Feed() {
     }
   };
 
-  const handleCreatePost = () => navigate("/create");
+  const handleCreatePost = () => navigate("/create-post");
 
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
