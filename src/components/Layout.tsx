@@ -1,20 +1,55 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import AvatarComponent from '@/components/Avatar';
+import React, { useState } from "react";
+import { Outlet, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import AvatarComponent from "@/components/Avatar";
 
-import Home from '@/pages/home';
-/*
-import CreatePost from '@/pages/create-post';
-import Donate from '@/pages/donate';
-// import Search from '@/pages/search/home';
-import Leaderboard from '../Leaderboard';
-import CreateEvent from '@/components/events/CreateEvent';
-import Chat from '@/components/messages/Chat';
-import AdminDashboard from '@/pages/admin';
-*/
+import {
+  HomeIcon,
+  EnvelopeIcon,
+  UserCircleIcon,
+  InformationCircleIcon,
+  ArrowRightOnRectangleIcon,
+  UserPlusIcon,
+} from "@heroicons/react/24/outline";
 
-function DrawerNavigator() {
+type FooterLinkProps = {
+  to: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  label: string;
+};
+
+const FooterLink: React.FC<FooterLinkProps> = ({ to, icon: Icon, label }) => (
+  <Link to={to} className="flex flex-col items-center text-gray-600 hover:text-blue-600">
+    <Icon className="w-6 h-6" />
+    <div className="text-xs">{label}</div>
+  </Link>
+);
+
+const LayoutFooter: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  return (
+    <footer className="bg-white border-t border-gray-200 px-4 py-2 text-sm text-gray-700">
+      <div className="flex justify-around items-center gap-4">
+        {isLoggedIn ? (
+          <>
+            <FooterLink to="/" icon={HomeIcon} label="Feed" />
+            <FooterLink to="/chat" icon={EnvelopeIcon} label="DMs" />
+            <FooterLink to="/user/me" icon={UserCircleIcon} label="My Profile" />
+          </>
+        ) : (
+          <>
+            <FooterLink to="/about" icon={InformationCircleIcon} label="About" />
+            <FooterLink to="/login" icon={ArrowRightOnRectangleIcon} label="Login" />
+            <FooterLink to="/sign-up" icon={UserPlusIcon} label="Register" />
+          </>
+        )}
+      </div>
+    </footer>
+  );
+};
+
+const Layout: React.FC = () => {
   const { isLoggedIn, user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
@@ -25,7 +60,6 @@ function DrawerNavigator() {
       <aside className="w-60 bg-white border-r border-gray-200 shadow-sm p-4">
         <nav className="flex flex-col gap-2">
           <Link to="/" className="font-semibold text-blue-600">Home</Link>
-
           {isLoggedIn && (
             <>
               <Link to="/create-post">Create Post</Link>
@@ -41,20 +75,15 @@ function DrawerNavigator() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
-        {/* Header */}
+      <div className="flex-1 flex flex-col">
         <header className="flex justify-between items-center px-6 py-4 shadow bg-white">
-          <h1 className="text-xl font-semibold text-gray-800">App</h1>
+          <h1 className="text-xl font-semibold text-gray-800">Kudos League</h1>
           <div className="relative">
             {isLoggedIn && user ? (
               <>
                 <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-2">
                   {user.avatar ? (
-                    <AvatarComponent
-                      username={user.username}
-                      avatar={user.avatar}
-                      size={32}
-                    />
+                    <AvatarComponent username={user.username} avatar={user.avatar} size={32} />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-700">
                       {user.username?.charAt(0) || 'U'}
@@ -103,14 +132,14 @@ function DrawerNavigator() {
           </div>
         </header>
 
-        {/* Dynamic page content (from routing) would render here */}
-        <section className="flex-1 p-6 overflow-y-auto">
-          <Home />
-          {/* This is a placeholder; normally you'd use <Outlet /> or route matching */}
-        </section>
-      </main>
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
+        </main>
+
+        <LayoutFooter />
+      </div>
     </div>
   );
-}
+};
 
-export default DrawerNavigator;
+export default Layout;
