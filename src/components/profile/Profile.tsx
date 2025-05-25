@@ -6,7 +6,7 @@ import ProfileHeader from "./ProfileHeader";
 import PostCard from "./PostCard";
 import HandshakeCard from "./HandshakeCard";
 import Achievements from "./Achievements";
-import EditProfile from "./EditProfile"; // If you already have this implemented
+import EditProfile from "./EditProfile";
 import { useForm } from "react-hook-form";
 
 type Props = {

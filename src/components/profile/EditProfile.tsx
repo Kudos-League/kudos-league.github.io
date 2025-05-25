@@ -3,18 +3,20 @@ import useLocation from "@/hooks/useLocation";
 import AvatarComponent from "../Avatar";
 import Input from "../forms/Input";
 import MapDisplay from "../Map";
+import { UseFormReturn } from "react-hook-form";
+import { ProfileFormValues, UserDTO } from "@/shared/api/types";
 
-interface EditProfileProps {
-  form: any;
-  targetUser: any;
+interface Props {
+  targetUser: UserDTO;
+  userSettings?: any;
+  form: UseFormReturn<ProfileFormValues>; // ✅ Required for react-hook-form
+  onSubmit: (data: ProfileFormValues) => void;
   onClose: () => void;
   loading: boolean;
-  onSubmit: (data: any) => Promise<void>;
   error: string | null;
-  userSettings?: any;
 }
 
-const EditProfile: React.FC<EditProfileProps> = ({
+const EditProfile: React.FC<Props> = ({
   form,
   targetUser,
   onClose,
@@ -27,7 +29,11 @@ const EditProfile: React.FC<EditProfileProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const getAvatarUrl = () => {
-    if (form.watch("avatar")?.[0]) return form.watch("avatar")[0].uri;
+    const avatarFileOrUrl = form.watch("avatar")?.[0];
+    if (avatarFileOrUrl) {
+      if (typeof avatarFileOrUrl === "string") return avatarFileOrUrl;
+      if (avatarFileOrUrl instanceof File) return URL.createObjectURL(avatarFileOrUrl);
+    }
     if (form.watch("avatarUrl")) return form.watch("avatarUrl");
     return targetUser.avatar || null;
   };
