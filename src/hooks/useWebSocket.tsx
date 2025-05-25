@@ -2,7 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getWSSURL } from 'shared/api/config';
 import { Events } from 'shared/constants';
-import { getMessages } from 'shared/api/actions';
+import {
+  getMessages,
+  sendDirectMessage,
+  sendMessage,
+} from 'shared/api/actions';
 import { MessageDTO } from 'shared/api/types';
 
 export const useWebSocket = (
@@ -90,7 +94,7 @@ export const useWebSocket = (
       return;
     }
 
-    clearPolling(); 
+    clearPolling();
 
     console.log(`[WebSocket] Joining channel ${channelID}`);
     socket.emit('joinChannel', { channelID });
@@ -101,13 +105,18 @@ export const useWebSocket = (
         console.log(`[WebSocket] Successfully joined channel ${channelID}`);
       }
 
-      getMessages(channelID, token).then((list) => list?.length && setMessages(list));
+      getMessages(channelID, token).then((list) =>
+        list?.length && setMessages(list)
+      );
     });
 
     socket.off(Events.MESSAGE_CREATE);
     socket.on(Events.MESSAGE_CREATE, (newMessage: MessageDTO) => {
       console.log(`[WebSocket] New message in channel ${channelID}`, newMessage);
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => {
+        const exists = prev.some((msg) => msg.id === newMessage.id);
+        return exists ? prev : [...prev, newMessage];
+      });
     });
   };
 
@@ -119,5 +128,30 @@ export const useWebSocket = (
     clearPolling();
   };
 
-  return { socket, messages, joinChannel, leaveChannel };
+  const send = async ({
+    channel,
+    receiverID,
+    content,
+  }: {
+    channel?: { id: number };
+    receiverID?: number;
+    content: string;
+  }) => {
+    if (!token) return;
+
+    try {
+      const newMsg = receiverID
+        ? await sendDirectMessage(receiverID, { content }, token)
+        : await sendMessage({ channelID: channel!.id, content }, token);
+
+      setMessages((prev) => {
+        const exists = prev.some((msg) => msg.id === newMsg.id);
+        return exists ? prev : [...prev, newMsg];
+      });
+    } catch (err) {
+      console.error('[WebSocket] Failed to send message', err);
+    }
+  };
+
+  return { socket, messages, joinChannel, leaveChannel, send };
 };

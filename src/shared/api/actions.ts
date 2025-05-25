@@ -1,4 +1,4 @@
-import { UserDTO } from "@/shared/api/types";
+import { MessageDTO, UserDTO } from "@/shared/api/types";
 import { getEndpointUrl } from "./config";
 import {
   CategoryDTO,
@@ -270,7 +270,7 @@ export async function addTagToUser(
 export async function sendMessage(
   request: CreateMessageDTO,
   token: string
-): Promise<{ data: any }> {
+): Promise<MessageDTO> {
   if (!token) throw Error("Invalid token");
   const response = await instance.post("/messages", request, {
     headers: {
@@ -359,10 +359,7 @@ export async function sendDirectMessage(
   receiverID: number,
   message: CreateMessageDTO,
   token: string
-): Promise<{
-  author: any;
-  channel: any; data: any 
-}> {
+): Promise<MessageDTO> {
   if (!token) throw Error("Invalid token");
   
   const response = await instance.post(`/users/${receiverID}/dm`, message, {

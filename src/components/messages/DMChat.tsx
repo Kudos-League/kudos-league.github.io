@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { getUserDetails, sendDirectMessage } from "@/shared/api/actions";
+import { getUserDetails } from "@/shared/api/actions";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { ChannelDTO, CreateMessageDTO, MessageDTO } from "@/shared/api/types";
+import { ChannelDTO, MessageDTO } from "@/shared/api/types";
 import DMList from "./DMList";
 import ChatWindow from "./ChatWindow";
 
-export default function ChatDashboard() {
+export default function DMChat() {
   const { user, token } = useAuth();
   const [channels, setChannels] = useState<ChannelDTO[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const { joinChannel, leaveChannel } = useWebSocket(token, messages, setMessages);
+
+  const { joinChannel, leaveChannel, send } = useWebSocket(token, messages, setMessages);
 
   useEffect(() => {
     if (user && token) {
@@ -34,13 +35,11 @@ export default function ChatDashboard() {
   };
 
   const handleSend = async (content: string) => {
-    if (!token || !selectedChannel) return;
+    if (!selectedChannel) return;
     const receiver = selectedChannel.users.find(u => u.id !== user.id);
     if (!receiver) return;
 
-    const payload: CreateMessageDTO = { content };
-    const sent = await sendDirectMessage(receiver.id, payload, token);
-    setMessages((prev) => [...prev, { ...sent, status: "sent" }] as any);
+    await send({ receiverID: receiver.id, content });
   };
 
   return (

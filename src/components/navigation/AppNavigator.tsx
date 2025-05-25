@@ -18,28 +18,25 @@ import SignUp from "@/pages/signup";
 
 import EventDetails from "@/pages/event";
 import Layout from "../Layout";
+import DMChat from "../messages/DMChat";
 
 function AppNavigator() {
   return (
     <Routes>
       <Route path ="" element={<Layout />}>
-        {/* Main Entry Point */}
         <Route path="/" element={<Home />} />
 
-        {/* Donation Flow */}
         <Route path="/success" element={<Success />} />
         <Route path="/cancel" element={<Cancel />} />
 
-        {/* Entity Details Screens */}
         <Route path="/post/:id" element={<Post />} />
         <Route path="/user/:username" element={<Profile />} />
         <Route path="/event/:eventId" element={<EventDetails />} />
+        <Route path ="/chat" element={<DMChat />} />
 
-        {/* Auth Screens */}
         <Route path="/login" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
 
-        {/* Fallback: redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

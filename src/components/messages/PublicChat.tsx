@@ -1,9 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import {
-  getMessages,
-  getPublicChannels,
-  sendMessage as sendChatMessage,
-} from "@/shared/api/actions";
+import { getMessages, getPublicChannels } from "@/shared/api/actions";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChannelDTO, MessageDTO } from "@/shared/api/types";
@@ -17,7 +13,7 @@ export default function PublicChat() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { joinChannel, leaveChannel } = useWebSocket(token, messages, setMessages);
+  const { joinChannel, leaveChannel, send } = useWebSocket(token, messages, setMessages);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -65,18 +61,10 @@ export default function PublicChat() {
   };
 
   const sendMessage = async () => {
-    if (!token || !messageInput.trim() || !selectedChannel) return;
+    if (!messageInput.trim() || !selectedChannel) return;
 
-    try {
-      const newMessage = await sendChatMessage(
-        { channelID: selectedChannel.id, content: messageInput },
-        token
-      );
-      setMessages((prevMessages) => [...prevMessages, newMessage] as any);
-      setMessageInput("");
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
+    await send({ channel: selectedChannel, content: messageInput });
+    setMessageInput("");
   };
 
   return (

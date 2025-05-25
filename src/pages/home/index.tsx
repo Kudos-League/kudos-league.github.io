@@ -7,7 +7,7 @@ import About from "@/pages/about";
 import SignIn from "@/pages/login";
 import SignUp from "@/pages/signup";
 import Profile from "@/pages/user";
-import Chat from "@/components/messages/Chat";
+import DMChat from "@/components/messages/DMChat";
 import PublicChat from "@/components/messages/PublicChat";
 
 export default function HomeRouter() {
@@ -18,7 +18,7 @@ export default function HomeRouter() {
       {isLoggedIn ? (
         <>
           <Route path="/" element={<Feed />} />
-          <Route path="/chat" element={<Chat />} />
+          <Route path="/chat" element={<DMChat />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </>
