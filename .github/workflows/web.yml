@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - rewrite/web
   workflow_dispatch:
 
 jobs:
@@ -38,22 +39,20 @@ jobs:
           cache: "yarn"
 
       - name: Install Dependencies
-        run: |
-          yarn install
+        run: yarn install
 
       - name: Build the Web App
-        run: yarn start
-        continue-on-error: true
+        run: yarn build
 
       - name: Add Redirects and 404 Fallback
         run: |
-          echo "" > web-build/.nojekyll
-          cp web-build/index.html web-build/404.html
+          echo "" > build/.nojekyll
+          cp build/index.html build/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web-build
+          publish_dir: ./build
           publish_branch: gh-pages
           force_orphan: true
