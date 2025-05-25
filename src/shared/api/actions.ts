@@ -687,3 +687,15 @@ export async function updateReportStatus(
     );
     return response.data;
 }
+
+/** @throws {AxiosError} */
+export async function getGeocodedLocation(query: string, token: string) {
+    const response = await instance.get('/maps/proxy/geocode/json', {
+        params: { address: query },
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    return response.data;
+}

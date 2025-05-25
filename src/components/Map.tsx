@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { getEndpointUrl } from 'shared/api/config';
+import { getGeocodedLocation } from '@/shared/api/actions';
+import { useAuth } from '@/hooks/useAuth';
+import debounce from '@/shared/debounce';
 
 export interface MapCoordinates {
     latitude: number;
@@ -58,45 +61,48 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     regionID,
     onLocationChange
 }) => {
+    const { token } = useAuth();
     const fallback = coordinates ?? sampleCoordinates;
     const [mapCoordinates, setMapCoordinates] =
         useState<MapCoordinates>(fallback);
     const [loading, setLoading] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [suggestions, setSuggestions] = useState<any[]>([]);
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: GOOGLE_MAPS_KEY
     });
 
     useEffect(() => {
-        if (regionID) {
+        if (regionID && !mapCoordinates) {
             setLoading(true);
             fetchCoordinatesFromRegionID(regionID)
                 .then(setMapCoordinates)
                 .catch(() => setMapCoordinates(fallback))
                 .finally(() => setLoading(false));
         }
-        else if (coordinates) {
-            setMapCoordinates(coordinates);
-        }
-    }, [regionID, coordinates]);
+    }, [regionID]);
 
-    const handleAddressSearch = useCallback(
-        async (query: string) => {
-            const url = `${getEndpointUrl()}/maps/proxy?q=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_KEY}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            const loc = data?.results?.[0]?.geometry?.location;
-            const name = data?.results?.[0]?.formatted_address;
-            const placeID = data?.results?.[0]?.place_id;
+    useEffect(() => {
+        if (!searchInput || !token) return;
 
-            if (loc) {
-                const coords = { latitude: loc.lat, longitude: loc.lng };
-                setMapCoordinates(coords);
-                onLocationChange?.({ coordinates: coords, placeID, name });
+        const debouncedSearch = debounce(async () => {
+            try {
+                const data = await getGeocodedLocation(searchInput, token);
+                setSuggestions(data?.results ?? []);
             }
-        },
-        [onLocationChange]
-    );
+            catch (err) {
+                console.error('Error fetching suggestions:', err);
+                setSuggestions([]);
+            }
+        }, 300);
+
+        debouncedSearch();
+
+        return () => {
+            setSuggestions([]);
+        };
+    }, [searchInput, token]);
 
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
@@ -110,14 +116,40 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     }
 
     return (
-        <div style={{ position: 'relative', width, height }}>
+        <div style={{ position: 'relative', width, height, overflow: 'visible' }}>
             {showAddressBar && (
-                <input
-                    type='text'
-                    placeholder='Search address'
-                    style={searchInputStyle}
-                    onBlur={(e) => handleAddressSearch(e.target.value)}
-                />
+                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 999, width: 300 }}>
+                    <input
+                        type='text'
+                        value={searchInput}
+                        placeholder='Search address'
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="w-full p-2 rounded border border-gray-300 bg-white z-10"
+                    />
+                    {suggestions.length > 0 && (
+                        <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 max-h-52 overflow-y-auto z-[1000] shadow-md">
+                            {suggestions.map((suggestion, index) => (
+                                <li
+                                    key={index}
+                                    className="p-2 cursor-pointer border-b border-gray-100 hover:bg-gray-100"
+                                    onClick={() => {
+                                        const loc = suggestion.geometry.location;
+                                        const name = suggestion.formatted_address;
+                                        const placeID = suggestion.place_id;
+
+                                        const coords = { latitude: loc.lat, longitude: loc.lng };
+                                        setMapCoordinates(coords);
+                                        onLocationChange?.({ coordinates: coords, placeID, name });
+                                        setSuggestions([]);
+                                        setSearchInput(name);
+                                    }}
+                                >
+                                    {suggestion.formatted_address}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             )}
             <GoogleMap
                 mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -127,20 +159,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 {exactLocation && <Marker position={center} />}
             </GoogleMap>
         </div>
-    );
-};
 
-const searchInputStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 10,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 10,
-    padding: '0.5rem 1rem',
-    borderRadius: 4,
-    border: '1px solid #ccc',
-    backgroundColor: 'white',
-    width: 300
+    );
 };
 
 export default MapDisplay;
