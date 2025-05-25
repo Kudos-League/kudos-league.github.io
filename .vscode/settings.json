@@ -1,14 +1,28 @@
 {
-  "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
-  "editor.formatOnType": false, // required
-  "editor.formatOnPaste": true, // optional
-  "editor.formatOnSave": true, // optional
-  "editor.formatOnSaveMode": "file", // required to format on save
-  "files.autoSave": "onFocusChange", // optional but recommended
-  "vs-code-prettier-eslint.prettierLast": true, // set as "true" to run 'prettier' last not first
-  "eslint.validate": ["javascript"],
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "always"
-  },
-  "files.eol": "\n"
+    // Formatters
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint", // optional, or use dbaeumer.vscode-eslint
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true, // enables all fixers, not just ESLint
+        "source.fixAll.eslint": true // specifically ESLint
+    },
+
+    // ESLint support for various file types
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+        "json",
+        "jsonc",
+        "svelte" // add this if using svelte-eslint
+    ],
+
+    // Optional: Prettier-Eslint Integration
+    "vs-code-prettier-eslint.prettierLast": true,
+
+    // Optional: Auto-save behavior
+    "files.autoSave": "onFocusChange",
+    "files.eol": "\n"
 }

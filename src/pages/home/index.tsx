@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import Feed from "@/pages/feed";
+import Feed from '@/pages/feed';
 
 export default function HomeRouter() {
-  return <Feed />;
+    return <Feed />;
 }

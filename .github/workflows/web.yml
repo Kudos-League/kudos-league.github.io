@@ -1,59 +1,59 @@
 name: Deploy Web to GitHub Pages
 
 permissions:
-  contents: write
+    contents: write
 
 on:
-  push:
-    branches:
-      #- main
-      - rewrite/web
-  workflow_dispatch:
+    push:
+        branches:
+            #- main
+            - rewrite/web
+    workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          #ref: main
-          ref: rewrite/web
-          fetch-depth: 0
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v3
+              with:
+                  #ref: main
+                  ref: rewrite/web
+                  fetch-depth: 0
 
-      - name: Enable Corepack and Set Correct Yarn Version
-        run: |
-          corepack enable
-          corepack prepare yarn@4.5.1 --activate
-          yarn --version
+            - name: Enable Corepack and Set Correct Yarn Version
+              run: |
+                  corepack enable
+                  corepack prepare yarn@4.5.1 --activate
+                  yarn --version
 
-      - name: Prepare gh-pages branch
-        run: |
-          git fetch origin gh-pages
-          git worktree add /tmp/gh-pages gh-pages
-          rm -rf /tmp/gh-pages/*
+            - name: Prepare gh-pages branch
+              run: |
+                  git fetch origin gh-pages
+                  git worktree add /tmp/gh-pages gh-pages
+                  rm -rf /tmp/gh-pages/*
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "yarn"
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.x
+                  cache: 'yarn'
 
-      - name: Install Dependencies
-        run: yarn install
+            - name: Install Dependencies
+              run: yarn install
 
-      - name: Build the Web App
-        run: yarn build
+            - name: Build the Web App
+              run: yarn build
 
-      - name: Add Redirects and 404 Fallback
-        run: |
-          echo "" > build/.nojekyll
-          cp build/index.html build/404.html
+            - name: Add Redirects and 404 Fallback
+              run: |
+                  echo "" > build/.nojekyll
+                  cp build/index.html build/404.html
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-          publish_branch: gh-pages
-          force_orphan: true
+            - name: Deploy to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./build
+                  publish_branch: gh-pages
+                  force_orphan: true

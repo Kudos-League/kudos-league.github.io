@@ -1,0 +1,7 @@
+build/
+node_modules/
+coverage/
+dist/
+public/
+*.config.js
+*.config.cjs

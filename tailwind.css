@@ -1,28 +1,28 @@
 .m-8 {
-  margin: 2rem
+    margin: 2rem;
 }
 
 .flex {
-  display: flex
+    display: flex;
 }
 
 .hidden {
-  display: none
+    display: none;
 }
 
 .flex-1 {
-  flex: 1 1 0%
+    flex: 1 1 0%;
 }
 
 .border {
-  border-width: 1px
+    border-width: 1px;
 }
 
 .bg-gray-200 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(229 231 235 / var(--tw-bg-opacity))
+    --tw-bg-opacity: 1;
+    background-color: rgb(229 231 235 / var(--tw-bg-opacity));
 }
 
 .p-4 {
-  padding: 1rem
+    padding: 1rem;
 }
