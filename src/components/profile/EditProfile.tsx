@@ -5,6 +5,7 @@ import Input from "../forms/Input";
 import MapDisplay from "../Map";
 import { UseFormReturn } from "react-hook-form";
 import { ProfileFormValues, UserDTO } from "@/shared/api/types";
+import ImagePicker from "../forms/ImagePicker";
 
 interface Props {
   targetUser: UserDTO;
@@ -34,7 +35,7 @@ const EditProfile: React.FC<Props> = ({
       if (typeof avatarFileOrUrl === "string") return avatarFileOrUrl;
       if (avatarFileOrUrl instanceof File) return URL.createObjectURL(avatarFileOrUrl);
     }
-    if (form.watch("avatarUrl")) return form.watch("avatarUrl");
+    if (form.watch("avatarURL")) return form.watch("avatarURL");
     return targetUser.avatar || null;
   };
 
@@ -47,6 +48,18 @@ const EditProfile: React.FC<Props> = ({
           .split(",")
           .map((tag: string) => tag.trim())
           .filter((tag: string) => tag.length > 0);
+      }
+
+      if (!data.avatar?.length && data.avatarURL?.trim()) {
+        data.avatar = [data.avatarURL.trim()];
+      }
+
+      if (data.avatar?.[0] instanceof File) {
+        delete data.avatarURL;
+      }
+
+      if (Array.isArray(data.avatar) && data.avatar.length > 0) {
+        data.avatar = data.avatar[0];
       }
 
       onSubmit(data);
@@ -128,12 +141,21 @@ const EditProfile: React.FC<Props> = ({
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">Profile Picture</label>
+          <label className="block font-semibold mb-1">Profile Picture URL</label>
           <Input
-            name="avatarUrl"
+            name="avatarURL"
             form={form}
             label="Profile Picture URL"
             placeholder="Paste an image URL"
+          />
+          <p className="text-xs text-gray-500 mb-2">
+            Or upload an image instead
+          </p>
+          <ImagePicker
+            selectedFiles={form.watch("avatar") ?? []}
+            onChange={(files) => form.setValue("avatar", files)}
+            placeholder="Upload avatar"
+            multiple={false}
           />
         </div>
 

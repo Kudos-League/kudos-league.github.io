@@ -41,7 +41,7 @@ export type ProfileFormValues = {
   about?: string;
   email: string;
   avatar: File[];
-  avatarUrl?: string;
+  avatarURL?: string;
   location: MapCoordinates
   tags?: string[];
   mapCoordinates?: {
