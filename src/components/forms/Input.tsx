@@ -34,7 +34,7 @@ export default function Input<T extends FieldValues>({
   placeholder,
   value,
   multipleFiles = true,
-  multiline,
+  multiline = false,
   onValueChange,
 }: Props<T>) {
   const defaultValue: PathValue<T, Path<T>> =
@@ -48,6 +48,7 @@ export default function Input<T extends FieldValues>({
     control: form.control,
     name,
     defaultValue,
+    rules: registerOptions, // ✅ RHF validation rules
   });
 
   if (type === "file" || type === "file-image") {
@@ -85,18 +86,33 @@ export default function Input<T extends FieldValues>({
 
   return (
     <div className="my-2">
-      <label className="block mb-1 text-sm font-medium">{label}</label>
-      <input
-        type={type === "password" ? "password" : "text"}
-        value={value ?? field.value}
-        onChange={(e) => {
-          field.onChange(e.target.value);
-          onValueChange?.(e.target.value);
-        }}
-        className="w-full border rounded px-3 py-2"
-        placeholder={placeholder}
-        multiple={multipleFiles}
-      />
+      <label htmlFor={name} className="block mb-1 text-sm font-medium">{label}</label>
+      {multiline ? (
+        <textarea
+          id={name}
+          value={value ?? field.value}
+          onChange={(e) => {
+            field.onChange(e.target.value);
+            onValueChange?.(e.target.value);
+          }}
+          className="w-full border rounded px-3 py-2"
+          placeholder={placeholder}
+          rows={4}
+        />
+      ) : (
+        <input
+          id={name}
+          type={type === "password" ? "password" : "text"}
+          value={value ?? field.value}
+          onChange={(e) => {
+            field.onChange(e.target.value);
+            onValueChange?.(e.target.value);
+          }}
+          className="w-full border rounded px-3 py-2"
+          placeholder={placeholder}
+          multiple={multipleFiles}
+        />
+      )}
     </div>
   );
 }

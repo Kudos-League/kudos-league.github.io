@@ -75,6 +75,10 @@ const TagInput: React.FC<TagInputProps> = ({ onTagsChange, initialTags = [] }) =
     setSelectedTags((prev) => prev.filter((tag) => tag.id !== id));
   };
 
+  if (isLoading) {
+    return <div className="text-gray-500">Loading tags...</div>;
+  }
+
   return (
     <div className="w-full space-y-3">
       <label className="text-sm font-semibold">Tags</label>

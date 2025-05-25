@@ -35,7 +35,9 @@ export default function ImagePicker({
       <button
         type="button"
         onClick={openImagePicker}
-        className="flex items-center justify-center w-24 h-24 bg-gray-100 rounded border border-dashed"
+        className="flex items-center justify-center w-24 h-24 bg-gray-100 rounded border border-dashed text-2xl"
+        title={placeholder}
+        aria-label={placeholder}
       >
         ➕
       </button>

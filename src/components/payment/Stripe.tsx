@@ -19,6 +19,7 @@ export default function StripeWeb() {
       const { publishableKey } = await response.json();
       return publishableKey;
     } catch (err) {
+      console.error("Failed to fetch Stripe publishable key:", err);
       setError("Failed to load Stripe publishable key.");
     }
   };
@@ -32,6 +33,7 @@ export default function StripeWeb() {
         setStripe(stripeInstance);
         setLoading(true);
       } catch (e) {
+        console.error("Stripe initialization error:", e);
         setError("Failed to initialize Stripe.");
       }
     };

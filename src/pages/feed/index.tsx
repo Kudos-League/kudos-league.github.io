@@ -36,7 +36,7 @@ export default function Feed() {
   const filterAndOrderPosts = useCallback((posts: PostDTO[], orderingType: TypeOfOrdering, filterType: PostFilterType) => {
     if (!posts) return [];
 
-    let filtered = posts.filter((p) => p.type === (filterType === "gifts" ? "gift" : "request"));
+    const filtered = posts.filter((p) => p.type === (filterType === "gifts" ? "gift" : "request"));
 
     const sortFn = {
       date: (a: PostDTO, b: PostDTO) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

@@ -18,7 +18,7 @@ import { ChannelDTO, CreateHandshakeDTO, Post as PostType  } from "shared/api/ty
 const Post = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { user, isLoggedIn } = useAuth();
+    const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
 
     const [postDetails, setPostDetails] = useState<PostType | null>(null);

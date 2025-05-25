@@ -24,14 +24,14 @@ type Props = {
 };
 
 export default function PostCard({
-  id,
+  // id,
   title,
   body,
-  type,
+  // type,
   images,
-  tags,
+  // tags,
   sender,
-  rewardOffer,
+  // rewardOffer,
   fake,
   onPress,
 }: Props) {

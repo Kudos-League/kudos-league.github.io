@@ -30,11 +30,6 @@ type MapComponentProps =
 const sampleCoordinates = { latitude: 38.8951, longitude: -77.0364 };
 const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY!;
 
-const containerStyle = {
-  width: "100%",
-  height: "400px",
-};
-
 async function fetchCoordinatesFromRegionID(regionID: string): Promise<MapCoordinates> {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${regionID}&key=${GOOGLE_MAPS_KEY}`;
   const res = await fetch(url);
@@ -96,6 +91,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     lat: mapCoordinates.latitude,
     lng: mapCoordinates.longitude,
   };
+
+  if (loading) {
+    return <p>Loading map...</p>;
+  }
 
   return (
     <div style={{ position: "relative", width, height }}>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useController, useFormContext } from "react-hook-form";
 import Input from "@/components/forms/Input";
-import Picker from "@/components/forms/DropdownPicker";
+// import Picker from "@/components/forms/DropdownPicker";
 
 const predefinedAmounts = [
   { label: "$5", value: "500" },

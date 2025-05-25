@@ -6,7 +6,7 @@ type FilePickerProps = {
   selectedFiles?: File[];
   multiple?: boolean;
   style?: React.CSSProperties;
-  type?: 'text' | 'password' | 'file' | 'dropdown' | 'file-image';
+  type?: 'file' | 'file-image';
 };
 
 export default function FilePicker({
@@ -14,7 +14,7 @@ export default function FilePicker({
   placeholder = 'Choose Files',
   selectedFiles = [],
   multiple = true,
-  type = 'text',
+  type = 'file',
 }: FilePickerProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -24,6 +24,35 @@ export default function FilePicker({
   };
 
   const openFilePicker = () => fileInputRef.current?.click();
+
+  if (type === 'file-image') {
+    return (
+      <div className="my-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple={multiple}
+          hidden
+          onChange={handleFileChange}
+        />
+        <button
+          type="button"
+          onClick={openFilePicker}
+          className="w-24 h-24 border-2 border-dashed border-gray-400 flex items-center justify-center rounded hover:border-blue-500"
+        >
+          📷
+        </button>
+        {selectedFiles.length > 0 && (
+          <div className="mt-2 space-y-1 text-sm text-gray-600">
+            {selectedFiles.map((file, idx) => (
+              <p key={idx}>{file.name}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="my-4">

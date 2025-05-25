@@ -16,12 +16,20 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+
+  tseslint.configs.recommended,
+  pluginReact.configs.flat.recommended,
+
   {
     files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tseslint.parser,
+    },
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
-  tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
 ]);

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import io from "socket.io-client";
 import { getEndpointUrl } from "shared/api/config";
 

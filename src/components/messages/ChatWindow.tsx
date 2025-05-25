@@ -58,7 +58,9 @@ const ChatWindow: React.FC<Props> = ({ user, channel, messages, onSend, onBack }
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              messageInput && onSend(messageInput.trim());
+              if (messageInput) {
+                onSend(messageInput.trim());
+              }
               setMessageInput("");
             }
           }}
