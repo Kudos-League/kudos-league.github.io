@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import DiscordLoginButton from "./DiscordLoginButton";
+import GoogleLoginButton from "./GoogleLoginButton";
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -86,9 +88,8 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           <p className="text-center text-sm text-gray-500">or log in with</p>
 
           <div className="flex justify-center gap-4">
-            <button type="button" className="bg-purple-100 rounded-full p-2">G</button>
-            <button type="button" className="bg-purple-100 rounded-full p-2">A</button>
-            <button type="button" className="bg-purple-100 rounded-full p-2">f</button>
+            <DiscordLoginButton />
+            <GoogleLoginButton />
           </div>
 
           <div className="text-center text-sm mt-4">
