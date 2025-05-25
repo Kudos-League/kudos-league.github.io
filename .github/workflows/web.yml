@@ -43,7 +43,7 @@ jobs:
               run: yarn install
 
             - name: Build the Web App
-              run: CI='' yarn build
+              run: CI='' yarn build:dev
 
             - name: Add Redirects and 404 Fallback
               run: |
