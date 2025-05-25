@@ -33,22 +33,22 @@ export type PostDTO = {
   location: LocationDTO;
   category: CategoryDTO;
 };
-interface CustomFile extends File {
+export interface CustomFile extends File {
   uri: string;
 }
+
 export type ProfileFormValues = {
-  description?: string;
+  about?: string;
   email: string;
   avatar: File[];
   avatarUrl?: string;
   location: MapCoordinates
-  tags?: string;
+  tags?: string[];
   mapCoordinates?: {
     latitude: number;
     longitude: number;
   };
 };
-
 
 export interface Feat {
   location: string;
@@ -278,4 +278,5 @@ export interface UserDTO {
   tags: Tag[];
   badges: Badge[]
   location?: MapCoordinates;
+  settings?: UserSettingsDTO | null;
 }

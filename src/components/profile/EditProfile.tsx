@@ -9,7 +9,7 @@ import { ProfileFormValues, UserDTO } from "@/shared/api/types";
 interface Props {
   targetUser: UserDTO;
   userSettings?: any;
-  form: UseFormReturn<ProfileFormValues>; // ✅ Required for react-hook-form
+  form: UseFormReturn<ProfileFormValues>;
   onSubmit: (data: ProfileFormValues) => void;
   onClose: () => void;
   loading: boolean;
@@ -41,7 +41,15 @@ const EditProfile: React.FC<Props> = ({
   const handleFormSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
-      await onSubmit(data);
+
+      if (typeof data.tags === "string") {
+        data.tags = data.tags
+          .split(",")
+          .map((tag: string) => tag.trim())
+          .filter((tag: string) => tag.length > 0);
+      }
+
+      onSubmit(data);
       setFeedbackMessage("Profile updated");
       setTimeout(() => setFeedbackMessage(null), 2000);
     } catch (err: any) {
@@ -95,7 +103,7 @@ const EditProfile: React.FC<Props> = ({
         <div>
           <label className="block font-semibold mb-1">Description</label>
           <Input
-            name="description"
+            name="about"
             form={form}
             label="Description"
             placeholder="Write a short bio..."

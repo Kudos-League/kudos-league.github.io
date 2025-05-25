@@ -118,7 +118,7 @@ export async function getBannedTags() {
 }
 
 /** @throws {AxiosError} */
-export async function getUserDetails(id: number | string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean } = {}) {
+export async function getUserDetails(id: number | string = "me", token: string, options: { dmChannels?: boolean; dmChannel?: boolean, settings?: boolean } = {}) {
   const queryString = toQueryParams(options);
 
   const response = await instance.get(`/users/${id}${queryString}`, {
@@ -127,6 +127,7 @@ export async function getUserDetails(id: number | string = "me", token: string, 
       Authorization: `Bearer ${token}`,
     },
   });
+
   return response.data;
 }
 

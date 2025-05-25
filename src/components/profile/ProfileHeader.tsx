@@ -6,7 +6,7 @@ import { UserDTO } from "@/shared/api/types";
 
 interface Props {
   user: UserDTO;
-  userSettings?: { dataValues?: { about?: string } };
+  userSettings?: { about?: string };
   onEditProfile?: () => void;
   onStartDM?: () => void;
   isSelf: boolean;
@@ -70,7 +70,7 @@ const ProfileHeader: React.FC<Props> = ({
       </div>
 
       <p className="mt-6 text-gray-700 text-sm italic">
-        {userSettings?.dataValues?.about || "No bio available"}
+        {userSettings?.about || "No bio available"}
       </p>
 
       {user.location?.regionID && (

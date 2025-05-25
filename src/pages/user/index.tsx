@@ -51,7 +51,7 @@ export default function UserProfile() {
           }
 
           const [fetchedUser, fetchedPosts, fetchedHandshakes, fetchedEvents] = await Promise.all([
-            getUserDetails(targetUserID.toString(), authState.token),
+            getUserDetails(targetUserID.toString(), authState.token, { settings: true }),
             getUserPosts(targetUserID.toString(), authState.token),
             getUserHandshakes(targetUserID.toString(), authState.token),
             getUserEvents(targetUserID.toString(), authState.token),

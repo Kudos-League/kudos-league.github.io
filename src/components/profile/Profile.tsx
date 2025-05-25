@@ -11,7 +11,6 @@ import { useForm } from "react-hook-form";
 
 type Props = {
   user: UserDTO;
-  userSettings?: any;
   handleUpdate: (formData: any) => Promise<void>;
   posts: PostDTO[];
   handshakes: HandshakeDTO[];
@@ -22,7 +21,6 @@ type Props = {
 
 const Profile: React.FC<Props> = ({
   user,
-  userSettings,
   handleUpdate,
   posts,
   handshakes,
@@ -37,12 +35,12 @@ const Profile: React.FC<Props> = ({
   const [filter, setFilter] = useState<"all" | "gift" | "request" | "handshakes" | "events">("all");
 
     const form = useForm<ProfileFormValues>({
-    defaultValues: {
-      email: user.email,
-      avatar: [],
-      location: user.location || undefined
-    },
-  });
+      defaultValues: {
+        email: user.email,
+        avatar: [],
+        location: user.location || undefined
+      },
+    });
 
   const handleStartDM = () => {
     console.log("TODO: navigate to chat DM");
@@ -52,7 +50,7 @@ const Profile: React.FC<Props> = ({
     return (
       <EditProfile
         targetUser={user}
-        userSettings={userSettings}
+        userSettings={user.settings}
         onClose={() => setEditing(false)}
         onSubmit={handleUpdate}
         loading={loading}
@@ -67,7 +65,7 @@ const Profile: React.FC<Props> = ({
       {/* Header */}
       <ProfileHeader
         user={user}
-        userSettings={userSettings}
+        userSettings={user.settings}
         isSelf={isSelf}
         onEditProfile={() => setEditing(true)}
         onStartDM={handleStartDM}
