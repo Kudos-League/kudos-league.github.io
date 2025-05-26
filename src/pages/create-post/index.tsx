@@ -26,7 +26,7 @@ const MAX_FILE_COUNT = 5;
 const badwords = ['badword', 'badword2', 'badword3'];
 
 export default function CreatePost() {
-    const form = useForm<FormValues>({ defaultValues: { tags: [] } });
+    const form = useForm<FormValues>({ defaultValues: { tags: [], categoryID: 0 } });
     const { isLoggedIn, token } = useAuth();
     const { addPost } = usePosts();
     const navigate = useNavigate();
@@ -163,10 +163,11 @@ export default function CreatePost() {
             <label className='block text-sm font-semibold mt-2'>Category</label>
             <select
                 className='border rounded w-full px-3 py-2'
-                value={form.watch('categoryID')}
-                onChange={(e) =>
-                    form.setValue('categoryID', parseInt(e.target.value))
-                }
+                {...form.register('categoryID', {
+                    required: 'Please select a category',
+                    valueAsNumber: true,
+                    validate: value => value > 0 || 'Please select a valid category'
+                })}
             >
                 <option value=''>Select a category</option>
                 {categories.map((cat) => (
@@ -175,6 +176,12 @@ export default function CreatePost() {
                     </option>
                 ))}
             </select>
+
+            {form.formState.errors.categoryID && (
+                <p className='text-red-600 text-sm mt-1'>
+                    {form.formState.errors.categoryID.message}
+                </p>
+            )}
 
             <Input
                 name='files'
