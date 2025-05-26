@@ -154,7 +154,7 @@ export async function getUserDetails(
 }
 
 /** @throws {AxiosError} */
-export async function getUserPosts(id = 'me', token: string) {
+export async function getUserPosts(id: number | string = 'me', token: string) {
     const response = await instance.get(`/users/${id}/posts`, {
         headers: {
             Authorization: `Bearer ${token}`
@@ -204,7 +204,7 @@ export async function updateUserSettings(settingsData: any, token: string) {
 }
 
 /** @throws {AxiosError} */
-export async function getUserHandshakes(id = 'me', token: string) {
+export async function getUserHandshakes(id: number | string = 'me', token: string) {
     // Fetch sent handshakes
     const sentResponse = await instance.get(`/handshakes/by-sender/${id}`, {
         headers: {
@@ -227,7 +227,7 @@ export async function getUserHandshakes(id = 'me', token: string) {
 }
 
 export async function getUserEvents(
-    id: string,
+    id: string | number = 'me',
     token: string,
     filters?: {
         startDate?: string;

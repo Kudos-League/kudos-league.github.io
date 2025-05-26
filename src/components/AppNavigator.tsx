@@ -34,7 +34,7 @@ function AppNavigator() {
 
                 <Route path='/post/:id' element={<Post />} />
                 <Route path='/create-post' element={<CreatePost />} />
-                <Route path='/user/:username' element={<Profile />} />
+                <Route path='/user/:id' element={<Profile />} />
                 <Route path='/event/:eventId' element={<EventDetails />} />
                 <Route path='create-event' element={<CreateEvent />} />
 

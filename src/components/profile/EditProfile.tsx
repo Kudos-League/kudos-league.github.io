@@ -63,6 +63,11 @@ const EditProfile: React.FC<Props> = ({
                 data.avatar = data.avatar[0];
             }
 
+            if (!data.avatar) delete data.avatar;
+            if (!data.avatarURL || typeof data.avatarURL !== 'string' || data.avatarURL.trim() === '') {
+                delete data.avatarURL;
+            }
+
             onSubmit(data);
             setFeedbackMessage('Profile updated');
             setTimeout(() => setFeedbackMessage(null), 2000);

@@ -155,6 +155,34 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 mapContainerStyle={{ width: '100%', height: '100%' }}
                 center={center}
                 zoom={12}
+                options={{
+                    disableDefaultUI: true,
+                    clickableIcons: false,
+                    /*
+                    styles: [
+                        {
+                            featureType: 'poi',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        },
+                        {
+                            featureType: 'transit',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        },
+                        {
+                            featureType: 'road',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        },
+                        {
+                            featureType: 'administrative',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        }
+                    ]
+                    */
+                }}
             >
                 {exactLocation && <Marker position={center} />}
             </GoogleMap>

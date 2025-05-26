@@ -14,10 +14,9 @@ import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {
     const { user: userProfile, token, isLoggedIn, authState } = useAuth();
-    const { id } = useParams<{ id: string }>();
-
-    const targetUserID = id || userProfile?.id;
-    const isLoggedInUser = targetUserID === userProfile?.id;
+    const { id: routeID } = useParams<{ id: string }>();
+    const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
+    const targetUserID = routeID ? Number(routeID) : userProfile?.id;
 
     const [user, setUser] = useState<UserDTO | null>(null);
     const [posts, setPosts] = useState<PostDTO[]>([]);
@@ -30,68 +29,48 @@ export default function UserProfile() {
     useEffect(() => {
         const fetchUser = async () => {
             setError(null);
-            if (!targetUserID) {
-                setError('Missing user ID to fetch details.');
+
+            if (!targetUserID || !authState?.token) {
+                setError('Missing user ID or token.');
                 return;
             }
 
             try {
-                if (isLoggedInUser && userProfile) {
+                if (isViewingOwnProfile && userProfile) {
                     setUser(userProfile);
                     setFormState(userProfile);
-
-                    if (!posts.length && authState?.token) {
-                        const [fetchedPosts, fetchedHandshakes, fetchedEvents] =
-                            await Promise.all([
-                                getUserPosts(
-                                    targetUserID.toString(),
-                                    authState.token
-                                ),
-                                getUserHandshakes(
-                                    targetUserID.toString(),
-                                    authState.token
-                                ),
-                                getUserEvents(
-                                    targetUserID.toString(),
-                                    authState.token
-                                )
-                            ]);
-
-                        setPosts(fetchedPosts);
-                        setHandshakes(fetchedHandshakes);
-                        setEvents(fetchedEvents);
-                    }
                 }
                 else {
-                    if (!authState?.token) {
-                        throw new Error('No token available. Please log in.');
-                    }
-
                     const [
                         fetchedUser,
                         fetchedPosts,
                         fetchedHandshakes,
                         fetchedEvents
                     ] = await Promise.all([
-                        getUserDetails(
-                            targetUserID.toString(),
-                            authState.token,
-                            {
-                                settings: true
-                            }
-                        ),
-                        getUserPosts(targetUserID.toString(), authState.token),
-                        getUserHandshakes(
-                            targetUserID.toString(),
-                            authState.token
-                        ),
-                        getUserEvents(targetUserID.toString(), authState.token)
+                        getUserDetails(targetUserID, authState.token, {
+                            settings: true
+                        }),
+                        getUserPosts(targetUserID, authState.token),
+                        getUserHandshakes(targetUserID, authState.token),
+                        getUserEvents(targetUserID, authState.token)
                     ]);
 
                     setUser(fetchedUser);
                     setFormState(fetchedUser);
                     setPosts(fetchedPosts);
                     setHandshakes(fetchedHandshakes);
+                    setEvents(fetchedEvents);
+
+                    return;
+                }
+
+                // Only fetch posts/events if not already loaded
+                if (!posts.length) {
+                    const [fetchedPosts, fetchedEvents] = await Promise.all([
+                        getUserPosts(targetUserID, authState.token),
+                        getUserEvents(targetUserID, authState.token)
+                    ]);
+                    setPosts(fetchedPosts);
                     setEvents(fetchedEvents);
                 }
             }
@@ -102,7 +81,8 @@ export default function UserProfile() {
         };
 
         fetchUser();
-    }, [targetUserID, isLoggedInUser, authState, userProfile]);
+    }, [targetUserID, authState?.token]);
+
 
     const handleUpdate = async (formData: Partial<UserDTO>) => {
         if (!formData || !token || !targetUserID) {
