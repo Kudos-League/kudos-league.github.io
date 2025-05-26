@@ -96,7 +96,7 @@ const ProfileHeader: React.FC<Props> = ({
                     <MapDisplay
                         regionID={user.location.regionID}
                         showAddressBar={false}
-                        exactLocation={false}
+                        exactLocation={true}
                         width={400}
                         height={200}
                     />

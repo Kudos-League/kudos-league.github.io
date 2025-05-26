@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { getEndpointUrl } from 'shared/api/config';
 import { getGeocodedLocation } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import debounce from '@/shared/debounce';
@@ -10,12 +9,14 @@ export interface MapCoordinates {
     longitude: number;
     name?: string;
     regionID?: string;
+    changed?: boolean;
 }
 
 interface LocationData {
     coordinates: MapCoordinates;
     placeID: string;
     name?: string;
+    changed: boolean;
 }
 
 interface MapComponentPropsBase {
@@ -74,12 +75,26 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     });
 
     useEffect(() => {
-        if (regionID && !mapCoordinates) {
-            setLoading(true);
-            fetchCoordinatesFromRegionID(regionID)
-                .then(setMapCoordinates)
-                .catch(() => setMapCoordinates(fallback))
-                .finally(() => setLoading(false));
+        if (regionID) {
+            const alreadySet =
+                Math.abs(mapCoordinates.latitude - fallback.latitude) < 0.0001 &&
+                Math.abs(mapCoordinates.longitude - fallback.longitude) < 0.0001;
+
+            if (alreadySet && (!coordinates?.regionID || coordinates.regionID !== regionID)) {
+                setLoading(true);
+                fetchCoordinatesFromRegionID(regionID)
+                    .then((coords) => {
+                        setMapCoordinates(coords);
+                        onLocationChange?.({
+                            coordinates: coords,
+                            placeID: regionID,
+                            name: undefined,
+                            changed: false
+                        });
+                    })
+                    .catch(() => setMapCoordinates(sampleCoordinates))
+                    .finally(() => setLoading(false));
+            }
         }
     }, [regionID]);
 
@@ -137,12 +152,25 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                         const name = suggestion.formatted_address;
                                         const placeID = suggestion.place_id;
 
-                                        const coords = { latitude: loc.lat, longitude: loc.lng };
+                                        const newLat = loc.lat;
+                                        const newLng = loc.lng;
+
+                                        const isSameCoords =
+                                            Math.abs(newLat - mapCoordinates.latitude) < 0.00001 &&
+                                            Math.abs(newLng - mapCoordinates.longitude) < 0.00001;
+
+                                        const coords = {
+                                            latitude: newLat,
+                                            longitude: newLng,
+                                            changed: !isSameCoords
+                                        };
+
                                         setMapCoordinates(coords);
-                                        onLocationChange?.({ coordinates: coords, placeID, name });
+                                        onLocationChange?.({ coordinates: coords, placeID, name, changed: !isSameCoords });
                                         setSuggestions([]);
                                         setSearchInput(name);
                                     }}
+
                                 >
                                     {suggestion.formatted_address}
                                 </li>

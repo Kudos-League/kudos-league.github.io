@@ -22,7 +22,6 @@ export default function UserProfile() {
     const [posts, setPosts] = useState<PostDTO[]>([]);
     const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]);
     const [events, setEvents] = useState<EventDTO[]>([]);
-    const [formState, setFormState] = useState<Partial<UserDTO>>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +37,7 @@ export default function UserProfile() {
             try {
                 if (isViewingOwnProfile && userProfile) {
                     setUser(userProfile);
-                    setFormState(userProfile);
+                    // setFormState(userProfile);
                 }
                 else {
                     const [
@@ -56,7 +55,7 @@ export default function UserProfile() {
                     ]);
 
                     setUser(fetchedUser);
-                    setFormState(fetchedUser);
+                    // setFormState(fetchedUser);
                     setPosts(fetchedPosts);
                     setHandshakes(fetchedHandshakes);
                     setEvents(fetchedEvents);
@@ -83,11 +82,9 @@ export default function UserProfile() {
         fetchUser();
     }, [targetUserID, authState?.token]);
 
-
     const handleUpdate = async (formData: Partial<UserDTO>) => {
         if (!formData || !token || !targetUserID) {
-            setError('Invalid form data or authentication.');
-            return;
+            throw new Error('Invalid form data or authentication.');
         }
 
         setLoading(true);
@@ -100,10 +97,6 @@ export default function UserProfile() {
                 token
             );
             setUser(updatedUser);
-        }
-        catch (e) {
-            console.error(e);
-            setError('Failed to update user.');
         }
         finally {
             setLoading(false);

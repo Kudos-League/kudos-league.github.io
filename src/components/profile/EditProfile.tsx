@@ -11,7 +11,7 @@ interface Props {
     targetUser: UserDTO;
     userSettings?: any;
     form: UseFormReturn<ProfileFormValues>;
-    onSubmit: (data: ProfileFormValues) => void;
+    onSubmit: (data: ProfileFormValues) => Promise<void>;
     onClose: () => void;
     loading: boolean;
     error: string | null;
@@ -63,18 +63,24 @@ const EditProfile: React.FC<Props> = ({
                 data.avatar = data.avatar[0];
             }
 
-            if (!data.avatar) delete data.avatar;
+            if (!data.avatar?.length) delete data.avatar;
             if (!data.avatarURL || typeof data.avatarURL !== 'string' || data.avatarURL.trim() === '') {
                 delete data.avatarURL;
             }
 
-            onSubmit(data);
+            if (!data.location?.changed) {
+                delete data.location;
+            }
+            else delete data.location.changed;
+
+            await onSubmit(data);
             setFeedbackMessage('Profile updated');
             setTimeout(() => setFeedbackMessage(null), 2000);
         }
         catch (err: any) {
+            const str = err.response.data.errors[0]?.message || err.message || 'Update failed';
             console.error('Profile update failed', err);
-            setFeedbackMessage(err?.message || 'Update failed');
+            setFeedbackMessage(str);
             setTimeout(() => setFeedbackMessage(null), 3000);
         }
         finally {
@@ -190,11 +196,12 @@ const EditProfile: React.FC<Props> = ({
                         onLocationChange={(data) => {
                             if (data.coordinates) {
                                 setLocation(data.coordinates);
-                                form.setValue('location', {
+                                const obj = {
                                     ...data.coordinates,
                                     name: data.name,
                                     regionID: data.placeID
-                                });
+                                };
+                                form.setValue('location', obj);
                             }
                         }}
                     />
