@@ -192,7 +192,8 @@ const EditProfile: React.FC<Props> = ({
                                 setLocation(data.coordinates);
                                 form.setValue('location', {
                                     ...data.coordinates,
-                                    name: data.name
+                                    name: data.name,
+                                    regionID: data.placeID
                                 });
                             }
                         }}
