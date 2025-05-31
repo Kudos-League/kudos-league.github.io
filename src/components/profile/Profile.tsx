@@ -9,7 +9,7 @@ import {
 } from 'shared/api/types';
 
 import ProfileHeader from './ProfileHeader';
-import PostCard from './PostCard';
+import PostCard from '../posts/PostCard';
 import HandshakeCard from './HandshakeCard';
 import Achievements from './Achievements';
 import EditProfile from './EditProfile';
@@ -154,7 +154,7 @@ const Profile: React.FC<Props> = ({
                             (post) => filter === 'all' || post.type === filter
                         )
                         .map((post) => (
-                            <PostCard key={post.id} post={post} />
+                            <PostCard key={post.id} {...post} />
                         ))}
                 </div>
             )}

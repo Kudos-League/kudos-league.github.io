@@ -17,7 +17,6 @@ export default function PostsContainer({ posts }: { posts: PostDTO[] }) {
                 <PostCard
                     key={post.id}
                     {...post}
-                    onPress={() => navigate(`/post/${post.id}`)}
                 />
             ))}
         </div>

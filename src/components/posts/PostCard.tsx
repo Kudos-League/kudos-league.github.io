@@ -20,7 +20,6 @@ type Props = {
         kudosFinal: number;
     };
     fake?: boolean;
-    onPress: () => void;
 };
 
 function truncateBody(body: string, max = 100) {
@@ -29,7 +28,7 @@ function truncateBody(body: string, max = 100) {
 }
 
 export default function PostCard({
-    // id,
+    id,
     title,
     body,
     // type,
@@ -37,8 +36,7 @@ export default function PostCard({
     // tags,
     sender,
     // rewardOffer,
-    fake,
-    onPress
+    fake
 }: Props) {
     const navigate = useNavigate();
     const [imgError, setImgError] = useState(false);
@@ -58,7 +56,7 @@ export default function PostCard({
 
     return (
         <div
-            onClick={onPress}
+            onClick={() => navigate(`/post/${id}`)}
             className='flex justify-between items-start border rounded p-4 mb-4 bg-white shadow hover:shadow-md cursor-pointer transition'
         >
             <div className='flex-1 pr-4'>
