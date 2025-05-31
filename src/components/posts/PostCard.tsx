@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvatarComponent from '../Avatar';
 import { getEndpointUrl } from 'shared/api/config';
+import { getUserKudos } from '@/shared/api/actions';
+import { useAuth } from '@/hooks/useAuth';
 
 type Props = {
     id: number;
@@ -39,7 +41,25 @@ export default function PostCard({
     fake
 }: Props) {
     const navigate = useNavigate();
+    const { token } = useAuth();
+
     const [imgError, setImgError] = useState(false);
+    const [kudos, setKudos] = React.useState<number>(sender?.kudos || 0);
+    
+    React.useEffect(() => {
+        const fetchKudos = async () => {
+            if (!sender?.id) return;
+            try {
+                const totalKudos = await getUserKudos(sender.id, token);
+                setKudos(totalKudos);
+            }
+            catch (error) {
+                console.error('Failed to fetch user kudos:', error);
+            }
+        };
+    
+        fetchKudos();
+    }, [sender?.id]);
 
     const imageSrc = fake
         ? images?.[0]
@@ -77,7 +97,7 @@ export default function PostCard({
                                 {sender.username}
                             </p>
                             <p className='text-xs text-gray-500'>
-                                {sender.kudos} Kudos
+                                {kudos || 0} Kudos
                             </p>
                         </div>
                     </div>

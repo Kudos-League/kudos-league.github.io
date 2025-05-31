@@ -5,7 +5,8 @@ import {
     updateHandshake,
     createHandshake,
     likePost,
-    reportPost
+    reportPost,
+    getUserKudos
 } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
@@ -18,8 +19,8 @@ import {
     CreateHandshakeDTO,
     Post as PostType
 } from 'shared/api/types';
-import { getImagePath } from '@/shared/api/config';
 import ImageCarousel from '@/components/Carousel';
+import Handshakes from '@/components/posts/Handshakes';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ const Post = () => {
     const token = useAppSelector((state) => state.auth.token);
 
     const [postDetails, setPostDetails] = useState<PostType | null>(null);
+    const [kudos, setKudos] = React.useState<number>(user?.kudos || 0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [liked, setLiked] = useState<boolean | null>(null);
@@ -46,6 +48,24 @@ const Post = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportReason, setReportReason] = useState('');
+    
+    React.useEffect(() => {
+        const fetchKudos = async () => {
+            if (!postDetails?.sender?.id) {
+                return;
+            }
+
+            try {
+                const totalKudos = await getUserKudos(postDetails.sender.id, token);
+                setKudos(totalKudos);
+            }
+            catch (error) {
+                console.error('Failed to fetch user kudos:', error);
+            }
+        };
+    
+        fetchKudos();
+    }, [postDetails?.sender?.id]);
 
     const fetchPostDetails = async (postID: string) => {
         if (!token) {
@@ -371,7 +391,7 @@ const Post = () => {
                         {postDetails.sender?.username || 'Anonymous'}
                     </h2>
                     <p className='text-sm text-gray-500'>
-                        Kudos: {postDetails.sender?.kudos ?? 0}
+                        Kudos: {kudos ?? 0}
                     </p>
                 </div>
             </div>
@@ -488,70 +508,14 @@ const Post = () => {
             <div className='bg-white shadow p-4 rounded mb-6'>
                 <h2 className='text-lg font-bold mb-2'>Handshakes</h2>
 
-                {postDetails.handshakes?.length ? (
-                    <div className='space-y-4'>
-                        {(showAllHandshakes
-                            ? postDetails.handshakes
-                            : postDetails.handshakes.slice(0, 2)
-                        ).map((handshake, index) => {
-                            const isPostOwner =
-                                user?.id === Number(postDetails.sender?.id);
-                            const isAcceptable =
-                                handshake.status === 'new' && isPostOwner;
-
-                            return (
-                                <div
-                                    key={handshake.id}
-                                    className='flex items-center gap-4 bg-gray-100 p-3 rounded'
-                                >
-                                    <AvatarComponent
-                                        username={
-                                            handshake.sender?.username ||
-                                            'Anonymous'
-                                        }
-                                        avatar={handshake.sender?.avatar}
-                                        size={40}
-                                    />
-                                    <div className='flex-1'>
-                                        <p className='font-semibold'>
-                                            {handshake.sender?.username ||
-                                                'Unnamed'}
-                                        </p>
-                                        <p className='text-sm text-gray-600'>
-                                            Status: {handshake.status}
-                                        </p>
-                                        <p className='text-sm text-gray-600'>
-                                            Kudos:{' '}
-                                            {handshake.sender?.kudos ?? 0}
-                                        </p>
-                                    </div>
-                                    {isAcceptable && (
-                                        <button
-                                            onClick={() =>
-                                                handleAcceptHandshake(index)
-                                            }
-                                            className='bg-green-600 text-white px-3 py-1 rounded'
-                                        >
-                                            Accept
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-
-                        {postDetails.handshakes.length > 2 &&
-                            !showAllHandshakes && (
-                            <button
-                                onClick={() => setShowAllHandshakes(true)}
-                                className='mt-2 text-sm text-blue-600 hover:underline'
-                            >
-                                    Show all handshakes
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <p className='text-sm text-gray-500'>No handshakes yet.</p>
-                )}
+                <Handshakes
+                    handshakes={postDetails.handshakes}
+                    sender={postDetails.sender}
+                    currentUserId={user?.id}
+                    showAll={showAllHandshakes}
+                    onShowAll={() => setShowAllHandshakes(true)}
+                    onAccept={handleAcceptHandshake}
+                />
 
                 {/* Create handshake button if not the sender */}
                 {user?.id !== Number(postDetails.sender?.id) &&

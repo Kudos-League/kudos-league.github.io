@@ -128,6 +128,7 @@ export type HandshakeDTO = {
     offerID: number;
     senderID: number;
     recipientID: number;
+    sender?: UserDTO;
     status: string;
     createdAt: Date;
     updatedAt: Date;
@@ -218,13 +219,7 @@ export interface TopTagDTO {
 
 export interface Post {
     id: string;
-    sender: {
-        id: number; //TODO: number?
-        email: string;
-        username: string;
-        kudos: number;
-        avatar: string | null;
-    };
+    sender: UserDTO;
     rewardOffer: {
         kudos: number;
         status: string;

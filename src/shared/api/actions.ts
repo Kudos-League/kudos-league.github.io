@@ -164,6 +164,16 @@ export async function getUserPosts(id: number | string = 'me', token: string) {
 }
 
 /** @throws {AxiosError} */
+export async function getUserKudos(id: number | string = 'me', token: string) {
+    const response = await instance.get(`/users/${id}/kudos`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data;
+}
+
+/** @throws {AxiosError} */
 export async function getUserSettings(token: string) {
     const response = await instance.get(`/usersettings/me`, {
         headers: {
