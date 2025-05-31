@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getEventDetails, joinEvent, leaveEvent } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
-import { getAvatarURL } from '@/shared/api/config';
+import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 
 export default function EventDetailScreen() {
@@ -108,7 +108,7 @@ export default function EventDetailScreen() {
                             className='flex items-center gap-3 border p-2 rounded'
                         >
                             <img
-                                src={getAvatarURL(p.avatar)}
+                                src={getImagePath(p.avatar)}
                                 alt={p.username}
                                 className='w-10 h-10 rounded-full'
                             />

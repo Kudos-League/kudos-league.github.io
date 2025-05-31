@@ -15,12 +15,12 @@ export function getWSSURL(): string {
     return isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
 }
 
-export function getAvatarURL(avatarPath?: string | null): string | null {
+export function getImagePath(avatarPath?: string | null): string | null {
     if (!avatarPath) return null;
 
     if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
         return avatarPath;
     }
 
-    return `${BACKEND_URI}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+    return `${getEndpointUrl()}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
 }

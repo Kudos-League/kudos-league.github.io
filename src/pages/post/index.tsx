@@ -18,6 +18,8 @@ import {
     CreateHandshakeDTO,
     Post as PostType
 } from 'shared/api/types';
+import { getImagePath } from '@/shared/api/config';
+import ImageCarousel from '@/components/Carousel';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();
@@ -441,16 +443,8 @@ const Post = () => {
                 )}
             </div>
 
-            {/* Image Preview */}
-            {postDetails.images?.[0] && (
-                <div className='mb-6'>
-                    <img
-                        src={`${postDetails.images[0]}`}
-                        alt='Post'
-                        className='rounded-lg max-h-[300px] object-cover w-full'
-                    />
-                </div>
-            )}
+            {/* Images */}
+            <ImageCarousel images={postDetails.images || []} />
 
             {/* Map */}
             {postDetails.location?.regionID && (

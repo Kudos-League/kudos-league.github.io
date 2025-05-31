@@ -1,5 +1,5 @@
 import React from 'react';
-import { getAvatarURL } from '@/shared/api/config';
+import { getImagePath } from '@/shared/api/config';
 
 export default function AvatarComponent({
     avatar,
@@ -13,7 +13,7 @@ export default function AvatarComponent({
     onClick?: () => void;
 }) {
     const url = avatar
-        ? getAvatarURL(avatar)
+        ? getImagePath(avatar)
         : 'https://via.placeholder.com/150';
 
     return (
