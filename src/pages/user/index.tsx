@@ -72,6 +72,14 @@ export default function UserProfile() {
                     setPosts(fetchedPosts);
                     setEvents(fetchedEvents);
                 }
+
+                if (!handshakes.length) {
+                    const fetchedHandshakes = await getUserHandshakes(
+                        targetUserID,
+                        authState.token
+                    );
+                    setHandshakes(fetchedHandshakes);
+                }
             }
             catch (e) {
                 console.error(e);
