@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import AvatarComponent from '@/components/Avatar';
 import { getUserKudos } from '@/shared/api/actions';
 import type { HandshakeDTO, UserDTO } from '@/shared/api/types';
@@ -10,7 +11,6 @@ interface HandshakesProps {
     currentUserId: number | string | undefined;
     showAll: boolean;
     onShowAll: () => void;
-    onAccept: (index: number) => void;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -18,35 +18,33 @@ const Handshakes: React.FC<HandshakesProps> = ({
     sender,
     currentUserId,
     showAll,
-    onShowAll,
-    onAccept
+    onShowAll
 }) => {
     const { token } = useAuth();
+    const navigate = useNavigate();
 
-    // Map: handshake.id => kudos
     const [kudosMap, setKudosMap] = useState<Record<string, number>>({});
 
     useEffect(() => {
-        // Fetch kudos for all unique sender IDs in the displayed handshakes
         const uniqueSenders = Array.from(
             new Set(handshakes.map(h => h.senderID).filter(Boolean))
         );
         uniqueSenders.forEach(async (uid) => {
-            try {
-                if (uid && !(uid in kudosMap)) {
+            if (uid && !(uid in kudosMap)) {
+                try {
                     const val = await getUserKudos(uid, token);
                     setKudosMap(prev => ({ ...prev, [uid]: val }));
                 }
-            }
-            catch (e) {
-                console.error('Failed to fetch user kudos:', e);
+                catch (e) {
+                    console.error(`Error fetching kudos for user ${uid}:`, e);
+                    setKudosMap(prev => ({ ...prev, [uid]: 0 })); // Fallback to 0 if error
+                }
             }
         });
         // eslint-disable-next-line
     }, [handshakes]);
 
-    const isPostOwner = currentUserId === String(sender.id);
-
+    const isPostOwner = String(currentUserId) === String(sender.id);
     const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
 
     if (!handshakes.length) {
@@ -55,7 +53,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
 
     return (
         <div className='space-y-4'>
-            {visibleHandshakes.map((handshake, index) => {
+            {visibleHandshakes.map((handshake) => {
                 const isAcceptable = handshake.status === 'new' && isPostOwner;
                 const senderUser = handshake.sender;
                 const senderId = senderUser?.id;
@@ -66,27 +64,38 @@ const Handshakes: React.FC<HandshakesProps> = ({
                         key={handshake.id}
                         className='flex items-center gap-4 bg-gray-100 p-3 rounded'
                     >
-                        <AvatarComponent
-                            username={senderUser?.username || 'Anonymous'}
-                            avatar={senderUser?.avatar}
-                            size={40}
-                        />
-                        <div className='flex-1'>
-                            <p className='font-semibold'>
-                                {senderUser?.username || 'Unnamed'}
+                        {/* Avatar as a link to user profile */}
+                        <Link to={senderUser?.id ? `/user/${senderUser.id}` : '#'}>
+                            <AvatarComponent
+                                avatar={senderUser?.avatar}
+                                username={senderUser?.username || 'Anonymous'}
+                                size={40}
+                            />
+                        </Link>
+                        <div className='flex-1 min-w-0'>
+                            <div className='flex items-center gap-2'>
+                                <span className='font-semibold truncate'>
+                                    {senderUser?.username || 'Unnamed'}
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs text-white 
+                                    ${handshake.status === 'new' ? 'bg-yellow-500'
+                        : handshake.status === 'accepted' ? 'bg-blue-600'
+                            : 'bg-green-600'}`}>
+                                    {handshake.status}
+                                </span>
+                            </div>
+                            <p className='text-xs text-gray-500 truncate'>
+                                Kudos: {kudos !== undefined ? kudos : '...'}
                             </p>
-                            <p className='text-sm text-gray-600'>
-                                Status: {handshake.status}
-                            </p>
-                            <p className='text-sm text-gray-600'>
-                                Kudos:{' '}
-                                {kudos || 0}
+                            <p className='text-xs text-gray-400'>
+                                {new Date(handshake.createdAt).toLocaleDateString()}
                             </p>
                         </div>
                         {isAcceptable && (
                             <button
-                                onClick={() => onAccept(index)}
-                                className='bg-green-600 text-white px-3 py-1 rounded'
+                                className='bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700'
+                                onClick={() => navigate(`/post/${handshake.postID}`)}
+                                title='Accept and view post'
                             >
                                 Accept
                             </button>

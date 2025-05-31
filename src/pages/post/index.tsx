@@ -514,7 +514,6 @@ const Post = () => {
                     currentUserId={user?.id}
                     showAll={showAllHandshakes}
                     onShowAll={() => setShowAllHandshakes(true)}
-                    onAccept={handleAcceptHandshake}
                 />
 
                 {/* Create handshake button if not the sender */}
