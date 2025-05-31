@@ -1,8 +1,11 @@
 import React from 'react';
+import Tippy from '@tippyjs/react';
+
 import { useAuth } from '@/hooks/useAuth';
 import MapDisplay from '@/components/Map';
 import AvatarComponent from '@/components/Avatar';
 import { UserDTO } from '@/shared/api/types';
+import { getImagePath } from '@/shared/api/config';
 
 interface Props {
     user: UserDTO;
@@ -51,16 +54,16 @@ const ProfileHeader: React.FC<Props> = ({
                 {user.kudos.toLocaleString()} Kudos
             </p>
 
-            {user.badges && user.badges.length > 0 && (
+            {user.badges?.length && (
                 <div className='flex justify-center flex-wrap gap-2 mt-4'>
                     {user.badges.map((badge, i) => (
-                        <img
-                            key={i}
-                            src={badge.image}
-                            title={badge.name}
-                            alt={badge.name}
-                            className='w-10 h-10 rounded-full border'
-                        />
+                        <Tippy content={badge.name} key={i}>
+                            <img
+                                src={getImagePath(badge.image)}
+                                alt={badge.name}
+                                className='w-10 h-10 rounded-full border'
+                            />
+                        </Tippy>
                     ))}
                 </div>
             )}
