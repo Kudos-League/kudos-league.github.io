@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvatarComponent from '../Avatar';
 import { getEndpointUrl } from 'shared/api/config';
@@ -23,6 +23,11 @@ type Props = {
     onPress: () => void;
 };
 
+function truncateBody(body: string, max = 100) {
+    if (body.length <= max) return body;
+    return body.slice(0, max) + '…';
+}
+
 export default function PostCard({
     // id,
     title,
@@ -36,6 +41,8 @@ export default function PostCard({
     onPress
 }: Props) {
     const navigate = useNavigate();
+    const [imgError, setImgError] = useState(false);
+
     const imageSrc = fake
         ? images?.[0]
         : images?.[0]
@@ -46,6 +53,8 @@ export default function PostCard({
         e.stopPropagation();
         if (sender?.id) navigate(`/user/${sender.id}`);
     };
+
+    const showBodyInImageBox = imgError || !images?.length || !imageSrc;
 
     return (
         <div
@@ -81,17 +90,20 @@ export default function PostCard({
                 )}
             </div>
 
-            {images?.length ? (
-                <img
-                    src={imageSrc}
-                    alt={title}
-                    className='w-20 h-20 object-cover rounded'
-                />
-            ) : (
-                <div className='w-20 h-20 bg-gray-100 text-sm text-gray-500 rounded flex items-center justify-center text-center p-2'>
-                    No image
-                </div>
-            )}
+            <div className='w-20 h-20 flex items-center justify-center'>
+                {showBodyInImageBox ? (
+                    <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
+                        {truncateBody(body, 100)}
+                    </div>
+                ) : (
+                    <img
+                        src={imageSrc}
+                        alt={title}
+                        className='w-20 h-20 object-cover rounded'
+                        onError={() => setImgError(true)}
+                    />
+                )}
+            </div>
         </div>
     );
 }
