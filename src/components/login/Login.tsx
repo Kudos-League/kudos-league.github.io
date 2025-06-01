@@ -8,6 +8,7 @@ import GoogleLoginButton from './GoogleLoginButton';
 type LoginFormProps = {
     onSuccess?: () => void;
     onError?: (errorMessage: string) => void;
+    initialError?: string;
 };
 
 type FormValues = {
@@ -15,14 +16,14 @@ type FormValues = {
     password: string;
 };
 
-export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
+export default function LoginForm({ onSuccess, onError, initialError }: LoginFormProps) {
     const { login, token, logout } = useAuth();
     const {
         register: formRegister,
         handleSubmit,
         setValue
     } = useForm<FormValues>();
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(initialError ?? null);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const navigate = useNavigate();
 
