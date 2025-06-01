@@ -109,14 +109,19 @@ export default function CurrentEvent() {
                             {currentEvent.description}
                         </p>
                         <p className='text-sm text-gray-500'>
-                            {dayjs(currentEvent.startTime).format(
-                                'MMM D, YYYY h:mm A'
-                            )}{' '}
-                            –{' '}
-                            {dayjs(currentEvent.endTime).format(
-                                'MMM D, YYYY h:mm A'
-                            )}
+                            {dayjs(currentEvent.startTime).format('MMM D, YYYY h:mm A')} –{' '}
+                            {currentEvent.endTime
+                                ? dayjs(currentEvent.endTime).isValid()
+                                    ? dayjs(currentEvent.endTime).format('MMM D, YYYY h:mm A')
+                                    : 'Invalid end time'
+                                : 'Ongoing'}
                         </p>
+
+                        {currentEvent.location?.name && (
+                            <p className='text-sm text-gray-400 mt-1'>
+                            📍 {currentEvent.location?.name || 'Global'}
+                            </p>
+                        )}
                     </div>
 
                     <button

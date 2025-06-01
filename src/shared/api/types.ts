@@ -159,6 +159,7 @@ export type EventDTO = {
     updatedAt: string;
     content?: string;
     participants?: UserDTO[];
+    location?: LocationDTO | null;
 };
 
 export type CreateEventDTO = {
@@ -166,7 +167,7 @@ export type CreateEventDTO = {
     description: string;
     locationID?: string | null;
     startTime: Date;
-    endTime: Date;
+    endTime?: Date | null;
     content?: string;
     location: LocationDTO | null;
 };

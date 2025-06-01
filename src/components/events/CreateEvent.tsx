@@ -15,7 +15,7 @@ export default function CreateEvent() {
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
     const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date(Date.now() + 3600 * 1000));
+    const [endDate, setEndDate] = useState<Date | null>(new Date(Date.now() + 3600 * 1000));
     const [loading, setLoading] = useState(false);
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
@@ -118,11 +118,31 @@ export default function CreateEvent() {
                 date={startDate}
                 onChange={setStartDate}
             />
-            <UniversalDatePicker
-                label='End Time'
-                date={endDate}
-                onChange={setEndDate}
-            />
+
+            {endDate !== null ? (
+                <div className="space-y-1">
+                    <UniversalDatePicker
+                        label="End Time"
+                        date={endDate}
+                        onChange={setEndDate}
+                    />
+                    <button
+                        type="button"
+                        className="text-sm text-blue-600 underline"
+                        onClick={() => setEndDate(null)}
+                    >
+                        Remove End Time
+                    </button>
+                </div>
+            ) : (
+                <button
+                    type="button"
+                    className="text-sm text-blue-600 underline"
+                    onClick={() => setEndDate(new Date(Date.now() + 3600 * 1000))}
+                >
+		Add End Time
+                </button>
+            )}
 
             <button
                 onClick={onSubmit}
