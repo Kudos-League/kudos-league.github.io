@@ -12,13 +12,12 @@ import {
     HandshakeDTO,
     PostDTO,
     RewardOfferDTO,
-    SendCommentDTO,
     TopTagDTO,
     UserLoginRequestSchemaDTO,
-    UserLoginResponseDTO,
-    UserTagRequestDTO
+    UserLoginResponseDTO
 } from './types';
 import axios from 'axios';
+import { withRateLimit } from './rateLimitQueue';
 
 const instance = axios.create({
     baseURL: getEndpointUrl(),
@@ -165,12 +164,17 @@ export async function getUserPosts(id: number | string = 'me', token: string) {
 
 /** @throws {AxiosError} */
 export async function getUserKudos(id: number | string = 'me', token: string) {
-    const response = await instance.get(`/users/${id}/kudos`, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+    const endpointKey = `/users/${id}/kudos`;
+
+    return withRateLimit(endpointKey, async () => {
+        const response = await instance.get(endpointKey, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        return response.data;
     });
-    return response.data;
 }
 
 /** @throws {AxiosError} */

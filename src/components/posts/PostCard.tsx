@@ -48,7 +48,7 @@ export default function PostCard({
     
     React.useEffect(() => {
         const fetchKudos = async () => {
-            if (!sender?.id) return;
+            if (!sender?.id || kudos !== 0) return;
             try {
                 const totalKudos = await getUserKudos(sender.id, token);
                 setKudos(totalKudos);
