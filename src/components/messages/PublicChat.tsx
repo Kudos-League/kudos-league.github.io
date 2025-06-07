@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { getMessages, getPublicChannels } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
+import MessageGroup from './MessageGroup';
+import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 
 export default function PublicChat() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         null
     );
@@ -19,6 +21,11 @@ export default function PublicChat() {
         token,
         messages,
         setMessages
+    );
+
+    const groupedMessages = useMemo(
+        () => groupMessagesByAuthor(messages),
+        [messages]
     );
 
     useEffect(() => {
@@ -118,15 +125,14 @@ export default function PublicChat() {
                             No messages in this channel.
                         </p>
                     ) : (
-                        messages.map((msg) => (
-                            <div key={msg.id} className='text-sm'>
-                                <strong className='text-gray-800'>
-                                    {msg.author?.username}:{' '}
-                                </strong>
-                                <span className='text-gray-700'>
-                                    {msg.content}
-                                </span>
-                            </div>
+                        groupedMessages.map((group) => (
+                            <MessageGroup
+                                key={group[0].id}
+                                messages={group}
+                                isOwn={group[0].author?.id === user?.id}
+                                compact
+                                isPublic
+                            />
                         ))
                     )}
                 </div>

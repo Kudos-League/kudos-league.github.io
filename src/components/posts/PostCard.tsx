@@ -4,6 +4,7 @@ import AvatarComponent from '../Avatar';
 import { getEndpointUrl } from 'shared/api/config';
 import { getUserKudos } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
+import UserCard from '../UserCard';
 
 type Props = {
     id: number;
@@ -67,11 +68,6 @@ export default function PostCard({
             ? getEndpointUrl() + images[0]
             : undefined;
 
-    const handleUserClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (sender?.id) navigate(`/user/${sender.id}`);
-    };
-
     const showBodyInImageBox = imgError || !images?.length || !imageSrc;
 
     return (
@@ -83,23 +79,14 @@ export default function PostCard({
                 <h2 className='text-lg font-bold mb-2'>{title}</h2>
 
                 {sender && (
-                    <div
-                        onClick={handleUserClick}
-                        className='flex items-center gap-2 mb-2 cursor-pointer'
-                    >
-                        <AvatarComponent
-                            avatar={sender.avatar}
+                    <div className='mb-2'>
+                        <UserCard
+                            userID={parseInt(sender.id)}
                             username={sender.username}
-                            size={32}
+                            avatar={sender.avatar}
+                            kudos={kudos}
+                            large={false}
                         />
-                        <div>
-                            <p className='text-sm font-semibold text-gray-700'>
-                                {sender.username}
-                            </p>
-                            <p className='text-xs text-gray-500'>
-                                {kudos || 0} Kudos
-                            </p>
-                        </div>
                     </div>
                 )}
 

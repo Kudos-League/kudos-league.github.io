@@ -3,6 +3,7 @@ import { fetchLeaderboard } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import AvatarComponent from './Avatar';
 import { useNavigate } from 'react-router-dom';
+import UserCard from './UserCard';
 
 type LeaderboardUser = {
     id: number;
@@ -137,18 +138,17 @@ export default function Leaderboard() {
                         onClick={() => handleAvatarClick(entry.id)}
                         className='flex items-center bg-gray-50 p-4 rounded-lg hover:shadow cursor-pointer'
                     >
-                        <AvatarComponent
-                            avatar={entry.avatar}
-                            username={entry.username}
-                            size={50}
-                        />
-
+ 
                         <div className='flex-1 ml-4'>
-                            <p className='font-bold text-gray-800'>
-                                {entry.username}
-                            </p>
+                            <UserCard
+                                userID={entry.id}
+                                avatar={entry.avatar}
+                                username={entry.username}
+                                kudos={entry.totalKudos}
+                                large={true}
+                            />
                             <p className='text-sm text-gray-500'>
-                                {entry.location?.name || 'Unknown'}
+                                {entry.location?.name || ''}
                             </p>
                         </div>
 

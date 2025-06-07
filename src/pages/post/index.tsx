@@ -21,6 +21,7 @@ import {
 } from 'shared/api/types';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/posts/Handshakes';
+import UserCard from '@/components/UserCard';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();
@@ -376,25 +377,13 @@ const Post = () => {
     return (
         <div className='max-w-4xl mx-auto p-4'>
             {/* Header / Avatar */}
-            <div className='flex items-center gap-4 mb-6'>
-                <AvatarComponent
-                    username={postDetails.sender?.username || 'Anonymous'}
-                    avatar={postDetails.sender?.avatar}
-                    size={50}
-                    onClick={() =>
-                        postDetails.sender?.id &&
-                        navigate(`/user/${postDetails.sender.id}`)
-                    }
-                />
-                <div>
-                    <h2 className='font-bold text-lg'>
-                        {postDetails.sender?.username || 'Anonymous'}
-                    </h2>
-                    <p className='text-sm text-gray-500'>
-                        Kudos: {kudos ?? 0}
-                    </p>
-                </div>
-            </div>
+            <UserCard
+                userID={postDetails.sender?.id}
+                avatar={postDetails.sender?.avatar}
+                username={postDetails.sender?.username}
+                kudos={kudos}
+                large
+            />
 
             {/* Post Title and Badges */}
             <div className='mb-4'>

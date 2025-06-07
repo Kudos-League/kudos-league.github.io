@@ -1,6 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { ChannelDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
+import MessageGroup from './MessageGroup';
+import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 
 interface Props {
     user: UserDTO | null;
@@ -19,9 +21,18 @@ const ChatWindow: React.FC<Props> = ({
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
+    const groupedMessages = useMemo(
+        () => groupMessagesByAuthor(messages),
+        [messages]
+    );
+    const [scrolledOnce, setScrolledOnce] = useState(false);
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (!scrolledOnce && messages.length) {
+            bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+            setScrolledOnce(true);
+            return;
+        }
     }, [messages]);
 
     if (!channel) {
@@ -50,11 +61,11 @@ const ChatWindow: React.FC<Props> = ({
 
             {/* Message list */}
             <div className='flex-1 overflow-y-auto p-4 bg-gray-50'>
-                {messages.map((msg) => (
-                    <MessageBubble
-                        key={msg.id}
-                        message={msg}
-                        isOwn={msg.author?.id === user?.id}
+                {groupedMessages.map((group) => (
+                    <MessageGroup
+                        key={group[0].id}
+                        messages={group}
+                        isOwn={!!user?.id && group[0].author?.id === user.id}
                     />
                 ))}
                 <div ref={bottomRef} />
