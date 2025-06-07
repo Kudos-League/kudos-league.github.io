@@ -108,7 +108,7 @@ export default function PublicChat() {
                 <div className='border-b p-4 text-center font-bold text-lg'>
                     {selectedChannel
                         ? selectedChannel.name
-                        : 'Select a Public Chat'}
+                        : 'Select a Chat Room'}
                 </div>
 
                 {/* Message List */}

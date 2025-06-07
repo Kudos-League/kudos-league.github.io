@@ -232,7 +232,7 @@ export interface Post {
     tags: Tag[];
     location: LocationDTO;
     title: string;
-    type: string;
+    type: 'request' | 'gift';
     body: string;
     createdAt: Date;
     updatedAt: Date;

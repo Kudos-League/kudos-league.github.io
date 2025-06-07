@@ -122,7 +122,7 @@ export default function Feed() {
                     onClick={handleCreatePost}
                     className='text-white bg-black px-4 py-2 rounded hover:bg-gray-800'
                 >
-                    + Post
+                    + Gift / Request
                 </button>
             </div>
 

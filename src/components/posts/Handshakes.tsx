@@ -48,7 +48,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
     const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
 
     if (!handshakes.length) {
-        return <p className='text-sm text-gray-500'>No handshakes yet.</p>;
+        return <p className='text-sm text-gray-500'>Nothing yet!</p>;
     }
 
     return (

@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePosts } from '@/hooks/usePosts';
 import Input from '@/components/forms/Input';
 import MapDisplay from '@/components/Map';
-import GiftType from './GiftType';
 import TagInput from '@/components/TagInput';
 import Login from '@/components/login/Login';
 import { getCategories } from '@/shared/api/actions';
@@ -32,7 +31,6 @@ export default function CreatePost() {
     const navigate = useNavigate();
 
     const [postType, setPostType] = useState<'gift' | 'request'>('gift');
-    const [giftType, setGiftType] = useState('Gift');
     const [location, setLocation] = useState<LocationDTO | null>(null);
     const [categories, setCategories] = useState<CategoryDTO[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
@@ -142,10 +140,6 @@ export default function CreatePost() {
                 </div>
             )}
 
-            {postType === 'gift' && (
-                <GiftType selected={giftType} onSelect={setGiftType} />
-            )}
-
             <Input
                 name='title'
                 label='Title *'
@@ -223,7 +217,7 @@ export default function CreatePost() {
                 onClick={form.handleSubmit(onSubmit)}
                 className='mt-4 px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700'
             >
-                Create Post
+                Create
             </button>
         </div>
     );

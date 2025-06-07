@@ -43,21 +43,21 @@ export default function UserProfile() {
                     const [
                         fetchedUser,
                         fetchedPosts,
-                        fetchedHandshakes,
+                        // fetchedHandshakes,
                         fetchedEvents
                     ] = await Promise.all([
                         getUserDetails(targetUserID, authState.token, {
                             settings: true
                         }),
                         getUserPosts(targetUserID, authState.token),
-                        getUserHandshakes(targetUserID, authState.token),
+                        // getUserHandshakes(targetUserID, authState.token),
                         getUserEvents(targetUserID, authState.token)
                     ]);
 
                     setUser(fetchedUser);
                     // setFormState(fetchedUser);
                     setPosts(fetchedPosts);
-                    setHandshakes(fetchedHandshakes);
+                    // setHandshakes(fetchedHandshakes);
                     setEvents(fetchedEvents);
 
                     return;
@@ -73,7 +73,7 @@ export default function UserProfile() {
                     setEvents(fetchedEvents);
                 }
 
-                if (!handshakes.length) {
+                if (isViewingOwnProfile && !handshakes.length) {
                     const fetchedHandshakes = await getUserHandshakes(
                         targetUserID,
                         authState.token

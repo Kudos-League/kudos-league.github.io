@@ -395,7 +395,7 @@ const Post = () => {
                 )}
                 <div className='flex gap-2 mt-2'>
                     <span
-                        className={`px-2 py-1 rounded text-white text-xs ${postDetails.type === 'Request' ? 'bg-blue-500' : 'bg-green-500'}`}
+                        className={`px-2 py-1 rounded text-white text-xs ${postDetails.type === 'request' ? 'bg-blue-500' : 'bg-green-500'}`}
                     >
                         {postDetails.type}
                     </span>
@@ -470,7 +470,6 @@ const Post = () => {
 
             {/* Placeholder: Comments, Chat, Handshakes, etc. */}
             <div className='bg-white shadow p-4 rounded mb-6'>
-                <h2 className='text-lg font-bold mb-2'>Comments</h2>
                 <MessageList
                     title='Comments'
                     messages={postDetails.messages || []}
@@ -495,7 +494,7 @@ const Post = () => {
             {/* TODO: handshakes section, chat modal, and report modal */}
             {/* Handshakes */}
             <div className='bg-white shadow p-4 rounded mb-6'>
-                <h2 className='text-lg font-bold mb-2'>Handshakes</h2>
+                <h2 className='text-lg font-bold mb-2'>{postDetails.type === 'request' ? 'Offered By' : 'Requested By'}</h2>
 
                 <Handshakes
                     handshakes={postDetails.handshakes}
@@ -518,7 +517,7 @@ const Post = () => {
                         >
                             {creatingHandshake
                                 ? 'Creating...'
-                                : 'Start Handshake'}
+                                : postDetails.type === 'gift' ? 'Request This' : 'Gift This'}
                         </button>
                     </div>
                 )}

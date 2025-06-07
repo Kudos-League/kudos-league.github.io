@@ -6,7 +6,8 @@ import {
     HandshakeDTO,
     EventDTO,
     ProfileFormValues
-} from 'shared/api/types';
+} from '@/shared/api/types';
+import { Filters, FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
 import ProfileHeader from './ProfileHeader';
 import PostCard from '../posts/PostCard';
@@ -38,9 +39,8 @@ const Profile: React.FC<Props> = ({
 
     const isSelf = currentUser?.id === user.id;
     const [editing, setEditing] = useState(false);
-    const [filter, setFilter] = useState<
-        'all' | 'gift' | 'request' | 'handshakes' | 'events'
-    >('all');
+    const Filters = getFilters(isSelf);
+    const [filter, setFilter] = useState<FilterType>(Filters[0]);
 
     const form = useForm<ProfileFormValues>({
         defaultValues: {
@@ -84,7 +84,7 @@ const Profile: React.FC<Props> = ({
 
             {/* Filter Buttons */}
             <div className='flex gap-4 justify-center'>
-                {['all', 'gift', 'request', 'handshakes', 'events'].map(
+                {Filters.map(
                     (type) => (
                         <button
                             key={type}
@@ -102,19 +102,18 @@ const Profile: React.FC<Props> = ({
             </div>
 
             {/* Filtered Content */}
-            {filter === 'handshakes' ? (
+            {filter === FiltersEnum.RequestsGifts ? (
                 <div className='grid gap-4'>
                     {handshakes.length === 0 ? (
                         <p className='text-center text-gray-500'>
-                            No handshakes available.
+                            No requests / gift responses available.
                         </p>
                     ) : (
                         handshakes.map((handshake) => (
                             <HandshakeCard
                                 key={handshake.id}
                                 handshake={handshake}
-                                userId={user.id.toString()}
-                                token={token || ''}
+                                userID={user.id.toString()}
                             />
                         ))
                     )}
