@@ -142,14 +142,16 @@ export async function getUserDetails(
 ) {
     const queryString = toQueryParams(options);
 
-    const response = await instance.get(`/users/${id}${queryString}`, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
-        }
-    });
+    return withRateLimit(`/users/${id}${queryString}`, async () => {
+        const response = await instance.get(`/users/${id}${queryString}`, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${token}`
+            }
+        });
 
-    return response.data;
+        return response.data;
+    });
 }
 
 /** @throws {AxiosError} */

@@ -73,25 +73,46 @@ export async function withRateLimit(endpointKey: string, fn: () => Promise<any>)
             await delay(retrySeconds * 1000);
 
             console.info(`[RateLimit] Retrying original request for ${endpointKey}`);
-            let result;
+            let result: any;
             try {
                 result = await fn();
+
+                // Only flush the queue if retry succeeds
+                const queue = queueMap.get(endpointKey);
+                if (queue) {
+                    console.info(`[RateLimit] Flushing ${queue.length} queued calls for ${endpointKey}`);
+                    for (const job of queue) await job();
+                    queueMap.delete(endpointKey);
+                }
+
+                retryInProgress.delete(endpointKey);
+                return result;
             }
-            catch (err) {
+            catch (err: any) {
+                // Retry failed again with another 429
+                if (err?.response?.status === 429) {
+                    console.warn(`[RateLimit] Retry also hit 429. Re-queueing all jobs.`);
+                    rateLimitMap.set(endpointKey, getNow() + 2); // push rate limit forward again
+
+                    const queue = queueMap.get(endpointKey) ?? [];
+                    queueMap.set(endpointKey, [
+                        ...queue,
+                        async () => {
+                            try {
+                                const retryResult = await fn();
+                                return retryResult;
+                            }
+                            catch (err) {
+                                console.error('[RateLimit] Retry failed again:', err);
+                                throw err;
+                            }
+                        }
+                    ]);
+                }
+
                 retryInProgress.delete(endpointKey);
                 throw err;
             }
-
-            // Process any queued calls
-            const queue = queueMap.get(endpointKey);
-            if (queue) {
-                console.info(`[RateLimit] Flushing ${queue.length} queued calls for ${endpointKey}`);
-                for (const job of queue) await job();
-                queueMap.delete(endpointKey);
-            }
-
-            retryInProgress.delete(endpointKey);
-            return result;
         }
 
         throw error;
