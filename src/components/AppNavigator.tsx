@@ -42,6 +42,7 @@ function AppNavigator() {
 
                 <Route path='/chat' element={<PublicChat />} />
                 <Route path='/dms' element={<DMChat />} />
+                <Route path="/dms/:id?" element={<DMChat />} />
                 <Route path='/leaderboard' element={<Leaderboard />} />
                 <Route path='/admin' element={<AdminDashboard />} />
 

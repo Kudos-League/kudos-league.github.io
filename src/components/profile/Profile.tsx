@@ -7,15 +7,15 @@ import {
     EventDTO,
     ProfileFormValues
 } from '@/shared/api/types';
-import { Filters, FiltersEnum, FilterType, getFilters } from '@/shared/constants';
+import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
 import ProfileHeader from './ProfileHeader';
 import PostCard from '../posts/PostCard';
-import HandshakeCard from './HandshakeCard';
 import Achievements from './Achievements';
 import EditProfile from './EditProfile';
 import { useForm } from 'react-hook-form';
 import Handshakes from '../posts/Handshakes';
+import { useNavigate } from 'react-router-dom';
 
 type Props = {
     user: UserDTO;
@@ -36,7 +36,8 @@ const Profile: React.FC<Props> = ({
     loading,
     error
 }) => {
-    const { user: currentUser, token } = useAuth();
+    const { user: currentUser } = useAuth();
+    const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
     const [editing, setEditing] = useState(false);
@@ -52,7 +53,7 @@ const Profile: React.FC<Props> = ({
     });
 
     const handleStartDM = () => {
-        console.log('TODO: navigate to chat DM');
+        navigate(`/dms/${user.id}`);
     };
 
     if (editing) {
