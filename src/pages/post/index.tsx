@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useAppSelector } from 'redux_store/hooks';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import {
+    HandThumbUpIcon,
+    HandThumbDownIcon
+} from '@heroicons/react/24/solid';
+
 import {
     getPostDetails,
     createHandshake,
@@ -8,7 +15,6 @@ import {
     getUserKudos
 } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppSelector } from 'redux_store/hooks';
 import MapDisplay from '@/components/Map';
 import MessageList from '@/components/messages/MessageList';
 import ChatModal from '@/components/messages/ChatModal';
@@ -64,6 +70,33 @@ const Post = () => {
     
         fetchKudos();
     }, [postDetails?.sender?.id]);
+
+    const handleLike = async () => {
+        if (!postDetails || liked === true) return;
+
+        try {
+            await likePost(parseInt(postDetails.id), true, token);
+            setLiked(true);
+        // If you want to also update postDetails.likes, do it here
+        }
+        catch (err) {
+            console.error('Failed to like post:', err);
+            alert('Failed to like the post.');
+        }
+    };
+
+    const handleDislike = async () => {
+        if (!postDetails || liked === false) return;
+
+        try {
+            await likePost(parseInt(postDetails.id), false, token);
+            setLiked(false);
+        }
+        catch (err) {
+            console.error('Failed to dislike post:', err);
+            alert('Failed to dislike the post.');
+        }
+    };
 
     const fetchPostDetails = async (postID: string) => {
         if (!token) {
@@ -353,39 +386,33 @@ const Post = () => {
             </div>
 
             {/* Like, Dislike, Report */}
-            <div className='flex gap-6 items-center my-4'>
+            <div className='flex gap-4 items-center my-4 flex-wrap'>
                 <button
-                    onClick={() =>
-                        likePost(parseInt(postDetails.id), true, token)
-                    }
+                    onClick={handleLike}
                     disabled={liked === true}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
+                        ${liked === true ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300'}`}
                 >
-                    👍{' '}
-                    <span
-                        className={
-                            liked === true ? 'text-green-600' : 'text-gray-400'
-                        }
-                    >
-                        Like
-                    </span>
+                    <HandThumbUpIcon className="w-4 h-4" />
+                    Like
                 </button>
+
                 <button
-                    onClick={() =>
-                        likePost(parseInt(postDetails.id), false, token)
-                    }
+                    onClick={handleDislike}
                     disabled={liked === false}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
+                    ${liked === false ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300'}`}
                 >
-                    👎{' '}
-                    <span
-                        className={
-                            liked === false ? 'text-red-600' : 'text-gray-400'
-                        }
-                    >
-                        Dislike
-                    </span>
+                    <HandThumbDownIcon className="w-4 h-4" />
+                    Dislike
                 </button>
-                <button onClick={() => alert('TODO: open report modal')}>
-                    ⚠️ Report
+
+                <button
+                    onClick={() => setReportModalVisible(true)}
+                    className='flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300'
+                >
+                    <ExclamationTriangleIcon className='w-4 h-4' />
+                    Report
                 </button>
             </div>
 
