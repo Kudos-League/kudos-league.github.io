@@ -7,7 +7,7 @@ import {
 import type { HandshakeDTO, UserDTO } from 'shared/api/types';
 import type { CreateRewardOfferDTO } from 'shared/api/types';
 import { useNavigate } from 'react-router-dom';
-import UserCard from '../UserCard';
+import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/hooks/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '../messages/ChatModal';

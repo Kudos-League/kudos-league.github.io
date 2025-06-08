@@ -8,7 +8,7 @@ import {
     getUserPosts,
     updateUser
 } from 'shared/api/actions';
-import Profile from '@/components/profile/Profile';
+import Profile from '@/components/users/Profile';
 import { useAuth } from '@/hooks/useAuth';
 import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserKudos } from '@/shared/api/actions';
-import UserCard from '../UserCard';
+import UserCard from '@/components/users/UserCard';
 
 interface Props {
     message: MessageDTO;

@@ -9,19 +9,20 @@ import Cancel from '@/pages/donate/cancel';
 import Post from '@/pages/post';
 import CreatePost from '@/pages/create-post';
 import Profile from '@/pages/user';
-import CreateEvent from './events/CreateEvent';
 import EventDetails from '@/pages/event';
 
 import SignIn from '@/pages/login';
 import SignUp from '@/pages/signup';
 
 import Layout from './Layout';
-import DMChat from './messages/DMChat';
 import DonatePage from '@/pages/donate';
-import Leaderboard from './Leaderboard';
 import AdminDashboard from '@/pages/admin';
-import PublicChat from './messages/PublicChat';
-import EventsPage from './events/Events';
+
+import CreateEvent from '@/components/events/CreateEvent';
+import Leaderboard from '@/components/Leaderboard';
+import DMChat from '@/components/messages/DMChat';
+import PublicChat from '@/components/messages/PublicChat';
+import EventsPage from '@/components/events/Events';
 
 function AppNavigator() {
     return (

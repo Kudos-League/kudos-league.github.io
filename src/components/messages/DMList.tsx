@@ -1,5 +1,5 @@
 import React from 'react';
-import AvatarComponent from '../Avatar';
+import AvatarComponent from '../users/Avatar';
 import { ChannelDTO } from '@/shared/api/types';
 
 interface Props {

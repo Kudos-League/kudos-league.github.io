@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useLocation from '@/hooks/useLocation';
-import AvatarComponent from '../Avatar';
+import AvatarComponent from './Avatar';
 import Input from '../forms/Input';
 import MapDisplay from '../Map';
 import { UseFormReturn } from 'react-hook-form';

@@ -25,8 +25,8 @@ import {
     Post as PostType
 } from 'shared/api/types';
 import ImageCarousel from '@/components/Carousel';
-import Handshakes from '@/components/posts/Handshakes';
-import UserCard from '@/components/UserCard';
+import Handshakes from '@/components/handshakes/Handshakes';
+import UserCard from '@/components/users/UserCard';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();

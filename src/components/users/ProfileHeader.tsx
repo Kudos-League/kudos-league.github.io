@@ -3,7 +3,7 @@ import Tippy from '@tippyjs/react';
 
 import { useAuth } from '@/hooks/useAuth';
 import MapDisplay from '@/components/Map';
-import AvatarComponent from '@/components/Avatar';
+import AvatarComponent from '@/components/users/Avatar';
 import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
 import { getUserKudos } from '@/shared/api/actions';

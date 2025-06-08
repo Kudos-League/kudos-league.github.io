@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { fetchLeaderboard } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
-import AvatarComponent from './Avatar';
 import { useNavigate } from 'react-router-dom';
-import UserCard from './UserCard';
+import UserCard from '@/components/users/UserCard';
 
 type LeaderboardUser = {
     id: number;

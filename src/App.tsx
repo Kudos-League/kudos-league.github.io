@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from 'redux_store/store';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
-import AppNavigator from '@/components/AppNavigator';
+import AppNavigator from '@/components/navigation/AppNavigator';
 
 import { ErrorBoundary } from 'react-error-boundary';
 import { BrowserRouter } from 'react-router-dom';

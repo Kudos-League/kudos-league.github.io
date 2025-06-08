@@ -1,6 +1,6 @@
 import React from 'react';
 import { HandshakeDTO, UserDTO } from '@/shared/api/types';
-import HandshakeCard from '../profile/HandshakeCard';
+import HandshakeCard from './HandshakeCard';
 
 interface HandshakesProps {
     handshakes: HandshakeDTO[];

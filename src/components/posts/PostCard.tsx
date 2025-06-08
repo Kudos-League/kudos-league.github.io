@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getEndpointUrl } from 'shared/api/config';
 import { getUserKudos } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
-import UserCard from '../UserCard';
+import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
 
 function truncateBody(body: string, max = 100) {

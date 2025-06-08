@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import AvatarComponent from '@/components/Avatar';
+import AvatarComponent from '@/components/users/Avatar';
 
 import {
     HomeIcon,

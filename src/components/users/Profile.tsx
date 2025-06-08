@@ -14,7 +14,7 @@ import PostCard from '../posts/PostCard';
 import Achievements from './Achievements';
 import EditProfile from './EditProfile';
 import { useForm } from 'react-hook-form';
-import Handshakes from '../posts/Handshakes';
+import Handshakes from '../handshakes/Handshakes';
 import { useNavigate } from 'react-router-dom';
 
 type Props = {
