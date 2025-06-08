@@ -20,12 +20,14 @@ export type LocationDTO = {
 
 export type PostDTO = {
     id: number;
+    sender?: UserDTO;
     senderId: number;
     title: string;
     body: string;
     isRequest: boolean;
     images?: string[];
     type: 'request' | 'gift';
+    status: string;
     isActive: boolean;
     kudos?: number;
     createdAt: Date;

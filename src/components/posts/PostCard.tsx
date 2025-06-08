@@ -1,33 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AvatarComponent from '../Avatar';
 import { getEndpointUrl } from 'shared/api/config';
 import { getUserKudos } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import UserCard from '../UserCard';
-
-type Props = {
-    id: number;
-    title: string;
-    body: string;
-    type: string;
-    images?: string[];
-    tags?: Array<{ id: string; name: string }>;
-    sender?: {
-        id: string;
-        username: string;
-        avatar?: string;
-        kudos: number;
-    };
-    rewardOffer?: {
-        kudosFinal: number;
-    };
-    fake?: boolean;
-};
+import { PostDTO } from '@/shared/api/types';
 
 function truncateBody(body: string, max = 100) {
     if (body.length <= max) return body;
     return body.slice(0, max) + '…';
+}
+
+interface Props extends PostDTO {
+    fake?: boolean;
 }
 
 export default function PostCard({
@@ -38,6 +23,7 @@ export default function PostCard({
     images,
     // tags,
     sender,
+    status,
     // rewardOffer,
     fake
 }: Props) {
@@ -76,12 +62,20 @@ export default function PostCard({
             className='flex justify-between items-start border rounded p-4 mb-4 bg-white shadow hover:shadow-md cursor-pointer transition'
         >
             <div className='flex-1 pr-4'>
-                <h2 className='text-lg font-bold mb-2'>{title}</h2>
+                <div className="flex items-center gap-2 mb-2">
+                    {status === 'closed' && (
+                        <span className="bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                            CLOSED
+                        </span>
+                    )}
+                    <h2 className="text-lg font-bold">{title}</h2>
+                </div>
+
 
                 {sender && (
                     <div className='mb-2'>
                         <UserCard
-                            userID={parseInt(sender.id)}
+                            userID={sender.id}
                             username={sender.username}
                             avatar={sender.avatar}
                             kudos={kudos}

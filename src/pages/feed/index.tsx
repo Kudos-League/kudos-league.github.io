@@ -45,7 +45,7 @@ export default function Feed() {
             if (!posts) return [];
 
             const filtered = posts.filter(
-                (p) => p.type === (filterType === 'gifts' ? 'gift' : 'request')
+                (p) => p.type === (filterType === 'gifts' ? 'gift' : 'request') && p.status !== 'closed'
             );
 
             const sortFn = {

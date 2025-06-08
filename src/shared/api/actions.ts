@@ -632,6 +632,23 @@ export async function getReports(token: string) {
 }
 
 /** @throws {AxiosError} */
+export async function updatePost(
+    postID: number,
+    updates: Partial<PostDTO>,
+    token: string
+) {
+    const formData = toFormData(updates);
+    const response = await instance.put(`/posts/${postID}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    return response.data;
+}
+
+/** @throws {AxiosError} */
 export async function likePost(postID: number, like: boolean, token: string) {
     const response = await instance.put(
         `/posts/${postID}/like`,

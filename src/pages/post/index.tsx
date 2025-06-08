@@ -12,7 +12,8 @@ import {
     createHandshake,
     likePost,
     reportPost,
-    getUserKudos
+    getUserKudos,
+    updatePost
 } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import MapDisplay from '@/components/Map';
@@ -70,6 +71,22 @@ const Post = () => {
     
         fetchKudos();
     }, [postDetails?.sender?.id]);
+
+    const updateStatus = async (newStatus: string) => {
+        if (!token || !postDetails) return;
+
+        try {
+            const updated = await updatePost(parseInt(postDetails.id), { status: newStatus }, token);
+            console.log('Post status updated:', updated);
+            setPostDetails({ ...postDetails, status: updated.status });
+        }
+        catch (err) {
+            console.error('Failed to update post status:', err);
+            alert('Failed to update post status.');
+        }
+    };
+
+    const handleClosePost = () => updateStatus('closed');
 
     const handleLike = async () => {
         if (!postDetails || liked === true) return;
@@ -367,7 +384,15 @@ const Post = () => {
 
             {/* Post Title and Badges */}
             <div className='mb-4'>
-                <h1 className='text-2xl font-bold'>{postDetails.title}</h1>
+                <div className="flex items-center gap-2">
+                    {postDetails.status === 'closed' && (
+                        <span className="bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                            CLOSED
+                        </span>
+                    )}
+                    <h1 className="text-2xl font-bold">{postDetails.title}</h1>
+                </div>
+
                 {postDetails.category?.name && (
                     <p className='text-sm italic text-gray-600'>
                         Category: {postDetails.category.name}
@@ -383,6 +408,15 @@ const Post = () => {
                         {postDetails.status}
                     </span>
                 </div>
+
+                {postDetails.status !== 'closed' && user?.id === postDetails.sender?.id && (
+                    <button
+                        onClick={handleClosePost}
+                        className="bg-red-600 text-white px-4 py-2 rounded mt-2"
+                    >
+                        Close Post
+                    </button>
+                )}
             </div>
 
             {/* Like, Dislike, Report */}
