@@ -497,7 +497,7 @@ const Post = () => {
                 <h2 className='text-lg font-bold mb-2'>{postDetails.type === 'request' ? 'Offered By' : 'Requested By'}</h2>
 
                 <Handshakes
-                    handshakes={postDetails.handshakes}
+                    handshakes={postDetails.handshakes.map(h => ({ ...h, post: postDetails }))}
                     sender={postDetails.sender}
                     currentUserId={user?.id}
                     showAll={showAllHandshakes}
