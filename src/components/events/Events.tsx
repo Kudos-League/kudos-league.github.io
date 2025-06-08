@@ -1,34 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
 import { EventDTO } from '@/shared/api/types';
 import { getEvents } from '@/shared/api/actions';
-import { useAuth } from '@/hooks/useAuth';
-import dayjs from 'dayjs';
+
+const locales = {
+    'en-US': require('date-fns/locale/en-US')
+};
+
+const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+    getDay,
+    locales
+});
+
+const months = Array.from({ length: 12 }, (_, i) => ({
+    label: format(new Date(0, i), 'MMMM'),
+    value: i
+}));
 
 export default function EventsPage() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const calendarRef = useRef<any>(null);
 
     const [events, setEvents] = useState<EventDTO[]>([]);
-    const [showClosed, setShowClosed] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
     useEffect(() => {
         const fetch = async () => {
-            setLoading(true);
-            const filters: any = {
-                endTime: showClosed ? undefined : dayjs().toISOString(),
-            };
-
             try {
-                const res = await getEvents(filters);
-                const filtered = res.filter((event: EventDTO) => {
-                    if (showClosed) {
-                        return event.endTime && dayjs(event.endTime).isBefore(dayjs());
-                    }
-                    return !event.endTime || dayjs(event.endTime).isAfter(dayjs());
-                });
-                setEvents(filtered);
+                const res = await getEvents({});
+                setEvents(res);
             }
             catch (e) {
                 console.error('Failed to fetch events:', e);
@@ -37,59 +45,63 @@ export default function EventsPage() {
                 setLoading(false);
             }
         };
-
         fetch();
-    }, [showClosed]);
+    }, []);
+
+    const handleMonthChange = (month: number) => {
+        const newDate = new Date(currentDate.getFullYear(), month, 1);
+        setCurrentDate(newDate);
+    };
+
+    const mappedEvents = events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        start: new Date(event.startTime),
+        end: event.endTime ? new Date(event.endTime) : new Date(event.startTime),
+        allDay: false
+    }));
 
     return (
-        <div className='max-w-4xl mx-auto p-4'>
-            <div className='flex justify-between items-center mb-4'>
-                <h1 className='text-2xl font-bold'>Events</h1>
-                <button
-                    onClick={() => navigate('/create-event')}
-                    className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-                >
-                    + Create Event
-                </button>
-            </div>
-
-            <div className='mb-4'>
-                <button
-                    onClick={() => setShowClosed((prev) => !prev)}
-                    className='text-sm text-blue-600 underline'
-                >
-                    {showClosed ? 'Show Ongoing Events' : 'Show Closed Events'}
-                </button>
+        <div className="max-w-5xl mx-auto p-4">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Events Calendar</h1>
+                <div className="flex items-center gap-2">
+                    <select
+                        value={currentDate.getMonth()}
+                        onChange={(e) => handleMonthChange(Number(e.target.value))}
+                        className="border rounded px-2 py-1"
+                    >
+                        {months.map((m) => (
+                            <option key={m.value} value={m.value}>
+                                {m.label}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => navigate('/create-event')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                        + Create Event
+                    </button>
+                </div>
             </div>
 
             {loading ? (
-                <p className='text-center text-lg'>Loading events...</p>
-            ) : events.length > 0 ? (
-                <div className='space-y-4'>
-                    {events.map((event) => (
-                        <div
-                            key={event.id}
-                            onClick={() => navigate(`/event/${event.id}`)}
-                            className='p-4 bg-gray-100 rounded shadow cursor-pointer hover:bg-gray-200'
-                        >
-                            <h2 className='text-lg font-bold'>{event.title}</h2>
-                            <p className='text-gray-600'>{event.description}</p>
-                            <p className='text-sm text-gray-500'>
-                                {dayjs(event.startTime).format('MMM D, YYYY h:mm A')} –{' '}
-                                {event.endTime
-                                    ? dayjs(event.endTime).isValid()
-                                        ? dayjs(event.endTime).format('MMM D, YYYY h:mm A')
-                                        : 'Invalid end time'
-                                    : 'Ongoing'}
-                            </p>
-                            {event.location?.name && (
-                                <p className='text-sm text-gray-400 mt-1'>📍 {event.location.name}</p>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                <p className="text-center text-lg">Loading events...</p>
             ) : (
-                <p className='text-center text-gray-600 italic'>No events found.</p>
+                <Calendar
+                    localizer={localizer}
+                    events={mappedEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: 600 }}
+                    defaultView="month"
+                    views={['month']}
+                    date={currentDate}
+                    onNavigate={(date) => setCurrentDate(date)}
+                    onSelectEvent={(event) => navigate(`/event/${event.id}`)}
+                    ref={calendarRef}
+                />
             )}
         </div>
     );
