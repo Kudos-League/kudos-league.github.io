@@ -345,6 +345,14 @@ const Post = () => {
         }
     };
 
+    const handleHandshakeDeleted = (id: number) => {
+        if (!postDetails) return;
+        setPostDetails(prev => ({
+            ...prev!,
+            handshakes: prev!.handshakes.filter(h => h.id !== id)
+        }));
+    };
+
     const handleReport = async () => {
         if (!token || !postDetails) return;
 
@@ -582,6 +590,7 @@ const Post = () => {
                                 : prev
                         )
                     }
+                    onHandshakeDeleted={handleHandshakeDeleted}
                 />
 
                 {/* Create handshake button if not the sender */}

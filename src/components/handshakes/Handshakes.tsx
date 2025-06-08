@@ -5,11 +5,12 @@ import HandshakeCard from './HandshakeCard';
 interface HandshakesProps {
     handshakes: HandshakeDTO[];
     sender: UserDTO;
-    currentUserId: number | string | undefined;
+    currentUserId: number | undefined;
     showAll: boolean;
     onShowAll: () => void;
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
+    onHandshakeDeleted?: (id: number) => void;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -18,7 +19,8 @@ const Handshakes: React.FC<HandshakesProps> = ({
     showAll,
     onShowAll,
     onHandshakeCreated,
-    showPostDetails
+    showPostDetails,
+    onHandshakeDeleted
 }) => {
     const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
 
@@ -32,9 +34,10 @@ const Handshakes: React.FC<HandshakesProps> = ({
                 <HandshakeCard
                     key={handshake.id}
                     handshake={handshake}
-                    userID={String(currentUserId)}
+                    userID={currentUserId}
                     onHandshakeCreated={onHandshakeCreated}
                     showPostDetails={showPostDetails}
+                    onDelete={onHandshakeDeleted}
                 />
             ))}
 

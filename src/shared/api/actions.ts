@@ -383,6 +383,17 @@ export async function updateHandshake(
 }
 
 /** @throws {AxiosError} */
+export async function deleteHandshake(handshakeID: number, token: string) {
+    if (!token) throw Error('Invalid token');
+
+    return instance.delete(`/handshakes/${handshakeID}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+}
+
+/** @throws {AxiosError} */
 export async function searchPosts(
     query: string,
     sort?: 'date' | 'tags' | 'location',

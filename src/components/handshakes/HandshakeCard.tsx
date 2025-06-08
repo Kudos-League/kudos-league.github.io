@@ -1,29 +1,34 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Tippy from '@tippyjs/react';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+
 import {
     getUserDetails,
     updateHandshake,
-    createRewardOffer
-} from 'shared/api/actions';
-import type { HandshakeDTO, UserDTO } from 'shared/api/types';
-import type { CreateRewardOfferDTO } from 'shared/api/types';
-import { useNavigate } from 'react-router-dom';
+    createRewardOffer,
+    deleteHandshake
+} from '@/shared/api/actions';
+import type { HandshakeDTO, UserDTO } from '@/shared/api/types';
+import type { CreateRewardOfferDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/hooks/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
-import ChatModal from '../messages/ChatModal';
+import ChatModal from '@/components/messages/ChatModal';
 
 interface Props {
     handshake: HandshakeDTO;
-    userID: string;
+    userID: number;
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
+    onDelete?: (id: number) => void;
 }
 
-const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) => {
+const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, onDelete }) => {
     const navigate = useNavigate();
     const { token } = useAuth();
 
-    const isSender = handshake.senderID.toString() === userID;
+    const isSender = handshake.senderID === userID;
     const [status, setStatus] = useState(handshake.status);
     const [processing, setProcessing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -32,7 +37,6 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
     const [error, setError] = useState<string | null>();
 
     const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
-    const [receiverUser, setReceiverUser] = useState<UserDTO | null>(null);
 
     const [imgError, setImgError] = useState(false);
 
@@ -44,21 +48,17 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
     imgError || !handshake.post.images?.length || !imageSrc;
 
     useEffect(() => {
-        const fetchUsers = async () => {
+        const fetchSender = async () => {
             try {
-                const [sender, receiver] = await Promise.all([
-                    getUserDetails(handshake.senderID.toString(), token),
-                    getUserDetails(handshake.receiverID.toString(), token)
-                ]);
+                const sender = await getUserDetails(handshake.senderID, token);
                 setSenderUser(sender);
-                setReceiverUser(receiver);
             }
             catch (err) {
                 console.error('Error loading user info', err);
                 setError('Error loading user info');
             }
         };
-        fetchUsers();
+        fetchSender();
     }, [handshake, token]);
 
     const handleAccept = async () => {
@@ -112,14 +112,15 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
                 <div className='flex justify-between items-start'>
                     <div className='font-semibold'>
                         <UserCard
-                            username={isSender ? receiverUser?.username : senderUser?.username}
-                            avatar={isSender ? receiverUser?.avatar : senderUser?.avatar}
-                            userID={isSender ? receiverUser?.id : senderUser?.id}
+                            username={senderUser?.username}
+                            avatar={senderUser?.avatar}
+                            userID={senderUser?.id}
                             large={!showPostDetails}
                         />
                     </div>
 
-                    <div className='flex flex-col justify-between items-end min-h-[3.5rem] ml-4'>
+                    <div className='flex items-start gap-2 ml-4'>
+                        {/* Status badge */}
                         <span
                             className={`text-xs px-2 py-1 rounded-full text-white ${
                                 status === 'new'
@@ -132,10 +133,26 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
                             {status}
                         </span>
 
-                        {error && (
-                            <span className='text-xs bg-red-500 text-white px-2 py-1 rounded-full mt-auto'>
-                                {error}
-                            </span>
+                        {isSender && status === 'new' && (
+                            <Tippy content="Rescind Offer">
+                                <button
+                                    onClick={async () => {
+                                        if (!confirm('Are you sure you want to rescind this handshake?')) return;
+
+                                        try {
+                                            await deleteHandshake(handshake.id, token);
+                                            onDelete?.(handshake.id);
+                                        }
+                                        catch (err) {
+                                            console.error('Failed to delete handshake', err);
+                                            setError('Failed to delete handshake');
+                                        }
+                                    }}
+                                    className="text-red-600 hover:text-red-800"
+                                >
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
+                            </Tippy>
                         )}
                     </div>
                 </div>
@@ -192,7 +209,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
                 {status === 'accepted' &&
                 ((handshake.post.type === 'request' && isSender) ||
                     (handshake.post.type === 'gift' &&
-                        handshake.senderID.toString() === userID)) && (
+                        handshake.senderID === userID)) && (
                     <div className='space-y-2'>
                         <label className='block text-sm font-medium'>
                             Assign Kudos
@@ -216,15 +233,31 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) 
                         )}
                     </div>
                 )}
+
+                {!isSender && status === 'accepted' && (
+                    <button
+                        onClick={async () => {
+                            try {
+                                await updateHandshake(handshake.id, { status: 'new' }, token);
+                                setStatus('new');
+                            }
+                            catch (err) {
+                                console.error('Failed to undo accept', err);
+                                setError('Failed to undo accept');
+                            }
+                        }}
+                        className='mt-2 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600'
+                    >
+                        Undo Accept
+                    </button>
+                )}
             </div>
 
             {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
                     setIsChatOpen={setIsChatOpen}
-                    recipientID={handshake.senderID === parseInt(userID)
-                        ? handshake.receiverID
-                        : handshake.senderID}
+                    recipientID={handshake.receiverID}
                     initialMessage={
                         handshake.post.type === 'gift'
                             ? "Hey I'd love to give you this, where can we meet?"
