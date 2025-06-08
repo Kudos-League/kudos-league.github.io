@@ -21,6 +21,7 @@ import DonatePage from '@/pages/donate';
 import Leaderboard from './Leaderboard';
 import AdminDashboard from '@/pages/admin';
 import PublicChat from './messages/PublicChat';
+import EventsPage from './events/Events';
 
 function AppNavigator() {
     return (
@@ -36,7 +37,8 @@ function AppNavigator() {
                 <Route path='/create-post' element={<CreatePost />} />
                 <Route path='/user/:id' element={<Profile />} />
                 <Route path='/event/:eventId' element={<EventDetails />} />
-                <Route path='create-event' element={<CreateEvent />} />
+                <Route path ='/events' element={<EventsPage />} />
+                <Route path='/create-event' element={<CreateEvent />} />
 
                 <Route path='/chat' element={<PublicChat />} />
                 <Route path='/dms' element={<DMChat />} />

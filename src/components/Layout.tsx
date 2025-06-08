@@ -87,7 +87,7 @@ const Layout: React.FC = () => {
                             <Link to='/donate'>Donate</Link>
                             <Link to='/leaderboard'>Leaderboard</Link>
                             <Link to='/chat'>Forum</Link>
-                            <Link to='/create-event'>Create Event</Link>
+                            <Link to='/events'>Events</Link>
                             {user?.admin && (
                                 <Link to='/admin'>Admin Dashboard</Link>
                             )}
