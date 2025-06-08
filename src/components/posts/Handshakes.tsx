@@ -8,13 +8,15 @@ interface HandshakesProps {
     currentUserId: number | string | undefined;
     showAll: boolean;
     onShowAll: () => void;
+    onHandshakeCreated?: (handshake: HandshakeDTO) => void;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
     handshakes,
     currentUserId,
     showAll,
-    onShowAll
+    onShowAll,
+    onHandshakeCreated
 }) => {
     const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
 
@@ -29,6 +31,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     key={handshake.id}
                     handshake={handshake}
                     userID={String(currentUserId)}
+                    onHandshakeCreated={onHandshakeCreated} 
                 />
             ))}
 

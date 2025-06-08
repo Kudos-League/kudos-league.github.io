@@ -10,10 +10,12 @@ import { useNavigate } from 'react-router-dom';
 import UserCard from '../UserCard';
 import { useAuth } from '@/hooks/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
+import ChatModal from '../messages/ChatModal';
 
 interface Props {
     handshake: HandshakeDTO;
     userID: string;
+    onHandshakeCreated?: (handshake: HandshakeDTO) => void;
 }
 
 const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
@@ -25,6 +27,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
     const [processing, setProcessing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [kudosValue, setKudosValue] = useState('');
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [error, setError] = useState<string | null>();
 
     const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
@@ -63,6 +66,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
         try {
             await updateHandshake(handshake.id, { status: 'accepted' }, token);
             setStatus('accepted');
+            setIsChatOpen(true);
         }
         catch (err) {
             console.error(err);
@@ -102,108 +106,129 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
     };
 
     return (
-        <div className='border p-4 rounded shadow bg-white space-y-3'>
-            <div className='flex justify-between items-start'>
-                <div className='font-semibold'>
-                    <UserCard
-                        username={isSender ? receiverUser?.username : senderUser?.username}
-                        avatar={isSender ? receiverUser?.avatar : senderUser?.avatar}
-                        userID={isSender ? receiverUser?.id : senderUser?.id}
-                    />
-                </div>
-
-                <div className='flex flex-col justify-between items-end min-h-[3.5rem] ml-4'>
-                    <span
-                        className={`text-xs px-2 py-1 rounded-full text-white ${
-                            status === 'new'
-                                ? 'bg-yellow-500'
-                                : status === 'accepted'
-                                    ? 'bg-blue-600'
-                                    : 'bg-green-600'
-                        }`}
-                    >
-                        {status}
-                    </span>
-
-                    {error && (
-                        <span className='text-xs bg-red-500 text-white px-2 py-1 rounded-full mt-auto'>
-                            {error}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-
-            <div className='flex items-start space-x-4'>
-                <div
-                    onClick={() => navigate(`/post/${handshake.postID}`)}
-                    className='w-20 h-20 flex-shrink-0 cursor-pointer'
-                >
-                    {showBodyInImageBox ? (
-                        <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
-                            {handshake.post.body.slice(0, 60)}…
-                        </div>
-                    ) : (
-                        <img
-                            src={imageSrc}
-                            alt={handshake.post.title}
-                            className='w-full h-full object-cover rounded'
-                            onError={() => setImgError(true)}
+        <>
+            <div className='border p-4 rounded shadow bg-white space-y-3'>
+                <div className='flex justify-between items-start'>
+                    <div className='font-semibold'>
+                        <UserCard
+                            username={isSender ? receiverUser?.username : senderUser?.username}
+                            avatar={isSender ? receiverUser?.avatar : senderUser?.avatar}
+                            userID={isSender ? receiverUser?.id : senderUser?.id}
                         />
+                    </div>
+
+                    <div className='flex flex-col justify-between items-end min-h-[3.5rem] ml-4'>
+                        <span
+                            className={`text-xs px-2 py-1 rounded-full text-white ${
+                                status === 'new'
+                                    ? 'bg-yellow-500'
+                                    : status === 'accepted'
+                                        ? 'bg-blue-600'
+                                        : 'bg-green-600'
+                            }`}
+                        >
+                            {status}
+                        </span>
+
+                        {error && (
+                            <span className='text-xs bg-red-500 text-white px-2 py-1 rounded-full mt-auto'>
+                                {error}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div className='flex items-start justify-between'>
+                    <div className='flex space-x-4'>
+                        <div
+                            onClick={() => navigate(`/post/${handshake.postID}`)}
+                            className='w-20 h-20 flex-shrink-0 cursor-pointer'
+                        >
+                            {showBodyInImageBox ? (
+                                <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
+                                    {handshake.post.body.slice(0, 60)}…
+                                </div>
+                            ) : (
+                                <img
+                                    src={imageSrc}
+                                    alt={handshake.post.title}
+                                    className='w-full h-full object-cover rounded'
+                                    onError={() => setImgError(true)}
+                                />
+                            )}
+                        </div>
+
+                        <div className='flex flex-col justify-between'>
+                            <span
+                                className='text-blue-600 underline cursor-pointer'
+                                onClick={() => navigate(`/post/${handshake.postID}`)}
+                            >
+                                {handshake.post.title}
+                            </span>
+                            <p className='text-sm text-gray-500'>
+                Created: {new Date(handshake.createdAt).toLocaleDateString()}
+                            </p>
+                        </div>
+                    </div>
+
+                    {!isSender && status === 'new' && (
+                        <button
+                            className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ml-4 self-start'
+                            onClick={async () => {
+                                await handleAccept();
+                                setIsChatOpen(true);
+                            }}
+                            disabled={processing}
+                        >
+                            {processing ? 'Accepting...' : 'Accept'}
+                        </button>
                     )}
                 </div>
 
-                <div className='flex-1'>
-                    <span
-                        className='text-blue-600 underline cursor-pointer'
-                        onClick={() => navigate(`/post/${handshake.postID}`)}
-                    >
-                        {handshake.post.title}
-                    </span>
-                    <p className='text-sm text-gray-500'>
-                        Created: {new Date(handshake.createdAt).toLocaleDateString()}
-                    </p>
-                </div>
-            </div>
-
-            {!isSender && status === 'new' && (
-                <button
-                    className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-                    onClick={handleAccept}
-                    disabled={processing}
-                >
-                    {processing ? 'Accepting...' : 'Accept'}
-                </button>
-            )}
-
-            {status === 'accepted' &&
+                {status === 'accepted' &&
                 ((handshake.post.type === 'request' && isSender) ||
                     (handshake.post.type === 'gift' &&
                         handshake.senderID.toString() === userID)) && (
-                <div className='space-y-2'>
-                    <label className='block text-sm font-medium'>
+                    <div className='space-y-2'>
+                        <label className='block text-sm font-medium'>
                             Assign Kudos
-                    </label>
-                    <input
-                        type='number'
-                        value={kudosValue}
-                        onChange={(e) => setKudosValue(e.target.value)}
-                        className='border rounded w-full px-2 py-1'
-                        placeholder='Enter kudos'
-                    />
-                    <button
-                        onClick={handleKudosSubmit}
-                        disabled={submitting}
-                        className='bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700'
-                    >
-                        {submitting ? 'Submitting...' : 'Submit'}
-                    </button>
-                    {error && (
-                        <p className='text-sm text-red-500'>{error}</p>
-                    )}
-                </div>
+                        </label>
+                        <input
+                            type='number'
+                            value={kudosValue}
+                            onChange={(e) => setKudosValue(e.target.value)}
+                            className='border rounded w-full px-2 py-1'
+                            placeholder='Enter kudos'
+                        />
+                        <button
+                            onClick={handleKudosSubmit}
+                            disabled={submitting}
+                            className='bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700'
+                        >
+                            {submitting ? 'Submitting...' : 'Submit'}
+                        </button>
+                        {error && (
+                            <p className='text-sm text-red-500'>{error}</p>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {isChatOpen && (
+                <ChatModal
+                    isChatOpen={isChatOpen}
+                    setIsChatOpen={setIsChatOpen}
+                    recipientID={handshake.senderID === parseInt(userID)
+                        ? handshake.receiverID
+                        : handshake.senderID}
+                    initialMessage={
+                        handshake.post.type === 'gift'
+                            ? "Hey I'd love to give you this, where can we meet?"
+                            : "Hey thanks for offering this, where can we meet?"
+                    }
+                />
             )}
-        </div>
+        </>
     );
 };
 

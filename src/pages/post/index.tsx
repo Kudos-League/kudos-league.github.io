@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     getPostDetails,
-    updateHandshake,
     createHandshake,
     likePost,
     reportPost,
@@ -10,7 +9,6 @@ import {
 } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
-import AvatarComponent from '@/components/Avatar';
 import MapDisplay from '@/components/Map';
 import MessageList from '@/components/messages/MessageList';
 import ChatModal from '@/components/messages/ChatModal';
@@ -25,7 +23,6 @@ import UserCard from '@/components/UserCard';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
 
@@ -93,11 +90,6 @@ const Post = () => {
         if (id) fetchPostDetails(id);
     }, [id]);
 
-    const displayedHandshakes = showAllHandshakes
-        ? postDetails?.handshakes
-        : postDetails?.handshakes.slice(0, 2);
-    const displayedOffers = postDetails?.rewardOffers || [];
-
     const startDMChat = async (recipientId: number) => {
         if (!token) {
             console.error('No token found');
@@ -113,51 +105,6 @@ const Post = () => {
         }
         catch (error) {
             console.error('Error preparing DM chat:', error);
-        }
-    };
-
-    const handleAcceptHandshake = async (index: number) => {
-        if (!token) {
-            console.error('No token found');
-            return;
-        }
-
-        try {
-            const handshake = displayedHandshakes?.[index];
-            if (!handshake) {
-                console.error('Handshake not found');
-                return;
-            }
-
-            setLoading(true);
-
-            // Update handshake status to 'accepted'
-            const response = await updateHandshake(
-                handshake.id,
-                { status: 'accepted' },
-                token
-            );
-
-            // Update the UI with the updated handshake
-            const updatedHandshakes = [...(displayedHandshakes || [])];
-            updatedHandshakes[index] = response.data;
-
-            // Update the post details with the updated handshakes
-            setPostDetails((prevDetails) => ({
-                ...prevDetails!,
-                handshakes: updatedHandshakes
-            }));
-
-            // Open chat with the handshake sender
-            startDMChat(handshake.sender?.id || '0');
-
-            console.log(`Handshake ${handshake.id} accepted successfully`);
-        }
-        catch (error) {
-            console.error('Error accepting handshake:', error);
-        }
-        finally {
-            setLoading(false);
         }
     };
 
@@ -502,6 +449,16 @@ const Post = () => {
                     currentUserId={user?.id}
                     showAll={showAllHandshakes}
                     onShowAll={() => setShowAllHandshakes(true)}
+                    onHandshakeCreated={(newHandshake) =>
+                        setPostDetails((prev) =>
+                            prev
+                                ? {
+                                    ...prev,
+                                    handshakes: [...(prev.handshakes || []), newHandshake]
+                                }
+                                : prev
+                        )
+                    }
                 />
 
                 {/* Create handshake button if not the sender */}

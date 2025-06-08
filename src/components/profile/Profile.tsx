@@ -15,6 +15,7 @@ import HandshakeCard from './HandshakeCard';
 import Achievements from './Achievements';
 import EditProfile from './EditProfile';
 import { useForm } from 'react-hook-form';
+import Handshakes from '../posts/Handshakes';
 
 type Props = {
     user: UserDTO;
@@ -109,13 +110,16 @@ const Profile: React.FC<Props> = ({
                             No requests / gift responses available.
                         </p>
                     ) : (
-                        handshakes.map((handshake) => (
-                            <HandshakeCard
-                                key={handshake.id}
-                                handshake={handshake}
-                                userID={user.id.toString()}
-                            />
-                        ))
+                        <Handshakes
+                            handshakes={handshakes}
+                            sender={user}
+                            currentUserId={user.id}
+                            showAll={true}
+                            onShowAll={() => {
+                                console.log('Show all handshakes');
+                            }}
+                        />
+
                     )}
                 </div>
             ) : filter === 'events' ? (
