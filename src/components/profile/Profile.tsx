@@ -119,6 +119,7 @@ const Profile: React.FC<Props> = ({
                             onShowAll={() => {
                                 console.log('Show all handshakes');
                             }}
+                            showPostDetails
                         />
 
                     )}

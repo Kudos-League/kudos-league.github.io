@@ -16,9 +16,10 @@ interface Props {
     handshake: HandshakeDTO;
     userID: string;
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
+    showPostDetails?: boolean;
 }
 
-const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
+const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails }) => {
     const navigate = useNavigate();
     const { token } = useAuth();
 
@@ -107,13 +108,14 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
 
     return (
         <>
-            <div className='border p-4 rounded shadow bg-white space-y-3'>
+            <div className={`border p-4 rounded shadow bg-white ${showPostDetails && 'space-y-3'}`}>
                 <div className='flex justify-between items-start'>
                     <div className='font-semibold'>
                         <UserCard
                             username={isSender ? receiverUser?.username : senderUser?.username}
                             avatar={isSender ? receiverUser?.avatar : senderUser?.avatar}
                             userID={isSender ? receiverUser?.id : senderUser?.id}
+                            large={!showPostDetails}
                         />
                     </div>
 
@@ -139,37 +141,39 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID }) => {
                 </div>
 
                 <div className='flex items-start justify-between'>
-                    <div className='flex space-x-4'>
-                        <div
-                            onClick={() => navigate(`/post/${handshake.postID}`)}
-                            className='w-20 h-20 flex-shrink-0 cursor-pointer'
-                        >
-                            {showBodyInImageBox ? (
-                                <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
-                                    {handshake.post.body.slice(0, 60)}…
-                                </div>
-                            ) : (
-                                <img
-                                    src={imageSrc}
-                                    alt={handshake.post.title}
-                                    className='w-full h-full object-cover rounded'
-                                    onError={() => setImgError(true)}
-                                />
-                            )}
-                        </div>
-
-                        <div className='flex flex-col justify-between'>
-                            <span
-                                className='text-blue-600 underline cursor-pointer'
+                    {showPostDetails && (
+                        <div className='flex space-x-4'>
+                            <div
                                 onClick={() => navigate(`/post/${handshake.postID}`)}
+                                className='w-20 h-20 flex-shrink-0 cursor-pointer'
                             >
-                                {handshake.post.title}
-                            </span>
-                            <p className='text-sm text-gray-500'>
-                Created: {new Date(handshake.createdAt).toLocaleDateString()}
-                            </p>
+                                {showBodyInImageBox ? (
+                                    <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
+                                        {handshake.post.body.slice(0, 60)}…
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={imageSrc}
+                                        alt={handshake.post.title}
+                                        className='w-full h-full object-cover rounded'
+                                        onError={() => setImgError(true)}
+                                    />
+                                )}
+                            </div>
+
+                            <div className='flex flex-col justify-between'>
+                                <span
+                                    className='text-blue-600 underline cursor-pointer'
+                                    onClick={() => navigate(`/post/${handshake.postID}`)}
+                                >
+                                    {handshake.post.title}
+                                </span>
+                                <p className='text-sm text-gray-500'>
+                                    Created: {new Date(handshake.createdAt).toLocaleDateString()}
+                                </p>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {!isSender && status === 'new' && (
                         <button
