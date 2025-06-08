@@ -16,6 +16,7 @@ import EditProfile from './EditProfile';
 import { useForm } from 'react-hook-form';
 import Handshakes from '../handshakes/Handshakes';
 import { useNavigate } from 'react-router-dom';
+import { createDMChannel } from '@/shared/api/actions';
 
 type Props = {
     user: UserDTO;
@@ -36,7 +37,7 @@ const Profile: React.FC<Props> = ({
     loading,
     error
 }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, token } = useAuth();
     const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
@@ -52,8 +53,16 @@ const Profile: React.FC<Props> = ({
         }
     });
 
-    const handleStartDM = () => {
-        navigate(`/dms/${user.id}`);
+    const handleStartDM = async () => {
+        if (!currentUser?.id || !user?.id) return;
+        try {
+            await createDMChannel(currentUser.id, user.id, token);
+            navigate(`/dms/${user.id}`);
+        }
+        catch (err) {
+            console.error('Failed to create or get DM channel', err);
+            alert('Failed to start a direct message. Please try again.');
+        }
     };
 
     if (editing) {

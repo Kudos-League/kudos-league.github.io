@@ -192,7 +192,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                         </div>
                     )}
 
-                    {!isSender && status === 'new' && (
+                    {userID === handshake.receiverID && status === 'new' && (
                         <button
                             className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ml-4 self-start'
                             onClick={async () => {

@@ -81,6 +81,8 @@ export const useWebSocket = (
             return;
         }
 
+        setMessages([]);
+
         if (!socket || !isConnected) {
             console.warn('[WebSocket] Fallback to polling messages every 5s');
 
