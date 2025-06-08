@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppSelector } from 'redux_store/hooks';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import {
     HandThumbUpIcon,
     HandThumbDownIcon
@@ -28,6 +29,18 @@ import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 
+function EditPostButton({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            onClick={onClick}
+            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+            <PencilSquareIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            Edit
+        </button>
+    );
+}
+
 const Post = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
@@ -49,6 +62,8 @@ const Post = () => {
         null
     );
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({ title: '', body: '' });
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -391,6 +406,13 @@ const Post = () => {
                         </span>
                     )}
                     <h1 className="text-2xl font-bold">{postDetails.title}</h1>
+
+                    {user?.id === postDetails.sender?.id && postDetails.status !== 'closed' && (
+                        <EditPostButton onClick={() => {
+                            setEditData({ title: postDetails.title, body: postDetails.body });
+                            setIsEditing(!isEditing);
+                        }} />
+                    )}
                 </div>
 
                 {postDetails.category?.name && (
@@ -451,14 +473,54 @@ const Post = () => {
             </div>
 
             {/* Body / Description */}
-            <div className='bg-gray-100 rounded p-4 mb-6'>
-                <p>{postDetails.body}</p>
-                {postDetails.rewardOffers?.[0]?.kudosFinal && (
-                    <p className='mt-2 font-semibold text-blue-600'>
-                        Final Kudos: {postDetails.rewardOffers[0].kudosFinal}
-                    </p>
-                )}
-            </div>
+            {isEditing ? (
+                <div className="bg-white p-4 border rounded mb-6 space-y-3">
+                    <input
+                        className="w-full border px-2 py-1 rounded"
+                        value={editData.title}
+                        onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                    />
+                    <textarea
+                        className="w-full border px-2 py-1 rounded"
+                        rows={4}
+                        value={editData.body}
+                        onChange={(e) => setEditData({ ...editData, body: e.target.value })}
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            className="bg-green-600 text-white px-4 py-1 rounded"
+                            onClick={async () => {
+                                try {
+                                    const updated = await updatePost(parseInt(postDetails.id), editData, token);
+                                    setPostDetails({ ...postDetails, ...updated });
+                                    setIsEditing(false);
+                                }
+                                catch (err) {
+                                    alert('Failed to save changes.');
+                                    console.error(err);
+                                }
+                            }}
+                        >
+                            Save
+                        </button>
+                        <button
+                            className="border px-4 py-1 rounded"
+                            onClick={() => setIsEditing(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className='bg-gray-100 rounded p-4 mb-6'>
+                    <p>{postDetails.body}</p>
+                    {postDetails.rewardOffers?.[0]?.kudosFinal && (
+                        <p className='mt-2 font-semibold text-blue-600'>
+                            Final Kudos: {postDetails.rewardOffers[0].kudosFinal}
+                        </p>
+                    )}
+                </div>
+            )}
 
             {/* Images */}
             <ImageCarousel images={postDetails.images || []} />
