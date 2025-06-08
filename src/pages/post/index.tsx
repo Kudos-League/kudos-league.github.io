@@ -435,7 +435,7 @@ const Post = () => {
                     <MapDisplay
                         showAddressBar={false}
                         regionID={postDetails.location.regionID}
-                        exactLocation={false}
+                        exactLocation={true}
                         width={500}
                         height={300}
                     />

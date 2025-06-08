@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { getGeocodedLocation } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
@@ -69,6 +69,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
+    const suppressSearchRef = useRef(false);
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: GOOGLE_MAPS_KEY
@@ -99,7 +100,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     }, [regionID]);
 
     useEffect(() => {
-        if (!searchInput || !token) return;
+        if (!searchInput || !token || suppressSearchRef.current) return;
 
         const debouncedSearch = debounce(async () => {
             try {
@@ -118,6 +119,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             setSuggestions([]);
         };
     }, [searchInput, token]);
+
 
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
@@ -165,12 +167,21 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                             changed: !isSameCoords
                                         };
 
-                                        setMapCoordinates(coords);
-                                        onLocationChange?.({ coordinates: coords, placeID, name, changed: !isSameCoords });
+                                        suppressSearchRef.current = true;
                                         setSuggestions([]);
+                                        setMapCoordinates(coords);
                                         setSearchInput(name);
-                                    }}
+                                        onLocationChange?.({
+                                            coordinates: coords,
+                                            placeID,
+                                            name,
+                                            changed: !isSameCoords
+                                        });
 
+                                        setTimeout(() => {
+                                            suppressSearchRef.current = false;
+                                        }, 500);
+                                    }}
                                 >
                                     {suggestion.formatted_address}
                                 </li>
@@ -212,7 +223,51 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     */
                 }}
             >
-                {exactLocation && <Marker position={center} />}
+                {exactLocation && (
+                    <Marker
+                        position={center}
+                        draggable={showAddressBar}
+                        onDragEnd={async (e) => {
+                            const newLat = e.latLng?.lat();
+                            const newLng = e.latLng?.lng();
+
+                            if (newLat == null || newLng == null) return;
+
+                            try {
+                                const response = await fetch(
+                                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLat},${newLng}&key=${GOOGLE_MAPS_KEY}`
+                                );
+                                const data = await response.json();
+                                const result = data.results?.[0];
+                                const name = result?.formatted_address ?? '';
+                                const placeID = result?.place_id ?? '';
+
+                                const coords = {
+                                    latitude: newLat,
+                                    longitude: newLng,
+                                    changed: true
+                                };
+
+                                suppressSearchRef.current = true;
+                                setSuggestions([]);
+                                setMapCoordinates(coords);
+                                setSearchInput(name);
+                                onLocationChange?.({
+                                    coordinates: coords,
+                                    placeID,
+                                    name,
+                                    changed: true
+                                });
+                                setTimeout(() => {
+                                    suppressSearchRef.current = false;
+                                }, 500);
+                            }
+                            catch (err) {
+                                console.error('Reverse geocoding failed', err);
+                            }
+                        }}
+                    />
+                )}
             </GoogleMap>
         </div>
 
