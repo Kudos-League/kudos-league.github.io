@@ -63,7 +63,9 @@ const EditProfile: React.FC<Props> = ({
                 data.avatar = data.avatar[0];
             }
 
-            if (!data.avatar?.length) delete data.avatar;
+            if (!data.avatar) {
+                delete data.avatar;
+            }
             if (!data.avatarURL || typeof data.avatarURL !== 'string' || data.avatarURL.trim() === '') {
                 delete data.avatarURL;
             }
@@ -78,7 +80,7 @@ const EditProfile: React.FC<Props> = ({
             setTimeout(() => setFeedbackMessage(null), 2000);
         }
         catch (err: any) {
-            const str = err.response.data.errors[0]?.message || err.message || 'Update failed';
+            const str = err.response.data.errors?.[0]?.message || err.response.data.message || err.message || 'Update failed';
             console.error('Profile update failed', err);
             setFeedbackMessage(str);
             setTimeout(() => setFeedbackMessage(null), 3000);
@@ -177,9 +179,9 @@ const EditProfile: React.FC<Props> = ({
                         Or upload an image instead
                     </p>
                     <ImagePicker
-                        selectedFiles={form.watch('avatar') ?? []}
-                        onChange={(files) => form.setValue('avatar', files)}
-                        placeholder='Upload avatar'
+                        name="avatar"
+                        form={form}
+                        placeholder="Upload avatar"
                         multiple={false}
                     />
                 </div>

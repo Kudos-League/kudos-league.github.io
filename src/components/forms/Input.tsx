@@ -97,7 +97,7 @@ export default function Input<T extends FieldValues>({
             {multiline ? (
                 <textarea
                     id={name}
-                    value={value ?? field.value}
+                    value={field.value}
                     onChange={(e) => {
                         field.onChange(e.target.value);
                         onValueChange?.(e.target.value);

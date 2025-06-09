@@ -1,51 +1,59 @@
 import React, { useRef } from 'react';
+import { Controller, UseFormReturn } from 'react-hook-form';
 
 type ImagePickerProps = {
-    onChange: (files: File[]) => void;
+    form: UseFormReturn<any>;
+    name: string;
     placeholder?: string;
-    selectedFiles?: File[];
     multiple?: boolean;
 };
 
 export default function ImagePicker({
-    onChange,
+    form,
+    name,
     placeholder = 'Choose Images',
-    selectedFiles: selectedImages = [],
     multiple = true
 }: ImagePickerProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(event.target.files || []);
-        onChange(multiple ? files : [files[0]]);
-    };
-
     const openImagePicker = () => fileInputRef.current?.click();
 
     return (
-        <div className='my-4'>
-            <input
-                ref={fileInputRef}
-                type='file'
-                accept='image/*'
-                multiple={multiple}
-                hidden
-                onChange={handleFileChange}
+        <div className="my-4">
+            <Controller
+                control={form.control}
+                name={name}
+                defaultValue={[]}
+                render={({ field }) => (
+                    <>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            multiple={multiple}
+                            ref={fileInputRef}
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                field.onChange(multiple ? files : [files[0]]);
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={openImagePicker}
+                            className="flex items-center justify-center w-24 h-24 bg-gray-100 rounded border border-dashed text-2xl"
+                            title={placeholder}
+                            aria-label={placeholder}
+                        >
+                            ➕
+                        </button>
+                        {Array.isArray(field.value) && field.value.length > 0 && (
+                            <p className="mt-2 text-sm text-gray-600">
+                                {field.value.map((file: File) => file.name).join(', ')}
+                            </p>
+                        )}
+                    </>
+                )}
             />
-            <button
-                type='button'
-                onClick={openImagePicker}
-                className='flex items-center justify-center w-24 h-24 bg-gray-100 rounded border border-dashed text-2xl'
-                title={placeholder}
-                aria-label={placeholder}
-            >
-                ➕
-            </button>
-            {selectedImages.length > 0 && (
-                <p className='mt-2 text-sm text-gray-600'>
-                    {selectedImages.map((file) => file.name).join(', ')}
-                </p>
-            )}
         </div>
     );
 }
