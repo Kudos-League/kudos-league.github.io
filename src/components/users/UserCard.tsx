@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import AvatarComponent from './Avatar';
+import AvatarComponent from '@/components/users/Avatar';
 
 interface UserCardProps {
     userID?: number;

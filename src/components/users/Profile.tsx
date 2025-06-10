@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+
 import {
     UserDTO,
     PostDTO,
@@ -8,12 +9,12 @@ import {
 } from '@/shared/api/types';
 import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
-import ProfileHeader from './ProfileHeader';
-import PostCard from '../posts/PostCard';
-import Achievements from './Achievements';
-import EditProfile from './EditProfile';
-import Handshakes from '../handshakes/Handshakes';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import ProfileHeader from '@/components/users/ProfileHeader';
+import PostCard from '@/components/posts/PostCard';
+import Achievements from '@/components/users/Achievements';
+import EditProfile from '@/components/users/EditProfile';
+import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
 
 type Props = {

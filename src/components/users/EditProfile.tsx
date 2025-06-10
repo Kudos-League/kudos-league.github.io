@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+
 import useLocation from '@/hooks/useLocation';
-import AvatarComponent from './Avatar';
-import Input from '../forms/Input';
-import MapDisplay from '../Map';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import AvatarComponent from '@/components/users/Avatar';
+import Input from '@/components/forms/Input';
+import MapDisplay from '@/components/Map';
 import { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import ImagePicker from '../forms/ImagePicker';
+import ImagePicker from '@/components/forms/ImagePicker';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUser } from '@/shared/api/actions';
 
