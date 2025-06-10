@@ -3,31 +3,58 @@ import useLocation from '@/hooks/useLocation';
 import AvatarComponent from './Avatar';
 import Input from '../forms/Input';
 import MapDisplay from '../Map';
-import { UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import ImagePicker from '../forms/ImagePicker';
+import { useAuth } from '@/hooks/useAuth';
+import { updateUser } from '@/shared/api/actions';
 
 interface Props {
     targetUser: UserDTO;
     userSettings?: any;
-    form: UseFormReturn<ProfileFormValues>;
-    onSubmit: (data: ProfileFormValues) => Promise<void>;
     onClose: () => void;
-    loading: boolean;
-    error: string | null;
 }
 
 const EditProfile: React.FC<Props> = ({
-    form,
     targetUser,
     onClose,
-    loading,
-    onSubmit,
-    error
 }) => {
+    const { user, token, updateUser: updateUserCache } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { location, setLocation } = useLocation();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+    const targetUserID = targetUser?.id;
+    const form = useForm<ProfileFormValues>({
+        defaultValues: {
+            email: user.email,
+            avatar: [],
+            location: user.location || undefined
+        }
+    });
+
+    const onSubmit = async (formData: Partial<UserDTO>) => {
+        if (!formData || !token || !targetUserID) {
+            throw new Error('Invalid form data or authentication.');
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const updatedUser = await updateUser(
+                formData,
+                targetUserID.toString(),
+                token
+            );
+            updateUserCache(updatedUser);
+        }
+        finally {
+            setLoading(false);
+        }
+    };
 
     const getAvatarUrl = () => {
         const avatarFileOrUrl = form.watch('avatar')?.[0];

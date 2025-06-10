@@ -4,8 +4,7 @@ import {
     UserDTO,
     PostDTO,
     HandshakeDTO,
-    EventDTO,
-    ProfileFormValues
+    EventDTO
 } from '@/shared/api/types';
 import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
@@ -13,29 +12,22 @@ import ProfileHeader from './ProfileHeader';
 import PostCard from '../posts/PostCard';
 import Achievements from './Achievements';
 import EditProfile from './EditProfile';
-import { useForm } from 'react-hook-form';
 import Handshakes from '../handshakes/Handshakes';
 import { useNavigate } from 'react-router-dom';
 import { createDMChannel } from '@/shared/api/actions';
 
 type Props = {
     user: UserDTO;
-    handleUpdate: (formData: any) => Promise<void>;
     posts: PostDTO[];
     handshakes: HandshakeDTO[];
     events: EventDTO[];
-    loading: boolean;
-    error: string | null;
 };
 
 const Profile: React.FC<Props> = ({
     user,
-    handleUpdate,
     posts,
     handshakes,
     events,
-    loading,
-    error
 }) => {
     const { user: currentUser, token } = useAuth();
     const navigate = useNavigate();
@@ -44,14 +36,6 @@ const Profile: React.FC<Props> = ({
     const [editing, setEditing] = useState(false);
     const Filters = getFilters(isSelf);
     const [filter, setFilter] = useState<FilterType>(Filters[0]);
-
-    const form = useForm<ProfileFormValues>({
-        defaultValues: {
-            email: user.email,
-            avatar: [],
-            location: user.location || undefined
-        }
-    });
 
     const handleStartDM = async () => {
         if (!currentUser?.id || !user?.id) return;
@@ -71,10 +55,6 @@ const Profile: React.FC<Props> = ({
                 targetUser={user}
                 userSettings={user.settings}
                 onClose={() => setEditing(false)}
-                onSubmit={handleUpdate}
-                loading={loading}
-                error={error}
-                form={form}
             />
         );
     }

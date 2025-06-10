@@ -20,6 +20,7 @@ type AuthContextType = {
         email: string,
         password: string
     ) => Promise<void>;
+    updateUser: (updated: Partial<UserDTO>) => void; 
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -156,6 +157,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const updateUser = (updated: Partial<UserDTO>) => {
+        setUserProfile((prev) => (prev ? { ...prev, ...updated } : prev));
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -166,7 +171,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 loading,
                 login: loginHandler,
                 logout: logoutHandler,
-                register: signUpHandler
+                register: signUpHandler,
+                updateUser
             }}
         >
             {children}

@@ -6,14 +6,13 @@ import {
     getUserEvents,
     getUserHandshakes,
     getUserPosts,
-    updateUser
 } from 'shared/api/actions';
 import Profile from '@/components/users/Profile';
 import { useAuth } from '@/hooks/useAuth';
 import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {
-    const { user: userProfile, token, isLoggedIn, authState } = useAuth();
+    const { user: userProfile, isLoggedIn, authState } = useAuth();
     const { id: routeID } = useParams<{ id: string }>();
     const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
     const targetUserID = routeID ? Number(routeID) : userProfile?.id;
@@ -22,7 +21,6 @@ export default function UserProfile() {
     const [posts, setPosts] = useState<PostDTO[]>([]);
     const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]);
     const [events, setEvents] = useState<EventDTO[]>([]);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -90,27 +88,6 @@ export default function UserProfile() {
         fetchUser();
     }, [targetUserID, authState?.token]);
 
-    const handleUpdate = async (formData: Partial<UserDTO>) => {
-        if (!formData || !token || !targetUserID) {
-            throw new Error('Invalid form data or authentication.');
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const updatedUser = await updateUser(
-                formData,
-                targetUserID.toString(),
-                token
-            );
-            setUser(updatedUser);
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-
     if (!isLoggedIn) {
         return (
             <div className='text-red-600 text-center mt-10'>
@@ -127,13 +104,18 @@ export default function UserProfile() {
         );
     }
 
+    if (error) {
+        return (
+            <div className='text-red-600 text-center mt-10'>
+                {error}
+            </div>
+        );
+    }
+
     return (
         <div className='max-w-5xl mx-auto px-4 py-8'>
             <Profile
                 user={user}
-                handleUpdate={handleUpdate}
-                loading={loading}
-                error={error}
                 posts={posts}
                 handshakes={handshakes}
                 events={events}
