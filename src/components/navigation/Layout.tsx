@@ -29,7 +29,7 @@ const FooterLink: React.FC<FooterLinkProps> = ({ to, icon: Icon, label }) => (
 );
 
 const LayoutFooter: React.FC = () => {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, user } = useAuth();
 
     return (
         <footer className='bg-white border-t border-gray-200 px-4 py-2 text-sm text-gray-700'>
@@ -39,7 +39,7 @@ const LayoutFooter: React.FC = () => {
                         <FooterLink to='/' icon={HomeIcon} label='Feed' />
                         <FooterLink to='/dms' icon={EnvelopeIcon} label='DMs' />
                         <FooterLink
-                            to='/user/me'
+                            to={`/user/${user.id}`}
                             icon={UserCircleIcon}
                             label='My Profile'
                         />
