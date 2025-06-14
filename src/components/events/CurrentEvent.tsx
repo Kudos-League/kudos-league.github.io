@@ -122,6 +122,12 @@ export default function CurrentEvent() {
                             📍 {currentEvent.location?.name || 'Global'}
                             </p>
                         )}
+
+                        {typeof currentEvent.participantCount === 'number' && (
+                            <p className='text-sm text-blue-500 mt-1'>
+                                👥 {currentEvent.participantCount} participant{currentEvent.participantCount !== 1 ? 's' : ''}
+                            </p>
+                        )}
                     </div>
 
                     <button

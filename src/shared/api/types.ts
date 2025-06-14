@@ -162,6 +162,7 @@ export type EventDTO = {
     content?: string;
     participants?: UserDTO[];
     location?: LocationDTO | null;
+    participantCount?: number;
 };
 
 export type CreateEventDTO = {
