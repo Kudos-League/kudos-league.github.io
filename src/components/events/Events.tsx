@@ -31,6 +31,7 @@ export default function EventsPage() {
     const [events, setEvents] = useState<EventDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
+    const [selectedDateEvents, setSelectedDateEvents] = useState<EventDTO[] | null>(null);
 
     useEffect(() => {
         const fetch = async () => {
@@ -51,6 +52,19 @@ export default function EventsPage() {
     const handleMonthChange = (month: number) => {
         const newDate = new Date(currentDate.getFullYear(), month, 1);
         setCurrentDate(newDate);
+    };
+
+    const handleDateClick = ({ start }: { start: Date }) => {
+        const selectedDay = new Date(start);
+        selectedDay.setHours(0, 0, 0, 0);
+
+        const matched = events.filter((event) => {
+            const eventDate = new Date(event.startTime);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === selectedDay.getTime();
+        });
+
+        setSelectedDateEvents(matched);
     };
 
     const mappedEvents = events.map((event) => ({
@@ -88,6 +102,43 @@ export default function EventsPage() {
 
             {loading ? (
                 <p className="text-center text-lg">Loading events...</p>
+            ) : selectedDateEvents ? (
+                <div>
+                    <button
+                        onClick={() => setSelectedDateEvents(null)}
+                        className="text-sm text-blue-600 underline mb-4"
+                    >
+			← Back to calendar
+                    </button>
+
+                    <h2 className="text-xl font-semibold mb-2">
+			Events on {format(new Date(selectedDateEvents[0]?.startTime || new Date()), 'PPP')}
+                    </h2>
+
+                    {selectedDateEvents.length === 0 ? (
+                        <p className="text-gray-500 italic">No events on this date.</p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {selectedDateEvents.map((event) => (
+                                <li
+                                    key={event.id}
+                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    className="p-3 rounded shadow hover:bg-gray-100 cursor-pointer"
+                                >
+                                    <p className="font-bold text-lg">{event.title}</p>
+                                    <p className="text-gray-600 text-sm mb-1">{event.description}</p>
+                                    <p className="text-sm text-gray-500">
+                                        {format(new Date(event.startTime), 'p')} –{' '}
+                                        {event.endTime ? format(new Date(event.endTime), 'p') : 'Ongoing'}
+                                    </p>
+                                    {event.location?.name && (
+                                        <p className="text-sm text-gray-400">📍 {event.location.name}</p>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             ) : (
                 <Calendar
                     localizer={localizer}
@@ -100,6 +151,8 @@ export default function EventsPage() {
                     date={currentDate}
                     onNavigate={(date) => setCurrentDate(date)}
                     onSelectEvent={(event) => navigate(`/event/${event.id}`)}
+                    onSelectSlot={handleDateClick}
+                    selectable
                     ref={calendarRef}
                 />
             )}
