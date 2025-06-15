@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const loginHandler = async (username: string, password: string) => {
         setErrorMessage(null);
+        if (!username || !password) return null;
         try {
             const response = await login({ username, password });
             const newAuthState: AuthState = {
