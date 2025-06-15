@@ -13,7 +13,6 @@ import {
     createHandshake,
     likePost,
     reportPost,
-    getUserKudos,
     updatePost
 } from 'shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,7 +46,6 @@ const Post = () => {
     const token = useAppSelector((state) => state.auth.token);
 
     const [postDetails, setPostDetails] = useState<PostType | null>(null);
-    const [kudos, setKudos] = React.useState<number>(user?.kudos || 0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [liked, setLiked] = useState<boolean | null>(null);
@@ -68,24 +66,6 @@ const Post = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportReason, setReportReason] = useState('');
-    
-    React.useEffect(() => {
-        const fetchKudos = async () => {
-            if (!postDetails?.sender?.id) {
-                return;
-            }
-
-            try {
-                const totalKudos = await getUserKudos(postDetails.sender.id, token);
-                setKudos(totalKudos);
-            }
-            catch (error) {
-                console.error('Failed to fetch user kudos:', error);
-            }
-        };
-    
-        fetchKudos();
-    }, [postDetails?.sender?.id]);
 
     const updateStatus = async (newStatus: string) => {
         if (!token || !postDetails) return;
@@ -401,7 +381,7 @@ const Post = () => {
                 userID={postDetails.sender?.id}
                 avatar={postDetails.sender?.avatar}
                 username={postDetails.sender?.username}
-                kudos={kudos}
+                kudos={postDetails.sender?.kudos}
                 large
             />
 
@@ -594,10 +574,9 @@ const Post = () => {
                 />
 
                 {/* Create handshake button if not the sender */}
-                {user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some(
-                        (h) => h.sender?.id === user?.id
-                    ) && (
+                {postDetails.status !== 'closed' &&                       // NEW
+                    user?.id !== Number(postDetails.sender?.id) &&
+                    !postDetails.handshakes?.some(h => h.sender?.id === user?.id) && (
                     <div className='mt-4 flex justify-center'>
                         <button
                             onClick={handleSubmitHandshake}

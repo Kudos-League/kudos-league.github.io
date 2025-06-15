@@ -149,7 +149,7 @@ const Profile: React.FC<Props> = ({
                             (post) => filter === 'all' || post.type === filter
                         )
                         .map((post) => (
-                            <PostCard key={post.id} {...post} />
+                            <PostCard key={post.id} {...post} showHandshakeShortcut />
                         ))}
                 </div>
             )}

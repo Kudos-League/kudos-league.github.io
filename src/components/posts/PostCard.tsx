@@ -1,108 +1,111 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEndpointUrl } from 'shared/api/config';
-import { getUserKudos } from '@/shared/api/actions';
-import { useAuth } from '@/hooks/useAuth';
+import { getEndpointUrl } from '@/shared/api/config';
 import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
+import { useAuth } from '@/hooks/useAuth';
+import HandshakeCard from '@/components/handshakes/HandshakeCard';
 
 function truncateBody(body: string, max = 100) {
-    if (body.length <= max) return body;
-    return body.slice(0, max) + '…';
+    return body.length <= max ? body : body.slice(0, max) + '…';
+}
+
+function getUserHandshake(post: Partial<PostDTO>, viewerID?: number) {
+    if (!viewerID || !post.handshakes?.length) return;
+    return post.handshakes.find(
+        h => h.senderID === viewerID || h.receiverID === viewerID
+    );
 }
 
 interface Props extends PostDTO {
-    fake?: boolean;
+  fake?: boolean;
+  showHandshakeShortcut?: boolean;
 }
 
-export default function PostCard({
-    id,
-    title,
-    body,
-    // type,
-    images,
-    // tags,
-    sender,
-    status,
-    // rewardOffer,
-    fake
-}: Props) {
+export default function PostCard(props: Props) {
+    const {
+        id, title, body, images, sender, status, handshakes,
+        fake, showHandshakeShortcut = false
+    } = props;
+
+    const { user } = useAuth();
     const navigate = useNavigate();
-    const { token } = useAuth();
-
     const [imgError, setImgError] = useState(false);
-    const [kudos, setKudos] = React.useState<number>(sender?.kudos || 0);
-    
-    React.useEffect(() => {
-        const fetchKudos = async () => {
-            if (!sender?.id || kudos !== 0) return;
-            try {
-                const totalKudos = await getUserKudos(sender.id, token);
-                setKudos(totalKudos);
-            }
-            catch (error) {
-                console.error('Failed to fetch user kudos:', error);
-            }
-        };
-    
-        fetchKudos();
-    }, [sender?.id]);
 
-    const imageSrc = fake
-        ? images?.[0]
-        : images?.[0]
-            ? getEndpointUrl() + images[0]
-            : undefined;
-
+    const imageSrc = fake ? images?.[0] : images?.[0] ? getEndpointUrl() + images[0] : undefined;
     const showBodyInImageBox = imgError || !images?.length || !imageSrc;
+
+    const viewerHandshake = getUserHandshake(
+        { handshakes },
+        user?.id
+    );
 
     return (
         <div
+            className="border rounded p-4 mb-4 bg-white shadow hover:shadow-md cursor-pointer transition"
             onClick={() => navigate(`/post/${id}`)}
-            className='flex justify-between items-start border rounded p-4 mb-4 bg-white shadow hover:shadow-md cursor-pointer transition'
         >
-            <div className='flex-1 pr-4'>
-                <div className="flex items-center gap-2 mb-2">
-                    {status === 'closed' && (
-                        <span className="bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
-                            CLOSED
-                        </span>
+            <div className="flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        {status === 'closed' && (
+                            <span className="bg-red-600 text-white text-xs font-semibold
+                               px-2 py-1 rounded">
+                                CLOSED
+                            </span>
+                        )}
+                        <h2 className="text-lg font-bold">{title}</h2>
+                    </div>
+
+                    {sender && (
+                        <div className="mb-2">
+                            <UserCard
+                                userID={sender.id}
+                                username={sender.username}
+                                avatar={sender.avatar}
+                                kudos={sender.kudos}
+                            />
+                        </div>
                     )}
-                    <h2 className="text-lg font-bold">{title}</h2>
+
+                    {!images?.length && (
+                        <p className="text-sm text-gray-600 line-clamp-3">{body}</p>
+                    )}
                 </div>
 
-
-                {sender && (
-                    <div className='mb-2'>
-                        <UserCard
-                            userID={sender.id}
-                            username={sender.username}
-                            avatar={sender.avatar}
-                            kudos={kudos}
-                            large={false}
+                <div className="w-20 h-20 flex items-center justify-center">
+                    {showBodyInImageBox ? (
+                        <div className="w-full h-full bg-gray-100 text-xs text-gray-600
+                            rounded flex items-center justify-center text-center
+                            p-2 overflow-hidden">
+                            {truncateBody(body)}
+                        </div>
+                    ) : (
+                        <img
+                            src={imageSrc}
+                            alt={title}
+                            className="w-20 h-20 object-cover rounded"
+                            onError={() => setImgError(true)}
                         />
-                    </div>
-                )}
-
-                {!images?.length && (
-                    <p className='text-sm text-gray-600 line-clamp-3'>{body}</p>
-                )}
+                    )}
+                </div>
             </div>
 
-            <div className='w-20 h-20 flex items-center justify-center'>
-                {showBodyInImageBox ? (
-                    <div className='w-full h-full bg-gray-100 text-xs text-gray-600 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
-                        {truncateBody(body, 100)}
-                    </div>
-                ) : (
-                    <img
-                        src={imageSrc}
-                        alt={title}
-                        className='w-20 h-20 object-cover rounded'
-                        onError={() => setImgError(true)}
+            {viewerHandshake && showHandshakeShortcut && (
+                <div
+                    className="mt-4"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <HandshakeCard
+                        handshake={{
+                            ...viewerHandshake,
+                            post: props
+                        }}
+                        userID={user?.id}
+                        showPostDetails={false}
                     />
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

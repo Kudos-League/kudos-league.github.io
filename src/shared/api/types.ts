@@ -21,7 +21,7 @@ export type LocationDTO = {
 export type PostDTO = {
     id: number;
     sender?: UserDTO;
-    senderId: number;
+    senderID: number;
     title: string;
     body: string;
     isRequest: boolean;
@@ -34,6 +34,7 @@ export type PostDTO = {
     updatedAt: Date;
     location: LocationDTO;
     category: CategoryDTO;
+    handshakes?: HandshakeDTO[];
 };
 export interface CustomFile extends File {
     uri: string;
@@ -103,6 +104,8 @@ export type CreateRewardOfferDTO = {
     amount: number;
     currency: string;
     kudos: number;
+    receiverID?: number;
+    senderID?: number;
 };
 
 export type RewardOfferDTO = {

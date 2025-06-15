@@ -35,17 +35,25 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
     const [kudosValue, setKudosValue] = useState('');
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [error, setError] = useState<string | null>();
-
     const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
-
     const [imgError, setImgError] = useState(false);
 
     const imageSrc = handshake.post.images?.[0]
         ? getEndpointUrl() + handshake.post.images[0]
         : undefined;
+    const showBodyInImageBox = imgError || !handshake.post.images?.length || !imageSrc;
+    // ─── who is receiving the item? ──────────────────────────────────────────────
+    const canAccept = status === 'new' && userID === handshake.post.senderID;
+    const itemReceiverID =
+        handshake.post.type === 'gift'
+            ? handshake.senderID            // a gift post: requester is handshake.sender
+            : handshake.post.senderID;      // a request post: OP is the receiver
 
-    const showBodyInImageBox =
-    imgError || !handshake.post.images?.length || !imageSrc;
+    const gifterID =
+        handshake.post.type === 'gift'
+            ? handshake.post.senderID       // giver = post owner
+            : handshake.senderID;           // giver = handshake sender
+    const userIsItemReceiver = userID === itemReceiverID;
 
     useEffect(() => {
         const fetchSender = async () => {
@@ -61,17 +69,21 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
         fetchSender();
     }, [handshake, token]);
 
-    const handleAccept = async () => {
-        if (status !== 'new') return;
+    const handleAccept = async (): Promise<boolean> => {
+        setError(null);
+        if (status !== 'new') return false;
+
         setProcessing(true);
         try {
             await updateHandshake(handshake.id, { status: 'accepted' }, token);
             setStatus('accepted');
             setIsChatOpen(true);
+            return true;
         }
         catch (err) {
             console.error(err);
-            setError(err.toString());
+            setError('Could not accept handshake.');
+            return false;
         }
         finally {
             setProcessing(false);
@@ -90,7 +102,8 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                 postID: handshake.postID,
                 amount: Number(kudosValue),
                 currency: 'kudos',
-                kudos: Number(kudosValue)
+                kudos: Number(kudosValue),
+                receiverID: gifterID
             };
             await createRewardOffer(dto, token);
             await updateHandshake(handshake.id, { status: 'completed' }, token);
@@ -192,13 +205,10 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                         </div>
                     )}
 
-                    {userID === handshake.receiverID && status === 'new' && (
+                    {canAccept && (
                         <button
                             className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ml-4 self-start'
-                            onClick={async () => {
-                                await handleAccept();
-                                setIsChatOpen(true);
-                            }}
+                            onClick={handleAccept}
                             disabled={processing}
                         >
                             {processing ? 'Accepting...' : 'Accept'}
@@ -206,10 +216,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     )}
                 </div>
 
-                {status === 'accepted' &&
-                ((handshake.post.type === 'request' && isSender) ||
-                    (handshake.post.type === 'gift' &&
-                        handshake.senderID === userID)) && (
+                {status === 'accepted' && userIsItemReceiver && (
                     <div className='space-y-2'>
                         <label className='block text-sm font-medium'>
                             Assign Kudos
@@ -250,6 +257,10 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     >
                         Undo Accept
                     </button>
+                )}
+
+                {error && (
+                    <p className='mt-2 text-sm text-red-600'>{error}</p>
                 )}
             </div>
 

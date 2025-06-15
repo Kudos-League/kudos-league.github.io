@@ -6,7 +6,6 @@ import MapDisplay from '@/components/Map';
 import AvatarComponent from '@/components/users/Avatar';
 import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
-import { getUserKudos } from '@/shared/api/actions';
 
 interface Props {
     user: UserDTO;
@@ -24,25 +23,10 @@ const ProfileHeader: React.FC<Props> = ({
     isSelf
 }) => {
     const { isLoggedIn, token } = useAuth();
-    const [kudos, setKudos] = React.useState<number>(user.kudos || 0);
-
-    React.useEffect(() => {
-        const fetchKudos = async () => {
-            try {
-                const totalKudos = await getUserKudos(user.id, token);
-                setKudos(totalKudos);
-            }
-            catch (error) {
-                console.error('Failed to fetch user kudos:', error);
-            }
-        };
-
-        fetchKudos();
-    }, [user.id]);
 
     const getUserTitle = () => {
-        if (kudos > 10000) return 'Questing Knight';
-        if (kudos > 5000) return 'Pro';
+        if (user.kudos > 10000) return 'Questing Knight';
+        if (user.kudos > 5000) return 'Pro';
         return 'Novice';
     };
 
@@ -67,7 +51,7 @@ const ProfileHeader: React.FC<Props> = ({
             <p className='text-gray-500 text-sm'>{getUserTitle()}</p>
             <h1 className='text-2xl font-bold'>{user.username}</h1>
             <p className='text-gray-600 text-sm'>
-                {kudos || 0} Kudos
+                {user.kudos || 0} Kudos
             </p>
 
             {user.badges?.length && (
