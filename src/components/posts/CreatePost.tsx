@@ -7,7 +7,7 @@ import { usePosts } from '@/hooks/usePosts';
 import Input from '@/components/forms/Input';
 import TagInput from '@/components/TagInput';
 import { getCategories } from '@/shared/api/actions';
-import { badwords, MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
+import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 type FormValues = {
@@ -35,7 +35,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [location, setLocation] = useState<LocationDTO | null>(null);
     const [categories, setCategories] = useState<CategoryDTO[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
-    const [badWordFlag, setBadWordFlag] = useState(false);
 
     useEffect(() => {
         getCategories().then(setCategories).catch(console.error);
@@ -45,10 +44,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         (tags: { id: string; name: string }[]) => {
             const tagNames = tags.map((t) => t.name);
             form.setValue('tags', tagNames);
-            const hasBad = tagNames.some((t) =>
-                badwords.includes(t.toLowerCase().trim())
-            );
-            setBadWordFlag(hasBad);
         },
         [form]
     );
@@ -185,11 +180,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 initialTags={form.watch('tags')}
                 onTagsChange={handleTagsChange}
             />
-            {badWordFlag && (
-                <p className='text-red-600 text-sm'>
-                    Tag contains a blocked word.
-                </p>
-            )}
 
             <label className='block text-sm font-semibold mt-4'>Location</label>
             <MapDisplay

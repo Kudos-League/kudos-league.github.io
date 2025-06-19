@@ -37,16 +37,22 @@ function toFormData(dto: Record<string, any>): FormData {
 
         if (
             Array.isArray(val) &&
-            val.length &&
+            val.length > 0 &&
             (val[0] instanceof File || val[0] instanceof Blob)
         ) {
             val.forEach((f) => fd.append(key, f));
         }
         else if (
+            Array.isArray(val) &&
+            typeof val[0] !== 'object'
+        ) {
+            // Primitive array (e.g., tags: string[])
+            fd.append(key, JSON.stringify(val)); // Send as JSON string
+        }
+        else if (
             val !== null &&
             typeof val === 'object' &&
-            !(val instanceof File) &&
-            !(val instanceof Blob)
+            !(val instanceof File || val instanceof Blob)
         ) {
             fd.append(key, JSON.stringify(val));
         }
@@ -257,7 +263,8 @@ export async function updateUser(
     token: string
 ) {
     if (!token) throw Error('Invalid token');
-    const response = await instance.patch(`/users/${id}`, request, {
+    const formData = toFormData(request);
+    const response = await instance.patch(`/users/${id}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`

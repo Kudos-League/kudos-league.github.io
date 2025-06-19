@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 
 import type { ChannelDTO, CreateHandshakeDTO, PostDTO } from "@/shared/api/types";
+import Pill from '../common/Pill';
 
 interface Props {
     id?: string;
@@ -394,7 +395,7 @@ export default function PostDetails(props: Props) {
                         Category: {postDetails.category.name}
                     </p>
                 )}
-                <div className='flex gap-2 mt-2'>
+                <div className='flex flex-wrap items-center gap-2 mt-2'>
                     <span
                         className={`px-2 py-1 rounded text-white text-xs ${postDetails.type === 'request' ? 'bg-blue-500' : 'bg-green-500'}`}
                     >
@@ -403,6 +404,10 @@ export default function PostDetails(props: Props) {
                     <span className='px-2 py-1 rounded bg-gray-700 text-white text-xs'>
                         {postDetails.status}
                     </span>
+
+                    {postDetails.tags?.map((tag, i) => (
+                        <Pill key={i} name={tag.name} />
+                    ))}
                 </div>
 
                 {postDetails.status !== 'closed' && user?.id === postDetails.sender?.id && (
@@ -501,7 +506,7 @@ export default function PostDetails(props: Props) {
 
             {/* Map */}
             {postDetails.location?.regionID && (
-                <div className='mb-6'>
+                <div className='mb-6 flex justify-center'>
                     <MapDisplay
                         showAddressBar={false}
                         regionID={postDetails.location.regionID}

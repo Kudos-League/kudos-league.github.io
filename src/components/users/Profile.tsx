@@ -12,7 +12,6 @@ import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 import { useAuth } from '@/hooks/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import PostCard from '@/components/posts/PostCard';
-import Achievements from '@/components/users/Achievements';
 import EditProfile from '@/components/users/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
@@ -22,6 +21,7 @@ type Props = {
     posts: PostDTO[];
     handshakes: HandshakeDTO[];
     events: EventDTO[];
+    setUser?: (user: UserDTO) => void;
 };
 
 const Profile: React.FC<Props> = ({
@@ -29,6 +29,7 @@ const Profile: React.FC<Props> = ({
     posts,
     handshakes,
     events,
+    setUser
 }) => {
     const { user: currentUser, token } = useAuth();
     const navigate = useNavigate();
@@ -56,6 +57,7 @@ const Profile: React.FC<Props> = ({
                 targetUser={user}
                 userSettings={user.settings}
                 onClose={() => setEditing(false)}
+                setTargetUser={setUser}
             />
         );
     }
@@ -70,9 +72,6 @@ const Profile: React.FC<Props> = ({
                 onEditProfile={() => setEditing(true)}
                 onStartDM={handleStartDM}
             />
-
-            {/* Achievements */}
-            <Achievements />
 
             {/* Filter Buttons */}
             <div className='flex gap-4 justify-center'>

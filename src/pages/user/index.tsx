@@ -119,6 +119,7 @@ export default function UserProfile() {
                 posts={posts}
                 handshakes={handshakes}
                 events={events}
+                setUser={setUser}
             />
         </div>
     );

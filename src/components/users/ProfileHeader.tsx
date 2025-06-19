@@ -6,6 +6,7 @@ import MapDisplay from '@/components/Map';
 import AvatarComponent from '@/components/users/Avatar';
 import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
+import Pill from '../common/Pill';
 
 interface Props {
     user: UserDTO;
@@ -22,7 +23,7 @@ const ProfileHeader: React.FC<Props> = ({
     onStartDM,
     isSelf
 }) => {
-    const { isLoggedIn, token } = useAuth();
+    const { isLoggedIn } = useAuth();
 
     const getUserTitle = () => {
         if (user.kudos > 10000) return 'Questing Knight';
@@ -54,7 +55,7 @@ const ProfileHeader: React.FC<Props> = ({
                 {user.kudos || 0} Kudos
             </p>
 
-            {user.badges?.length && (
+            {user.badges?.length ? (
                 <div className='flex justify-center flex-wrap gap-2 mt-4'>
                     {user.badges.map((badge, i) => (
                         <Tippy content={badge.name} key={i}>
@@ -66,7 +67,7 @@ const ProfileHeader: React.FC<Props> = ({
                         </Tippy>
                     ))}
                 </div>
-            )}
+            ) : null}
 
             <div className='flex justify-center gap-4 mt-6'>
                 {isLoggedIn && !isSelf && (
@@ -87,6 +88,14 @@ const ProfileHeader: React.FC<Props> = ({
                 )}
             </div>
 
+            {user.tags && user.tags.length > 0 && (
+                <div className='mt-4 flex flex-wrap justify-center gap-2'>
+                    {user.tags.map((tag, i) => (
+                        <Pill key={i} name={tag.name} />
+                    ))}
+                </div>
+            )}
+
             <p className='mt-6 text-gray-700 text-sm italic'>
                 {userSettings?.about || 'No bio available'}
             </p>
@@ -96,13 +105,15 @@ const ProfileHeader: React.FC<Props> = ({
                     <h3 className='text-sm font-semibold mb-1 text-gray-600'>
                         Location
                     </h3>
-                    <MapDisplay
-                        regionID={user.location.regionID}
-                        showAddressBar={false}
-                        exactLocation={true}
-                        width={400}
-                        height={200}
-                    />
+                    <div className='flex justify-center'>
+                        <MapDisplay
+                            regionID={user.location.regionID}
+                            showAddressBar={false}
+                            exactLocation={true}
+                            width={400}
+                            height={200}
+                        />
+                    </div>
                 </div>
             )}
 

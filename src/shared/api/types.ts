@@ -37,7 +37,9 @@ export type PostDTO = {
     handshakes?: HandshakeDTO[];
     rewardOffers?: RewardOfferDTO[];
     messages?: MessageDTO[];
+    tags?: Tag[];
 };
+
 export interface CustomFile extends File {
     uri: string;
 }
