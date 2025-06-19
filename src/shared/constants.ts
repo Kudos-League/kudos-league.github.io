@@ -35,3 +35,9 @@ export const getFilters = (isSelf: boolean) => {
         ? [...common, FiltersEnum.RequestsGifts] as const
         : common;
 };
+
+export const MAX_FILE_SIZE_MB = 5;
+export const MAX_FILE_COUNT = 5;
+
+// TODO: Why is this here???
+export const badwords = ['badword', 'badword2', 'badword3'];

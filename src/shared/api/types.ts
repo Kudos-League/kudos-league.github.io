@@ -35,6 +35,8 @@ export type PostDTO = {
     location: LocationDTO;
     category: CategoryDTO;
     handshakes?: HandshakeDTO[];
+    rewardOffers?: RewardOfferDTO[];
+    messages?: MessageDTO[];
 };
 export interface CustomFile extends File {
     uri: string;
@@ -113,7 +115,7 @@ export type RewardOfferDTO = {
     postId: number;
     senderId: number;
     amount: number;
-    currency: string; //TODO: what?
+    kudosFinal: number;
     createdAt: Date;
     updatedAt: Date;
 };

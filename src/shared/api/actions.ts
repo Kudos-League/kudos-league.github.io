@@ -114,7 +114,7 @@ export async function getPosts({
 }
 
 /** @throws {AxiosError} */
-export async function getPostDetails(token: string, id: string) {
+export async function getPostDetails(token: string, id: number) {
     const response = await instance.get(`/posts/${id}`, {
         headers: {
             'Content-Type': 'multipart/form-data',

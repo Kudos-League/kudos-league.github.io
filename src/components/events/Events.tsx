@@ -1,11 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { EventDTO } from '@/shared/api/types';
-import { getEvents } from '@/shared/api/actions';
+
+type Props = {
+    events: EventDTO[];
+}
 
 const locales = {
     'en-US': require('date-fns/locale/en-US')
@@ -24,30 +27,12 @@ const months = Array.from({ length: 12 }, (_, i) => ({
     value: i
 }));
 
-export default function EventsPage() {
+export default function Events({ events }: Props) {
     const navigate = useNavigate();
     const calendarRef = useRef<any>(null);
 
-    const [events, setEvents] = useState<EventDTO[]>([]);
-    const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [selectedDateEvents, setSelectedDateEvents] = useState<EventDTO[] | null>(null);
-
-    useEffect(() => {
-        const fetch = async () => {
-            try {
-                const res = await getEvents({});
-                setEvents(res);
-            }
-            catch (e) {
-                console.error('Failed to fetch events:', e);
-            }
-            finally {
-                setLoading(false);
-            }
-        };
-        fetch();
-    }, []);
 
     const handleMonthChange = (month: number) => {
         const newDate = new Date(currentDate.getFullYear(), month, 1);
@@ -100,19 +85,17 @@ export default function EventsPage() {
                 </div>
             </div>
 
-            {loading ? (
-                <p className="text-center text-lg">Loading events...</p>
-            ) : selectedDateEvents ? (
+            {selectedDateEvents ? (
                 <div>
                     <button
                         onClick={() => setSelectedDateEvents(null)}
                         className="text-sm text-blue-600 underline mb-4"
                     >
-			← Back to calendar
+                        ← Back to calendar
                     </button>
 
                     <h2 className="text-xl font-semibold mb-2">
-			Events on {format(new Date(selectedDateEvents[0]?.startTime || new Date()), 'PPP')}
+                        Events on {format(new Date(selectedDateEvents[0]?.startTime || new Date()), 'PPP')}
                     </h2>
 
                     {selectedDateEvents.length === 0 ? (

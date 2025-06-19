@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import Layout from '@/components/navigation/Layout';
+
 import Home from '@/pages/home';
 
 import Success from '@/pages/donate/sucess';
@@ -14,7 +16,8 @@ import EventDetails from '@/pages/event';
 import SignIn from '@/pages/login';
 import SignUp from '@/pages/signup';
 
-import Layout from './Layout';
+import EventsPage from '@/pages/events';
+
 import DonatePage from '@/pages/donate';
 import AdminDashboard from '@/pages/admin';
 
@@ -22,7 +25,6 @@ import CreateEvent from '@/components/events/CreateEvent';
 import Leaderboard from '@/components/Leaderboard';
 import DMChat from '@/components/messages/DMChat';
 import PublicChat from '@/components/messages/PublicChat';
-import EventsPage from '@/components/events/Events';
 
 function AppNavigator() {
     return (
@@ -37,7 +39,7 @@ function AppNavigator() {
                 <Route path='/post/:id' element={<Post />} />
                 <Route path='/create-post' element={<CreatePost />} />
                 <Route path='/user/:id' element={<Profile />} />
-                <Route path='/event/:eventId' element={<EventDetails />} />
+                <Route path='/event/:id' element={<EventDetails />} />
                 <Route path ='/events' element={<EventsPage />} />
                 <Route path='/create-event' element={<CreateEvent />} />
 
