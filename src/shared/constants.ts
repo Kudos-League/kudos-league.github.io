@@ -38,3 +38,5 @@ export const getFilters = (isSelf: boolean) => {
 
 export const MAX_FILE_SIZE_MB = 5;
 export const MAX_FILE_COUNT = 5;
+
+export const LOCAL_FMT = "yyyy-MM-dd'T'HH:mm";

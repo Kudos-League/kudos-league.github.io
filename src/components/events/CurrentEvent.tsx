@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { EventDTO } from '@/shared/api/types';
 import { getEvents } from '@/shared/api/actions';
 import dayjs from 'dayjs';
 import { useAuth } from '@/hooks/useAuth';
+import EventCard from './EventCard';
 
 export default function CurrentEvent() {
-    const navigate = useNavigate();
     const { user } = useAuth();
 
     const [events, setEvents] = useState<EventDTO[]>([]);
@@ -53,8 +52,6 @@ export default function CurrentEvent() {
         fetch();
     }, [locationFilter, timeFilter, user?.location?.name]);
 
-    const currentEvent = events[currentIndex];
-
     return (
         <div className='my-6 px-4'>
             <h2 className='text-xl font-bold mb-2 text-center'>
@@ -87,7 +84,7 @@ export default function CurrentEvent() {
             </div>
 
             {events.length > 0 ? (
-                <div className='flex items-center justify-center gap-4'>
+                <div className='flex items-center justify-center gap-4 list-none'>
                     <button
                         onClick={() =>
                             setCurrentIndex(
@@ -98,37 +95,7 @@ export default function CurrentEvent() {
                         ◀
                     </button>
 
-                    <div
-                        className='p-4 bg-gray-100 rounded shadow cursor-pointer max-w-md text-center'
-                        onClick={() => navigate(`/event/${currentEvent.id}`)}
-                    >
-                        <h3 className='font-bold text-lg'>
-                            {currentEvent.title}
-                        </h3>
-                        <p className='text-gray-600 mb-2'>
-                            {currentEvent.description}
-                        </p>
-                        <p className='text-sm text-gray-500'>
-                            {dayjs(currentEvent.startTime).format('MMM D, YYYY h:mm A')} –{' '}
-                            {currentEvent.endTime
-                                ? dayjs(currentEvent.endTime).isValid()
-                                    ? dayjs(currentEvent.endTime).format('MMM D, YYYY h:mm A')
-                                    : 'Invalid end time'
-                                : 'Ongoing'}
-                        </p>
-
-                        {currentEvent.location?.name && (
-                            <p className='text-sm text-gray-400 mt-1'>
-                            📍 {currentEvent.location?.name || 'Global'}
-                            </p>
-                        )}
-
-                        {typeof currentEvent.participantCount === 'number' && (
-                            <p className='text-sm text-blue-500 mt-1'>
-                                👥 {currentEvent.participantCount} participant{currentEvent.participantCount !== 1 ? 's' : ''}
-                            </p>
-                        )}
-                    </div>
+                    <EventCard event={events[currentIndex]} />
 
                     <button
                         onClick={() =>

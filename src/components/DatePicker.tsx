@@ -1,4 +1,6 @@
 import React from 'react';
+import { format } from 'date-fns';
+import { LOCAL_FMT } from '@/shared/constants';
 
 interface UniversalDatePickerProps {
     date: Date;
@@ -11,7 +13,7 @@ export default function UniversalDatePickerWeb({
     onChange,
     label
 }: UniversalDatePickerProps) {
-    const formattedValue = date.toISOString().slice(0, 16);
+    const formattedValue = format(date, LOCAL_FMT);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;

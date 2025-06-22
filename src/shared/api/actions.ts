@@ -244,16 +244,12 @@ export async function getUserEvents(
     }
 ): Promise<EventDTO[]> {
     const queryString = filters ? toQueryParams(filters) : '';
-    const response = await instance.get(`/events${queryString}`, {
+    const response = await instance.get(`/users/${id}/events${queryString}`, {
         headers: {
             Authorization: `Bearer ${token}`
         }
     });
-    const userEvents = response.data.filter(
-        (event: EventDTO) =>
-            event.creatorID && event.creatorID.toString() === id
-    );
-    return userEvents;
+    return response.data;
 }
 
 /** @throws {AxiosError} */

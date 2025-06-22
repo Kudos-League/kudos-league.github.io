@@ -15,6 +15,7 @@ import PostCard from '@/components/posts/PostCard';
 import EditProfile from '@/components/users/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
+import EventCard from '../events/EventCard';
 
 type Props = {
     user: UserDTO;
@@ -114,30 +115,14 @@ const Profile: React.FC<Props> = ({
                     )}
                 </div>
             ) : filter === 'events' ? (
-                <div className='grid gap-4'>
+                <div className='grid gap-4 list-none'>
                     {events.length === 0 ? (
                         <p className='text-center text-gray-500'>
                             No events available.
                         </p>
                     ) : (
                         events.map((event) => (
-                            <div
-                                key={event.id}
-                                className='bg-white p-4 rounded shadow hover:shadow-md transition cursor-pointer'
-                                onClick={() =>
-                                    console.log(
-                                        'TODO: Navigate to event',
-                                        event.id
-                                    )
-                                }
-                            >
-                                <h3 className='text-lg font-bold'>
-                                    {event.title}
-                                </h3>
-                                <p className='text-sm text-gray-600'>
-                                    {event.description}
-                                </p>
-                            </div>
+                            <EventCard key={event.id} event={event} />
                         ))
                     )}
                 </div>

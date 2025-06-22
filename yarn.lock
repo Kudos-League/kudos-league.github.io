@@ -5939,6 +5939,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"date-fns-tz@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "date-fns-tz@npm:3.2.0"
+  peerDependencies:
+    date-fns: ^3.0.0 || ^4.0.0
+  checksum: 10/8ab4745f00b40381220f0a7a2ec16e217cb629d4018a19047264d289dd260322baa23e19b3ed63c7e553f9ad34bea9dea105391132930a3e141e9a0a53e54af2
+  languageName: node
+  linkType: hard
+
 "date-fns@npm:^4.1.0":
   version: 4.1.0
   resolution: "date-fns@npm:4.1.0"
@@ -12479,6 +12488,7 @@ __metadata:
     autoprefixer: "npm:^10.4.21"
     axios: "npm:^1.9.0"
     date-fns: "npm:^4.1.0"
+    date-fns-tz: "npm:^3.2.0"
     dayjs: "npm:^1.11.13"
     dotenv-cli: "npm:^8.0.0"
     eslint: "npm:8"

@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+
 import { useAuth } from "@/hooks/useAuth";
 import { EventDTO } from "@/shared/api/types";
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
@@ -14,6 +17,8 @@ export default function EventDetails({ event, setEvent }: Props) {
     const { user, token } = useAuth();
 
     const [joining, setJoining] = useState(false);
+
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const handleJoin = async () => {
         if (!token || !event.id) return;
@@ -56,7 +61,11 @@ export default function EventDetails({ event, setEvent }: Props) {
             <h1 className='text-2xl font-bold'>{event.title}</h1>
             <p className='text-gray-700'>{event.description}</p>
             <p className='text-sm text-gray-500 italic'>
-                {event.startTime} – {event.endTime}
+                {format(toZonedTime(new Date(event.startTime), tz), "PPP p")}
+                {' – '}
+                {event.endTime
+                    ? format(toZonedTime(new Date(event.endTime), tz), "PPP p")
+                    : 'Ongoing'}
             </p>
     
             {event.location?.regionID && (
