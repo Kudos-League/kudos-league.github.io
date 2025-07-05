@@ -10,7 +10,7 @@ export default function EventsPage() {
     useEffect(() => {
         const fetch = async () => {
             try {
-                const res = await getEvents();
+                const res = await getEvents({ filter: 'all' });
                 setEvents(res);
             }
             catch (e) {
