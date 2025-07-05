@@ -491,7 +491,7 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-100 rounded p-4 mb-6'>
+                <div className='bg-gray-100 rounded p-4 mb-6 break-all'>
                     <p>{postDetails.body}</p>
                     {postDetails.rewardOffers?.[0]?.kudosFinal && (
                         <p className='mt-2 font-semibold text-blue-600'>

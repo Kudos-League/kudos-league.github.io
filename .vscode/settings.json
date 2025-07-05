@@ -4,8 +4,8 @@
     "editor.formatOnSave": true,
     "editor.formatOnSaveMode": "file",
     "editor.codeActionsOnSave": {
-        "source.fixAll": true, // enables all fixers, not just ESLint
-        "source.fixAll.eslint": true // specifically ESLint
+        "source.fixAll": "explicit",
+        "source.fixAll.eslint": "explicit"
     },
 
     // ESLint support for various file types

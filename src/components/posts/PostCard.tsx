@@ -45,16 +45,16 @@ export default function PostCard(props: Props) {
             className="border rounded p-4 mb-4 bg-white shadow hover:shadow-md cursor-pointer transition"
             onClick={() => navigate(`/post/${id}`)}
         >
-            <div className="flex justify-between items-start">
-                <div className="flex-1 pr-4">
+            <div className="flex justify-between items-start gap-4 w-full">
+                <div className="flex-1 pr-4 w-4/5">
                     <div className="flex items-center gap-2 mb-2">
                         {status === 'closed' && (
                             <span className="bg-red-600 text-white text-xs font-semibold
-                               px-2 py-1 rounded">
+                               px-2 py-1 rounded whitespace-nowrap">
                                 CLOSED
                             </span>
                         )}
-                        <h2 className="text-lg font-bold">{title}</h2>
+                        <h2 className="text-lg font-bold break-words">{title}</h2>
                     </div>
 
                     {sender && (
@@ -68,12 +68,10 @@ export default function PostCard(props: Props) {
                         </div>
                     )}
 
-                    {!images?.length && (
-                        <p className="text-sm text-gray-600 line-clamp-3">{body}</p>
-                    )}
+                    <p className="text-sm text-gray-600 line-clamp-3 mr-2 break-words">{body}</p>
                 </div>
 
-                <div className="w-20 h-20 flex items-center justify-center">
+                <div className="w-20 h-20 flex items-center justify-center mt-2">
                     {showBodyInImageBox ? (
                         <div className="w-full h-full bg-gray-100 text-xs text-gray-600
                             rounded flex items-center justify-center text-center

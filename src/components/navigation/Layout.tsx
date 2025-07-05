@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import AvatarComponent from '@/components/users/Avatar';
 
@@ -25,6 +25,26 @@ const FooterLink: React.FC<FooterLinkProps> = ({ to, icon: Icon, label }) => (
     >
         <Icon className='w-6 h-6' />
         <div className='text-xs'>{label}</div>
+    </Link>
+);
+
+// New component for sidebar navigation links with active state
+type SidebarLinkProps = {
+    to: string;
+    children: React.ReactNode;
+    isActive?: boolean;
+};
+
+const SidebarLink: React.FC<SidebarLinkProps> = ({ to, children, isActive }) => (
+    <Link 
+        to={to} 
+        className={`px-3 py-2 rounded-md transition-colors duration-200 ${
+            isActive 
+                ? 'bg-blue-100 text-blue-700 font-semibold border-l-4 border-blue-500' 
+                : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+        }`}
+    >
+        {children}
     </Link>
 );
 
@@ -72,24 +92,45 @@ const Layout: React.FC = () => {
     const { isLoggedIn, user, logout } = useAuth();
     const [showDropdown, setShowDropdown] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Helper function to check if a path is active
+    const isActivePath = (path: string) => {
+        if (path === '/') {
+            return location.pathname === '/';
+        }
+        return location.pathname.startsWith(path);
+    };
 
     return (
         <div className='flex h-screen'>
             {/* Sidebar */}
             <aside className='w-60 bg-white border-r border-gray-200 shadow-sm p-4'>
-                <nav className='flex flex-col gap-2'>
-                    <Link to='/' className='font-semibold text-blue-600'>
+                <nav className='flex flex-col gap-1'>
+                    <SidebarLink to='/' isActive={isActivePath('/')}>
                         Home
-                    </Link>
+                    </SidebarLink>
                     {isLoggedIn && (
                         <>
-                            <Link to='/create-post'>Create Gift / Request</Link>
-                            <Link to='/donate'>Donate</Link>
-                            <Link to='/leaderboard'>Leaderboard</Link>
-                            <Link to='/chat'>Forum</Link>
-                            <Link to='/events'>Events</Link>
+                            <SidebarLink to='/create-post' isActive={isActivePath('/create-post')}>
+                                Create Gift / Request
+                            </SidebarLink>
+                            <SidebarLink to='/donate' isActive={isActivePath('/donate')}>
+                                Donate
+                            </SidebarLink>
+                            <SidebarLink to='/leaderboard' isActive={isActivePath('/leaderboard')}>
+                                Leaderboard
+                            </SidebarLink>
+                            <SidebarLink to='/chat' isActive={isActivePath('/chat')}>
+                                Forum
+                            </SidebarLink>
+                            <SidebarLink to='/events' isActive={isActivePath('/events')}>
+                                Events
+                            </SidebarLink>
                             {user?.admin && (
-                                <Link to='/admin'>Admin Dashboard</Link>
+                                <SidebarLink to='/admin' isActive={isActivePath('/admin')}>
+                                    Admin Dashboard
+                                </SidebarLink>
                             )}
                         </>
                     )}

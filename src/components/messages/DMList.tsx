@@ -61,7 +61,7 @@ const DMList: React.FC<Props> = ({
                                     {channel.lastMessage?.content?.slice(
                                         0,
                                         32
-                                    ) || 'No messages'}
+                                    ) || 'No messages received yet'}
                                 </p>
                             </div>
                         </div>

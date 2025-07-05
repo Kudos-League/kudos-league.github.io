@@ -18,6 +18,11 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const form = useForm<SignUpFormValues>();
     const navigate = useNavigate();
 
+    // Password gate state
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [accessPassword, setAccessPassword] = useState('');
+    const [accessError, setAccessError] = useState<string | null>(null);
+
     const [formPassword, setFormPassword] = useState({
         value: '',
         visible: false
@@ -28,6 +33,17 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isVerifying, setIsVerifying] = useState(false);
+
+    const handleAccessSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (accessPassword === 'kudos') {
+            setIsAuthorized(true);
+            setAccessError(null);
+        }
+        else {
+            setAccessError('Incorrect password');
+        }
+    };
 
     const onSubmit = async () => {
         const { username, email } = form.getValues();
@@ -56,6 +72,59 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         }
     };
 
+    // Password gate screen
+    if (!isAuthorized) {
+        return (
+            <div className='min-h-screen flex items-center justify-center relative'>
+                <img
+                    src='/images/login_background.jpg'
+                    className='absolute inset-0 w-full h-full object-cover opacity-80 -z-10'
+                />
+                <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
+                    <h1 className='text-3xl font-bold text-center mb-6'>Access Required</h1>
+                    <p className='text-gray-600 text-center mb-6'>
+                        Please enter the access password to continue with sign-up.
+                    </p>
+
+                    <form onSubmit={handleAccessSubmit} className='space-y-4'>
+                        <input
+                            className='w-full p-3 rounded bg-gray-100'
+                            placeholder='Access Password'
+                            type='password'
+                            value={accessPassword}
+                            onChange={(e) => setAccessPassword(e.target.value)}
+                        />
+                        
+                        <button
+                            type='submit'
+                            className='w-full py-3 rounded text-white font-bold bg-blue-600 hover:bg-blue-700'
+                        >
+                            Continue
+                        </button>
+
+                        <div className='text-center text-sm mt-4'>
+                            Already have an account?{' '}
+                            <button
+                                type='button'
+                                onClick={() => navigate('/login')}
+                                className='text-blue-500 font-bold'
+                            >
+                                Log In
+                            </button>
+                        </div>
+
+                        {accessError && (
+                            <p className='text-red-500 text-center mt-2'>
+                                {accessError}
+                            </p>
+                        )}
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    // Original sign-up form
     return (
         <div className='min-h-screen flex items-center justify-center relative'>
             <img

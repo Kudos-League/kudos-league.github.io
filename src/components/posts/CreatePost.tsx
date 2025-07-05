@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { CategoryDTO, LocationDTO } from '@/shared/api/types';
 import MapDisplay from '@/components/Map';
@@ -29,16 +29,25 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const { isLoggedIn, token } = useAuth();
     const { addPost } = usePosts();
     const navigate = useNavigate();
+    const routerLocation = useLocation();
 
     const [showModal, setShowModal] = useState(false);
     const [postType, setPostType] = useState<'gift' | 'request'>('gift');
     const [location, setLocation] = useState<LocationDTO | null>(null);
     const [categories, setCategories] = useState<CategoryDTO[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
+    
+    // New state for managing selected images
+    const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
     useEffect(() => {
         getCategories().then(setCategories).catch(console.error);
     }, []);
+
+    // Update form when selectedImages changes
+    useEffect(() => {
+        form.setValue('files', selectedImages);
+    }, [selectedImages, form]);
 
     const handleTagsChange = useCallback(
         (tags: { id: string; name: string }[]) => {
@@ -59,26 +68,59 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         return null;
     };
 
+    // Handle adding new images
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+
+        const newFiles = Array.from(files);
+        const updatedImages = [...selectedImages, ...newFiles];
+        
+        // Validate the total number of files
+        const fileError = validateFiles(updatedImages);
+        if (fileError) {
+            setServerError(fileError);
+            return;
+        }
+
+        setSelectedImages(updatedImages);
+        setServerError(null);
+        
+        // Reset the input so the same file can be selected again if needed
+        event.target.value = '';
+    };
+
+    // Handle removing an image
+    const removeImage = (indexToRemove: number) => {
+        setSelectedImages(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    // Create preview URL for an image
+    const createImagePreview = (file: File) => {
+        return URL.createObjectURL(file);
+    };
+
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         if (!isLoggedIn) return setShowLoginForm(true);
 
-        const fileError = validateFiles(data.files);
+        const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
-        const cleanedFiles = Array.isArray(data.files) ? data.files : [];
+        setLocation(routerLocation.state as LocationDTO || null);
         const newPost = {
             title: data.title,
             body: data.body,
             type: postType,
             tags: data.tags,
             categoryID: data.categoryID,
-            files: cleanedFiles,
+            files: selectedImages,
             location
         };
 
         try {
             await addPost(newPost, token).unwrap();
             form.reset();
+            setSelectedImages([]); // Clear selected images
             navigate('/feed');
         }
         catch (err: any) {
@@ -168,13 +210,47 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 </p>
             )}
 
-            <Input
-                name='files'
-                label='Attach Images'
-                form={form}
-                type='file-image'
-                multipleFiles
-            />
+            {/* Enhanced Image Upload Section */}
+            <div>
+                <label className='block text-sm font-semibold mb-2'>
+                    Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
+                </label>
+                
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="border rounded w-full px-3 py-2 mb-4"
+                    disabled={selectedImages.length >= MAX_FILE_COUNT}
+                />
+
+                {/* Display selected images with delete buttons */}
+                {selectedImages.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {selectedImages.map((file, index) => (
+                            <div key={index} className="relative group">
+                                <img
+                                    src={createImagePreview(file)}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-24 object-cover rounded border"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeImage(index)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-600 transition-colors"
+                                    title="Remove image"
+                                >
+                                    ×
+                                </button>
+                                <div className="text-xs text-gray-500 mt-1 truncate">
+                                    {file.name}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             <TagInput
                 initialTags={form.watch('tags')}

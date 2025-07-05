@@ -62,7 +62,7 @@ export default function DMChat() {
     };
 
     return (
-        <div className='flex h-screen'>
+        <div className='flex h-full'>
             <DMList
                 channels={channels}
                 onSearch={setSearchQuery}

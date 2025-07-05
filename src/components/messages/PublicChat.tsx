@@ -84,7 +84,7 @@ export default function PublicChat() {
     };
 
     return (
-        <div className='flex h-screen bg-white overflow-hidden'>
+        <div className='flex h-full bg-white overflow-hidden'>
             {/* Left: Channel List */}
             <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
                 {channels.map((channel) => (
