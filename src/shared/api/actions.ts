@@ -237,11 +237,11 @@ export async function getUserEvents(
     id: string | number = 'me',
     token: string,
     filters?: {
-        startDate?: string;
-        endDate?: string;
-        location?: string;
-        all?: 'true' | 'false';
-    }
+		startDate?: string;
+		endDate?: string;
+		location?: string;
+		filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
+	}
 ): Promise<EventDTO[]> {
     const queryString = filters ? toQueryParams(filters) : '';
     const response = await instance.get(`/users/${id}/events${queryString}`, {
@@ -581,10 +581,10 @@ export async function leaveEvent(
 
 /** @throws {AxiosError} */
 export async function getEvents(filters?: {
-    startDate?: string;
-    endDate?: string;
-    location?: string;
-    all?: 'true' | 'false';
+	startDate?: string;
+	endDate?: string;
+	location?: string;
+	filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
 }): Promise<EventDTO[]> {
     const queryString = filters ? toQueryParams(filters) : '';
     const response = await instance.get(`/events${queryString}`);

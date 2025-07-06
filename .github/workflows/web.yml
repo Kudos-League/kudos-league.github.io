@@ -6,8 +6,7 @@ permissions:
 on:
     push:
         branches:
-            #- main
-            - rewrite/web
+            - main
     workflow_dispatch:
 
 jobs:
@@ -17,8 +16,7 @@ jobs:
             - name: Checkout Repository
               uses: actions/checkout@v3
               with:
-                  #ref: main
-                  ref: rewrite/web
+                  ref: main
                   fetch-depth: 0
 
             - name: Enable Corepack and Set Correct Yarn Version
