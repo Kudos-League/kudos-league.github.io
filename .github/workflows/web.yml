@@ -6,8 +6,7 @@ permissions:
 on:
     push:
         branches:
-            #- main
-            - rewrite/web
+            - main
     workflow_dispatch:
 
 jobs:
