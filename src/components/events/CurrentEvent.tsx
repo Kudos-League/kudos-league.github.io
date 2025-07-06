@@ -11,15 +11,24 @@ const dayjs = (date) => ({
     toISOString: () => new Date().toISOString()
 });
 
-const EventCard = ({ event }) => (
+interface EventCardProps {
+    event: any; // Replace 'any' with the actual event type if available
+}
+
+const EventCard: React.FC<EventCardProps> = ({ event }) => (
     <div className="bg-white p-4 rounded-lg shadow-md border">
-        <h3 className="font-semibold">Sample Event</h3>
-        <p className="text-gray-600">Event details would appear here</p>
+        <h3 className="font-semibold">{event?.name ?? 'Sample Event'}</h3>
+        <p className="text-gray-600">{event?.details ?? 'Event details would appear here'}</p>
     </div>
 );
 
 // Custom Location Setup Modal Component
-const LocationSetupModal = ({ isOpen, onClose }) => {
+interface LocationSetupModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+const LocationSetupModal: React.FC<LocationSetupModalProps> = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
@@ -61,7 +70,7 @@ const LocationSetupModal = ({ isOpen, onClose }) => {
                                     <span className="font-medium text-gray-900">Go to your profile</span>
                                 </div>
                                 <p className="text-sm text-gray-600">
-                                    Click on your profile in the top right, then select "Profile" from the dropdown
+                                    Click on your profile in the top right, then select &quot;Profile&quot; from the dropdown
                                 </p>
                             </div>
                         </div>
@@ -76,7 +85,7 @@ const LocationSetupModal = ({ isOpen, onClose }) => {
                                     <span className="font-medium text-gray-900">Edit your profile</span>
                                 </div>
                                 <p className="text-sm text-gray-600">
-                                    Click the "Edit" button to modify your profile settings
+                                    Click the &quot;Edit&quot; button to modify your profile settings
                                 </p>
                             </div>
                         </div>
@@ -91,7 +100,7 @@ const LocationSetupModal = ({ isOpen, onClose }) => {
                                     <span className="font-medium text-gray-900">Add your location</span>
                                 </div>
                                 <p className="text-sm text-gray-600">
-                                    Enter your location and click "Save Changes"
+                                    Enter your location and click &quot;Save Changes&quot;
                                 </p>
                             </div>
                         </div>
