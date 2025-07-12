@@ -99,6 +99,8 @@ export interface MessageDTO {
 
 export type CreateMessageDTO = Partial<MessageDTO>;
 
+export type UpdateMessageDTO = Partial<Pick<MessageDTO, 'content'>>;
+
 export interface SendCommentDTO {
     content: string;
 }

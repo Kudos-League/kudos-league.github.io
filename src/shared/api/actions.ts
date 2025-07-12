@@ -1,4 +1,4 @@
-import { MessageDTO, UserDTO } from '@/shared/api/types';
+import { MessageDTO, UpdateMessageDTO, UserDTO } from '@/shared/api/types';
 import { getEndpointUrl } from './config';
 import {
     CategoryDTO,
@@ -315,6 +315,38 @@ export async function sendMessage(
 
     return response.data;
 }
+
+
+/** @throws {AxiosError} */
+export async function updateMessage(
+    id: number,
+    request: UpdateMessageDTO,
+    token: string
+): Promise<MessageDTO> {
+    if (!token) throw Error('Invalid token');
+    const response = await instance.put(`/messages/${id}`, request, {
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data;
+}
+
+/** @throws {AxiosError} */
+export async function deleteMessage(
+    id: number,
+    token: string
+): Promise<MessageDTO> {
+    if (!token) throw Error('Invalid token');
+    const response = await instance.delete(`/messages/${id}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data;
+}
+
 
 export async function createRewardOffer(
     request: CreateRewardOfferDTO,
