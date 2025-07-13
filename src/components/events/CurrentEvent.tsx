@@ -1,28 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { X, MapPin, User, Edit3 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { getEvents } from '@/shared/api/actions';
+import dayjs from 'dayjs';
+import EventCard from './EventCard';
 
-// Mock types and hooks for demo
-const EventDTO = {};
-const useAuth = () => ({ user: { location: { name: null } } });
-const getEvents = async (filters) => [];
-const dayjs = (date) => ({
-    subtract: (num, unit) => ({ toISOString: () => new Date().toISOString() }),
-    toISOString: () => new Date().toISOString()
-});
-
-interface EventCardProps {
-    event: any; // Replace 'any' with the actual event type if available
-}
-
-const EventCard: React.FC<EventCardProps> = ({ event }) => (
-    <div className="bg-white p-4 rounded-lg shadow-md border">
-        <h3 className="font-semibold">{event?.name ?? 'Sample Event'}</h3>
-        <p className="text-gray-600">{event?.details ?? 'Event details would appear here'}</p>
-    </div>
-);
-
-// Custom Location Setup Modal Component
 interface LocationSetupModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -211,7 +193,7 @@ export default function CurrentEvent() {
             </div>
 
             {events.length > 0 ? (
-                <div className='flex items-center justify-center gap-4'>
+                <div className='flex items-center justify-center gap-4 list-none'>
                     <button
                         onClick={() =>
                             setCurrentIndex(
