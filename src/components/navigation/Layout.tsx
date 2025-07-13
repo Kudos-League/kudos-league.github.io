@@ -38,7 +38,7 @@ type SidebarLinkProps = {
 const SidebarLink: React.FC<SidebarLinkProps> = ({ to, children, isActive }) => (
     <Link 
         to={to} 
-        className={`px-3 py-2 rounded-md transition-colors duration-200 ${
+        className={`px-3 py-2 rounded-md transition-colors duration-200 whitespace-nowrap ${
             isActive 
                 ? 'bg-blue-100 text-blue-700 font-semibold border-l-4 border-blue-500' 
                 : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
