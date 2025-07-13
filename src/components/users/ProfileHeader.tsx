@@ -89,7 +89,7 @@ const ProfileHeader: React.FC<Props> = ({
             </div>
 
             {user.tags && user.tags.length > 0 && (
-                <div className='mt-4 flex flex-wrap justify-center gap-2'>
+                <div className='mt-6 flex flex-wrap justify-center gap-2'>
                     {user.tags.map((tag, i) => (
                         <Pill key={i} name={tag.name} />
                     ))}
@@ -100,11 +100,11 @@ const ProfileHeader: React.FC<Props> = ({
                 {userSettings?.about || 'No bio available'}
             </p>
 
-            {user.location?.regionID && (
-                <div className='mt-6'>
-                    <h3 className='text-sm font-semibold mb-1 text-gray-600'>
+            <div className='mt-6'>
+                <h3 className='text-sm font-semibold mb-1 text-gray-600'>
                         Location
-                    </h3>
+                </h3>
+                {user.location?.regionID ? (
                     <div className='flex justify-center'>
                         <MapDisplay
                             regionID={user.location.regionID}
@@ -114,21 +114,12 @@ const ProfileHeader: React.FC<Props> = ({
                             height={200}
                         />
                     </div>
-                </div>
-            )}
-
-            {user.tags && user.tags.length > 0 && (
-                <div className='mt-4 flex flex-wrap justify-center gap-2'>
-                    {user.tags.map((tag, i) => (
-                        <span
-                            key={i}
-                            className='px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full'
-                        >
-                            {tag.name}
-                        </span>
-                    ))}
-                </div>
-            )}
+                ) : (
+                    <p className='text-center text-gray-500 text-sm italic'>
+                            No location available
+                    </p>
+                )}
+            </div>
         </div>
     );
 };

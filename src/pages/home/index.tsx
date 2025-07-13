@@ -17,12 +17,10 @@ interface TypeOfOrdering {
 export default function Feed() {
     const { posts, fetchPosts, loading, error } = usePosts();
     const [orderedPosts, setOrderedPosts] = useState<PostDTO[]>([]);
-    const [searchVisible, setSearchVisible] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [results, setResults] = useState<PostDTO[]>([]);
     const [cache, setCache] = useState<Record<string, PostDTO[]>>({});
     const [activeTab, setActiveTab] = useState<PostFilterType>('gifts');
-    const [sortOption, setSortOption] = useState('Sort by date');
     const [typeOfOrdering, setTypeOfOrdering] = useState<TypeOfOrdering>({
         type: 'date',
         order: 'desc'
@@ -96,15 +94,12 @@ export default function Feed() {
         }
     };
 
-    const toggleSortOption = () => {
-        if (sortOption === 'Sort by date') {
-            setSortOption('Sort by distance');
-            setTypeOfOrdering({ type: 'distance', order: 'asc' });
-        }
-        else {
-            setSortOption('Sort by date');
-            setTypeOfOrdering({ type: 'date', order: 'desc' });
-        }
+    const handleSortByDate = () => {
+        setTypeOfOrdering({ type: 'date', order: 'desc' });
+    };
+
+    const handleSortByDistance = () => {
+        setTypeOfOrdering({ type: 'distance', order: 'asc' });
     };
 
     const handleCreatePost = () => navigate('/create-post');
@@ -134,21 +129,32 @@ export default function Feed() {
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className='flex-1 border px-3 py-2 rounded'
                 />
+                
+                {/* Sort options - now both visible */}
                 <button
-                    onClick={() => setSearchVisible((prev) => !prev)}
-                    className='text-sm text-blue-600 underline'
+                    onClick={handleSortByDate}
+                    className={`text-sm border px-3 py-1 rounded ${
+                        typeOfOrdering.type === 'date' 
+                            ? 'bg-black text-white' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
-                    {searchVisible ? 'Close Search' : 'Open Search'}
+                    Sort by date
                 </button>
                 <button
-                    onClick={toggleSortOption}
-                    className='text-sm text-gray-700 border px-3 py-1 rounded'
+                    onClick={handleSortByDistance}
+                    className={`text-sm border px-3 py-1 rounded ${
+                        typeOfOrdering.type === 'distance' 
+                            ? 'bg-black text-white' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
-                    {sortOption}
+                    Sort by distance
                 </button>
+                
                 <button
                     onClick={() => setFilterOpen(!filterOpen)}
-                    className='text-sm text-gray-700 border px-3 py-1 rounded'
+                    className='text-sm text-gray-700 border px-3 py-1 rounded hover:bg-gray-100'
                 >
                     Filters
                 </button>

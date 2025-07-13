@@ -309,6 +309,36 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    // Handler for message updates
+    const handleMessageUpdate = (updatedMessage: any) => {
+        setPostDetails((prev: PostDTO) => {
+            if (!prev) return prev;
+        
+            const updatedMessages = (prev.messages || []).map(msg => 
+                msg.id === updatedMessage.id ? updatedMessage : msg
+            );
+        
+            return {
+                ...prev,
+                messages: updatedMessages
+            };
+        });
+    };
+
+    // Handler for message deletions
+    const handleMessageDelete = (deletedMessageId: number) => {
+        setPostDetails((prev: PostDTO) => {
+            if (!prev) return prev;
+        
+            const filteredMessages = (prev.messages || []).filter(msg => msg.id !== deletedMessageId);
+        
+            return {
+                ...prev,
+                messages: filteredMessages
+            };
+        });
+    };
+
     const handleHandshakeDeleted = (id: number) => {
         if (!postDetails) return;
         setPostDetails((prev: any) => ({
@@ -491,7 +521,7 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-100 rounded p-4 mb-6'>
+                <div className='bg-gray-100 rounded p-4 mb-6 break-all'>
                     <p>{postDetails.body}</p>
                     {postDetails.rewardOffers?.[0]?.kudosFinal && (
                         <p className='mt-2 font-semibold text-blue-600'>
@@ -536,7 +566,11 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={user?.id !== postDetails.sender?.id}
+                    showSendMessage={user?.id !== postDetails.sender?.id} 
+                    allowDelete={user?.id !== postDetails.sender?.id}
+                    allowEdit={user?.id !== postDetails.sender?.id}
+                    onMessageUpdate={handleMessageUpdate}
+                    onMessageDelete={handleMessageDelete}
                 />
             </div>
 

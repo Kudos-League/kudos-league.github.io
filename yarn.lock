@@ -9983,6 +9983,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lucide-react@npm:^0.525.0":
+  version: 0.525.0
+  resolution: "lucide-react@npm:0.525.0"
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/367bdf5f117ebddc8f7a8d57a749b802a82b0c1ff36d54fa06e6115d0900f21133e5e2aeabdcf763c506c12cf46b33ac8e5ad93b236c404ee728256600e987fa
+  languageName: node
+  linkType: hard
+
 "luxon@npm:^3.2.1":
   version: 3.6.1
   resolution: "luxon@npm:3.6.1"
@@ -12498,6 +12507,7 @@ __metadata:
     eslint-plugin-prettier: "npm:^5.4.0"
     eslint-plugin-react: "npm:^7.37.5"
     globals: "npm:^16.1.0"
+    lucide-react: "npm:^0.525.0"
     patch-package: "npm:^8.0.0"
     postcss: "npm:^8.5.3"
     postinstall-postinstall: "npm:^2.1.0"
