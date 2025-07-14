@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEndpointUrl } from '@/shared/api/config';
+import { getEndpointUrl, getImagePath } from '@/shared/api/config';
 import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,7 +32,7 @@ export default function PostCard(props: Props) {
     const navigate = useNavigate();
     const [imgError, setImgError] = useState(false);
 
-    const imageSrc = fake ? images?.[0] : images?.[0] ? getEndpointUrl() + images[0] : undefined;
+    const imageSrc = fake ? images?.[0] : images?.[0] ? getImagePath(images[0]): undefined;
     const showBodyInImageBox = imgError || !images?.length || !imageSrc;
 
     const viewerHandshake = getUserHandshake(
