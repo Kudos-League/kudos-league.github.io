@@ -6,7 +6,7 @@ import PostsContainer from '@/components/posts/PostContainer';
 import CurrentEvent from '@/components/events/CurrentEvent';
 import { PostDTO } from '@/shared/api/types';
 
-type PostFilterType = 'gifts' | 'requests';
+type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
 
 interface TypeOfOrdering {
@@ -20,7 +20,7 @@ export default function Feed() {
     const [searchText, setSearchText] = useState('');
     const [results, setResults] = useState<PostDTO[]>([]);
     const [cache, setCache] = useState<Record<string, PostDTO[]>>({});
-    const [activeTab, setActiveTab] = useState<PostFilterType>('gifts');
+    const [activeTab, setActiveTab] = useState<PostFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = useState<TypeOfOrdering>({
         type: 'date',
         order: 'desc'
@@ -42,9 +42,16 @@ export default function Feed() {
         ) => {
             if (!posts) return [];
 
-            const filtered = posts.filter(
-                (p) => p.type === (filterType === 'gifts' ? 'gift' : 'request') && p.status !== 'closed'
-            );
+            const filtered = posts.filter((p) => {
+                // Always exclude closed posts
+                if (p.status === 'closed') return false;
+                
+                // If 'all' is selected, include all non-closed posts
+                if (filterType === 'all') return true;
+                
+                // Filter by type: gifts or requests
+                return p.type === (filterType === 'gifts' ? 'gift' : 'request');
+            });
 
             const sortFn = {
                 date: (a: PostDTO, b: PostDTO) =>
@@ -193,6 +200,12 @@ export default function Feed() {
             )}
 
             <div className='flex gap-2'>
+                <button
+                    onClick={() => setActiveTab('all')}
+                    className={`px-4 py-1 rounded-full text-sm ${activeTab === 'all' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                >
+                    All
+                </button>
                 <button
                     onClick={() => setActiveTab('gifts')}
                     className={`px-4 py-1 rounded-full text-sm ${activeTab === 'gifts' ? 'bg-black text-white' : 'bg-gray-200'}`}

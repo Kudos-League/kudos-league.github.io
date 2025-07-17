@@ -56,7 +56,7 @@ const LayoutFooter: React.FC = () => {
             <div className='flex justify-around items-center gap-4'>
                 {isLoggedIn ? (
                     <>
-                        <FooterLink to='/' icon={HomeIcon} label='Feed' />
+                        <FooterLink to='/' icon={HomeIcon} label='Home' />
                         <FooterLink to='/dms' icon={EnvelopeIcon} label='DMs' />
                         <FooterLink
                             to={`/user/${user.id}`}
@@ -108,7 +108,7 @@ const Layout: React.FC = () => {
             <aside className='w-60 bg-white border-r border-gray-200 shadow-sm p-4'>
                 <nav className='flex flex-col gap-1'>
                     <SidebarLink to='/' isActive={isActivePath('/')}>
-                        Home
+                        Main
                     </SidebarLink>
                     {isLoggedIn && (
                         <>
