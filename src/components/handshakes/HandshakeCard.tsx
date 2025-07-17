@@ -99,10 +99,12 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                 console.log('Last message from other user:', lastMsg);
                 
                 setLastMessage(lastMsg || null);
-            } catch (err) {
+            }
+            catch (err) {
                 console.error('Error fetching last message:', err);
                 // Don't show error to user, just silently fail
-            } finally {
+            }
+            finally {
                 setLoadingMessage(false);
             }
         };
@@ -282,11 +284,8 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                                 <ChatBubbleLeftIcon className='w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0' />
                                                 <div className='min-w-0 flex-1'>
                                                     <p className='text-xs text-gray-700 break-words'>
-                                                        "{formatMessagePreview(lastMessage.content)}"
+                                                        {formatMessagePreview(lastMessage.content)}
                                                     </p>
-                                                    <span className='text-xs text-gray-400'>
-                                                        {getTimeAgo(lastMessage.createdAt)}
-                                                    </span>
                                                 </div>
                                                 <span className='text-xs text-blue-500 font-medium'>Click to chat</span>
                                             </div>
@@ -310,9 +309,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 transition-all duration-200 transform hover:scale-105 active:scale-95
                                 shadow-lg hover:shadow-xl ml-4 mt-2 self-start min-w-[120px]
                                 ${processing 
-                                    ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed' 
-                                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
-                                }
+                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed' 
+                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
+                        }
                                 before:absolute before:inset-0 before:bg-white before:opacity-0 
                                 hover:before:opacity-10 before:transition-opacity before:duration-200
                             `}
@@ -353,9 +352,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                     transition-all duration-200 transform hover:scale-105 active:scale-95
                                     shadow-md hover:shadow-lg min-w-[100px]
                                     ${submitting
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
-                                    }
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
+                    }
                                 `}
                             >
                                 {submitting ? (
