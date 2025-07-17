@@ -5,6 +5,7 @@ import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
 import { useAuth } from '@/hooks/useAuth';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
+import Pill from '../common/Pill';
 
 function truncateBody(body: string, max = 100) {
     return body.length <= max ? body : body.slice(0, max) + '…';
@@ -24,7 +25,7 @@ interface Props extends PostDTO {
 
 export default function PostCard(props: Props) {
     const {
-        id, title, body, images, sender, status, handshakes,
+        id, title, body, images, sender, status, handshakes, tags = [],
         fake, showHandshakeShortcut = false
     } = props;
 
@@ -67,7 +68,11 @@ export default function PostCard(props: Props) {
                             />
                         </div>
                     )}
-
+                    <div className='my-2'>
+                        {tags.map((tag, i) => (
+                            <Pill key={i} name={tag.name} />
+                        ))}
+                    </div>
                     <p className="text-sm text-gray-600 line-clamp-3 mr-2 break-words">{body}</p>
                 </div>
 

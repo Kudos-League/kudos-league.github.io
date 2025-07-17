@@ -140,13 +140,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     className={`px-4 py-2 rounded ${postType === 'gift' ? 'bg-black text-white' : 'bg-gray-200'}`}
                     onClick={() => setPostType('gift')}
                 >
-                    Give
+                    Give stuff
                 </button>
                 <button
                     className={`px-4 py-2 rounded ${postType === 'request' ? 'bg-black text-white' : 'bg-gray-200'}`}
                     onClick={() => setPostType('request')}
                 >
-                    Request
+                    Request stuff
                 </button>
                 <button
                     onClick={() => setShowModal(true)}

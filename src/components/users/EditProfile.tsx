@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import useLocation from '@/hooks/useLocation';
@@ -9,6 +9,7 @@ import ImagePicker from '@/components/forms/ImagePicker';
 import Toast from '@/components/common/Toast';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUser } from '@/shared/api/actions';
+import { getImagePath } from '@/shared/api/config';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import TagInput from '../TagInput';
@@ -33,6 +34,10 @@ const EditProfile: React.FC<Props> = ({
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+    const [showImageOptions, setShowImageOptions] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const urlInputRef = useRef<HTMLInputElement>(null);
 
     const targetUserID = targetUser?.id;
     const form = useForm<ProfileFormValues>({
@@ -42,18 +47,90 @@ const EditProfile: React.FC<Props> = ({
             location: user.location || undefined,
             tags: user.tags.map(t => t.name) || [],
             about: user.settings?.about || '',
+            avatarURL: '',
         }
     });
 
-    const getAvatarUrl = () => {
-        const avatarFileOrUrl = form.watch('avatar')?.[0];
-        if (avatarFileOrUrl) {
-            if (typeof avatarFileOrUrl === 'string') return avatarFileOrUrl;
-            if (avatarFileOrUrl instanceof File)
-                return URL.createObjectURL(avatarFileOrUrl);
+    // Watch form values for reactive updates
+    const watchedAvatar = form.watch('avatar');
+    const watchedAvatarURL = form.watch('avatarURL');
+
+    // Update preview when form values change
+    useEffect(() => {
+        // Priority: uploaded file > URL input > original avatar
+        if (watchedAvatar && watchedAvatar.length > 0) {
+            const file = watchedAvatar[0];
+            if (file instanceof File) {
+                const objectUrl = URL.createObjectURL(file);
+                setPreviewUrl(objectUrl);
+                return () => URL.revokeObjectURL(objectUrl);
+            }
         }
-        if (form.watch('avatarURL')) return form.watch('avatarURL');
-        return targetUser.avatar || null;
+        
+        if (watchedAvatarURL && watchedAvatarURL.trim()) {
+            setPreviewUrl(watchedAvatarURL.trim());
+            return;
+        }
+        
+        // Use original avatar
+        setPreviewUrl(null);
+    }, [watchedAvatar, watchedAvatarURL]);
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            form.setValue('avatar', [files[0]]);
+            form.setValue('avatarURL', '');
+            setShowImageOptions(false);
+        }
+    };
+
+    const handleURLSubmit = () => {
+        const url = urlInputRef.current?.value?.trim();
+        if (url) {
+            form.setValue('avatarURL', url);
+            form.setValue('avatar', []);
+            setShowImageOptions(false);
+            if (urlInputRef.current) {
+                urlInputRef.current.value = '';
+            }
+        }
+    };
+
+    const clearImage = () => {
+        form.setValue('avatar', []);
+        form.setValue('avatarURL', '');
+        setPreviewUrl(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        if (urlInputRef.current) {
+            urlInputRef.current.value = '';
+        }
+        setShowImageOptions(false);
+    };
+
+    // Custom Avatar component that handles preview properly
+    const PreviewAvatar = () => {
+        if (previewUrl) {
+            // For preview, use the URL directly without getImagePath transformation
+            return (
+                <img
+                    src={previewUrl}
+                    alt={targetUser.username || 'User'}
+                    className='rounded-full object-cover'
+                    style={{ width: 100, height: 100 }}
+                />
+            );
+        }
+        // Use the original AvatarComponent for the default avatar
+        return (
+            <AvatarComponent
+                avatar={targetUser.avatar}
+                username={targetUser.username}
+                size={100}
+            />
+        );
     };
 
     const handleFormSubmit = async (data: any) => {
@@ -61,7 +138,6 @@ const EditProfile: React.FC<Props> = ({
         setToastMessage(null);
         setIsSubmitting(true);
 
-                
         try {
             if (typeof data.tags === 'string') {
                 data.tags = data.tags
@@ -112,16 +188,14 @@ const EditProfile: React.FC<Props> = ({
                     targetUserID.toString(),
                     token
                 );
-                updateUserCache(updatedUser); // Update auth context user
-                setTargetUser?.(updatedUser); // Update parent component (profile page)
-                onClose(); // Navigate back to profile page
-                window.location.reload(); // Reload to reflect changes
+                updateUserCache(updatedUser);
+                setTargetUser?.(updatedUser);
+                onClose();
+                window.location.reload();
             }
             finally {
                 setLoading(false);
             }
-            // setFeedbackMessage('Profile updated');
-            // setTimeout(() => setFeedbackMessage(null), 2000);
         }
         catch (err: any) {
             const str = err.response?.data?.errors?.[0]?.message || 
@@ -152,18 +226,107 @@ const EditProfile: React.FC<Props> = ({
                     </button>
                 </div>
 
-                <div className='flex flex-col items-center mb-4'>
-                    <AvatarComponent
-                        avatar={getAvatarUrl()}
-                        username={targetUser.username}
-                        size={100}
-                    />
+                {/* Avatar Section with Edit Functionality */}
+                <div className='flex flex-col items-center mb-6'>
+                    <div className='relative group'>
+                        <PreviewAvatar />
+                        
+                        {/* Edit Icon Overlay */}
+                        <button
+                            type="button"
+                            onClick={() => setShowImageOptions(!showImageOptions)}
+                            className='absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 shadow-lg hover:bg-blue-700 transition-colors'
+                            title="Change profile picture"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+
+                        {/* Image Upload Options Dropdown */}
+                        {showImageOptions && (
+                            <div className='absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10 min-w-[280px]'>
+                                <div className='space-y-3'>
+                                    <h4 className='font-semibold text-gray-800'>Change Profile Picture</h4>
+                                    
+                                    {/* File Upload Option */}
+                                    <div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileSelect}
+                                            className="hidden"
+                                            id="avatar-file-input"
+                                        />
+                                        <label
+                                            htmlFor="avatar-file-input"
+                                            className='block w-full text-center bg-blue-50 text-blue-700 border border-blue-200 rounded px-3 py-2 cursor-pointer hover:bg-blue-100 transition-colors'
+                                        >
+                                            📁 Upload Image
+                                        </label>
+                                    </div>
+
+                                    {/* URL Input Option */}
+                                    <div>
+                                        <div className='flex gap-2'>
+                                            <input
+                                                ref={urlInputRef}
+                                                type="text"
+                                                placeholder="Paste image URL..."
+                                                className='flex-1 border border-gray-300 rounded px-3 py-2 text-sm'
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleURLSubmit();
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleURLSubmit}
+                                                className='bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700'
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className='flex gap-2 pt-2 border-t'>
+                                        {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
+                                            <button
+                                                type="button"
+                                                onClick={clearImage}
+                                                className='text-xs text-red-600 hover:text-red-800'
+                                            >
+                                                Remove Image
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowImageOptions(false)}
+                                            className='text-xs text-gray-600 hover:text-gray-800 ml-auto'
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <p className='text-xl font-semibold mt-2'>
                         {targetUser.username}
                     </p>
                     <p className='text-sm text-gray-500'>
                         {targetUser.kudos} Kudos
                     </p>
+                    {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
+                        <p className='text-xs text-green-600 mt-1'>
+                            ✓ Image updated
+                        </p>
+                    )}
                 </div>
 
                 {feedbackMessage && (
@@ -172,7 +335,7 @@ const EditProfile: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Form Inputs */}
+                {/* Form Inputs - removed the separate profile picture section */}
                 <div className='space-y-6'>
                     <div>
                         <label className='block font-semibold mb-1'>Email</label>
@@ -192,7 +355,7 @@ const EditProfile: React.FC<Props> = ({
                         <Input
                             name='about'
                             form={form}
-                            label='Description'
+                            label=''
                             placeholder='Write a short bio...'
                             multiline
                         />
@@ -202,7 +365,6 @@ const EditProfile: React.FC<Props> = ({
                     </div>
 
                     <div>
-                        <label className='block font-semibold mb-1'>Tags</label>
                         <TagInput
                             initialTags={form.watch('tags')}
                             onTagsChange={(tags) => {
@@ -210,30 +372,9 @@ const EditProfile: React.FC<Props> = ({
                                 form.setValue('tags', tagNames);
                             }}
                         />
-                        <p className='text-xs text-gray-500 italic'>
+                        <p className='text-xs text-gray-500 italic mt-2'>
                             These tags appear on your profile. You can use interests, skills, or hobbies.
                         </p>
-                    </div>
-
-                    <div>
-                        <label className='block font-semibold mb-1'>
-                        Profile Picture URL
-                        </label>
-                        <Input
-                            name='avatarURL'
-                            form={form}
-                            label='Profile Picture URL'
-                            placeholder='Paste an image URL'
-                        />
-                        <p className='text-xs text-gray-500 mb-2'>
-                        Or upload an image instead
-                        </p>
-                        <ImagePicker
-                            name="avatar"
-                            form={form}
-                            placeholder="Upload avatar"
-                            multiple={false}
-                        />
                     </div>
 
                     <div>
@@ -264,7 +405,7 @@ const EditProfile: React.FC<Props> = ({
                         <button
                             onClick={form.handleSubmit(handleFormSubmit)}
                             disabled={loading || isSubmitting}
-                            className='bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700'
+                            className='bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50'
                         >
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
@@ -277,6 +418,14 @@ const EditProfile: React.FC<Props> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Click outside to close image options */}
+            {showImageOptions && (
+                <div 
+                    className="fixed inset-0 z-0" 
+                    onClick={() => setShowImageOptions(false)}
+                />
+            )}
 
             {toastMessage && (
                 <Toast
