@@ -4,17 +4,23 @@ import { sendMessage, updateMessage, deleteMessage } from '@/shared/api/actions'
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 
+// Extended interface to include reply functionality
+interface ExtendedMessageDTO extends MessageDTO {
+    replyToId?: number;
+    replyTo?: MessageDTO;
+}
 
 interface Props {
-    messages: MessageDTO[];
+    messages: ExtendedMessageDTO[];
     title?: string;
     callback?: (data: any) => void;
-    onMessageUpdate?: (updatedMessage: MessageDTO) => void;
+    onMessageUpdate?: (updatedMessage: ExtendedMessageDTO) => void;
     onMessageDelete?: (deletedMessageId: number) => void;
     postID?: number;
     showSendMessage?: boolean;
     allowEdit?: boolean;
     allowDelete?: boolean;
+    allowReply?: boolean;
 }
 
 const MessageList: React.FC<Props> = ({
@@ -26,7 +32,8 @@ const MessageList: React.FC<Props> = ({
     postID,
     showSendMessage,
     allowEdit = false,
-    allowDelete = false
+    allowDelete = false,
+    allowReply = true
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
@@ -34,6 +41,10 @@ const MessageList: React.FC<Props> = ({
     const [messageContent, setMessageContent] = useState('');
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
+    
+    // Reply state
+    const [replyingToMessageId, setReplyingToMessageId] = useState<number | null>(null);
+    const [replyContent, setReplyContent] = useState('');
 
     // Simple processing - just sort by ID
     const processedMessages = useMemo(() => {
@@ -42,19 +53,31 @@ const MessageList: React.FC<Props> = ({
         return [...messages].sort((a, b) => a.id - b.id);
     }, [messages]);
 
+    // Get the message being replied to
+    const replyingToMessage = useMemo(() => {
+        if (!replyingToMessageId) return null;
+        return processedMessages.find(msg => msg.id === replyingToMessageId);
+    }, [replyingToMessageId, processedMessages]);
+
     const handleSubmitMessage = async () => {
-        if (!messageContent.trim() || !user || !token || !postID) return;
+        const content = replyingToMessageId ? replyContent : messageContent;
+        if (!content.trim() || !user || !token || !postID) return;
 
         const newMessage: CreateMessageDTO = {
-            content: messageContent,
+            content,
             authorID: user.id,
-            postID
+            postID,
+            ...(replyingToMessageId && { replyToId: replyingToMessageId })
         };
 
         try {
             const response = await sendMessage(newMessage, token);
             callback?.(response);
+            
+            // Clear both regular and reply content
             setMessageContent('');
+            setReplyContent('');
+            setReplyingToMessageId(null);
         }
         catch (err) {
             console.error('Failed to send message:', err);
@@ -62,7 +85,7 @@ const MessageList: React.FC<Props> = ({
         }
     };
 
-    const handleEditStart = (message: MessageDTO) => {
+    const handleEditStart = (message: ExtendedMessageDTO) => {
         setEditingMessageId(message.id);
         setEditContent(message.content);
     };
@@ -70,20 +93,19 @@ const MessageList: React.FC<Props> = ({
     const handleEditSave = async (messageId: number) => {
         if (!editContent.trim() || !token) return;
 
-        // Find the original message to preserve author data
         const originalMessage = processedMessages.find(msg => msg.id === messageId);
         if (!originalMessage) return;
 
         try {
             const response = await updateMessage(messageId, { content: editContent }, token);
             
-            // Merge the response with original author data to ensure we don't lose it
-            const updatedMessage: MessageDTO = {
+            const updatedMessage: ExtendedMessageDTO = {
                 ...response,
-                author: response.author || originalMessage.author // Preserve original author if not in response
+                author: response.author || originalMessage.author,
+                replyToId: originalMessage.replyToId,
+                replyTo: originalMessage.replyTo
             };
             
-            // Use specific callback for updates, fallback to general callback
             if (onMessageUpdate) {
                 onMessageUpdate(updatedMessage);
             } 
@@ -105,10 +127,21 @@ const MessageList: React.FC<Props> = ({
         setEditContent('');
     };
 
+    const handleReplyStart = (messageId: number) => {
+        setReplyingToMessageId(messageId);
+        setReplyContent('');
+        // Clear any existing message content
+        setMessageContent('');
+    };
+
+    const handleReplyCancel = () => {
+        setReplyingToMessageId(null);
+        setReplyContent('');
+    };
+
     const handleDelete = async (messageId: number) => {
         if (!token) return;
         
-        // Simple confirmation
         if (!window.confirm('Are you sure you want to delete this message?')) {
             return;
         }
@@ -116,12 +149,10 @@ const MessageList: React.FC<Props> = ({
         try {
             await deleteMessage(messageId, token);
             
-            // Use specific callback for deletions, fallback to general callback
             if (onMessageDelete) {
                 onMessageDelete(messageId);
             }
             else {
-                // For general callback, just trigger a refresh without passing the deleted message
                 callback?.({ type: 'delete', messageId });
             }
         } 
@@ -131,30 +162,54 @@ const MessageList: React.FC<Props> = ({
         }
     };
 
-    const canEditMessage = (message: MessageDTO) => {
+    const canEditMessage = (message: ExtendedMessageDTO) => {
         return allowEdit && user && user.id === message.authorID;
     };
 
-    const canDeleteMessage = (message: MessageDTO) => {
+    const canDeleteMessage = (message: ExtendedMessageDTO) => {
         return allowDelete && user && user.id === message.authorID;
     };
 
-    // Enhanced Message Component with edit/delete functionality
-    const renderMessage = (msg: MessageDTO) => {
+    const canReplyToMessage = (message: ExtendedMessageDTO) => {
+        return allowReply && user && showSendMessage;
+    };
+
+    // Enhanced Message Component with edit/delete/reply functionality
+    const renderMessage = (msg: ExtendedMessageDTO) => {
         const isEditing = editingMessageId === msg.id;
         const showEditButton = canEditMessage(msg);
         const showDeleteButton = canDeleteMessage(msg);
+        const showReplyButton = canReplyToMessage(msg);
+        const isReply = Boolean(msg.replyToId);
 
         return (
-            <div key={msg.id} className="border-b border-gray-200 py-3 last:border-b-0">
+            <div key={msg.id} className={`border-b border-gray-200 py-3 last:border-b-0 ${isReply ? 'ml-6 pl-4 border-l-2 border-blue-200' : ''}`}>
+                {/* Reply indicator */}
+                {isReply && msg.replyTo && (
+                    <div className="mb-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <span className="font-medium">Replying to {msg.replyTo.author?.username || `User ${msg.replyTo.authorID}`}:</span>
+                        <div className="mt-1 text-gray-600 italic truncate">
+                            {msg.replyTo.content.length > 50 ? msg.replyTo.content.substring(0, 50) + '...' : msg.replyTo.content}
+                        </div>
+                    </div>
+                )}
+
                 <div className="mb-2 flex justify-between items-start">
                     <span className="font-semibold text-gray-900">
                         {msg.author?.username || `User ${msg.authorID}`}
                     </span>
                     
                     {/* Action buttons */}
-                    {(showEditButton || showDeleteButton) && !isEditing && (
+                    {(showEditButton || showDeleteButton || showReplyButton) && !isEditing && (
                         <div className="flex gap-1">
+                            {showReplyButton && (
+                                <button
+                                    onClick={() => handleReplyStart(msg.id)}
+                                    className="text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                                >
+                                    Reply
+                                </button>
+                            )}
                             {showEditButton && (
                                 <button
                                     onClick={() => handleEditStart(msg)}
@@ -241,27 +296,67 @@ const MessageList: React.FC<Props> = ({
             </div>
 
             {showSendMessage && (
-                <div className='flex border-t pt-3 items-center gap-2'>
-                    <input
-                        type='text'
-                        placeholder='Type a message...'
-                        value={messageContent}
-                        onChange={(e) => setMessageContent(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSubmitMessage();
-                            }
-                        }}
-                        className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
-                    />
-                    <button
-                        onClick={handleSubmitMessage}
-                        disabled={!messageContent.trim()}
-                        className='bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                    >
-                        ➤
-                    </button>
+                <div className='border-t pt-3'>
+                    {/* Reply context */}
+                    {replyingToMessageId && replyingToMessage && (
+                        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-sm font-medium text-blue-800">
+                                    Replying to {replyingToMessage.author?.username || `User ${replyingToMessage.authorID}`}
+                                </span>
+                                <button
+                                    onClick={handleReplyCancel}
+                                    className="text-blue-600 hover:text-blue-800 text-xs"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="text-sm text-blue-700 italic">
+                                {replyingToMessage.content.length > 100 
+                                    ? replyingToMessage.content.substring(0, 100) + '...' 
+                                    : replyingToMessage.content}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className='flex items-center gap-2'>
+                        <input
+                            type='text'
+                            placeholder={replyingToMessageId ? 'Type your reply...' : 'Type a message...'}
+                            value={replyingToMessageId ? replyContent : messageContent}
+                            onChange={(e) => {
+                                if (replyingToMessageId) {
+                                    setReplyContent(e.target.value);
+                                }
+                                else {
+                                    setMessageContent(e.target.value);
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSubmitMessage();
+                                }
+                                else if (e.key === 'Escape' && replyingToMessageId) {
+                                    handleReplyCancel();
+                                }
+                            }}
+                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                        />
+                        <button
+                            onClick={handleSubmitMessage}
+                            disabled={!(replyingToMessageId ? replyContent.trim() : messageContent.trim())}
+                            className='bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                        >
+                            {replyingToMessageId ? '↩' : '➤'}
+                        </button>
+                    </div>
+                    
+                    {replyingToMessageId && (
+                        <p className="text-xs text-gray-500 mt-1">
+                            Press Esc to cancel reply
+                        </p>
+                    )}
                 </div>
             )}
 
