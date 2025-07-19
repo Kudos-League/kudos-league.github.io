@@ -104,7 +104,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     window.history.replaceState({}, '', url.pathname);
                     console.log('[Email login] Using email token from query:', emailToken);
 
-                    // 👇 This is correct use of `emailVerificationToken`
                     await loginHandler({ token: emailToken });
 
                     window.location.href = '/';
@@ -117,9 +116,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const jwt = parsed.token;
 
                     if (jwt) {
-                        console.log('[JWT auth] Found token in localStorage:', jwt);
-
-                        // 👇 Use token directly to fetch profile (NO login call)
                         setAuthState(parsed);
                         dispatch(updateAuth(parsed));
                         const profile = await getUserDetails('me', jwt);
