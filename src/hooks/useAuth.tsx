@@ -4,7 +4,6 @@ import { useAppDispatch } from 'redux_store/hooks';
 import { getUserDetails, login, register } from '@/shared/api/actions';
 import { UserDTO } from '@/shared/api/types';
 
-// Web storage key
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
 type AuthContextType = {
@@ -13,13 +12,13 @@ type AuthContextType = {
     user: UserDTO | null;
     isLoggedIn: boolean;
     loading: boolean;
-    login: (username: string, password: string) => Promise<void>;
+    login: (credentials: { username: string; password: string }) => Promise<void>;
     logout: () => Promise<void>;
     register: (
         username: string,
         email: string,
         password: string
-    ) => Promise<void>;
+    ) => Promise<any>;
     updateUser: (updated: Partial<UserDTO>) => void; 
 };
 
@@ -34,26 +33,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const token = authState?.token || null;
 
-    const storeTokenAndFetchProfile = async (token: string) => {
-        const newAuthState: AuthState = {
-            token,
-            tokenTimestamp: Date.now(),
-            username: ''
-        };
-
-        setAuthState(newAuthState);
-        dispatch(updateAuth(newAuthState));
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
-
-        const profile = await getUserDetails(undefined, token);
-        setUserProfile(profile);
-    };
-
-    const loginHandler = async (username: string, password: string) => {
+    const loginHandler = async ({username, password,token}: {username?: string; password?: string; token?: string}) => {
         setErrorMessage(null);
-        if (!username || !password) return null;
+
+        if (!token && (!username || !password)) {
+            setErrorMessage('Username and password are required for login.');
+            throw new Error('Username and password are required for login.');
+        }
+
+        if (token && (username || password)) {
+            setErrorMessage('Cannot provide both token and username/password.');
+            throw new Error('Cannot provide both token and username/password.');
+        }
+
         try {
-            const response = await login({ username, password });
+            const response = await login({ username, password, token });
             const newAuthState: AuthState = {
                 token: response.data.token,
                 username: response.data.user.username,
@@ -103,31 +97,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                // Grab token from query param
                 const url = new URL(window.location.href);
-                let token = url.searchParams.get('token');
+                const emailToken = url.searchParams.get('token');
 
-                if (token) {
-                    window.history.replaceState(
-                        {},
-                        '',
-                        window.location.pathname
-                    ); // Clean up URL
+                if (emailToken) {
+                    window.history.replaceState({}, '', url.pathname);
+                    console.log('[Email login] Using email token from query:', emailToken);
+
+                    // 👇 This is correct use of `emailVerificationToken`
+                    await loginHandler({ token: emailToken });
+
+                    window.location.href = '/';
+                    return;
                 }
-                else {
-                    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                    if (stored) {
-                        const parsed: AuthState = JSON.parse(stored);
-                        token = parsed.token;
+
+                const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+                if (stored) {
+                    const parsed: AuthState = JSON.parse(stored);
+                    const jwt = parsed.token;
+
+                    if (jwt) {
+                        console.log('[JWT auth] Found token in localStorage:', jwt);
+
+                        // 👇 Use token directly to fetch profile (NO login call)
+                        setAuthState(parsed);
+                        dispatch(updateAuth(parsed));
+                        const profile = await getUserDetails('me', jwt);
+                        setUserProfile(profile);
                     }
-                }
-
-                if (token) {
-                    await storeTokenAndFetchProfile(token);
                 }
             }
             catch (err) {
                 console.error('Failed to initialize auth:', err);
+                setErrorMessage('Failed to initialize authentication.');
             }
             finally {
                 setLoading(false);
@@ -150,11 +152,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password: string
     ) => {
         try {
-            await register({ username, email, password });
-            await loginHandler(username, password);
+            const res = await register({ username, email, password });
+
+            if (res.data?.token) {
+                return loginHandler({ username, password });
+            }
+            else {
+                return 'Sign-up successful. Awaiting email verification.';
+            }
         }
-        catch (error) {
-            throw new Error('Sign-up failed. Please try again.');
+        catch (error: any) {
+            const msg = error?.response?.data?.message || 'Sign-up failed.';
+            throw new Error(msg);
         }
     };
 

@@ -65,8 +65,9 @@ export interface Feat {
 }
 
 export type UserLoginRequestSchemaDTO = {
-    username: string;
-    password: string;
+    username?: string;
+    password?: string;
+    token?: string;
 };
 
 export type UserLoginResponseDTO = {

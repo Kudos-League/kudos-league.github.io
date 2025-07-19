@@ -32,6 +32,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         visible: false
     });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isVerifying, setIsVerifying] = useState(false);
 
     const handleAccessSubmit = (e: React.FormEvent) => {
@@ -59,10 +60,17 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
         try {
             setIsVerifying(true);
-            await registerUser(username, email, formPassword.value);
-            setIsVerifying(false);
-            onSuccess?.();
-            navigate('/feed');
+            const msg = await registerUser(username, email, formPassword.value);
+            if (msg && typeof msg === 'string') {
+                // Possibly message to verify
+                setSuccessMessage(msg);
+                setIsVerifying(false);
+            }
+            else {
+                setIsVerifying(false);
+                onSuccess?.();
+                navigate('/feed');
+            }
         }
         catch (err: any) {
             setIsVerifying(false);
@@ -229,6 +237,12 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     {errorMessage && (
                         <p className='text-red-500 text-center mt-2'>
                             {errorMessage}
+                        </p>
+                    )}
+
+                    {successMessage && (
+                        <p className='text-green-500 text-center mt-2'>
+                            {successMessage}
                         </p>
                     )}
                 </form>

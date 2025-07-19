@@ -6,9 +6,9 @@ import DiscordLoginButton from './DiscordLoginButton';
 import GoogleLoginButton from './GoogleLoginButton';
 
 type LoginFormProps = {
-    onSuccess?: () => void;
-    onError?: (errorMessage: string) => void;
-    initialError?: string;
+	onSuccess?: () => void;
+	onError?: (errorMessage: string) => void;
+	initialError?: string;
 };
 
 type FormValues = {
@@ -30,7 +30,7 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
     const onSubmit = async (data: FormValues) => {
         setErrorMessage(null);
         try {
-            await login(data.username, data.password);
+            await login(data);
             onSuccess?.();
         }
         catch (error: any) {
