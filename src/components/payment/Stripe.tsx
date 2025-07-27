@@ -3,8 +3,10 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { FormProvider, useForm } from 'react-hook-form';
 import DonationAmountPicker from './DonationAmountPicker';
 import { getEndpointUrl } from 'shared/api/config';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function StripeWeb() {
+    const { token } = useAuth();
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,10 @@ export default function StripeWeb() {
             `${getEndpointUrl()}/stripe/checkout-session`,
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
                 body: JSON.stringify({ amount: donationAmount })
             }
         );
