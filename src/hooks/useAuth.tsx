@@ -3,6 +3,7 @@ import { AuthState, updateAuth } from '@/redux_store/slices/auth-slice';
 import { useAppDispatch } from 'redux_store/hooks';
 import { getUserDetails, login, register } from '@/shared/api/actions';
 import { UserDTO } from '@/shared/api/types';
+import { isJwt } from '@/shared/constants';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -47,6 +48,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         try {
+            if (token && isJwt(token)) {
+                const auth: AuthState = { token, username: '', tokenTimestamp: Date.now() };
+                setAuthState(auth);
+                dispatch(updateAuth(auth));
+                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+                return;
+            }
+  
             const response = await login({ username, password, token });
             const newAuthState: AuthState = {
                 token: response.data.token,
@@ -95,44 +104,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [token]);
 
     useEffect(() => {
-        const initializeAuth = async () => {
+        const bootstrap = async () => {
+            setLoading(true);
             try {
                 const url = new URL(window.location.href);
-                const emailToken = url.searchParams.get('token');
+                const tok  = url.searchParams.get('token');
 
-                if (emailToken) {
+                if (tok) {
                     window.history.replaceState({}, '', url.pathname);
-                    console.log('[Email login] Using email token from query:', emailToken);
-
-                    await loginHandler({ token: emailToken });
-
-                    window.location.href = '/';
-                    return;
+                    await loginHandler({ token: tok });
                 }
 
                 const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                if (stored) {
-                    const parsed: AuthState = JSON.parse(stored);
-                    const jwt = parsed.token;
+                if (stored && !tok) {
+                    const cached = JSON.parse(stored) as AuthState;
+                    if (cached.token) {
+                        setAuthState(cached);
+                        dispatch(updateAuth(cached));
+                    }
+                }
 
-                    if (jwt) {
-                        setAuthState(parsed);
-                        dispatch(updateAuth(parsed));
-                        const profile = await getUserDetails('me', jwt);
-                        setUserProfile(profile);
+                if (isJwt(authState?.token ?? '')) {
+                    const profile = await getUserDetails('me', authState!.token);
+                    setUserProfile(profile);
+                    if (!authState!.username) {
+                        const patched = { ...authState!, username: profile.username };
+                        setAuthState(patched);
+                        dispatch(updateAuth(patched));
+                        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(patched));
                     }
                 }
             }
-            catch (err) {
-                console.error('Failed to initialize auth:', err);
-                setErrorMessage('Failed to initialize authentication.');
+            catch (e) {
+                console.error('Auth bootstrap failed:', e);
+                localStorage.removeItem(AUTH_STORAGE_KEY);
+                setAuthState(null);
+                dispatch(updateAuth({} as any));
             }
             finally {
                 setLoading(false);
             }
         };
 
-        initializeAuth();
+        bootstrap();
     }, []);
 
     const logoutHandler = async () => {
