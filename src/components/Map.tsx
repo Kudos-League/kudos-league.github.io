@@ -62,7 +62,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     regionID,
     onLocationChange
 }) => {
-    const { token } = useAuth();
     const fallback = coordinates ?? sampleCoordinates;
     const [mapCoordinates, setMapCoordinates] =
         useState<MapCoordinates>(fallback);
@@ -121,10 +120,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         }
 
         const run = debounce(() => {
-      autoServiceRef.current!.getPlacePredictions(
-          { input: searchInput },
-          (preds) => setSuggestions(preds ?? [])
-      );
+            autoServiceRef.current!.getPlacePredictions(
+                { input: searchInput },
+                (preds) => setSuggestions(preds ?? [])
+            );
         }, 300);
 
         run();
@@ -151,7 +150,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         className="w-full p-2 rounded border border-gray-300 bg-white z-10"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        /* other props */
                     />
                     {suggestions.length > 0 && (
                         <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 max-h-52 overflow-y-auto z-[1000] shadow-md">
@@ -160,40 +158,39 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     className="p-2 cursor-pointer border-b border-gray-100 hover:bg-gray-100"
                                     key={suggestion.place_id}
                                     onClick={() => {
-                    /* ---- look up geometry by place_id ---- */
-                    placesRef.current!.getDetails(
-                        { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address'] },
-                        (det, status) => {
-                            if (
-                                status !== google.maps.places.PlacesServiceStatus.OK ||
-                          !det?.geometry?.location
-                            )
-                                return;
+                                        placesRef.current!.getDetails(
+                                            { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address'] },
+                                            (det, status) => {
+                                                if (
+                                                    status !== google.maps.places.PlacesServiceStatus.OK ||
+                                            !det?.geometry?.location
+                                                )
+                                                    return;
 
-                            const newLat = det.geometry.location.lat();
-                            const newLng = det.geometry.location.lng();
+                                                const newLat = det.geometry.location.lat();
+                                                const newLng = det.geometry.location.lng();
 
-                            const coords = {
-                                latitude: newLat,
-                                longitude: newLng,
-                                changed:
-                            Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
-                            Math.abs(newLng - mapCoordinates.longitude) > 1e-5
-                            };
+                                                const coords = {
+                                                    latitude: newLat,
+                                                    longitude: newLng,
+                                                    changed:
+                                                Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
+                                                Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                                                };
 
-                            suppressSearchRef.current = true;
-                            setSuggestions([]);
-                            setMapCoordinates(coords);
-                            setSearchInput(det.formatted_address ?? suggestion.description);
-                            onLocationChange?.({
-                                coordinates: coords,
-                                placeID: suggestion.place_id,
-                                name: det.formatted_address ?? suggestion.description,
-                                changed: coords.changed
-                            });
-                            setTimeout(() => (suppressSearchRef.current = false), 500);
-                        }
-                    );
+                                                suppressSearchRef.current = true;
+                                                setSuggestions([]);
+                                                setMapCoordinates(coords);
+                                                setSearchInput(det.formatted_address ?? suggestion.description);
+                                                onLocationChange?.({
+                                                    coordinates: coords,
+                                                    placeID: suggestion.place_id,
+                                                    name: det.formatted_address ?? suggestion.description,
+                                                    changed: coords.changed
+                                                });
+                                                setTimeout(() => (suppressSearchRef.current = false), 500);
+                                            }
+                                        );
                                     }}
                                 >
                                     {suggestion.description}
