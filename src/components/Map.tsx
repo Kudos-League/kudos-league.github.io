@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { useAuth } from '@/hooks/useAuth';
 import debounce from '@/shared/debounce';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
 
@@ -161,11 +160,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                         placesRef.current!.getDetails(
                                             { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address'] },
                                             (det, status) => {
-                                                if (
-                                                    status !== google.maps.places.PlacesServiceStatus.OK ||
-                                            !det?.geometry?.location
-                                                )
+                                                if (status !== google.maps.places.PlacesServiceStatus.OK || !det?.geometry?.location) {
                                                     return;
+                                                }
 
                                                 const newLat = det.geometry.location.lat();
                                                 const newLng = det.geometry.location.lng();
@@ -174,8 +171,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                                     latitude: newLat,
                                                     longitude: newLng,
                                                     changed:
-                                                Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
-                                                Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                                                        Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
+                                                        Math.abs(newLng - mapCoordinates.longitude) > 1e-5
                                                 };
 
                                                 suppressSearchRef.current = true;
@@ -280,7 +277,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 )}
             </GoogleMap>
         </div>
-
     );
 };
 
