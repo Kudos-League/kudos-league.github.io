@@ -42,3 +42,5 @@ export const MAX_FILE_COUNT = 5;
 export const LOCAL_FMT = "yyyy-MM-dd'T'HH:mm";
 
 export const isJwt = (tok: string) => tok.split('.').length === 3;
+
+export const GOOGLE_LIBRARIES = ['places', 'marker'] as const;

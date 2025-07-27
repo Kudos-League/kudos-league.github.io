@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { getGeocodedLocation } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import debounce from '@/shared/debounce';
+import { GOOGLE_LIBRARIES } from '@/shared/constants';
 
 export interface MapCoordinates {
     latitude: number;
@@ -70,10 +70,24 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const suppressSearchRef = useRef(false);
+    const autoServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+    const placesRef      = useRef<google.maps.places.PlacesService | null>(null);
+    const placeLibRef = useRef<google.maps.PlacesLibrary | null>(null);
 
     const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: GOOGLE_MAPS_KEY
+        googleMapsApiKey: GOOGLE_MAPS_KEY,
+        libraries: GOOGLE_LIBRARIES as any
     });
+
+    useEffect(() => {
+        if (!isLoaded || !window.google?.maps?.places) return;
+        (async () => {
+            placeLibRef.current = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+        })();
+        autoServiceRef.current  = new google.maps.places.AutocompleteService();
+        const dummyDiv          = document.createElement('div');
+        placesRef.current       = new google.maps.places.PlacesService(dummyDiv);
+    }, [isLoaded]);
 
     useEffect(() => {
         if (regionID) {
@@ -100,26 +114,21 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     }, [regionID]);
 
     useEffect(() => {
-        if (!searchInput || !token || suppressSearchRef.current) return;
+        if (!isLoaded || !searchInput || suppressSearchRef.current) return;
+        if (searchInput.length < 3) {          // Google ignores <3 chars
+            setSuggestions([]);
+            return;
+        }
 
-        const debouncedSearch = debounce(async () => {
-            try {
-                const data = await getGeocodedLocation(searchInput, token);
-                setSuggestions(data?.results ?? []);
-            }
-            catch (err) {
-                console.error('Error fetching suggestions:', err);
-                setSuggestions([]);
-            }
+        const run = debounce(() => {
+      autoServiceRef.current!.getPlacePredictions(
+          { input: searchInput },
+          (preds) => setSuggestions(preds ?? [])
+      );
         }, 300);
 
-        debouncedSearch();
-
-        return () => {
-            setSuggestions([]);
-        };
-    }, [searchInput, token]);
-
+        run();
+    }, [searchInput, isLoaded]);
 
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
@@ -138,52 +147,56 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 999, width: 300 }}>
                     <input
                         type='text'
-                        value={searchInput}
                         placeholder='Search address'
-                        onChange={(e) => setSearchInput(e.target.value)}
                         className="w-full p-2 rounded border border-gray-300 bg-white z-10"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        /* other props */
                     />
                     {suggestions.length > 0 && (
                         <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 max-h-52 overflow-y-auto z-[1000] shadow-md">
                             {suggestions.map((suggestion, index) => (
                                 <li
-                                    key={index}
                                     className="p-2 cursor-pointer border-b border-gray-100 hover:bg-gray-100"
+                                    key={suggestion.place_id}
                                     onClick={() => {
-                                        const loc = suggestion.geometry.location;
-                                        const name = suggestion.formatted_address;
-                                        const placeID = suggestion.place_id;
+                    /* ---- look up geometry by place_id ---- */
+                    placesRef.current!.getDetails(
+                        { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address'] },
+                        (det, status) => {
+                            if (
+                                status !== google.maps.places.PlacesServiceStatus.OK ||
+                          !det?.geometry?.location
+                            )
+                                return;
 
-                                        const newLat = loc.lat;
-                                        const newLng = loc.lng;
+                            const newLat = det.geometry.location.lat();
+                            const newLng = det.geometry.location.lng();
 
-                                        const isSameCoords =
-                                            Math.abs(newLat - mapCoordinates.latitude) < 0.00001 &&
-                                            Math.abs(newLng - mapCoordinates.longitude) < 0.00001;
+                            const coords = {
+                                latitude: newLat,
+                                longitude: newLng,
+                                changed:
+                            Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
+                            Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                            };
 
-                                        const coords = {
-                                            latitude: newLat,
-                                            longitude: newLng,
-                                            changed: !isSameCoords
-                                        };
-
-                                        suppressSearchRef.current = true;
-                                        setSuggestions([]);
-                                        setMapCoordinates(coords);
-                                        setSearchInput(name);
-                                        onLocationChange?.({
-                                            coordinates: coords,
-                                            placeID,
-                                            name,
-                                            changed: !isSameCoords
-                                        });
-
-                                        setTimeout(() => {
-                                            suppressSearchRef.current = false;
-                                        }, 500);
+                            suppressSearchRef.current = true;
+                            setSuggestions([]);
+                            setMapCoordinates(coords);
+                            setSearchInput(det.formatted_address ?? suggestion.description);
+                            onLocationChange?.({
+                                coordinates: coords,
+                                placeID: suggestion.place_id,
+                                name: det.formatted_address ?? suggestion.description,
+                                changed: coords.changed
+                            });
+                            setTimeout(() => (suppressSearchRef.current = false), 500);
+                        }
+                    );
                                     }}
                                 >
-                                    {suggestion.formatted_address}
+                                    {suggestion.description}
                                 </li>
                             ))}
                         </ul>
