@@ -29,7 +29,7 @@ const EditProfile: React.FC<Props> = ({
     const { user, token, updateUser: updateUserCache } = useAuth();
 
     const [loading, setLoading] = useState(false);
-    const { location, setLocation } = useLocation();
+    const { setLocation } = useLocation();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -381,7 +381,6 @@ const EditProfile: React.FC<Props> = ({
                         <label className='block font-semibold mb-1'>Location</label>
                         <MapDisplay
                             regionID={targetUser.location?.regionID}
-                            coordinates={location}
                             width={400}
                             height={300}
                             showAddressBar={true}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import debounce from '@/shared/debounce';
+import useUserLocation from '@/hooks/useLocation';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
 
 export interface MapCoordinates {
@@ -36,7 +37,7 @@ type MapComponentProps =
           coordinates?: MapCoordinates | null;
       } & MapComponentPropsBase);
 
-const sampleCoordinates = { latitude: 38.8951, longitude: -77.0364 };
+// const sampleCoordinates = { latitude: 38.8951, longitude: -77.0364 };
 const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY!;
 
 async function fetchCoordinatesFromRegionID(
@@ -61,9 +62,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     regionID,
     onLocationChange
 }) => {
-    const fallback = coordinates ?? sampleCoordinates;
-    const [mapCoordinates, setMapCoordinates] =
-        useState<MapCoordinates>(fallback);
+    const { location: userLocation } = useUserLocation();
+    const fallback = coordinates ?? userLocation; // ?? sampleCoordinates;
+    const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(fallback);
+    
+    const hasLocation = coordinates || userLocation;
+
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -105,15 +109,22 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             changed: false
                         });
                     })
-                    .catch(() => setMapCoordinates(sampleCoordinates))
+                    .catch(() => setMapCoordinates(fallback))
                     .finally(() => setLoading(false));
             }
         }
     }, [regionID]);
 
     useEffect(() => {
+        if (!coordinates && userLocation) {
+            setMapCoordinates(userLocation);
+        }
+    }, [userLocation]);
+
+
+    useEffect(() => {
         if (!isLoaded || !searchInput || suppressSearchRef.current) return;
-        if (searchInput.length < 3) {          // Google ignores <3 chars
+        if (searchInput.length < 3) {
             setSuggestions([]);
             return;
         }
@@ -131,12 +142,16 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
     const center = {
-        lat: mapCoordinates.latitude,
-        lng: mapCoordinates.longitude
+        lat: mapCoordinates?.latitude ?? 0,
+        lng: mapCoordinates?.longitude ?? 0
     };
 
     if (loading) {
         return <p>Loading map...</p>;
+    }
+
+    if (!hasLocation) {
+        return <p>Loading location...</p>;
     }
 
     return (

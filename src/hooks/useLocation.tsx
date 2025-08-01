@@ -16,8 +16,24 @@ export default function useUserLocation(): ReturnProps {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
+        const fetchApproxLocation = async () => {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data && data.latitude && data.longitude) {
+                    setLocation({
+                        latitude: data.latitude,
+                        longitude: data.longitude
+                    });
+                }
+            }
+            catch (err) {
+                setErrorMsg('Unable to determine location');
+            }
+        };
+
         if (!navigator.geolocation) {
-            setErrorMsg('Geolocation is not supported by this browser.');
+            fetchApproxLocation();
             return;
         }
 
@@ -28,8 +44,8 @@ export default function useUserLocation(): ReturnProps {
                     longitude: position.coords.longitude
                 });
             },
-            (error) => {
-                setErrorMsg(error.message);
+            () => {
+                fetchApproxLocation();
             }
         );
     }, []);
