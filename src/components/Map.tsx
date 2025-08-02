@@ -24,6 +24,7 @@ interface MapComponentPropsBase {
     height?: string | number;
     exactLocation?: boolean;
     regionID?: string;
+    shouldGetYourLocation?: boolean;
     onLocationChange?: (data: LocationData) => void;
 }
 
@@ -60,10 +61,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     height = 400,
     exactLocation = true,
     regionID,
-    onLocationChange
+    onLocationChange,
+    shouldGetYourLocation = false
 }) => {
     const { location: userLocation } = useUserLocation();
-    const fallback = coordinates ?? userLocation; // ?? sampleCoordinates;
+    const fallback = coordinates ?? (shouldGetYourLocation ? userLocation : null); // ?? sampleCoordinates;
     const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(fallback);
     
     const hasLocation = coordinates || userLocation;
@@ -94,8 +96,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     useEffect(() => {
         if (regionID) {
             const alreadySet =
-                Math.abs(mapCoordinates.latitude - fallback.latitude) < 0.0001 &&
-                Math.abs(mapCoordinates.longitude - fallback.longitude) < 0.0001;
+                Math.abs(mapCoordinates?.latitude ?? 0 - fallback?.latitude ?? 0) < 0.0001 &&
+                Math.abs(mapCoordinates?.longitude ?? 0 - fallback?.longitude ?? 0) < 0.0001;
 
             if (alreadySet && (!coordinates?.regionID || coordinates.regionID !== regionID)) {
                 setLoading(true);
@@ -116,7 +118,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     }, [regionID]);
 
     useEffect(() => {
-        if (!coordinates && userLocation) {
+        if (shouldGetYourLocation && !coordinates && userLocation) {
             setMapCoordinates(userLocation);
         }
     }, [userLocation]);
@@ -142,9 +144,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
     const center = {
-        lat: mapCoordinates?.latitude ?? 0,
-        lng: mapCoordinates?.longitude ?? 0
+        lat: mapCoordinates?.latitude,
+        lng: mapCoordinates?.longitude
     };
+
+    const isValidCoordinates = mapCoordinates?.latitude != null && mapCoordinates?.longitude != null;
 
     if (loading) {
         return <p>Loading map...</p>;
@@ -152,6 +156,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
 
     if (!hasLocation) {
         return <p>Loading location...</p>;
+    }
+
+    if (!isValidCoordinates) {
+        return <p>No location available.</p>;
     }
 
     return (

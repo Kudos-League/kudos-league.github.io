@@ -262,6 +262,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 showAddressBar
                 coordinates={undefined}
                 height={300}
+                shouldGetYourLocation
                 onLocationChange={(data) => {
                     if (data)
                         setLocation({

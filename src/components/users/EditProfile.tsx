@@ -383,8 +383,9 @@ const EditProfile: React.FC<Props> = ({
                             regionID={targetUser.location?.regionID}
                             width={400}
                             height={300}
-                            showAddressBar={true}
-                            exactLocation={false}
+                            showAddressBar
+                            exactLocation
+                            shouldGetYourLocation
                             onLocationChange={(data) => {
                                 if (data.coordinates) {
                                     setLocation(data.coordinates);
