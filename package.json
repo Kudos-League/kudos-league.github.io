@@ -46,8 +46,8 @@
         "lint": "eslint .",
         "postinstall": "patch-package",
         "start": "craco start",
-        "build": "craco build",
-        "build:dev": "NODE_ENV=production dotenv -e .env.dev -- craco build",
+        "build": "craco build && rm -rf build/stats.json",
+        "build:dev": "NODE_ENV=production dotenv -e .env.dev -- craco build && rm -rf build/stats.json",
         "test": "craco test",
         "eject": "react-scripts eject"
     },
