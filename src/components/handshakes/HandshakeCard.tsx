@@ -285,6 +285,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                                 <div className='min-w-0 flex-1'>
                                                     <p className='text-xs text-gray-700 break-words'>
                                                         {formatMessagePreview(lastMessage.content)}
+                     
                                                     </p>
                                                 </div>
                                                 <span className='text-xs text-blue-500 font-medium'>Click to chat</span>
@@ -376,7 +377,8 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     </div>
                 )}
 
-                {!isSender && status === 'accepted' && (
+                {/* {console.log("############DEBUG STUFF: ", userID, handshake.senderID, status, userID === handshake.post.senderID, status !== 'completed', handshake.senderID)} */}
+                {userID === handshake.senderID && status === 'accepted' && (                    
                     <button
                         onClick={async () => {
                             try {

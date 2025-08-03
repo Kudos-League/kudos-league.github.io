@@ -4,7 +4,6 @@ import HandshakeCard from './HandshakeCard';
 
 interface HandshakesProps {
     handshakes: HandshakeDTO[];
-    sender: UserDTO;
     currentUserId: number | undefined;
     showAll: boolean;
     onShowAll: () => void;

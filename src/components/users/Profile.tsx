@@ -103,7 +103,7 @@ const Profile: React.FC<Props> = ({
                     ) : (
                         <Handshakes
                             handshakes={handshakes}
-                            sender={user}
+                            // sender={user}
                             currentUserId={user.id}
                             showAll={true}
                             onShowAll={() => {

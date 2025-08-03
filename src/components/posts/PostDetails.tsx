@@ -12,6 +12,7 @@ import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
+import TagInput from '@/components/TagInput';
 import {
     createHandshake,
     likePost,
@@ -20,7 +21,7 @@ import {
 } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 
-import type { ChannelDTO, CreateHandshakeDTO, PostDTO } from "@/shared/api/types";
+import type { ChannelDTO, CreateHandshakeDTO, PostDTO, LocationDTO } from "@/shared/api/types";
 import Pill from '../common/Pill';
 
 interface Props {
@@ -61,7 +62,12 @@ export default function PostDetails(props: Props) {
     const { user, token } = useAuth();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({ title: '', body: '' });
+    const [editData, setEditData] = useState({ 
+        title: '', 
+        body: '', 
+        tags: [] as string[],
+        location: null as LocationDTO | null
+    });
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -98,7 +104,6 @@ export default function PostDetails(props: Props) {
         try {
             await likePost(postDetails.id, true, token);
             setLiked(true);
-        // If you want to also update postDetails.likes, do it here
         }
         catch (err) {
             console.error('Failed to like post:', err);
@@ -127,7 +132,6 @@ export default function PostDetails(props: Props) {
 
         try {
             if (user && recipientId) {
-                // Don't create a DM channel yet, just open the chat modal
                 setIsChatOpen(true);
                 setPendingRecipientID(recipientId);
             }
@@ -148,7 +152,6 @@ export default function PostDetails(props: Props) {
             return;
         }
 
-        // Don't create handshake yet, just open chat
         startDMChat(postDetails.sender?.id || 0);
     };
 
@@ -161,7 +164,6 @@ export default function PostDetails(props: Props) {
             return;
         }
 
-        // Get the recipient ID (should be the same as pendingRecipientID)
         const recipientId = pendingRecipientID;
         if (!recipientId) {
             console.error('Could not find recipient ID');
@@ -178,7 +180,6 @@ export default function PostDetails(props: Props) {
         setCreatingHandshake(true);
 
         try {
-            // Create the handshake after message is sent
             const handshakeData: CreateHandshakeDTO = {
                 postID: postDetails.id,
                 senderID: user?.id || 0,
@@ -190,7 +191,6 @@ export default function PostDetails(props: Props) {
             console.log('Sending handshake data:', handshakeData);
             const response = await createHandshake(handshakeData, token);
 
-            // Check if response has the expected structure
             if (!response || !response.data) {
                 console.error(
                     'Invalid response from createHandshake:',
@@ -203,24 +203,17 @@ export default function PostDetails(props: Props) {
 
             console.log('Handshake created successfully:', newHandshake);
 
-            // Update the post details with the new handshake
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
                 handshakes: [...(prevDetails?.handshakes || []), newHandshake]
             }));
 
-            // Show feedback to the user
             alert(
                 'Handshake created successfully! You can now coordinate the details with the post owner.'
             );
 
-            // Close the chat after handshake is created
             setIsChatOpen(false);
-
-            // Clear the pending recipient
             setPendingRecipientID(null);
-
-            // Refresh the post details to show the new handshake
             fetchPostDetails(postDetails.id);
         }
         catch (error) {
@@ -241,7 +234,6 @@ export default function PostDetails(props: Props) {
             return;
         }
 
-        // Get the recipient ID from the channel users
         const recipientId = channel.users?.find((u) => u.id !== user?.id)?.id;
         if (!recipientId) {
             console.error('Could not find recipient ID in channel users');
@@ -258,7 +250,6 @@ export default function PostDetails(props: Props) {
         setCreatingHandshake(true);
 
         try {
-            // Now create the handshake after successful message and channel creation
             const handshakeData: CreateHandshakeDTO = {
                 postID: postDetails.id,
                 senderID: user?.id || 0,
@@ -270,7 +261,6 @@ export default function PostDetails(props: Props) {
             console.log('Sending handshake data:', handshakeData);
             const response = await createHandshake(handshakeData, token);
 
-            // Check if response has the expected structure
             if (!response || !response.data) {
                 console.error(
                     'Invalid response from createHandshake:',
@@ -283,21 +273,16 @@ export default function PostDetails(props: Props) {
 
             console.log('Handshake created successfully:', newHandshake);
 
-            // Update the post details with the new handshake
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
                 handshakes: [...(prevDetails?.handshakes || []), newHandshake]
             }));
 
-            // Show feedback to the user
             alert(
                 'Handshake created successfully! You can now coordinate the details with the post owner.'
             );
 
-            // Clear the pending recipient
             setPendingRecipientID(null);
-
-            // Refresh the post details to show the new handshake
             fetchPostDetails(postDetails.id);
         }
         catch (error) {
@@ -309,7 +294,6 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    // Handler for message updates
     const handleMessageUpdate = (updatedMessage: any) => {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
@@ -325,7 +309,6 @@ export default function PostDetails(props: Props) {
         });
     };
 
-    // Handler for message deletions
     const handleMessageDelete = (deletedMessageId: number) => {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
@@ -371,6 +354,58 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const handleTagsChange = (tags: { id: string; name: string }[]) => {
+        const tagNames = tags.map((t) => t.name);
+        setEditData({ ...editData, tags: tagNames });
+    };
+
+    const handleLocationChange = (data: any) => {
+        if (data.coordinates) {
+            const locationData: LocationDTO = {
+                name: data.name,
+                regionID: data.placeID
+            };
+            setEditData({ ...editData, location: locationData });
+        }
+    };
+
+    const handleStartEdit = () => {
+        if (!postDetails) return;
+        
+        setEditData({
+            title: postDetails.title,
+            body: postDetails.body,
+            tags: postDetails.tags?.map(tag => tag.name) || [],
+            location: postDetails.location || null
+        });
+        setIsEditing(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!postDetails) return;
+        
+        try {
+            const updateData: any = {
+                title: editData.title,
+                body: editData.body,
+                tags: editData.tags,
+            };
+
+            // Only include location if it was changed
+            if (editData.location && editData.location !== postDetails.location) {
+                updateData.location = editData.location;
+            }
+
+            const updated = await updatePost(postDetails.id, updateData, token);
+            setPostDetails({ ...postDetails, ...updated });
+            setIsEditing(false);
+        }
+        catch (err) {
+            alert('Failed to save changes.');
+            console.error(err);
+        }
+    };
+
     if (loading){
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
     }
@@ -413,10 +448,7 @@ export default function PostDetails(props: Props) {
                     <h1 className="text-2xl font-bold">{postDetails.title}</h1>
 
                     {user?.id === postDetails.sender?.id && postDetails.status !== 'closed' && (
-                        <EditPostButton onClick={() => {
-                            setEditData({ title: postDetails.title, body: postDetails.body });
-                            setIsEditing(!isEditing);
-                        }} />
+                        <EditPostButton onClick={handleStartEdit} />
                     )}
                 </div>
 
@@ -481,39 +513,65 @@ export default function PostDetails(props: Props) {
                 </button>
             </div>
 
-            {/* Body / Description */}
+            {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className="bg-white p-4 border rounded mb-6 space-y-3">
-                    <input
-                        className="w-full border px-2 py-1 rounded"
-                        value={editData.title}
-                        onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                    />
-                    <textarea
-                        className="w-full border px-2 py-1 rounded"
-                        rows={4}
-                        value={editData.body}
-                        onChange={(e) => setEditData({ ...editData, body: e.target.value })}
-                    />
-                    <div className="flex gap-2">
+                <div className="bg-white p-6 border rounded-lg mb-6 space-y-4">
+                    <h3 className="text-lg font-semibold">Edit Post</h3>
+                    
+                    {/* Title */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Title</label>
+                        <input
+                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={editData.title}
+                            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                            placeholder="Enter post title"
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <textarea
+                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows={4}
+                            value={editData.body}
+                            onChange={(e) => setEditData({ ...editData, body: e.target.value })}
+                            placeholder="Enter post description"
+                        />
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                        <TagInput
+                            initialTags={editData.tags}
+                            onTagsChange={handleTagsChange}
+                        />
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Location</label>
+                        <MapDisplay
+                            showAddressBar
+                            regionID={editData.location?.regionID}
+                            coordinates={null}
+                            height={300}
+                            shouldGetYourLocation={false}
+                            onLocationChange={handleLocationChange}
+                        />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4">
                         <button
-                            className="bg-green-600 text-white px-4 py-1 rounded"
-                            onClick={async () => {
-                                try {
-                                    const updated = await updatePost(postDetails?.id, editData, token);
-                                    setPostDetails({ ...postDetails, ...updated });
-                                    setIsEditing(false);
-                                }
-                                catch (err) {
-                                    alert('Failed to save changes.');
-                                    console.error(err);
-                                }
-                            }}
+                            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            onClick={handleSaveEdit}
                         >
-                            Save
+                            Save Changes
                         </button>
                         <button
-                            className="border px-4 py-1 rounded"
+                            className="border border-gray-300 px-6 py-2 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                             onClick={() => setIsEditing(false)}
                         >
                             Cancel
@@ -547,7 +605,7 @@ export default function PostDetails(props: Props) {
                 </div>
             )}
 
-            {/* Placeholder: Comments, Chat, Handshakes, etc. */}
+            {/* Comments */}
             <div className='bg-white shadow p-4 rounded mb-6'>
                 <MessageList
                     title='Comments'
@@ -580,7 +638,6 @@ export default function PostDetails(props: Props) {
 
                 <Handshakes
                     handshakes={postDetails.handshakes.map(h => ({ ...h, post: postDetails }))}
-                    sender={postDetails.sender}
                     currentUserId={user?.id}
                     showAll={showAllHandshakes}
                     onShowAll={() => setShowAllHandshakes(true)}
@@ -598,7 +655,7 @@ export default function PostDetails(props: Props) {
                 />
 
                 {/* Create handshake button if not the sender */}
-                {postDetails.status !== 'closed' &&                       // NEW
+                {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(h => h.sender?.id === user?.id) && (
                     <div className='mt-4 flex justify-center'>
@@ -615,6 +672,7 @@ export default function PostDetails(props: Props) {
                 )}
             </div>
 
+            {/* Chat Modal */}
             {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
@@ -627,6 +685,7 @@ export default function PostDetails(props: Props) {
                 />
             )}
 
+            {/* Report Modal */}
             {reportModalVisible && (
                 <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
                     <div className='bg-white rounded-lg p-6 w-full max-w-md shadow-xl'>
@@ -658,6 +717,8 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             )}
+
+            {/* Image Modal */}
             {modalVisible && selectedImage && (
                 <div className='fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center'>
                     <div className='relative'>
