@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { X, MapPin, User, Edit3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getEvents } from '@/shared/api/actions';
@@ -97,16 +97,6 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({ isOpen, onClose
                     >
                         Got it
                     </button>
-                    {/* <button
-                        onClick={() => {
-                            onClose();
-                            console.log("user is: " + user);
-                            nav(`/user/${user}`);
-                        }}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                    >
-                        Go to Profile
-                    </button> */}
                 </div>
             </div>
         </div>
@@ -122,23 +112,83 @@ export default function CurrentEvent() {
     const [timeFilter, setTimeFilter] = useState('all');
     const [showLocationModal, setShowLocationModal] = useState(false);
 
+    // Time filters for active events
+    const TIME_FILTERS = [
+        { label: 'All Time + Past', value: 'all' },
+        { label: 'Active Today', value: 'today' },
+        { label: 'Active Next 7 Days', value: 'next7d' },
+        { label: 'Active Next Month', value: 'nextmonth' }
+    ];
+
     const getTimeRange = () => {
         const now = new Date();
+        
         switch (timeFilter) {
-        case '24h':
+        case 'today':
+            // Get all events, then filter on frontend for ones active today
             return {
-                startDate: dayjs(now).subtract(1, 'day').toISOString(),
-                endDate: dayjs(now).toISOString()
+                filter: 'all' as const
             };
-        case '7d':
+        case 'next7d':
+            // Get all events, then filter on frontend for ones active in next 7 days
             return {
-                startDate: dayjs(now).subtract(7, 'day').toISOString(),
-                endDate: dayjs(now).toISOString()
+                filter: 'all' as const
+            };
+        case 'nextmonth':
+            // Get all events, then filter on frontend for ones active in next month
+            return {
+                filter: 'all' as const
             };
         default:
-            return {};
+            // All time + past - no filtering
+            return {
+                filter: 'all' as const
+            };
         }
     };
+
+    // Filter events on frontend based on time period
+    const filterEventsByTime = useCallback((events: any[], timeFilter: string) => {
+        if (timeFilter === 'all') {
+            return events; // Show all events including past ones
+        }
+
+        const now = new Date();
+        const startOfToday = dayjs(now).startOf('day');
+        const endOfToday = dayjs(now).endOf('day');
+
+        return events.filter(event => {
+            const eventStart = dayjs(event.startTime);
+            const eventEnd = dayjs(event.endTime || event.startTime);
+
+            switch (timeFilter) {
+            case 'today':
+                // Event is active today if it starts before/on end of today AND ends after/on start of today
+                return (eventStart.isBefore(endOfToday) || eventStart.isSame(endOfToday)) && 
+                       (eventEnd.isAfter(startOfToday) || eventEnd.isSame(startOfToday));
+                       
+            case 'next7d': {
+                const endOfNext7Days = dayjs(now).add(7, 'day').endOf('day');
+                // Event is active in next 7 days if it starts before/on end of next 7 days AND ends after/on start of today
+                return (eventStart.isBefore(endOfNext7Days) || eventStart.isSame(endOfNext7Days)) && 
+                       (eventEnd.isAfter(startOfToday) || eventEnd.isSame(startOfToday));
+            }
+            
+            case 'nextmonth': {
+                const endOfNextMonth = dayjs(now).add(1, 'month').endOf('day');
+                // Event is active in next month if it starts before/on end of next month AND ends after/on start of today
+                return (eventStart.isBefore(endOfNextMonth) || eventStart.isSame(endOfNextMonth)) && 
+                       (eventEnd.isAfter(startOfToday) || eventEnd.isSame(startOfToday));
+            }
+            
+            default:
+                return true;
+            }
+        });
+    }, []);
+
+    const getLabel = () =>
+        TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time + Past';
 
     useEffect(() => {
         const fetch = async () => {
@@ -154,17 +204,21 @@ export default function CurrentEvent() {
             };
 
             const response = await getEvents(filters);
-            setEvents(response);
+            
+            // Filter events based on time period
+            const filteredEvents = filterEventsByTime(response, timeFilter);
+            
+            setEvents(filteredEvents);
             setCurrentIndex(0);
         };
 
         fetch();
-    }, [locationFilter, timeFilter, user?.location?.name]);
+    }, [locationFilter, timeFilter, user?.location?.name, filterEventsByTime]);
 
     return (
         <div className='my-6 px-4'>
             <h2 className='text-xl font-bold mb-2 text-center'>
-                Currently Ongoing Events
+                Active Events
             </h2>
 
             <div className='flex items-center justify-between mb-4'>
@@ -179,17 +233,20 @@ export default function CurrentEvent() {
                     {locationFilter ? 'Local (On)' : 'Local (Off)'}
                 </button>
 
-                <select
-                    value={timeFilter}
-                    onChange={(e) =>
-                        setTimeFilter(e.target.value)
-                    }
-                    className='border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                >
-                    <option value='all'>All Time</option>
-                    <option value='24h'>Last 24 Hours</option>
-                    <option value='7d'>Last 7 Days</option>
-                </select>
+                {/* Updated dropdown with new time filter options */}
+                <div className='relative'>
+                    <select
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                        className='border rounded px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    >
+                        {TIME_FILTERS.map((filter) => (
+                            <option key={filter.value} value={filter.value}>
+                                {filter.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {events.length > 0 ? (
