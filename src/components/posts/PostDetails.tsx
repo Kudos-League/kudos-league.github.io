@@ -644,9 +644,9 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={user?.id !== postDetails.sender?.id} 
-                    allowDelete={user?.id !== postDetails.sender?.id}
-                    allowEdit={user?.id !== postDetails.sender?.id}
+                    showSendMessage={!!user} 
+                    allowDelete={!!user}
+                    allowEdit={!!user}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
                 />
