@@ -60,6 +60,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
             : handshake.senderID;           // giver = handshake sender
     const userIsItemReceiver = userID === itemReceiverID;
 
+    // Check if current user is a participant in this handshake
+    const isParticipant = userID === handshake.senderID || userID === handshake.post.senderID;
+
     // Determine the other user in the conversation
     const otherUserID = userID === handshake.senderID ? handshake.post.senderID : handshake.senderID;
 
@@ -77,10 +80,14 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
         fetchSender();
     }, [handshake, token]);
 
-    // Fetch last message if handshake is accepted
+    // Fetch last message if handshake is accepted and user is a participant
     useEffect(() => {
         const fetchLastMessage = async () => {
-            if (status !== 'accepted' && status !== 'completed') return;
+            // Only fetch messages if user is a participant and handshake is accepted/completed
+            if ((status !== 'accepted' && status !== 'completed') || !isParticipant) {
+                setLoadingMessage(false);
+                return;
+            }
             
             setLoadingMessage(true);
             try {
@@ -110,7 +117,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
         };
 
         fetchLastMessage();
-    }, [status, userID, otherUserID, token]);
+    }, [status, userID, otherUserID, token, isParticipant]);
 
     const handleAccept = async (): Promise<boolean> => {
         setError(null);
@@ -268,8 +275,8 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                     </p>
                                 </div>
 
-                                {/* Last message preview */}
-                                {(status === 'accepted' || status === 'completed') && (
+                                {/* Last message preview - only for participants */}
+                                {(status === 'accepted' || status === 'completed') && isParticipant && (
                                     <div 
                                         className='mt-2 p-2 bg-gray-50 rounded-lg border hover:bg-gray-100 cursor-pointer transition-colors duration-200'
                                         onClick={() => setIsChatOpen(true)}
@@ -285,7 +292,6 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                                 <div className='min-w-0 flex-1'>
                                                     <p className='text-xs text-gray-700 break-words'>
                                                         {formatMessagePreview(lastMessage.content)}
-                     
                                                     </p>
                                                 </div>
                                                 <span className='text-xs text-blue-500 font-medium'>Click to chat</span>
@@ -377,8 +383,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     </div>
                 )}
 
-                {/* {console.log("############DEBUG STUFF: ", userID, handshake.senderID, status, userID === handshake.post.senderID, status !== 'completed', handshake.senderID)} */}
-                {userID === handshake.senderID && status === 'accepted' && (                    
+                {!isSender && status === 'accepted' && (
                     <button
                         onClick={async () => {
                             try {

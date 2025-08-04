@@ -82,6 +82,26 @@ export default function PostDetails(props: Props) {
         null
     );
 
+    // Add this helper function at the top of your PostDetails component, 
+    // right after the imports and before the main component function:
+
+    const sortHandshakesWithUserFirst = (handshakes: any[], userId?: number) => {
+        if (!userId || !handshakes?.length) return handshakes || [];
+        
+        return [...handshakes].sort((a, b) => {
+            // Check if handshake belongs to current user (as sender or receiver)
+            const aIsUser = a.senderID === userId || a.receiverID === userId || a.recipientID === userId;
+            const bIsUser = b.senderID === userId || b.receiverID === userId || b.recipientID === userId;
+            
+            // User's handshakes first
+            if (aIsUser && !bIsUser) return -1;
+            if (!aIsUser && bIsUser) return 1;
+        
+            // If both or neither are user's, sort by creation date (newest first)
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+    };
+
     const updateStatus = async (newStatus: string) => {
         if (!token || !postDetails) return;
 
@@ -637,7 +657,10 @@ export default function PostDetails(props: Props) {
                 <h2 className='text-lg font-bold mb-2'>{postDetails.type === 'request' ? 'Offered By' : 'Requested By'}</h2>
 
                 <Handshakes
-                    handshakes={postDetails.handshakes.map(h => ({ ...h, post: postDetails }))}
+                    handshakes={sortHandshakesWithUserFirst(
+                        postDetails.handshakes?.map(h => ({ ...h, post: postDetails })) || [],
+                        user?.id
+                    )}
                     currentUserId={user?.id}
                     showAll={showAllHandshakes}
                     onShowAll={() => setShowAllHandshakes(true)}
@@ -652,8 +675,8 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
-                />
-
+                    showPostDetails
+                /> 
                 {/* Create handshake button if not the sender */}
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&

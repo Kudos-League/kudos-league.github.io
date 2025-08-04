@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addDays } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addDays, addYears } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { EventDTO } from '@/shared/api/types';
 
@@ -31,21 +31,42 @@ export default function Events({ events }: Props) {
             const start = toZonedTime(new Date(e.startTime), tz);
             const end   = e.endTime
                 ? toZonedTime(new Date(e.endTime), tz)
-                : start;                           // single-moment event
+                : null; // For infinite events, we'll check differently
 
-            return start <= dayEnd && end >= dayStart;  // **overlap test**
+            // For infinite events (no end time), check if the day is after start
+            if (!end) {
+                return start <= dayEnd;
+            }
+            
+            // For normal events, check overlap
+            return start <= dayEnd && end >= dayStart;
         });
     };
 
     /* ---------- transforms for RBC ---------- */
-    const mappedEvents = useMemo(() => events.map(e => ({
-        id: e.id,
-        title: e.title,
-        start: toZonedTime(new Date(e.startTime), tz),
-        end:   toZonedTime(new Date(e.endTime ?? e.startTime), tz),
-        allDay: false,
-        resource: e       // keep original for later
-    })), [events]);
+    const mappedEvents = useMemo(() => events.map(e => {
+        const startDate = toZonedTime(new Date(e.startTime), tz);
+        let endDate;
+        
+        if (e.endTime) {
+            // Normal event with end time
+            endDate = toZonedTime(new Date(e.endTime), tz);
+        } 
+        else {
+            // Infinite event - extend it for 1 year from start date
+            // This makes it visible on the calendar as an ongoing event
+            endDate = addYears(startDate, 1);
+        }
+
+        return {
+            id: e.id,
+            title: e.endTime ? e.title : `${e.title} (Ongoing)`, // Add indicator for infinite events
+            start: startDate,
+            end: endDate,
+            allDay: false,
+            resource: e       // keep original for later
+        };
+    }), [events, tz]);
 
     /* ---------- handlers ---------- */
     const handleDateClick = (slot: SlotInfo) => {
@@ -57,7 +78,7 @@ export default function Events({ events }: Props) {
     };
 
     const changeDay = (offset: number) => {
-        if (!viewDate) return;                // safety; shouldn’t fire when null
+        if (!viewDate) return;                // safety; shouldn't fire when null
         const newDate = addDays(viewDate, offset);
         setViewDate(newDate);                 // <-- update the heading
         setSelectedDateEvents(findEventsOn(newDate));  // <-- update the list
@@ -110,7 +131,7 @@ export default function Events({ events }: Props) {
                     onSelectEvent={(e: any) => navigate(`/event/${e.resource.id}`)}
                     onSelectSlot={handleDateClick}
                     selectable
-                    popup                       /* enable “… more” pop-up */
+                    popup                       /* enable "… more" pop-up */
                     onShowMore={(evts: any[], date) => {
                         setCurrentDate(date);
                         setSelectedDateEvents(evts.map(e => e.resource));
