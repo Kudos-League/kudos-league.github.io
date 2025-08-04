@@ -57,7 +57,7 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
     return (
         <div className='min-h-screen flex items-center justify-center relative'>
             <img
-                src='/images/login_background.jpg'
+                src='/images/welcome.png'
                 className='absolute inset-0 w-full h-full object-cover opacity-80 -z-10'
             />
             <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
