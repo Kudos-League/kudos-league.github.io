@@ -100,25 +100,28 @@ const ProfileHeader: React.FC<Props> = ({
                 {userSettings?.about || 'No bio available'}
             </p>
 
+            {/* Location Box */}
             <div className='mt-6'>
-                <h3 className='text-sm font-semibold mb-1 text-gray-600'>
+                <div className='bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto'>
+                    <h3 className='text-sm font-semibold mb-3 text-gray-700 text-left'>
                         Location
-                </h3>
-                {user.location?.regionID ? (
-                    <div className='flex justify-center'>
-                        <MapDisplay
-                            regionID={user.location.regionID}
-                            showAddressBar={false}
-                            exactLocation={true}
-                            width={400}
-                            height={200}
-                        />
-                    </div>
-                ) : (
-                    <p className='text-center text-gray-500 text-sm italic'>
-                            No location available
-                    </p>
-                )}
+                    </h3>
+                    {user.location?.regionID ? (
+                        <div className='flex justify-center'>
+                            <MapDisplay
+                                regionID={user.location.regionID}
+                                showAddressBar={false}
+                                exactLocation={true}
+                                width='100%'
+                                height={200}
+                            />
+                        </div>
+                    ) : (
+                        <p className='text-gray-500 text-sm text-left'>
+                            Location: not submitted
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );

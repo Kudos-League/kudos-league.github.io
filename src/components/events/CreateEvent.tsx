@@ -47,8 +47,11 @@ export default function CreateEvent() {
         };
 
         try {
-            await createEvent(payload, token);
-            navigate('/');
+            const response = await createEvent(payload, token);
+            const createdEvent = response.data;
+            
+            // Navigate to the newly created event's details page
+            navigate(`/event/${createdEvent.id}`);
         }
         catch (error: any) {
             if (error.response?.data?.message?.errors) {

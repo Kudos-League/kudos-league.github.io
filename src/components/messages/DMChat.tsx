@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getUserDetails } from '@/shared/api/actions';
+import { getUserDetails, getMessages } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
@@ -23,7 +23,7 @@ export default function DMChat() {
 
     useEffect(() => {
         if (user && token) {
-            getUserDetails(user.id, token, { dmChannels: true }).then((res) => {
+            getUserDetails(user.id, token, { dmChannels: true }).then(async (res) => {
                 const formatted = res.dmChannels
                     .map((channel) => {
                         const otherUser = channel.users.find((u) => u.id !== user.id);
@@ -31,10 +31,31 @@ export default function DMChat() {
                     })
                     .filter(Boolean) as ChannelDTO[];
 
-                setChannels(formatted);
+                // Fetch the last message for each channel
+                const channelsWithLastMessage = await Promise.all(
+                    formatted.map(async (channel) => {
+                        try {
+                            const channelMessages = await getMessages(channel.id, token);
+                            const lastMessage = channelMessages && channelMessages.length > 0 
+                                ? channelMessages[channelMessages.length - 1] 
+                                : null;
+                            
+                            return {
+                                ...channel,
+                                lastMessage
+                            };
+                        }
+                        catch (error) {
+                            console.error(`Error fetching messages for channel ${channel.id}:`, error);
+                            return channel; // Return channel without lastMessage if fetch fails
+                        }
+                    })
+                );
+
+                setChannels(channelsWithLastMessage);
 
                 if (targetUserId) {
-                    const matchedChannel = formatted.find((channel) =>
+                    const matchedChannel = channelsWithLastMessage.find((channel) =>
                         channel.users.some((u) => u.id === +targetUserId)
                     );
 
@@ -46,6 +67,20 @@ export default function DMChat() {
             });
         }
     }, [user, token, targetUserId]);
+
+    // Update channel's lastMessage when new messages arrive
+    useEffect(() => {
+        if (messages.length > 0 && selectedChannel) {
+            const lastMessage = messages[messages.length - 1];
+            setChannels(prevChannels => 
+                prevChannels.map(channel => 
+                    channel.id === selectedChannel.id 
+                        ? { ...channel, lastMessage }
+                        : channel
+                )
+            );
+        }
+    }, [messages, selectedChannel]);
 
     const openChat = async (channel: ChannelDTO) => {
         if (selectedChannel) leaveChannel(selectedChannel.id);

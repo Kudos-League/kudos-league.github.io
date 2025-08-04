@@ -179,6 +179,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                                 }))
                             }
                             className='absolute top-1/2 right-3 -translate-y-1/2 text-gray-500'
+                            tabIndex={-1}
+                            aria-label={formPassword.visible ? 'Hide password' : 'Show password'}
                         >
                             {formPassword.visible ? '🙈' : '👁️'}
                         </button>
@@ -205,6 +207,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                                 }))
                             }
                             className='absolute top-1/2 right-3 -translate-y-1/2 text-gray-500'
+                            tabIndex={-1}
+                            aria-label={confirmPassword.visible ? 'Hide password' : 'Show password'}
                         >
                             {confirmPassword.visible ? '🙈' : '👁️'}
                         </button>

@@ -84,6 +84,8 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
                             type='button'
                             onClick={() => setPasswordVisible((prev) => !prev)}
                             className='absolute top-1/2 right-3 -translate-y-1/2 text-gray-500'
+                            tabIndex={-1}
+                            aria-label={passwordVisible ? 'Hide password' : 'Show password'}
                         >
                             {passwordVisible ? '🙈' : '👁️'}
                         </button>
