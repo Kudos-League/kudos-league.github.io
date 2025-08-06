@@ -120,6 +120,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
         try {
             setIsVerifying(true);
+            await registerUser(username, email, formPassword.value);
             setErrorMessage(null);
             setSuccessMessage(null);
             
