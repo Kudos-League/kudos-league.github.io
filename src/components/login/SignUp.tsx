@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import GoogleSignUpButton from './GoogleSignUpButton';
 import DiscordSignUpButton from './DiscordSignUpButton';
+import GoogleLoginButton from './GoogleLoginButton';
+import DiscordLoginButton from './DiscordLoginButton';
 
 type SignUpFormProps = {
     onSuccess?: () => void;
@@ -320,8 +322,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         </p>
 
                         <div className='flex justify-center gap-4'>
-                            <GoogleSignUpButton />
-                            <DiscordSignUpButton />
+                            <GoogleLoginButton />
+                            <DiscordLoginButton />
                         </div>
 
                         <div className='text-center text-sm mt-4'>
