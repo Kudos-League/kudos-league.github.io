@@ -121,112 +121,114 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
     }
 
     return (
-        <div className='min-h-screen flex items-center justify-center relative'>
+        <>
             <img
                 src='/images/welcome.png'
                 className='absolute inset-0 w-full h-full object-cover opacity-80 -z-10'
             />
-            <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
-                <h1 className='text-3xl font-bold text-center mb-6'>Welcome</h1>
+            <div className='min-h-screen flex items-center justify-center relative'>
+                <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
+                    <h1 className='text-3xl font-bold text-center mb-6'>Welcome</h1>
 
-                <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-                    <input
-                        {...formRegister('username')}
-                        className='w-full p-3 rounded bg-gray-100'
-                        placeholder='Username'
-                        onChange={(e) => setValue('username', e.target.value)}
-                    />
-                    <div className='relative'>
+                    <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
                         <input
-                            {...formRegister('password')}
-                            className='w-full p-3 rounded bg-gray-100 pr-10'
-                            placeholder='Password'
-                            type={passwordVisible ? 'text' : 'password'}
-                            onChange={(e) =>
-                                setValue('password', e.target.value)
-                            }
+                            {...formRegister('username')}
+                            className='w-full p-3 rounded bg-gray-100'
+                            placeholder='Username'
+                            onChange={(e) => setValue('username', e.target.value)}
                         />
-                        <button
-                            type='button'
-                            onClick={() => setPasswordVisible((prev) => !prev)}
-                            className='absolute top-1/2 right-3 -translate-y-1/2 text-gray-500'
-                        >
-                            {passwordVisible ? '🙈' : '👁️'}
-                        </button>
-                    </div>
+                        <div className='relative'>
+                            <input
+                                {...formRegister('password')}
+                                className='w-full p-3 rounded bg-gray-100 pr-10'
+                                placeholder='Password'
+                                type={passwordVisible ? 'text' : 'password'}
+                                onChange={(e) =>
+                                    setValue('password', e.target.value)
+                                }
+                            />
+                            <button
+                                type='button'
+                                onClick={() => setPasswordVisible((prev) => !prev)}
+                                className='absolute top-1/2 right-3 -translate-y-1/2 text-gray-500'
+                            >
+                                {passwordVisible ? '🙈' : '👁️'}
+                            </button>
+                        </div>
 
-                    <div className='text-right text-sm mb-2'>
-                        <button
-                            type='button'
-                            onClick={() => navigate('/forgot-password')}
-                            className='text-blue-500'
-                        >
+                        <div className='text-right text-sm mb-2'>
+                            <button
+                                type='button'
+                                onClick={() => navigate('/forgot-password')}
+                                className='text-blue-500'
+                            >
                             Forgot password?
-                        </button>
-                    </div>
+                            </button>
+                        </div>
 
-                    <button
-                        type='submit'
-                        className='w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700'
-                    >
-                        Log In
-                    </button>
-
-                    <p className='text-center text-sm text-gray-500'>
-                        or log in with
-                    </p>
-
-                    <div className='flex justify-center gap-4'>
-                        <DiscordLoginButton />
-                        <GoogleLoginButton />
-                    </div>
-
-                    <div className='text-center text-sm mt-4'>
-                        Don&apos;t have an account?{' '}
                         <button
-                            type='button'
-                            onClick={() => navigate('/sign-up')}
-                            className='text-blue-500 font-bold'
+                            type='submit'
+                            className='w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700'
                         >
-                            Sign Up
+                        Log In
                         </button>
-                    </div>
 
-                    {errorMessage && (
-                        <div className='mt-4 p-4 bg-red-50 border border-red-200 rounded-lg'>
-                            <div className='flex items-start'>
-                                <div className='flex-shrink-0'>
-                                    <span className='text-red-400 text-lg'>⚠️</span>
-                                </div>
-                                <div className='ml-3 flex-1'>
-                                    <p className='text-sm text-red-700 font-medium'>
+                        <p className='text-center text-sm text-gray-500'>
+                        or log in with
+                        </p>
+
+                        <div className='flex justify-center gap-4'>
+                            <DiscordLoginButton />
+                            <GoogleLoginButton />
+                        </div>
+
+                        <div className='text-center text-sm mt-4'>
+                        Don&apos;t have an account?{' '}
+                            <button
+                                type='button'
+                                onClick={() => navigate('/sign-up')}
+                                className='text-blue-500 font-bold'
+                            >
+                            Sign Up
+                            </button>
+                        </div>
+
+                        {errorMessage && (
+                            <div className='mt-4 p-4 bg-red-50 border border-red-200 rounded-lg'>
+                                <div className='flex items-start'>
+                                    <div className='flex-shrink-0'>
+                                        <span className='text-red-400 text-lg'>⚠️</span>
+                                    </div>
+                                    <div className='ml-3 flex-1'>
+                                        <p className='text-sm text-red-700 font-medium'>
                                         Login Failed
-                                    </p>
-                                    <p className='text-sm text-red-600 mt-1'>
-                                        {errorMessage}
-                                    </p>
-                                    {(errorMessage.toLowerCase().includes('verification') || 
+                                        </p>
+                                        <p className='text-sm text-red-600 mt-1'>
+                                            {errorMessage}
+                                        </p>
+                                        {(errorMessage.toLowerCase().includes('verification') || 
                                       errorMessage.toLowerCase().includes('verify') ||
                                       errorMessage.toLowerCase().includes('email')) && (
-                                        <div className='mt-3 p-3 bg-blue-50 border border-blue-200 rounded'>
-                                            <p className='text-xs text-blue-700 font-medium flex items-center'>
-                                                <span className='mr-2'>💡</span>
+                                            <div className='mt-3 p-3 bg-blue-50 border border-blue-200 rounded'>
+                                                <p className='text-xs text-blue-700 font-medium flex items-center'>
+                                                    <span className='mr-2'>💡</span>
                                                 What to do next:
-                                            </p>
-                                            <ul className='text-xs text-blue-600 mt-2 space-y-1 ml-4'>
-                                                <li>• Check your email inbox (including spam folder)</li>
-                                                <li>• Look for a verification email from Kudos League</li>
-                                                <li>• Click the verification link in the email</li>
-                                                <li>• If you can&apos;t find it, contact support</li>
-                                            </ul>
-                                        </div>
-                                    )}
+                                                </p>
+                                                <ul className='text-xs text-blue-600 mt-2 space-y-1 ml-4'>
+                                                    <li>• Check your email inbox (including spam folder)</li>
+                                                    <li>• Look for a verification email from Kudos League</li>
+                                                    <li>• Click the verification link in the email</li>
+                                                    <li>• If you can&apos;t find it, contact support</li>
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </form>
+                        )}
+                    </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
