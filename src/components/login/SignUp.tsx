@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import GoogleSignUpButton from './GoogleSignUpButton';
-import DiscordSignUpButton from './DiscordSignUpButton';
 import GoogleLoginButton from './GoogleLoginButton';
 import DiscordLoginButton from './DiscordLoginButton';
 
