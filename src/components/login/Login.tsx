@@ -38,58 +38,58 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
         
         // Handle specific HTTP status codes
         switch (status) {
-            case 400:
-                return 'Invalid username or password format. Please check your credentials.';
+        case 400:
+            return 'Invalid username or password format. Please check your credentials.';
                 
-            case 401:
-                return 'Invalid username or password. Please try again.';
+        case 401:
+            return 'Invalid username or password. Please try again.';
                 
-            case 403:
-                // This is likely an email verification issue
-                if (responseMessage?.toLowerCase().includes('email') || 
+        case 403:
+            // This is likely an email verification issue
+            if (responseMessage?.toLowerCase().includes('email') || 
                     responseMessage?.toLowerCase().includes('verify') ||
                     responseMessage?.toLowerCase().includes('verification') ||
                     responseMessage?.toLowerCase().includes('unverified')) {
-                    return `Please verify your email address before logging in. Check your inbox for a verification link.`;
-                }
-                if (responseMessage?.toLowerCase().includes('disabled') ||
+                return `Please verify your email address before logging in. Check your inbox for a verification link.`;
+            }
+            if (responseMessage?.toLowerCase().includes('disabled') ||
                     responseMessage?.toLowerCase().includes('suspended') ||
                     responseMessage?.toLowerCase().includes('banned')) {
-                    return `Your account has been restricted. Contact support for assistance.`;
-                }
-                // Default 403 message - likely email verification
-                return 'Your account needs verification. Please check your email for a verification link, or contact support if you need help.';
+                return `Your account has been restricted. Contact support for assistance.`;
+            }
+            // Default 403 message - likely email verification
+            return 'Your account needs verification. Please check your email for a verification link, or contact support if you need help.';
                 
-            case 429:
-                return 'Too many login attempts. Please wait a few minutes before trying again.';
+        case 429:
+            return 'Too many login attempts. Please wait a few minutes before trying again.';
                 
-            case 500:
-                return 'Server error occurred. Please try again in a few moments.';
+        case 500:
+            return 'Server error occurred. Please try again in a few moments.';
                 
-            case 503:
-                return 'Service temporarily unavailable. Please try again later.';
+        case 503:
+            return 'Service temporarily unavailable. Please try again later.';
                 
-            default:
-                // Handle network errors
-                if (!error?.response) {
-                    return 'Unable to connect to server. Please check your internet connection.';
-                }
+        default:
+            // Handle network errors
+            if (!error?.response) {
+                return 'Unable to connect to server. Please check your internet connection.';
+            }
                 
-                // Handle other errors with backend message if available
-                if (responseMessage && typeof responseMessage === 'string') {
-                    // Make backend messages more user-friendly
-                    if (responseMessage.toLowerCase().includes('email') || 
+            // Handle other errors with backend message if available
+            if (responseMessage && typeof responseMessage === 'string') {
+                // Make backend messages more user-friendly
+                if (responseMessage.toLowerCase().includes('email') || 
                         responseMessage.toLowerCase().includes('verify')) {
-                        return `Email verification required: ${responseMessage}`;
-                    }
-                    return responseMessage;
+                    return `Email verification required: ${responseMessage}`;
                 }
+                return responseMessage;
+            }
                 
-                if (responseError && typeof responseError === 'string') {
-                    return responseError;
-                }
+            if (responseError && typeof responseError === 'string') {
+                return responseError;
+            }
                 
-                return error?.message || 'Login failed. Please try again.';
+            return error?.message || 'Login failed. Please try again.';
         }
     };
 
@@ -217,7 +217,7 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
                                                 <li>• Check your email inbox (including spam folder)</li>
                                                 <li>• Look for a verification email from Kudos League</li>
                                                 <li>• Click the verification link in the email</li>
-                                                <li>• If you can't find it, contact support</li>
+                                                <li>• If you can&apos;t find it, contact support</li>
                                             </ul>
                                         </div>
                                     )}

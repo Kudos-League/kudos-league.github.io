@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { createEvent } from '@/shared/api/actions';
@@ -17,95 +17,123 @@ export default function CreateEvent() {
     
     // Initialize with safe default dates
     const now = new Date();
-    const oneHourLater = new Date(now.getTime() + 3600 * 1000);
+    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day later
     
     const [startDate, setStartDate] = useState(now);
-    const [endDate, setEndDate] = useState<Date | null>(oneHourLater);
+    const [endDate, setEndDate] = useState<Date | null>(oneDayLater);
     const [loading, setLoading] = useState(false);
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
-    const [hasUserInteracted, setHasUserInteracted] = useState(false); // Track if user has made changes
 
-    console.log('CreateEvent render:', {
-        startDate: startDate.toISOString(),
-        endDate: endDate?.toISOString(),
-        hasUserInteracted
-    });
-
-    // DUAL VALIDATION APPROACH:
-    // 1. Immediate validation when dates are selected (better UX)
-    // 2. Form submission validation as safety net (prevents submission of invalid data)
-
-    // Validation function for dates
-    const validateDates = (): string[] => {
+    // Comprehensive date validation with detailed error messages
+    const dateValidation = useMemo(() => {
         const errors: string[] = [];
+        const warnings: string[] = [];
+        const info: string[] = [];
         
-        if (endDate && startDate) {
-            // Convert to milliseconds for accurate comparison
-            const startTime = new Date(startDate).getTime();
-            const endTime = new Date(endDate).getTime();
-            
-            console.log('Date validation:', {
-                startDate: startDate.toISOString(),
-                endDate: endDate.toISOString(),
-                startTime,
-                endTime,
-                isValid: endTime > startTime
-            });
-            
-            if (endTime <= startTime) {
-                errors.push('End time must be after start time.');
-            }
+        if (!startDate) {
+            errors.push('Start date is required');
+            return { errors, warnings, info, isValid: false, canSubmit: false };
+        }
+
+        const now = new Date();
+        const startTime = new Date(startDate).getTime();
+        
+        // Check if start date is in the past (more than 1 minute ago to account for processing time)
+        if (startTime < now.getTime() - 60000) {
+            warnings.push('Start time is in the past');
         }
         
-        return errors;
-    };
+        // Check if start date is too far in the future (more than 2 years)
+        const twoYearsFromNow = new Date(now.getFullYear() + 2, now.getMonth(), now.getDate());
+        if (startTime > twoYearsFromNow.getTime()) {
+            warnings.push('Start time is more than 2 years in the future');
+        }
 
-    // Handle start date change with validation
-    const handleStartDateChange = (newStartDate: Date) => {
-        console.log('Start date changed:', {
-            old: startDate.toISOString(),
-            new: newStartDate.toISOString(),
-            endDate: endDate?.toISOString()
-        });
-        
-        setStartDate(newStartDate);
-        
-        // Only validate if end date exists
-        if (endDate) {
-            const startTime = new Date(newStartDate).getTime();
-            const endTime = new Date(endDate).getTime();
-            
-            if (endTime <= startTime) {
-                setErrorMessages(['⚠️ End time must be after start time']);
+        // Provide helpful context about the start date
+        const timeDiff = startTime - now.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
+        const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+
+        if (timeDiff > 0) {
+            if (daysDiff > 0) {
+                info.push(`Event starts in ${daysDiff} day${daysDiff !== 1 ? 's' : ''}`);
+            }
+            else if (hoursDiff > 0) {
+                info.push(`Event starts in ${hoursDiff} hour${hoursDiff !== 1 ? 's' : ''}`);
+            }
+            else if (minutesDiff > 0) {
+                info.push(`Event starts in ${minutesDiff} minute${minutesDiff !== 1 ? 's' : ''}`);
             }
             else {
-                // Clear date-related errors if dates become valid
-                setErrorMessages(prev => prev.filter(msg => !msg.includes('time')));
+                info.push('Event starts very soon');
             }
         }
-    };
 
-    // Handle end date change with validation
-    const handleEndDateChange = (newEndDate: Date) => {
-        console.log('End date changed:', {
-            startDate: startDate.toISOString(),
-            old: endDate?.toISOString(),
-            new: newEndDate.toISOString()
-        });
-        
-        setEndDate(newEndDate);
-        
-        // Immediate validation feedback
-        const startTime = new Date(startDate).getTime();
-        const endTime = new Date(newEndDate).getTime();
-        
-        if (endTime <= startTime) {
-            setErrorMessages(['⚠️ End time must be after start time']);
+        // End date validation
+        if (endDate) {
+            const endTime = new Date(endDate).getTime();
+            
+            // Critical validation: end must be after start
+            if (endTime <= startTime) {
+                errors.push('End time must be after start time');
+            }
+            else {
+                // Calculate duration and provide helpful info
+                const durationMs = endTime - startTime;
+                const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+                const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                if (durationMs < 15 * 60 * 1000) { // Less than 15 minutes
+                    warnings.push('Event duration is very short (less than 15 minutes)');
+                }
+                
+                // Format duration display nicely
+                const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+                if (durationDays > 0) {
+                    const remainingHours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    if (remainingHours > 0) {
+                        info.push(`Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}, ${remainingHours}h`);
+                    }
+                    else {
+                        info.push(`Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}`);
+                    }
+                }
+                else if (durationHours > 0) {
+                    info.push(`Event duration: ${durationHours}h ${durationMinutes}m`);
+                }
+                else {
+                    info.push(`Event duration: ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}`);
+                }
+            }
         }
         else {
-            // Clear date-related errors if dates become valid
-            setErrorMessages(prev => prev.filter(msg => !msg.includes('time')));
+            info.push('No end time set (ongoing event)');
         }
+
+        const isValid = errors.length === 0;
+        const canSubmit = isValid && title.trim() && description.trim();
+
+        return { errors, warnings, info, isValid, canSubmit };
+    }, [startDate, endDate, title, description]);
+
+    // Auto-fix end date when start date changes
+    const handleStartDateChange = (newStartDate: Date) => {
+        setStartDate(newStartDate);
+        
+        // Auto-adjust end date if it becomes invalid
+        if (endDate && new Date(endDate).getTime() <= new Date(newStartDate).getTime()) {
+            const suggestedEndDate = new Date(new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000); // 1 day later
+            setEndDate(suggestedEndDate);
+        }
+        
+        // Clear previous error messages since we're updating
+        setErrorMessages([]);
+    };
+
+    const handleEndDateChange = (newEndDate: Date) => {
+        setEndDate(newEndDate);
+        setErrorMessages([]);
     };
 
     const onSubmit = async () => {
@@ -116,23 +144,22 @@ export default function CreateEvent() {
             return;
         }
 
-        if (!title.trim() || !description.trim()) {
-            setErrorMessages(['Title and description are required.']);
-            return;
-        }
-
-        // Form submission validation (safety net in case immediate validation was bypassed)
-        const dateErrors = validateDates();
-        if (dateErrors.length > 0) {
-            setErrorMessages(['❌ Cannot submit: End time must be after start time']);
+        // Final validation check
+        if (!dateValidation.canSubmit) {
+            const allIssues = [
+                ...dateValidation.errors,
+                ...(title.trim() ? [] : ['Title is required']),
+                ...(description.trim() ? [] : ['Description is required'])
+            ];
+            setErrorMessages(allIssues);
             return;
         }
 
         setLoading(true);
 
         const payload: CreateEventDTO = {
-            title,
-            description,
+            title: title.trim(),
+            description: description.trim(),
             location: {
                 ...location,
                 regionID: location?.regionID ?? null,
@@ -142,57 +169,29 @@ export default function CreateEvent() {
             endTime: endDate
         };
 
-        console.log('Creating event with payload:', {
-            ...payload,
-            startTime: startDate.toISOString(),
-            endTime: endDate?.toISOString()
-        });
-
         try {
             await createEvent(payload, token);
-            navigate('/');
+            navigate('/events');
         }
         catch (error: any) {
             console.error('Event creation error:', error);
             
-            // More descriptive error handling
             if (error.response?.status === 400) {
-                // Handle validation errors from backend
-                if (error.response?.data?.message?.errors) {
-                    const zodErrors = error.response.data.message.errors;
-                    const msgs = zodErrors.map(
-                        (err: any) => `${err.field}: ${err.message}`
-                    );
-                    setErrorMessages(msgs);
+                const backendMessage = error.response?.data?.message;
+                if (typeof backendMessage === 'string') {
+                    setErrorMessages([backendMessage]);
                 }
-                else if (error.response?.data?.message) {
-                    // Single error message from backend
-                    setErrorMessages([`Validation Error: ${error.response.data.message}`]);
+                else if (backendMessage?.errors) {
+                    const zodErrors = backendMessage.errors;
+                    const msgs = zodErrors.map((err: any) => `${err.field}: ${err.message}`);
+                    setErrorMessages(msgs);
                 }
                 else {
                     setErrorMessages(['Invalid data provided. Please check all fields.']);
                 }
             }
-            else if (error.response?.status === 401) {
-                setErrorMessages(['Authentication failed. Please log in again.']);
-            }
-            else if (error.response?.status === 403) {
-                setErrorMessages(['You do not have permission to create events.']);
-            }
-            else if (error.response?.status === 500) {
-                setErrorMessages(['Server error occurred. Please try again later.']);
-            }
-            else if (error.code === 'NETWORK_ERROR' || !error.response) {
-                setErrorMessages(['Network error. Please check your connection and try again.']);
-            }
             else {
-                // Fallback with more info
-                const statusText = error.response?.statusText || 'Unknown Error';
-                const status = error.response?.status || 'No Status';
-                setErrorMessages([
-                    `Failed to create event (${status}: ${statusText})`,
-                    'Please check your data and try again, or contact support if the problem persists.'
-                ]);
+                setErrorMessages(['Failed to create event. Please try again.']);
             }
         }
         finally {
@@ -200,53 +199,53 @@ export default function CreateEvent() {
         }
     };
 
-    // Real-time validation indicator
-    const hasDateError = endDate && startDate && new Date(endDate).getTime() <= new Date(startDate).getTime();
+    // Helper to get the appropriate CSS classes for validation state
+    const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {
+        if (hasErrors) return 'border-red-300 bg-red-50';
+        if (hasWarnings) return 'border-yellow-300 bg-yellow-50';
+        return 'border-gray-300 bg-white';
+    };
 
     return (
-        <div className='max-w-xl mx-auto p-6 space-y-4'>
+        <div className='max-w-xl mx-auto p-6 space-y-6'>
             <h1 className='text-2xl font-bold text-center'>Create Event</h1>
 
-            {/* Debug info - remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className='text-xs bg-gray-100 p-2 rounded'>
-                    <strong>Debug:</strong><br/>
-                    Start: {startDate.toISOString()}<br/>
-                    End: {endDate?.toISOString() || 'null'}<br/>
-                    User Interacted: {hasUserInteracted ? 'Yes' : 'No'}<br/>
-                    Has Error: {hasDateError ? 'Yes' : 'No'}<br/>
-                    Error Messages: {JSON.stringify(errorMessages)}
-                </div>
-            )}
-
-            <label className='font-semibold'>Title</label>
-            <input
-                className='w-full border rounded px-3 py-2'
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder='Enter event title'
-            />
-
-            <label className='font-semibold'>Description</label>
-            <textarea
-                className='w-full border rounded px-3 py-2 h-24'
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder='Enter event description'
-            />
-
-            <div className='flex items-center gap-3'>
-                <label className='font-semibold'>Is Global?</label>
+            {/* Title */}
+            <div>
+                <label className='block font-semibold mb-1'>Title</label>
                 <input
-                    type='checkbox'
-                    checked={global}
-                    onChange={() => setGlobal((prev) => !prev)}
+                    className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder='Enter event title'
                 />
             </div>
 
+            {/* Description */}
+            <div>
+                <label className='block font-semibold mb-1'>Description</label>
+                <textarea
+                    className='w-full border rounded px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder='Enter event description'
+                />
+            </div>
+
+            {/* Global Event Toggle */}
+            <div className='flex items-center gap-3'>
+                <label className='font-semibold'>Is Global Event?</label>
+                <input
+                    type='checkbox'
+                    checked={global}
+                    onChange={() => setGlobal(prev => !prev)}
+                />
+            </div>
+
+            {/* Location */}
             {!global && (
                 <div className='space-y-2'>
-                    <label className='font-semibold'>Pick a Location</label>
+                    <label className='block font-semibold'>Pick a Location</label>
                     <MapDisplay
                         showAddressBar
                         onLocationChange={(data) =>
@@ -261,73 +260,117 @@ export default function CreateEvent() {
                 </div>
             )}
 
-            <UniversalDatePicker
-                label='Start Time'
-                date={startDate}
-                onChange={handleStartDateChange}
-            />
-
-            {endDate !== null ? (
-                <div className="space-y-1">
-                    <UniversalDatePicker
-                        label="End Time"
-                        date={endDate}
-                        onChange={handleEndDateChange}
-                    />
-                    
-                    {/* Immediate validation feedback - more prominent */}
-                    {hasDateError && (
-                        <div className="bg-red-50 border border-red-200 rounded p-3">
-                            <p className="text-red-700 text-sm font-medium flex items-center">
-                                <span className="mr-2">⚠️</span>
-                                End time must be after start time
-                            </p>
+            {/* Start Date */}
+            <div className={`p-4 rounded-lg border-2 ${getValidationClasses(false, dateValidation.warnings.some(w => w.includes('past')))}`}>
+                <UniversalDatePicker
+                    label='Start Time'
+                    date={startDate}
+                    onChange={handleStartDateChange}
+                />
+                
+                {/* Dynamic start date information */}
+                {dateValidation.info.length > 0 && (
+                    <div className='mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded'>
+                        <div className='flex items-center gap-2'>
+                            <span>ℹ️</span>
+                            <div>
+                                {dateValidation.info.map((info, i) => (
+                                    <div key={i}>{info}</div>
+                                ))}
+                            </div>
                         </div>
-                    )}
-                    
+                    </div>
+                )}
+            </div>
+
+            {/* End Date */}
+            <div className={`space-y-1 p-4 rounded-lg border-2 ${getValidationClasses(dateValidation.errors.some(e => e.includes('End time')), dateValidation.warnings.some(w => w.includes('duration')))}`}>
+                {endDate !== null ? (
+                    <>
+                        <UniversalDatePicker
+                            label="End Time"
+                            date={endDate}
+                            onChange={handleEndDateChange}
+                        />
+                        
+                        <button
+                            type="button"
+                            className="text-sm text-blue-600 underline"
+                            onClick={() => setEndDate(null)}
+                        >
+                            Remove End Time (Make Ongoing)
+                        </button>
+                    </>
+                ) : (
                     <button
                         type="button"
-                        className="text-sm text-blue-600 underline"
+                        className="w-full text-sm text-blue-600 underline py-2"
                         onClick={() => {
-                            setEndDate(null);
-                            setHasUserInteracted(true);
-                            // Clear any date-related errors when removing end time
-                            setErrorMessages(prev => prev.filter(msg => !msg.includes('time')));
+                            const suggestedEndDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000); // 1 day later by default
+                            setEndDate(suggestedEndDate);
                         }}
                     >
-                        Remove End Time
+                        Add End Time
                     </button>
+                )}
+            </div>
+
+            {/* Validation Messages */}
+            {(dateValidation.errors.length > 0 || dateValidation.warnings.length > 0) && (
+                <div className='space-y-2'>
+                    {/* Errors */}
+                    {dateValidation.errors.map((error, i) => (
+                        <div key={`error-${i}`} className='bg-red-50 border border-red-200 rounded p-3'>
+                            <p className='text-red-700 text-sm font-medium flex items-center'>
+                                <span className='mr-2'>❌</span>
+                                {error}
+                            </p>
+                        </div>
+                    ))}
+                    
+                    {/* Warnings */}
+                    {dateValidation.warnings.map((warning, i) => (
+                        <div key={`warning-${i}`} className='bg-yellow-50 border border-yellow-200 rounded p-3'>
+                            <p className='text-yellow-700 text-sm font-medium flex items-center'>
+                                <span className='mr-2'>⚠️</span>
+                                {warning}
+                            </p>
+                        </div>
+                    ))}
                 </div>
-            ) : (
-                <button
-                    type="button"
-                    className="text-sm text-blue-600 underline"
-                    onClick={() => {
-                        const newEndDate = new Date(startDate.getTime() + 3600 * 1000);
-                        setEndDate(newEndDate);
-                        setHasUserInteracted(true);
-                        // Clear any existing errors when adding end time
-                        setErrorMessages(prev => prev.filter(msg => !msg.includes('time')));
-                    }}
-                >
-                    Add End Time
-                </button>
             )}
 
-            <button
-                onClick={onSubmit}
-                className={`w-full px-4 py-2 rounded text-white ${
-                    loading || hasDateError
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-                disabled={loading || hasDateError}
-            >
-                {loading ? 'Creating...' : 'Create Event'}
-            </button>
+            {/* Submit Button */}
+            <div className='space-y-2'>
+                <button
+                    onClick={onSubmit}
+                    className={`w-full px-4 py-3 rounded text-white font-medium transition-all ${
+                        dateValidation.canSubmit && !loading
+                            ? 'bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md'
+                            : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                    disabled={!dateValidation.canSubmit || loading}
+                >
+                    {loading ? (
+                        <div className='flex items-center justify-center gap-2'>
+                            <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                            Creating Event...
+                        </div>
+                    ) : (
+                        'Create Event'
+                    )}
+                </button>
+                
+                {!dateValidation.canSubmit && (
+                    <p className='text-sm text-gray-600 text-center'>
+                        Please fix the issues above to create your event
+                    </p>
+                )}
+            </div>
 
+            {/* Server Error Messages */}
             {errorMessages.length > 0 && (
-                <div className='bg-red-100 p-4 mt-4 rounded'>
+                <div className='bg-red-100 border border-red-300 rounded p-4'>
                     {errorMessages.map((msg, i) => (
                         <p key={i} className='text-red-700 text-sm'>
                             {msg}
