@@ -1,4 +1,4 @@
-name: Deploy (after tests)
+name: Deploy if tests succeed
 
 on:
   workflow_run:
