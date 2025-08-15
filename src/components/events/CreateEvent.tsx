@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { createEvent } from '@/shared/api/actions';
@@ -15,16 +15,14 @@ export default function CreateEvent() {
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
     
-    // Initialize with safe default dates
     const now = new Date();
-    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day later
+    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
     
     const [startDate, setStartDate] = useState(now);
     const [endDate, setEndDate] = useState<Date | null>(oneDayLater);
     const [loading, setLoading] = useState(false);
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
-    // Comprehensive date validation with detailed error messages
     const dateValidation = useMemo(() => {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -38,18 +36,15 @@ export default function CreateEvent() {
         const now = new Date();
         const startTime = new Date(startDate).getTime();
         
-        // Check if start date is in the past (more than 1 minute ago to account for processing time)
         if (startTime < now.getTime() - 60000) {
             warnings.push('Start time is in the past');
         }
         
-        // Check if start date is too far in the future (more than 2 years)
         const twoYearsFromNow = new Date(now.getFullYear() + 2, now.getMonth(), now.getDate());
         if (startTime > twoYearsFromNow.getTime()) {
             warnings.push('Start time is more than 2 years in the future');
         }
 
-        // Provide helpful context about the start date
         const timeDiff = startTime - now.getTime();
         const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
         const hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
@@ -70,25 +65,21 @@ export default function CreateEvent() {
             }
         }
 
-        // End date validation
         if (endDate) {
             const endTime = new Date(endDate).getTime();
             
-            // Critical validation: end must be after start
             if (endTime <= startTime) {
                 errors.push('End time must be after start time');
             }
             else {
-                // Calculate duration and provide helpful info
                 const durationMs = endTime - startTime;
                 const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
                 const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
                 
-                if (durationMs < 15 * 60 * 1000) { // Less than 15 minutes
+                if (durationMs < 15 * 60 * 1000) {
                     warnings.push('Event duration is very short (less than 15 minutes)');
                 }
                 
-                // Format duration display nicely
                 const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
                 if (durationDays > 0) {
                     const remainingHours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -117,17 +108,14 @@ export default function CreateEvent() {
         return { errors, warnings, info, isValid, canSubmit };
     }, [startDate, endDate, title, description]);
 
-    // Auto-fix end date when start date changes
     const handleStartDateChange = (newStartDate: Date) => {
         setStartDate(newStartDate);
         
-        // Auto-adjust end date if it becomes invalid
         if (endDate && new Date(endDate).getTime() <= new Date(newStartDate).getTime()) {
             const suggestedEndDate = new Date(new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000); // 1 day later
             setEndDate(suggestedEndDate);
         }
         
-        // Clear previous error messages since we're updating
         setErrorMessages([]);
     };
 
@@ -144,7 +132,6 @@ export default function CreateEvent() {
             return;
         }
 
-        // Final validation check
         if (!dateValidation.canSubmit) {
             const allIssues = [
                 ...dateValidation.errors,
@@ -199,7 +186,6 @@ export default function CreateEvent() {
         }
     };
 
-    // Helper to get the appropriate CSS classes for validation state
     const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {
         if (hasErrors) return 'border-red-300 bg-red-50';
         if (hasWarnings) return 'border-yellow-300 bg-yellow-50';
@@ -210,7 +196,6 @@ export default function CreateEvent() {
         <div className='max-w-xl mx-auto p-6 space-y-6'>
             <h1 className='text-2xl font-bold text-center'>Create Event</h1>
 
-            {/* Title */}
             <div>
                 <label className='block font-semibold mb-1'>Title</label>
                 <input
@@ -221,7 +206,6 @@ export default function CreateEvent() {
                 />
             </div>
 
-            {/* Description */}
             <div>
                 <label className='block font-semibold mb-1'>Description</label>
                 <textarea
@@ -232,7 +216,6 @@ export default function CreateEvent() {
                 />
             </div>
 
-            {/* Global Event Toggle */}
             <div className='flex items-center gap-3'>
                 <label className='font-semibold'>Is Global Event?</label>
                 <input
@@ -242,10 +225,13 @@ export default function CreateEvent() {
                 />
             </div>
 
-            {/* Location */}
             {!global && (
                 <div className='space-y-2'>
                     <label className='block font-semibold'>Pick a Location</label>
+                    <p className='text-yellow-700 text-sm font-medium flex items-center'>
+                        <span className='mr-2'>⚠️</span>
+                        The &nbsp;<u>EXACT</u>&nbsp; event location will be visible to all participants.
+                    </p>
                     <MapDisplay
                         showAddressBar
                         onLocationChange={(data) =>
@@ -260,7 +246,6 @@ export default function CreateEvent() {
                 </div>
             )}
 
-            {/* Start Date */}
             <div className={`p-4 rounded-lg border-2 ${getValidationClasses(false, dateValidation.warnings.some(w => w.includes('past')))}`}>
                 <UniversalDatePicker
                     label='Start Time'
@@ -268,7 +253,6 @@ export default function CreateEvent() {
                     onChange={handleStartDateChange}
                 />
                 
-                {/* Dynamic start date information */}
                 {dateValidation.info.length > 0 && (
                     <div className='mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded'>
                         <div className='flex items-center gap-2'>
@@ -283,7 +267,6 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {/* End Date */}
             <div className={`space-y-1 p-4 rounded-lg border-2 ${getValidationClasses(dateValidation.errors.some(e => e.includes('End time')), dateValidation.warnings.some(w => w.includes('duration')))}`}>
                 {endDate !== null ? (
                     <>
@@ -315,10 +298,8 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {/* Validation Messages */}
             {(dateValidation.errors.length > 0 || dateValidation.warnings.length > 0) && (
                 <div className='space-y-2'>
-                    {/* Errors */}
                     {dateValidation.errors.map((error, i) => (
                         <div key={`error-${i}`} className='bg-red-50 border border-red-200 rounded p-3'>
                             <p className='text-red-700 text-sm font-medium flex items-center'>
@@ -328,7 +309,6 @@ export default function CreateEvent() {
                         </div>
                     ))}
                     
-                    {/* Warnings */}
                     {dateValidation.warnings.map((warning, i) => (
                         <div key={`warning-${i}`} className='bg-yellow-50 border border-yellow-200 rounded p-3'>
                             <p className='text-yellow-700 text-sm font-medium flex items-center'>
@@ -340,7 +320,6 @@ export default function CreateEvent() {
                 </div>
             )}
 
-            {/* Submit Button */}
             <div className='space-y-2'>
                 <button
                     onClick={onSubmit}
@@ -368,7 +347,6 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {/* Server Error Messages */}
             {errorMessages.length > 0 && (
                 <div className='bg-red-100 border border-red-300 rounded p-4'>
                     {errorMessages.map((msg, i) => (

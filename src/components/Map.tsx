@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, Circle, Marker, useJsApiLoader } from '@react-google-maps/api';
 import debounce from '@/shared/debounce';
 import useUserLocation from '@/hooks/useLocation';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
@@ -27,6 +27,7 @@ interface MapComponentPropsBase {
     regionID?: string;
     shouldGetYourLocation?: boolean;
     onLocationChange?: (data: LocationData) => void;
+    approximateRadiusMeters?: number; 
 }
 
 type MapComponentProps =
@@ -41,6 +42,18 @@ type MapComponentProps =
 
 const DEFAULT_CENTER = { latitude: 39.8283, longitude: -98.5795 };
 const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY!;
+
+const circleOptions = {
+    strokeOpacity: 0.7,
+    strokeWeight: 2,
+    strokeColor: '#2563eb',
+    fillColor: '#3b82f6',
+    fillOpacity: 0.12,
+    clickable: false,
+    draggable: false,
+    editable: false,
+    zIndex: 1
+} as google.maps.CircleOptions;
 
 async function fetchCoordinatesFromRegionID(
     regionID: string
@@ -63,7 +76,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     exactLocation = true,
     regionID,
     onLocationChange,
-    shouldGetYourLocation = false
+    shouldGetYourLocation = false,
+    approximateRadiusMeters = 3200
 }) => {
     const { location: userLocation, errorMsg } = useUserLocation();
     const fallback = coordinates ?? (shouldGetYourLocation ? userLocation : null);
@@ -71,7 +85,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         fallback ?? DEFAULT_CENTER
     );
 
-    const hasLocation = coordinates || userLocation;
+    // const hasLocation = coordinates || userLocation;
 
     const [loading, setLoading] = useState(false);
     const [displayLabel, setDisplayLabel] = useState('');
@@ -314,7 +328,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     */
                 }}
             >
-                {exactLocation && (
+                {exactLocation ? (
                     <Marker
                         position={center}
                         draggable={showAddressBar}
@@ -375,6 +389,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             }
                         }}
                     />
+                ) : (
+                    <Circle
+                        center={center}
+                        radius={approximateRadiusMeters}
+                        options={circleOptions}
+                    /> 
                 )}
             </GoogleMap>
         </div>

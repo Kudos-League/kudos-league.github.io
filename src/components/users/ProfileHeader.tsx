@@ -17,7 +17,7 @@ interface Props {
 }
 
 const ProfileHeader: React.FC<Props> = ({
-    user,
+    user: targetUser,
     userSettings,
     onEditProfile,
     onStartDM,
@@ -26,8 +26,8 @@ const ProfileHeader: React.FC<Props> = ({
     const { isLoggedIn } = useAuth();
 
     const getUserTitle = () => {
-        if (user.kudos > 10000) return 'Questing Knight';
-        if (user.kudos > 5000) return 'Pro';
+        if (targetUser.kudos > 10000) return 'Questing Knight';
+        if (targetUser.kudos > 5000) return 'Pro';
         return 'Novice';
     };
 
@@ -43,21 +43,21 @@ const ProfileHeader: React.FC<Props> = ({
                     }}
                 >
                     <AvatarComponent
-                        avatar={user.avatar}
-                        username={user.username}
+                        avatar={targetUser.avatar}
+                        username={targetUser.username}
                         size={80}
                     />
                 </div>
             </div>
             <p className='text-gray-500 text-sm'>{getUserTitle()}</p>
-            <h1 className='text-2xl font-bold'>{user.username}</h1>
+            <h1 className='text-2xl font-bold'>{targetUser.username}</h1>
             <p className='text-gray-600 text-sm'>
-                {user.kudos || 0} Kudos
+                {targetUser.kudos || 0} Kudos
             </p>
 
-            {user.badges?.length ? (
+            {targetUser.badges?.length ? (
                 <div className='flex justify-center flex-wrap gap-2 mt-4'>
-                    {user.badges.map((badge, i) => (
+                    {targetUser.badges.map((badge, i) => (
                         <Tippy content={badge.name} key={i}>
                             <img
                                 src={getImagePath(badge.image)}
@@ -88,9 +88,9 @@ const ProfileHeader: React.FC<Props> = ({
                 )}
             </div>
 
-            {user.tags && user.tags.length > 0 && (
+            {targetUser.tags && targetUser.tags.length > 0 && (
                 <div className='mt-6 flex flex-wrap justify-center gap-2'>
-                    {user.tags.map((tag, i) => (
+                    {targetUser.tags.map((tag, i) => (
                         <Pill key={i} name={tag.name} />
                     ))}
                 </div>
@@ -106,12 +106,12 @@ const ProfileHeader: React.FC<Props> = ({
                     <h3 className='text-sm font-semibold mb-3 text-gray-700 text-left'>
                         Location
                     </h3>
-                    {user.location?.regionID ? (
+                    {targetUser.location?.regionID ? (
                         <div className='flex justify-center'>
                             <MapDisplay
-                                regionID={user.location.regionID}
+                                regionID={targetUser.location.regionID}
                                 showAddressBar={false}
-                                exactLocation={true}
+                                exactLocation={isSelf}
                                 width='100%'
                                 height={200}
                             />
