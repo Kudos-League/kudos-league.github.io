@@ -1,6 +1,5 @@
 {
   "name": "react-typescript-setup",
-  "homepage": "https://kudos-league.github.io",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -48,6 +47,7 @@
     "start": "craco start",
     "build": "craco build && rm -rf build/stats.json",
     "build:dev": "NODE_ENV=production dotenv -e .env.dev -- craco build && rm -rf build/stats.json",
+    "build:prod": "NODE_ENV=production dotenv -e .env.live -- craco build && rm -rf build/stats.json",
     "test": "craco test",
     "eject": "react-scripts eject"
   },

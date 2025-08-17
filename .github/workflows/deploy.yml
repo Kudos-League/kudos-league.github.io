@@ -30,6 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'yarn'
 
       - name: Enable Corepack and Yarn 4
         run: |
@@ -39,8 +40,15 @@ jobs:
       - name: Install deps
         run: yarn install --immutable
 
-      - name: Build
-        run: CI=false yarn build
+      - name: Build (branch-specific)
+        run: |
+          if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
+            echo "Building for production"
+            CI=false yarn build:prod
+          else
+            echo "Building for dev"
+            CI=false yarn build:dev
+          fi
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -50,4 +58,4 @@ jobs:
           projectName: ${{ secrets.CF_PROJECT_NAME }}
           directory: build
           branch: ${{ github.event.workflow_run.head_branch }}
-          wranglerVersion: '3'
+          wranglerVersion: '4'
