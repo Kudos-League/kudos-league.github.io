@@ -46,8 +46,8 @@
     "postinstall": "patch-package",
     "start": "craco start",
     "build": "craco build && rm -rf build/stats.json",
-    "build:dev": "NODE_ENV=production dotenv -e .env.dev -- craco build && rm -rf build/stats.json",
-    "build:prod": "NODE_ENV=production dotenv -e .env.live -- craco build && rm -rf build/stats.json",
+    "build:dev": "NODE_ENV=development dotenv -e .env.dev -- yarn build",
+    "build:prod": "NODE_ENV=production dotenv -e .env.live -- yarn build",
     "test": "craco test",
     "eject": "react-scripts eject"
   },
