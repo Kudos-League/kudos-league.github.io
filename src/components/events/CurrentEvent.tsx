@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getEvents } from '@/shared/api/actions';
 import dayjs from 'dayjs';
 import EventCard from './EventCard';
+import Button from '../common/Button';
 
 interface LocationSetupModalProps {
     isOpen: boolean;
@@ -27,12 +28,12 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({ isOpen, onClose
                             Location Required
                         </h3>
                     </div>
-                    <button
+                    <Button
                         onClick={onClose}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         <X className="w-5 h-5" />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Content */}
@@ -91,12 +92,12 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({ isOpen, onClose
 
                 {/* Footer */}
                 <div className="flex gap-3 p-6 bg-gray-50 rounded-b-xl">
-                    <button
+                    <Button
                         onClick={onClose}
                         className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                     >
                         Got it
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
@@ -222,7 +223,7 @@ export default function CurrentEvent() {
             </h2>
 
             <div className='flex items-center justify-between mb-4'>
-                <button
+                <Button
                     onClick={() => setLocationFilter((prev) => !prev)}
                     className={`px-4 py-1 rounded transition-colors ${
                         locationFilter
@@ -231,7 +232,7 @@ export default function CurrentEvent() {
                     }`}
                 >
                     {locationFilter ? 'Local (On)' : 'Local (Off)'}
-                </button>
+                </Button>
 
                 {/* Updated dropdown with new time filter options */}
                 <div className='relative'>
@@ -251,27 +252,31 @@ export default function CurrentEvent() {
 
             {events.length > 0 ? (
                 <div className='flex items-center justify-center gap-4 list-none'>
-                    <button
+                    <Button
                         onClick={() =>
                             setCurrentIndex(
                                 (i) => (i - 1 + events.length) % events.length
                             )
                         }
-                        className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        variant='icon'
+                        shape='circle'
+                        className='w-8 h-8'
                     >
                         ◀
-                    </button>
+                    </Button>
 
                     <EventCard event={events[currentIndex]} />
 
-                    <button
+                    <Button
                         onClick={() =>
                             setCurrentIndex((i) => (i + 1) % events.length)
                         }
-                        className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        variant='icon'
+                        shape='circle'
+                        className='w-8 h-8'
                     >
                         ▶
-                    </button>
+                    </Button>
                 </div>
             ) : (
                 <p className='text-center text-gray-600 italic mt-4'>

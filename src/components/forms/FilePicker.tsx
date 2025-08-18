@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import Button from '../common/Button';
 
 type FilePickerProps = {
     onChange: (files: File[]) => void;
@@ -36,13 +37,13 @@ export default function FilePicker({
                     hidden
                     onChange={handleFileChange}
                 />
-                <button
+                <Button
                     type='button'
                     onClick={openFilePicker}
                     className='w-24 h-24 border-2 border-dashed border-gray-400 flex items-center justify-center rounded hover:border-blue-500'
                 >
                     📷
-                </button>
+                </Button>
                 {selectedFiles.length > 0 && (
                     <div className='mt-2 space-y-1 text-sm text-gray-600'>
                         {selectedFiles.map((file, idx) => (
@@ -63,13 +64,13 @@ export default function FilePicker({
                 hidden
                 onChange={handleFileChange}
             />
-            <button
+            <Button
                 type='button'
                 onClick={openFilePicker}
                 className='px-4 py-2 bg-blue-600 text-white rounded'
             >
                 {placeholder}
-            </button>
+            </Button>
             {selectedFiles.length > 0 && (
                 <p className='mt-2 text-sm text-gray-600'>
                     {selectedFiles.map((file) => file.name).join(', ')}

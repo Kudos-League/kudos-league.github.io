@@ -5,6 +5,7 @@ import { searchPosts } from '@/shared/api/actions';
 import CurrentEvent from '@/components/events/CurrentEvent';
 import { PostDTO } from '@/shared/api/types';
 import PostList from '@/components/posts/PostList';
+import Button from '@/components/common/Button';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -121,12 +122,13 @@ export default function Feed() {
             {/* Header */}
             <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4'>
                 <h1 className='text-xl font-bold'>Welcome to Kudos League!</h1>
-                <button
+                <Button
                     onClick={handleCreatePost}
-                    className='text-white bg-black px-4 py-2 rounded hover:bg-gray-800 whitespace-nowrap self-start sm:self-auto'
+                    // variant='secondary'
+                    className='whitespace-nowrap self-start sm:self-auto'
                 >
                     + Gift / Request
-                </button>
+                </Button>
             </div>
 
             {/* Search and Controls */}
@@ -145,33 +147,29 @@ export default function Feed() {
                 {/* Sort and Filter Controls */}
                 <div className='flex flex-wrap items-center gap-2'>
                     {/* Sort options */}
-                    <button
+                    <Button
                         onClick={handleSortByDate}
-                        className={`text-sm border px-3 py-1 rounded whitespace-nowrap ${
-                            typeOfOrdering.type === 'date' 
-                                ? 'bg-black text-white' 
-                                : 'text-gray-700 hover:bg-gray-100'
-                        }`}
+                        variant='secondary'
+                        className={'text-sm border whitespace-nowrap'}
                     >
                         Sort by date
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleSortByDistance}
-                        className={`text-sm border px-3 py-1 rounded whitespace-nowrap ${
-                            typeOfOrdering.type === 'distance' 
-                                ? 'bg-black text-white' 
-                                : 'text-gray-700 hover:bg-gray-100'
-                        }`}
+                        variant='secondary'
+                        // TODO: Add active classes
+                        className='text-sm border whitespace-nowrap'
                     >
                         Sort by distance
-                    </button>
+                    </Button>
                     
-                    <button
+                    <Button
                         onClick={() => setFilterOpen(!filterOpen)}
-                        className='text-sm text-gray-700 border px-3 py-1 rounded hover:bg-gray-100 whitespace-nowrap md:ml-auto'
+                        variant='secondary'
+                        className='text-sm border whitespace-nowrap md:ml-auto'
                     >
                         {filterOpen ? 'Hide Filters' : 'More Filters'}
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -179,24 +177,27 @@ export default function Feed() {
             {filterOpen && (
                 <div className='p-4 border rounded bg-gray-50'>
                     <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2'>
-                        <button
-                            className={`px-3 py-1 rounded text-sm ${typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                        <Button
+                            className='text-sm'
+                            // variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({ type: 'date', order: 'desc' })
                             }
                         >
                             Newest
-                        </button>
-                        <button
-                            className={`px-3 py-1 rounded text-sm ${typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                        </Button>
+                        <Button
+                            className='text-sm'
+                            // variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({ type: 'date', order: 'asc' })
                             }
                         >
                             Oldest
-                        </button>
-                        <button
-                            className={`px-3 py-1 rounded text-sm ${typeOfOrdering.type === 'distance' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                        </Button>
+                        <Button
+                            className='text-sm'
+                            // variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({
                                     type: 'distance',
@@ -205,9 +206,10 @@ export default function Feed() {
                             }
                         >
                             Closest
-                        </button>
-                        <button
-                            className={`px-3 py-1 rounded text-sm ${typeOfOrdering.type === 'kudos' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                        </Button>
+                        <Button
+                            className='text-sm'
+                            // variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({
                                     type: 'kudos',
@@ -216,31 +218,34 @@ export default function Feed() {
                             }
                         >
                             Most Kudos
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
 
             {/* Category Filter Tabs */}
             <div className='flex flex-wrap gap-2'>
-                <button
+                <Button
                     onClick={() => setActiveTab('all')}
-                    className={`px-4 py-1 rounded-full text-sm whitespace-nowrap ${activeTab === 'all' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                    variant='secondary'
+                    className='text-sm whitespace-nowrap'
                 >
                     All
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setActiveTab('gifts')}
-                    className={`px-4 py-1 rounded-full text-sm whitespace-nowrap ${activeTab === 'gifts' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                    variant='secondary'
+                    className='text-sm whitespace-nowrap'
                 >
                     Gifts
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setActiveTab('requests')}
-                    className={`px-4 py-1 rounded-full text-sm whitespace-nowrap ${activeTab === 'requests' ? 'bg-black text-white' : 'bg-gray-200'}`}
+                    variant='secondary'
+                    className='text-sm whitespace-nowrap'
                 >
                     Requests
-                </button>
+                </Button>
             </div>
 
             <PostList

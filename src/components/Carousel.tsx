@@ -1,5 +1,6 @@
 import { getImagePath } from '@/shared/api/config';
 import React, { useState, useMemo } from 'react';
+import Button from './common/Button';
 
 type Props = {
     images: string[];
@@ -32,13 +33,15 @@ const ImageCarousel: React.FC<Props> = ({ images }) => {
     return (
         <div className="relative w-full max-w-2xl mx-auto flex items-center justify-center h-60 mb-6">
             {total > 1 && (
-                <button
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 bg-opacity-60 hover:bg-opacity-90 text-white rounded-full p-2 z-10"
+                <Button
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10"
+                    variant="icon"
+                    shape="circle"
                     onClick={goLeft}
                     aria-label="Previous image"
                 >
                     &#8592;
-                </button>
+                </Button>
             )}
             <div className="flex-1 flex items-center justify-center h-full">
                 <img
@@ -50,13 +53,15 @@ const ImageCarousel: React.FC<Props> = ({ images }) => {
                 />
             </div>
             {total > 1 && (
-                <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 bg-opacity-60 hover:bg-opacity-90 text-white rounded-full p-2 z-10"
+                <Button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10"
+                    variant="icon"
+                    shape="circle"
                     onClick={goRight}
                     aria-label="Next image"
                 >
                     &#8594;
-                </button>
+                </Button>
             )}
             {total > 1 && (
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-40 px-2 py-1 rounded text-xs text-white">

@@ -6,6 +6,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import AvatarComponent from '@/components/users/Avatar';
 import HeaderBell from '@/components/notifications/NotificationsBell';
+import Button from '../common/Button';
 
 type UserLike = {
   id: string | number;
@@ -36,14 +37,14 @@ const Navbar: React.FC<NavbarProps> = ({
         <header className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 py-4 shadow dark:bg-gray-900 md:px-6">
             {/* Left: Hamburger + Brand */}
             <div className="flex items-center gap-3">
-                <button
+                <Button
                     type="button"
                     aria-label="Open sidebar"
                     onClick={onOpenSidebar}
                     className="lg:hidden -m-2.5 p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded dark:text-gray-300 dark:hover:text-white dark:hover:bg-white/5"
                 >
                     <Bars3Icon className="h-6 w-6" />
-                </button>
+                </Button>
 
                 <div className="flex items-center">
                     {brand ?? (

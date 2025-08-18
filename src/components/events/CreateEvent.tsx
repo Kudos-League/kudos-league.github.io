@@ -5,6 +5,7 @@ import { createEvent } from '@/shared/api/actions';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
+import Button from '../common/Button';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -276,25 +277,23 @@ export default function CreateEvent() {
                             onChange={handleEndDateChange}
                         />
                         
-                        <button
-                            type="button"
-                            className="text-sm text-blue-600 underline"
+                        <Button
+                            className="text-sm text-blue-600"
                             onClick={() => setEndDate(null)}
                         >
                             Remove End Time (Make Ongoing)
-                        </button>
+                        </Button>
                     </>
                 ) : (
-                    <button
-                        type="button"
-                        className="w-full text-sm text-blue-600 underline py-2"
+                    <Button
+                        className="w-full text-sm text-blue-600 py-2"
                         onClick={() => {
                             const suggestedEndDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000); // 1 day later by default
                             setEndDate(suggestedEndDate);
                         }}
                     >
                         Add End Time
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -321,7 +320,7 @@ export default function CreateEvent() {
             )}
 
             <div className='space-y-2'>
-                <button
+                <Button
                     onClick={onSubmit}
                     className={`w-full px-4 py-3 rounded text-white font-medium transition-all ${
                         dateValidation.canSubmit && !loading
@@ -338,7 +337,7 @@ export default function CreateEvent() {
                     ) : (
                         'Create Event'
                     )}
-                </button>
+                </Button>
                 
                 {!dateValidation.canSubmit && (
                     <p className='text-sm text-gray-600 text-center'>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import debounce from 'lodash/debounce';
 import { getTopTags } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
+import Button from './common/Button';
 
 interface Tag {
     id: string;
@@ -179,14 +180,12 @@ const TagInput: React.FC<TagInputProps> = ({
                     placeholder='Enter tag and press Add'
                     autoComplete='off'
                 />
-                <button
+                <Button
                     onClick={handleAddTag}
-                    className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400'
                     disabled={!currentTagInput.trim() || isLoading}
-                    type='button'
                 >
                     Add
-                </button>
+                </Button>
             </div>
 
             {isLoading && (

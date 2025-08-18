@@ -16,6 +16,7 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostList';
+import Button from '../common/Button';
 
 type Props = {
     user: UserDTO;
@@ -78,17 +79,17 @@ const Profile: React.FC<Props> = ({
             <div className='flex gap-4 justify-center'>
                 {Filters.map(
                     (type) => (
-                        <button
+                        <Button
                             key={type}
                             onClick={() => setFilter(type as any)}
                             className={`px-4 py-2 rounded ${
                                 filter === type
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700'
+                                    ? '!bg-blue-600 !text-white'
+                                    : '!bg-gray-200 !text-gray-700'
                             }`}
                         >
                             {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </button>
+                        </Button>
                     )
                 )}
             </div>

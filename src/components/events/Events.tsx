@@ -7,6 +7,7 @@ import { EventDTO } from '@/shared/api/types';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import EventCard from './EventCard';
+import Button from '../common/Button';
 
 const locales = { 'en-US': require('date-fns/locale/en-US') };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }), getDay, locales });
@@ -89,21 +90,21 @@ export default function Events({ events }: Props) {
         <div className="max-w-5xl mx-auto p-4">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Events Calendar</h1>
-                <button onClick={() => navigate('/create-event')} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Create Event</button>
+                <Button onClick={() => navigate('/create-event')}>+ Create Event</Button>
             </div>
 
             {/* -------- single day -------- */}
             {selectedDateEvents ? (
                 <div>
                     <div className="flex items-center gap-4 mb-2">
-                        <button onClick={() => changeDay(-1)} className="text-lg">&larr;</button>
+                        <Button onClick={() => changeDay(-1)} className="text-lg">&larr;</Button>
                         <h2 className="text-xl font-semibold">
                             {format(viewDate ?? new Date(), 'PPP')}
                         </h2>
-                        <button onClick={() => changeDay(1)} className="text-lg">&rarr;</button>
+                        <Button onClick={() => changeDay(1)} className="text-lg">&rarr;</Button>
                     </div>
 
-                    <button onClick={() => setSelectedDateEvents(null)} className="text-sm text-blue-600 underline mb-4">← Back to calendar</button>
+                    <Button onClick={() => setSelectedDateEvents(null)}>← Back to calendar</Button>
 
                     {selectedDateEvents.length === 0 ? (
                         <p className="text-gray-500 italic">No events on this date.</p>

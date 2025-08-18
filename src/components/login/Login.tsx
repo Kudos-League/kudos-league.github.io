@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DiscordLoginButton from './DiscordLoginButton';
 import GoogleLoginButton from './GoogleLoginButton';
+import Button from '../common/Button';
 
 type LoginFormProps = {
 	onSuccess?: () => void;
@@ -110,12 +111,12 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
         return (
             <div className='p-4'>
                 <p>You are logged in.</p>
-                <button
+                <Button
                     onClick={logout}
-                    className='bg-red-500 text-white px-4 py-2 mt-2 rounded'
+                    variant='danger'
                 >
                     Log Out
-                </button>
+                </Button>
             </div>
         );
     }
@@ -166,15 +167,15 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
                             </button>
                         </div>
 
-                        <button
+                        <Button
                             type='submit'
-                            className='w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700'
+                            className='w-full'
                         >
-                        Log In
-                        </button>
+                            Log In
+                        </Button>
 
                         <p className='text-center text-sm text-gray-500'>
-                        or log in with
+                            or log in with
                         </p>
 
                         <div className='flex justify-center gap-4'>
@@ -183,13 +184,13 @@ export default function LoginForm({ onSuccess, onError, initialError }: LoginFor
                         </div>
 
                         <div className='text-center text-sm mt-4'>
-                        Don&apos;t have an account?{' '}
+                            Don&apos;t have an account?{' '}
                             <button
                                 type='button'
                                 onClick={() => navigate('/sign-up')}
                                 className='text-blue-500 font-bold'
                             >
-                            Sign Up
+                                Sign Up
                             </button>
                         </div>
 

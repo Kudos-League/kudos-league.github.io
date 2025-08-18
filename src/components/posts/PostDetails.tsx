@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 import type { ChannelDTO, CreateHandshakeDTO, PostDTO, LocationDTO } from "@/shared/api/types";
 import Pill from '../common/Pill';
+import Button from '../common/Button';
 
 interface Props {
     id?: string;
@@ -38,13 +39,13 @@ interface Props {
 
 function EditPostButton({ onClick }: { onClick: () => void }) {
     return (
-        <button
+        <Button
             onClick={onClick}
-            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center gap-1 text-sm font-semibold shadow"
         >
             <PencilSquareIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
             Edit
-        </button>
+        </Button>
     );
 }
 
@@ -434,12 +435,12 @@ export default function PostDetails(props: Props) {
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
-                <button
-                    className='bg-blue-500 text-white px-4 py-2 rounded mt-4'
+                <Button
+                    className='mt-4'
                     onClick={() => postDetails?.id && fetchPostDetails(postDetails.id)}
                 >
                     Retry
-                </button>
+                </Button>
             </div>
         );
     }
@@ -470,6 +471,16 @@ export default function PostDetails(props: Props) {
                     {user?.id === postDetails.sender?.id && postDetails.status !== 'closed' && (
                         <EditPostButton onClick={handleStartEdit} />
                     )}
+
+                    {postDetails.status !== 'closed' && user?.id === postDetails.sender?.id && (
+                        <Button
+                            onClick={handleClosePost}
+                            className="inline-flex items-center gap-1 text-sm font-semibold shadow"
+                            variant='danger'
+                        >
+                        Close Post
+                        </Button>
+                    )}
                 </div>
 
                 {postDetails.category?.name && (
@@ -491,46 +502,42 @@ export default function PostDetails(props: Props) {
                         <Pill key={i} name={tag.name} />
                     ))}
                 </div>
-
-                {postDetails.status !== 'closed' && user?.id === postDetails.sender?.id && (
-                    <button
-                        onClick={handleClosePost}
-                        className="bg-red-600 text-white px-4 py-2 rounded mt-2"
-                    >
-                        Close Post
-                    </button>
-                )}
             </div>
 
             {/* Like, Dislike, Report */}
             <div className='flex gap-4 items-center my-4 flex-wrap'>
-                <button
+                <Button
                     onClick={handleLike}
                     disabled={liked === true}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
-                        ${liked === true ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300'}`}
+                    shape='pill'
+                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
+                        ${liked === true ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
                 >
                     <HandThumbUpIcon className="w-4 h-4" />
                     Like
-                </button>
+                </Button>
 
-                <button
+                <Button
                     onClick={handleDislike}
                     disabled={liked === false}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
-                    ${liked === false ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300'}`}
+                    shape='pill'
+                    variant='danger'
+                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
+                    ${liked === false ? 'bg-gray-200 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
                 >
                     <HandThumbDownIcon className="w-4 h-4" />
                     Dislike
-                </button>
+                </Button>
 
-                <button
+                <Button
                     onClick={() => setReportModalVisible(true)}
-                    className='flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300'
+                    variant='warning'
+                    shape='pill'
+                    className='flex items-center gap-1 text-sm'
                 >
                     <ExclamationTriangleIcon className='w-4 h-4' />
                     Report
-                </button>
+                </Button>
             </div>
 
             {/* Body / Description - Enhanced Edit Form */}
@@ -584,18 +591,18 @@ export default function PostDetails(props: Props) {
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-4">
-                        <button
-                            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        <Button
+                            variant='success'
                             onClick={handleSaveEdit}
                         >
                             Save Changes
-                        </button>
-                        <button
-                            className="border border-gray-300 px-6 py-2 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        </Button>
+                        <Button
+                            // variant='secondary' // TODO: Looks invisible due to colours behind
                             onClick={() => setIsEditing(false)}
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : (
@@ -682,15 +689,14 @@ export default function PostDetails(props: Props) {
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(h => h.sender?.id === user?.id) && (
                     <div className='mt-4 flex justify-center'>
-                        <button
+                        <Button
                             onClick={handleSubmitHandshake}
-                            className='bg-blue-600 text-white px-4 py-2 rounded'
                             disabled={creatingHandshake}
                         >
                             {creatingHandshake
                                 ? 'Creating...'
                                 : postDetails.type === 'gift' ? 'Request This' : 'Gift This'}
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>
@@ -724,18 +730,18 @@ export default function PostDetails(props: Props) {
                             onChange={(e) => setReportReason(e.target.value)}
                         />
                         <div className='flex justify-end gap-2'>
-                            <button
+                            <Button
                                 onClick={() => setReportModalVisible(false)}
-                                className='px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                                // variant='secondary'
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={handleReport}
-                                className='px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700'
+                                variant='danger'
                             >
                                 Submit
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -750,12 +756,12 @@ export default function PostDetails(props: Props) {
                             alt='Preview'
                             className='max-w-full max-h-[90vh] rounded shadow-lg'
                         />
-                        <button
+                        <Button
                             onClick={() => setModalVisible(false)}
                             className='absolute top-2 right-2 text-white bg-black bg-opacity-50 px-3 py-1 rounded hover:bg-opacity-75'
                         >
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import GoogleLoginButton from './GoogleLoginButton';
 import DiscordLoginButton from './DiscordLoginButton';
+import Button from '../common/Button';
 
 type SignUpFormProps = {
     onSuccess?: () => void;
@@ -193,12 +194,12 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             onChange={(e) => setAccessPassword(e.target.value)}
                         />
                         
-                        <button
+                        <Button
                             type='submit'
-                            className='w-full py-3 rounded text-white font-bold bg-blue-600 hover:bg-blue-700'
+                            className='w-full'
                         >
                             Continue
-                        </button>
+                        </Button>
 
                         <div className='text-center text-sm mt-4'>
                             Already have an account?{' '}
@@ -304,7 +305,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             </button>
                         </div>
 
-                        <button
+                        <Button
                             type='button'
                             onClick={onSubmit}
                             disabled={isVerifying}
@@ -315,7 +316,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             }`}
                         >
                             {isVerifying ? 'Loading...' : 'Sign Up'}
-                        </button>
+                        </Button>
                         <p className='text-center text-sm text-gray-500'>
                         or sign up with
                         </p>
@@ -332,7 +333,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                                 onClick={() => navigate('/login')}
                                 className='text-blue-500 font-bold'
                             >
-                            Log In
+                                Log In
                             </button>
                         </div>
 
@@ -358,7 +359,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         <div className='mt-6 p-3 bg-gray-50 border rounded'>
                             <details>
                                 <summary className='text-sm font-medium text-gray-700 cursor-pointer'>
-                                Debug Logs ({debugLogs.length})
+                                    Debug Logs ({debugLogs.length})
                                 </summary>
                                 <div className='mt-2 max-h-40 overflow-y-auto text-xs font-mono'>
                                     {debugLogs.map((log, index) => (
@@ -367,13 +368,13 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                                         </div>
                                     ))}
                                 </div>
-                                <button
+                                <Button
                                     type='button'
                                     onClick={() => setDebugLogs([])}
                                     className='mt-2 text-xs text-red-600 hover:text-red-800'
                                 >
-                                Clear Logs
-                                </button>
+                                    Clear Logs
+                                </Button>
                             </details>
                         </div>
                     )}

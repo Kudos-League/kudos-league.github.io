@@ -3,6 +3,7 @@ import { CreateMessageDTO, MessageDTO, UpdateMessageDTO } from '@/shared/api/typ
 import { sendMessage, updateMessage, deleteMessage } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
+import Button from '../common/Button';
 
 
 interface Props {
@@ -156,20 +157,21 @@ const MessageList: React.FC<Props> = ({
                     {(showEditButton || showDeleteButton) && !isEditing && (
                         <div className="flex gap-1">
                             {showEditButton && (
-                                <button
+                                <Button
                                     onClick={() => handleEditStart(msg)}
-                                    className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                    className="text-xs"
                                 >
                                     Edit
-                                </button>
+                                </Button>
                             )}
                             {showDeleteButton && (
-                                <button
+                                <Button
                                     onClick={() => handleDelete(msg.id)}
-                                    className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                    variant='danger'
+                                    className="text-xs"
                                 >
                                     Delete
-                                </button>
+                                </Button>
                             )}
                         </div>
                     )}
@@ -194,19 +196,20 @@ const MessageList: React.FC<Props> = ({
                             }}
                         />
                         <div className="flex gap-2">
-                            <button
+                            <Button
                                 onClick={() => handleEditSave(msg.id)}
                                 disabled={!editContent.trim()}
-                                className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="text-xs"
                             >
                                 Save
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={handleEditCancel}
-                                className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition-colors"
+                                variant='secondary'
+                                className="text-xs"
                             >
                                 Cancel
-                            </button>
+                            </Button>
                         </div>
                         <p className="text-xs text-gray-500">
                             Press Ctrl+Enter to save, Esc to cancel
@@ -255,24 +258,25 @@ const MessageList: React.FC<Props> = ({
                         }}
                         className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
                     />
-                    <button
+                    <Button
                         onClick={handleSubmitMessage}
                         disabled={!messageContent.trim()}
-                        className='bg-blue-600 text-white px-3 py-2 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                        className='w-10 h-10'
+                        shape='circle'
                     >
                         ➤
-                    </button>
+                    </Button>
                 </div>
             )}
 
             {hasMoreMessages && !showAllMessages && (
                 <div className="flex justify-between items-center mt-3">
-                    <button
+                    <Button
                         onClick={() => setShowAllMessages(true)}
-                        className='px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors'
+                        variant='secondary'
                     >
                         Show more messages ({processedMessages.length - 3} more)
-                    </button>
+                    </Button>
                     
                     <span className="text-xs text-gray-500">
                         {processedMessages.length} message{processedMessages.length !== 1 ? 's' : ''}
@@ -281,12 +285,12 @@ const MessageList: React.FC<Props> = ({
             )}
 
             {showAllMessages && hasMoreMessages && (
-                <button
+                <Button
                     onClick={() => setShowAllMessages(false)}
-                    className='mt-3 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors w-full'
+                    variant='secondary'
                 >
                     Show less
-                </button>
+                </Button>
             )}
         </div>
     );

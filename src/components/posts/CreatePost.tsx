@@ -9,6 +9,7 @@ import TagInput from '@/components/TagInput';
 import { getCategories } from '@/shared/api/actions';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import Button from '../common/Button';
 
 type FormValues = {
     title: string;
@@ -136,24 +137,26 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     return (
         <div className='max-w-3xl mx-auto p-6 space-y-6'>
             <div className='flex gap-3'>
-                <button
+                <Button
                     className={`px-4 py-2 rounded ${postType === 'gift' ? 'bg-black text-white' : 'bg-gray-200'}`}
                     onClick={() => setPostType('gift')}
                 >
                     Give stuff
-                </button>
-                <button
+                </Button>
+                <Button
                     className={`px-4 py-2 rounded ${postType === 'request' ? 'bg-black text-white' : 'bg-gray-200'}`}
                     onClick={() => setPostType('request')}
+                    variant='secondary'
                 >
                     Request stuff
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setShowModal(true)}
-                    className='text-blue-600 underline ml-auto'
+                    className='ml-auto'
+                    variant='info'
                 >
                     ℹ️ Info
-                </button>
+                </Button>
             </div>
 
             {showModal && (
@@ -163,12 +166,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                             Lorem ipsum dolor sit amet, consectetur adipiscing
                             elit. Curabitur et mi risus...
                         </p>
-                        <button
+                        <Button
                             onClick={() => setShowModal(false)}
-                            className='mt-4 px-4 py-2 bg-blue-600 text-white rounded'
+                            className='mt-4'
                         >
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -235,14 +238,16 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                     alt={`Preview ${index + 1}`}
                                     className="w-full h-24 object-cover rounded border"
                                 />
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => removeImage(index)}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-600 transition-colors"
+                                    variant='danger'
+                                    shape='circle'
+                                    className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm font-bold"
                                     title="Remove image"
                                 >
                                     ×
-                                </button>
+                                </Button>
                                 <div className="text-xs text-gray-500 mt-1 truncate">
                                     {file.name}
                                 </div>
@@ -276,12 +281,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 <p className='text-red-600 text-sm mt-2'>{serverError}</p>
             )}
 
-            <button
+            <Button
                 onClick={form.handleSubmit(onSubmit)}
-                className='mt-4 px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700'
+                variant='success'
+                className='mt-4'
             >
                 Create
-            </button>
+            </Button>
         </div>
     )
 }

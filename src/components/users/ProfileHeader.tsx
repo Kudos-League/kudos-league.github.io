@@ -7,6 +7,7 @@ import AvatarComponent from '@/components/users/Avatar';
 import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '../common/Pill';
+import Button from '../common/Button';
 
 interface Props {
     user: UserDTO;
@@ -71,20 +72,20 @@ const ProfileHeader: React.FC<Props> = ({
 
             <div className='flex justify-center gap-4 mt-6'>
                 {isLoggedIn && !isSelf && (
-                    <button
+                    <Button
                         onClick={onStartDM}
-                        className='px-4 py-2 rounded bg-blue-100 hover:bg-blue-200'
+                        // variant='secondary'
                     >
                         💬 Message
-                    </button>
+                    </Button>
                 )}
                 {isSelf && (
-                    <button
+                    <Button
                         onClick={onEditProfile}
-                        className='px-4 py-2 rounded bg-gray-200 hover:bg-gray-300'
+                        // variant='secondary'
                     >
                         ⚙️ Edit
-                    </button>
+                    </Button>
                 )}
             </div>
 

@@ -9,6 +9,7 @@ import {
     XCircleIcon
 } from '@heroicons/react/24/outline';
 import { XMarkIcon } from '@heroicons/react/20/solid';
+import Button from './Button';
 
 export type AlertType = 'success' | 'danger' | 'warning' | 'info';
 
@@ -91,14 +92,14 @@ const Alert: React.FC<AlertProps> = ({
 
                         {closable && onClose && (
                             <div className="ml-4 flex shrink-0">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={onClose}
                                     className="inline-flex rounded-md text-gray-400 hover:text-gray-500 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 dark:hover:text-white dark:focus:outline-indigo-500"
                                 >
                                     <span className="sr-only">Close</span>
                                     <XMarkIcon aria-hidden="true" className="size-5" />
-                                </button>
+                                </Button>
                             </div>
                         )}
                     </div>

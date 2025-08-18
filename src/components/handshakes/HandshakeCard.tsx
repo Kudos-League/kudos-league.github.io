@@ -17,6 +17,7 @@ import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/hooks/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '@/components/messages/ChatModal';
+import Button from '../common/Button';
 
 interface Props {
     handshake: HandshakeDTO;
@@ -219,7 +220,8 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
 
                         {isSender && status === 'new' && (
                             <Tippy content="Rescind Offer">
-                                <button
+                                <Button
+                                    variant='danger'
                                     onClick={async () => {
                                         if (!confirm('Are you sure you want to rescind this handshake?')) return;
 
@@ -232,10 +234,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                             setError('Failed to delete handshake');
                                         }
                                     }}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-full transition-colors duration-200"
                                 >
                                     <XMarkIcon className="w-5 h-5" />
-                                </button>
+                                </Button>
                             </Tippy>
                         )}
                     </div>
@@ -310,7 +311,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     )}
 
                     {canAccept && (
-                        <button
+                        <Button
                             className={`
                                 relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
                                 transition-all duration-200 transform hover:scale-105 active:scale-95
@@ -334,7 +335,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                     <span className='ml-2 text-sm'>Accepting...</span>
                                 </div>
                             )}
-                        </button>
+                        </Button>
                     )}
                 </div>
 
@@ -351,17 +352,14 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 className='border border-green-300 rounded-lg flex-1 px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent'
                                 placeholder='Enter kudos amount'
                             />
-                            <button
+                            <Button
                                 onClick={handleKudosSubmit}
                                 disabled={submitting}
                                 className={`
                                     px-6 py-2 rounded-lg text-white font-medium text-sm
                                     transition-all duration-200 transform hover:scale-105 active:scale-95
                                     shadow-md hover:shadow-lg min-w-[100px]
-                                    ${submitting
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
-                    }
+                                    ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'}
                                 `}
                             >
                                 {submitting ? (
@@ -372,7 +370,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 ) : (
                                     'Submit'
                                 )}
-                            </button>
+                            </Button>
                         </div>
                         {error && (
                             <p className='text-sm text-red-600 flex items-center'>
@@ -384,7 +382,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                 )}
 
                 {!isSender && status === 'accepted' && (
-                    <button
+                    <Button
                         onClick={async () => {
                             try {
                                 await updateHandshake(handshake.id, { status: 'new' }, token);
@@ -395,10 +393,10 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 setError('Failed to undo accept');
                             }
                         }}
-                        className='bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg'
+                        variant='warning'
                     >
                         Undo Accept
-                    </button>
+                    </Button>
                 )}
 
                 {error && (

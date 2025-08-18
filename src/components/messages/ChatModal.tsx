@@ -8,6 +8,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, CreateMessageDTO, MessageDTO, UserDTO } from '@/shared/api/types';
+import Button from '../common/Button';
 
 interface ChatModalProps {
     isChatOpen: boolean;
@@ -344,7 +345,7 @@ export default function ChatModal({
                         {selectedChannel?.otherUser?.username ||
                             'Direct Message'}
                     </h2>
-                    <button
+                    <Button
                         className='text-sm text-red-500 hover:underline'
                         onClick={() => {
                             if (selectedChannel && selectedChannel.id !== -1) {
@@ -356,7 +357,7 @@ export default function ChatModal({
                         }}
                     >
                         Close
-                    </button>
+                    </Button>
                 </div>
                 
                 {/* Messages */}
@@ -441,7 +442,7 @@ export default function ChatModal({
                         className='flex-1 border rounded px-3 py-2'
                         placeholder='Type your message...'
                     />
-                    <button
+                    <Button
                         disabled={!validateMessage(messageInput) || loading}
                         onClick={sendMessage}
                         className={`px-4 py-2 rounded text-white ${
@@ -451,7 +452,7 @@ export default function ChatModal({
                         }`}
                     >
                         Send
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

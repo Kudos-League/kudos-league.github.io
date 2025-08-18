@@ -5,6 +5,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
 import MessageGroup from './MessageGroup';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
+import Button from '../common/Button';
 
 export default function PublicChat() {
     const { token, user } = useAuth();
@@ -89,7 +90,7 @@ export default function PublicChat() {
             {/* Left: Channel List */}
             <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
                 {channels.map((channel) => (
-                    <button
+                    <Button
                         key={channel.id}
                         onClick={() => selectChannel(channel)}
                         className={`block w-full text-left px-3 py-2 mb-1 rounded ${
@@ -99,7 +100,7 @@ export default function PublicChat() {
                         }`}
                     >
                         {channel.name}
-                    </button>
+                    </Button>
                 ))}
             </div>
 
@@ -151,12 +152,12 @@ export default function PublicChat() {
                                 if (e.key === 'Enter') sendMessage();
                             }}
                         />
-                        <button
+                        <Button
                             onClick={sendMessage}
                             className='ml-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
                         >
                             Send
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>

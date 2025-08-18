@@ -1,6 +1,7 @@
 import React from 'react';
 import { HandshakeDTO, UserDTO } from '@/shared/api/types';
 import HandshakeCard from './HandshakeCard';
+import Button from '../common/Button';
 
 interface HandshakesProps {
     handshakes: HandshakeDTO[];
@@ -41,12 +42,12 @@ const Handshakes: React.FC<HandshakesProps> = ({
             ))}
 
             {handshakes.length > 2 && !showAll && (
-                <button
+                <Button
                     onClick={onShowAll}
-                    className='mt-2 text-sm text-blue-600 hover:underline'
+                    className='mt-2 text-sm hover:underline'
                 >
                     Show all handshakes
-                </button>
+                </Button>
             )}
         </div>
     );

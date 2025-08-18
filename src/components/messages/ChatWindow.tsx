@@ -3,6 +3,7 @@ import { ChannelDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
 import MessageGroup from './MessageGroup';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
+import Button from '../common/Button';
 
 interface Props {
     user: UserDTO | null;
@@ -49,12 +50,12 @@ const ChatWindow: React.FC<Props> = ({
         <div className='w-2/3 flex flex-col h-full'>
             {/* Header */}
             <div className='flex items-center justify-between px-4 py-3 border-b bg-white'>
-                <button
+                <Button
                     onClick={onBack}
                     className='text-blue-600 font-semibold text-sm'
                 >
                     ← Back
-                </button>
+                </Button>
                 <h2 className='text-lg font-bold'>{otherUser?.username}</h2>
                 <div className='w-16' /> {/* spacer */}
             </div>
@@ -89,7 +90,7 @@ const ChatWindow: React.FC<Props> = ({
                         }
                     }}
                 />
-                <button
+                <Button
                     onClick={() => {
                         if (!messageInput.trim()) return;
                         onSend(messageInput.trim());
@@ -98,7 +99,7 @@ const ChatWindow: React.FC<Props> = ({
                     className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
                 >
                     Send
-                </button>
+                </Button>
             </div>
         </div>
     );

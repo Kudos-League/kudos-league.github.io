@@ -7,6 +7,7 @@ import { EventDTO } from "@/shared/api/types";
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
+import Button from "../common/Button";
 
 type Props = {
     event: EventDTO;
@@ -93,12 +94,13 @@ export default function EventDetails({ event, setEvent }: Props) {
                             />
                             <span className='font-medium'>{p.username}</span>
                             {p.id === user?.id && (
-                                <button
+                                <Button
+                                    variant='danger'
                                     onClick={handleLeave}
-                                    className='ml-auto px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600'
+                                    className='ml-auto'
                                 >
                                         Leave
-                                </button>
+                                </Button>
                             )}
                         </div>
                     ))
@@ -108,13 +110,13 @@ export default function EventDetails({ event, setEvent }: Props) {
             </div>
     
             {!event.participants?.some((p: any) => p.id === user?.id) && (
-                <button
+                <Button
                     onClick={handleJoin}
                     disabled={joining}
-                    className='mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
+                    className='mt-6'
                 >
                     {joining ? 'Joining...' : 'Join Event'}
-                </button>
+                </Button>
             )}
         </div>
     );
