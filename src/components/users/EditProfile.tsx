@@ -5,14 +5,14 @@ import useLocation from '@/hooks/useLocation';
 import AvatarComponent from '@/components/users/Avatar';
 import Input from '@/components/forms/Input';
 import MapDisplay from '@/components/Map';
-import ImagePicker from '@/components/forms/ImagePicker';
-import Toast from '@/components/common/Toast';
+// import ImagePicker from '@/components/forms/ImagePicker';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUser } from '@/shared/api/actions';
-import { getImagePath } from '@/shared/api/config';
+// import { getImagePath } from '@/shared/api/config';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import TagInput from '../TagInput';
+import TagInput from '@/components/TagInput';
+import Alert from '@/components/common/Alert';
 
 interface Props {
     targetUser: UserDTO;
@@ -75,6 +75,15 @@ const EditProfile: React.FC<Props> = ({
         // Use original avatar
         setPreviewUrl(null);
     }, [watchedAvatar, watchedAvatarURL]);
+
+    useEffect(() => {
+        if (toastMessage) {
+            const timer = setTimeout(() => {
+                setToastMessage(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toastMessage]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -225,6 +234,16 @@ const EditProfile: React.FC<Props> = ({
                     ← Back to Profile
                     </button>
                 </div>
+
+                {toastMessage && (
+                    <Alert
+                        type={toastType === 'success' ? 'success' : 'danger'}
+                        title={toastType === 'success' ? 'Notification' : undefined}
+                        message={toastMessage}
+                        show={!!toastMessage}
+                        onClose={() => setToastMessage(null)}
+                    />
+                )}
 
                 {/* Avatar Section with Edit Functionality */}
                 <div className='flex flex-col items-center mb-6'>
@@ -424,14 +443,6 @@ const EditProfile: React.FC<Props> = ({
                 <div 
                     className="fixed inset-0 z-0" 
                     onClick={() => setShowImageOptions(false)}
-                />
-            )}
-
-            {toastMessage && (
-                <Toast
-                    message={toastMessage}
-                    type={toastType}
-                    onClose={() => setToastMessage(null)}
                 />
             )}
         </>
