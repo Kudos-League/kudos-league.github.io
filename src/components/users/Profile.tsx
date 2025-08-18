@@ -11,11 +11,11 @@ import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
 import { useAuth } from '@/hooks/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
-import PostCard from '@/components/posts/PostCard';
 import EditProfile from '@/components/users/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
-import EventCard from '../events/EventCard';
+import EventCard from '@/components/events/EventCard';
+import PostList from '@/components/posts/PostList';
 
 type Props = {
     user: UserDTO;
@@ -127,14 +127,14 @@ const Profile: React.FC<Props> = ({
                     )}
                 </div>
             ) : (
-                <div className='grid gap-4 sm:grid-cols-1 md:grid-cols-2'>
-                    {posts
-                        .filter(
-                            (post) => filter === 'all' || post.type === filter
-                        )
-                        .map((post) => (
-                            <PostCard key={post.id} {...post} showHandshakeShortcut />
-                        ))}
+                <div className=''>
+                    <PostList
+                        posts={posts
+                            .filter(
+                                (post) => filter === 'all' || post.type === filter
+                            )}
+                        showHandshakeShortcut
+                    />
                 </div>
             )}
         </div>

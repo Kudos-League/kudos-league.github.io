@@ -2,9 +2,9 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePosts } from '@/hooks/usePosts';
 import { searchPosts } from '@/shared/api/actions';
-import PostsContainer from '@/components/posts/PostContainer';
 import CurrentEvent from '@/components/events/CurrentEvent';
 import { PostDTO } from '@/shared/api/types';
+import PostList from '@/components/posts/PostList';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -243,25 +243,10 @@ export default function Feed() {
                 </button>
             </div>
 
-            {/* Search Results */}
-            {searchText && results.length > 0 && (
-                <div className='border rounded p-4 bg-white'>
-                    <h2 className='text-sm font-semibold mb-2'>
-                        Search Results ({results.length}):
-                    </h2>
-                    <PostsContainer posts={results} />
-                </div>
-            )}
-
-            {/* Search - No Results */}
-            {searchText && results.length === 0 && searchText.length >= 2 && (
-                <div className='border rounded p-4 bg-gray-50 text-center'>
-                    <p className='text-gray-600'>No results found for {searchText}</p>
-                </div>
-            )}
-
-            {/* Main Posts Feed */}
-            {!searchText && <PostsContainer posts={orderedPosts} />}
+            <PostList
+                posts={results?.length ? results : orderedPosts}
+                showHandshakeShortcut
+            />
             
             {/* Empty State */}
             {!searchText && orderedPosts.length === 0 && !loading && (
