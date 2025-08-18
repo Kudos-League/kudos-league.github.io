@@ -8,6 +8,7 @@ import AppNavigator from '@/components/navigation/AppNavigator';
 
 import { ErrorBoundary } from 'react-error-boundary';
 import { BrowserRouter } from 'react-router-dom';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 
 function ErrorFallback() {
     return <div>Error loading</div>;
@@ -22,7 +23,9 @@ export default function App() {
                     onError={console.error}
                 >
                     <AuthProvider>
-                        <AppCore />
+                        <NotificationsProvider>
+                            <AppCore />
+                        </NotificationsProvider>
                     </AuthProvider>
                 </ErrorBoundary>
             </Suspense>
@@ -43,5 +46,3 @@ function AppCore() {
         </BrowserRouter>
     );
 }
-
-// noop 

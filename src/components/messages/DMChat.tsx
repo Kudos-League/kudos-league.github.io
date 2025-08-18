@@ -6,6 +6,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export default function DMChat() {
     const { id: targetUserId } = useParams<{ id: string }>();
@@ -14,12 +15,29 @@ export default function DMChat() {
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const { state: notifState } = useNotifications();
 
-    const { joinChannel, leaveChannel, send } = useWebSocket(
-        token,
+    const { joinChannel, leaveChannel, send } = useWebSocket({
         messages,
         setMessages
-    );
+    });
+
+    useEffect(() => {
+        const n = notifState.items[0];
+        if (!n) return;
+
+        if (n.type === 'direct-message') {
+            setChannels(prev =>
+                prev.map(c => c.id === n.channelID ? { ...c, lastMessage: n.message } : c)
+            );
+
+            if (selectedChannel?.id === n.channelID) {
+                const msg = n.message;
+                setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+            }
+        }
+
+    }, [notifState.items, selectedChannel?.id]);
 
     useEffect(() => {
         if (user && token) {

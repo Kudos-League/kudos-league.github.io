@@ -18,9 +18,10 @@ export default function PublicChat() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const { joinChannel, leaveChannel, send } = useWebSocket(
-        token,
-        messages,
-        setMessages
+        {
+            messages,
+            setMessages
+        }
     );
 
     const groupedMessages = useMemo(

@@ -4,7 +4,7 @@ export enum Environment {
 }
 
 const BACKEND_URI = process.env.REACT_APP_BACKEND_URI ?? 'http://localhost';
-const WSS_URI = process.env.REACT_APP_WSS_URI ?? 'ws://localhost:3001';
+const WSS_URI = process.env.REACT_APP_WSS_URI ?? 'ws://localhost';
 
 export function getEndpointUrl(): string {
     return BACKEND_URI;

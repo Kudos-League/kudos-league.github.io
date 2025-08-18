@@ -156,11 +156,10 @@ export default function ChatModal({
     );
     const token = useAppSelector((s) => s.auth.token);
     const { user } = useAuth();
-    const { joinChannel, leaveChannel } = useWebSocket(
-        token,
+    const { joinChannel, leaveChannel } = useWebSocket({
         messages,
         setMessages
-    );
+    });
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

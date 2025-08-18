@@ -763,3 +763,19 @@ export async function getGeocodedLocation(query: string, token: string) {
 
     return response.data;
 }
+
+export async function fetchNotifications(token: string, limit = 50) {
+    const res = await instance.get('/notifications', {
+        params: { limit },
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+    });
+    return res.data;
+}
+
+export async function markAllNotificationsRead(token: string) {
+    await instance.post('/notifications/mark-all-read', null, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+    });
+}

@@ -286,3 +286,24 @@ export interface UserDTO {
     location?: MapCoordinates;
     settings?: UserSettingsDTO | null;
 }
+
+export const NotificationType = {
+    DIRECT_MESSAGE: 'direct-message',
+    POST_REPLY: 'post-reply',
+} as const;
+
+export type NotificationTypeKeys = typeof NotificationType[keyof typeof NotificationType];
+
+export type DirectMessageNotification = {
+  type: typeof NotificationType.DIRECT_MESSAGE;
+  channelID: number;
+  message: MessageDTO;
+};
+
+export type PostReplyNotification = {
+  type: typeof NotificationType.POST_REPLY;
+  postID: number;
+  message: MessageDTO;
+};
+
+export type NotificationPayload = DirectMessageNotification | PostReplyNotification;
