@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import AvatarComponent from '@/components/users/Avatar';
-import HeaderBell from '@/components/NotificationsBell';
+import HeaderBell from '@/components/notifications/NotificationsBell';
 
 import {
     HomeIcon,

@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@craco/craco": "^7.1.0",
+    "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@mui/material": "^7.1.0",
     "@react-google-maps/api": "^2.20.7",

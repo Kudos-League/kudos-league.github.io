@@ -1,6 +1,6 @@
 import React from 'react';
 import PostCard from './PostCard';
-import Alert from '../Alert';
+import Alert from '../common/Alert';
 import type { PostDTO } from 'shared/api/types';
 
 export default function PostsContainer({ posts }: { posts: PostDTO[] }) {
