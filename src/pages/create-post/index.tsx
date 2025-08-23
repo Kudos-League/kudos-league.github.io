@@ -10,7 +10,5 @@ export default function CreatePostPage() {
         return <Login onSuccess={() => setShowLoginForm(false)} />;
     }
 
-    return (
-        <CreatePost setShowLoginForm={setShowLoginForm} />
-    )
+    return <CreatePost setShowLoginForm={setShowLoginForm} />;
 }

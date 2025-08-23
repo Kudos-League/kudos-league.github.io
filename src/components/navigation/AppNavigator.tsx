@@ -21,10 +21,9 @@ const Leaderboard = lazy(() => import('@/components/Leaderboard'));
 const DMChat = lazy(() => import('@/components/messages/DMChat'));
 const PublicChat = lazy(() => import('@/components/messages/PublicChat'));
 
-
 function AppNavigator() {
     return (
-        <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
+        <Suspense fallback={<div className='p-4 text-center'>Loading...</div>}>
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path='/' element={<Home />} />

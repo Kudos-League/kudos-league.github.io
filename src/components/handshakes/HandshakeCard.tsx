@@ -27,7 +27,12 @@ interface Props {
     onDelete?: (id: number) => void;
 }
 
-const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, onDelete }) => {
+const HandshakeCard: React.FC<Props> = ({
+    handshake,
+    userID,
+    showPostDetails,
+    onDelete
+}) => {
     const navigate = useNavigate();
     const { token } = useAuth();
 
@@ -46,26 +51,31 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
     const imageSrc = handshake.post.images?.[0]
         ? getEndpointUrl() + handshake.post.images[0]
         : undefined;
-    const showBodyInImageBox = imgError || !handshake.post.images?.length || !imageSrc;
-    
+    const showBodyInImageBox =
+        imgError || !handshake.post.images?.length || !imageSrc;
+
     // ─── who is receiving the item? ──────────────────────────────────────────────
     const canAccept = status === 'new' && userID === handshake.post.senderID;
     const itemReceiverID =
         handshake.post.type === 'gift'
-            ? handshake.senderID            // a gift post: requester is handshake.sender
-            : handshake.post.senderID;      // a request post: OP is the receiver
+            ? handshake.senderID // a gift post: requester is handshake.sender
+            : handshake.post.senderID; // a request post: OP is the receiver
 
     const gifterID =
         handshake.post.type === 'gift'
-            ? handshake.post.senderID       // giver = post owner
-            : handshake.senderID;           // giver = handshake sender
+            ? handshake.post.senderID // giver = post owner
+            : handshake.senderID; // giver = handshake sender
     const userIsItemReceiver = userID === itemReceiverID;
 
     // Check if current user is a participant in this handshake
-    const isParticipant = userID === handshake.senderID || userID === handshake.post.senderID;
+    const isParticipant =
+        userID === handshake.senderID || userID === handshake.post.senderID;
 
     // Determine the other user in the conversation
-    const otherUserID = userID === handshake.senderID ? handshake.post.senderID : handshake.senderID;
+    const otherUserID =
+        userID === handshake.senderID
+            ? handshake.post.senderID
+            : handshake.senderID;
 
     useEffect(() => {
         const fetchSender = async () => {
@@ -85,27 +95,36 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
     useEffect(() => {
         const fetchLastMessage = async () => {
             // Only fetch messages if user is a participant and handshake is accepted/completed
-            if ((status !== 'accepted' && status !== 'completed') || !isParticipant) {
+            if (
+                (status !== 'accepted' && status !== 'completed') ||
+                !isParticipant
+            ) {
                 setLoadingMessage(false);
                 return;
             }
-            
+
             setLoadingMessage(true);
             try {
                 // Create or get DM channel between the two users
-                const channel = await createDMChannel(userID, otherUserID, token);
+                const channel = await createDMChannel(
+                    userID,
+                    otherUserID,
+                    token
+                );
                 console.log('DM Channel:', channel);
-                
+
                 const messages = await getMessages(channel.id, token);
                 console.log('All messages:', messages);
-                
+
                 // Get the last message from the other user
-                const otherUserMessages = messages.filter((msg: MessageDTO) => msg.authorID === otherUserID);
+                const otherUserMessages = messages.filter(
+                    (msg: MessageDTO) => msg.authorID === otherUserID
+                );
                 console.log('Other user messages:', otherUserMessages);
-                
+
                 const lastMsg = otherUserMessages[otherUserMessages.length - 1];
                 console.log('Last message from other user:', lastMsg);
-                
+
                 setLastMessage(lastMsg || null);
             }
             catch (err) {
@@ -193,7 +212,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
 
     return (
         <>
-            <div className={`border border-gray-200 p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${showPostDetails && 'space-y-4'}`}>
+            <div
+                className={`border border-gray-200 p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${showPostDetails && 'space-y-4'}`}
+            >
                 <div className='flex justify-between items-start'>
                     <div className='font-semibold'>
                         <UserCard user={senderUser} large={!showPostDetails} />
@@ -210,27 +231,43 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                         : 'bg-gradient-to-r from-green-500 to-green-600'
                             }`}
                         >
-                            {status === 'new' ? 'Pending' : status.charAt(0).toUpperCase() + status.slice(1)}
+                            {status === 'new'
+                                ? 'Pending'
+                                : status.charAt(0).toUpperCase() +
+                                  status.slice(1)}
                         </span>
 
                         {isSender && status === 'new' && (
-                            <Tippy content="Rescind Offer">
+                            <Tippy content='Rescind Offer'>
                                 <Button
                                     variant='danger'
                                     onClick={async () => {
-                                        if (!confirm('Are you sure you want to rescind this handshake?')) return;
+                                        if (
+                                            !confirm(
+                                                'Are you sure you want to rescind this handshake?'
+                                            )
+                                        )
+                                            return;
 
                                         try {
-                                            await deleteHandshake(handshake.id, token);
+                                            await deleteHandshake(
+                                                handshake.id,
+                                                token
+                                            );
                                             onDelete?.(handshake.id);
                                         }
                                         catch (err) {
-                                            console.error('Failed to delete handshake', err);
-                                            setError('Failed to delete handshake');
+                                            console.error(
+                                                'Failed to delete handshake',
+                                                err
+                                            );
+                                            setError(
+                                                'Failed to delete handshake'
+                                            );
                                         }
                                     }}
                                 >
-                                    <XMarkIcon className="w-5 h-5" />
+                                    <XMarkIcon className='w-5 h-5' />
                                 </Button>
                             </Tippy>
                         )}
@@ -241,7 +278,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     {showPostDetails && (
                         <div className='flex space-x-4 flex-1'>
                             <div
-                                onClick={() => navigate(`/post/${handshake.postID}`)}
+                                onClick={() =>
+                                    navigate(`/post/${handshake.postID}`)
+                                }
                                 className='w-20 h-20 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity duration-200'
                             >
                                 {showBodyInImageBox ? (
@@ -262,41 +301,60 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 <div>
                                     <span
                                         className='text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium text-sm'
-                                        onClick={() => navigate(`/post/${handshake.postID}`)}
+                                        onClick={() =>
+                                            navigate(
+                                                `/post/${handshake.postID}`
+                                            )
+                                        }
                                     >
                                         {handshake.post.title}
                                     </span>
                                     <p className='text-xs text-gray-500 mt-1'>
-                                        Created: {new Date(handshake.createdAt).toLocaleDateString()}
+                                        Created:{' '}
+                                        {new Date(
+                                            handshake.createdAt
+                                        ).toLocaleDateString()}
                                     </p>
                                 </div>
 
                                 {/* Last message preview - only for participants */}
-                                {(status === 'accepted' || status === 'completed') && isParticipant && (
-                                    <div 
+                                {(status === 'accepted' ||
+                                    status === 'completed') &&
+                                    isParticipant && (
+                                    <div
                                         className='mt-2 p-2 bg-gray-50 rounded-lg border hover:bg-gray-100 cursor-pointer transition-colors duration-200'
                                         onClick={() => setIsChatOpen(true)}
                                     >
                                         {loadingMessage ? (
                                             <div className='flex items-center space-x-2'>
                                                 <div className='w-3 h-3 bg-gray-300 rounded-full animate-pulse'></div>
-                                                <span className='text-xs text-gray-500'>Loading last message...</span>
+                                                <span className='text-xs text-gray-500'>
+                                                        Loading last message...
+                                                </span>
                                             </div>
                                         ) : lastMessage ? (
                                             <div className='flex items-start space-x-2'>
                                                 <ChatBubbleLeftIcon className='w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0' />
                                                 <div className='min-w-0 flex-1'>
                                                     <p className='text-xs text-gray-700 break-words'>
-                                                        {formatMessagePreview(lastMessage.content)}
+                                                        {formatMessagePreview(
+                                                            lastMessage.content
+                                                        )}
                                                     </p>
                                                 </div>
-                                                <span className='text-xs text-blue-500 font-medium'>Click to chat</span>
+                                                <span className='text-xs text-blue-500 font-medium'>
+                                                        Click to chat
+                                                </span>
                                             </div>
                                         ) : (
                                             <div className='flex items-center space-x-2'>
                                                 <ChatBubbleLeftIcon className='w-3 h-3 text-gray-400' />
-                                                <span className='text-xs text-gray-500'>No messages yet</span>
-                                                <span className='text-xs text-blue-500 font-medium ml-auto'>Click to start chat</span>
+                                                <span className='text-xs text-gray-500'>
+                                                        No messages yet
+                                                </span>
+                                                <span className='text-xs text-blue-500 font-medium ml-auto'>
+                                                        Click to start chat
+                                                </span>
                                             </div>
                                         )}
                                     </div>
@@ -311,8 +369,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                                 relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
                                 transition-all duration-200 transform hover:scale-105 active:scale-95
                                 shadow-lg hover:shadow-xl ml-4 mt-2 self-start min-w-[120px]
-                                ${processing 
-                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed' 
+                                ${
+                        processing
+                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed'
                             : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
                         }
                                 before:absolute before:inset-0 before:bg-white before:opacity-0 
@@ -321,13 +380,17 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                             onClick={handleAccept}
                             disabled={processing}
                         >
-                            <span className={`transition-opacity duration-200 ${processing ? 'opacity-0' : 'opacity-100'}`}>
+                            <span
+                                className={`transition-opacity duration-200 ${processing ? 'opacity-0' : 'opacity-100'}`}
+                            >
                                 Accept Offer
                             </span>
                             {processing && (
                                 <div className='absolute inset-0 flex items-center justify-center'>
                                     <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-                                    <span className='ml-2 text-sm'>Accepting...</span>
+                                    <span className='ml-2 text-sm'>
+                                        Accepting...
+                                    </span>
                                 </div>
                             )}
                         </Button>
@@ -369,7 +432,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                         </div>
                         {error && (
                             <p className='text-sm text-red-600 flex items-center'>
-                                <span className='w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2'>!</span>
+                                <span className='w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2'>
+                                    !
+                                </span>
                                 {error}
                             </p>
                         )}
@@ -380,7 +445,11 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     <Button
                         onClick={async () => {
                             try {
-                                await updateHandshake(handshake.id, { status: 'new' }, token);
+                                await updateHandshake(
+                                    handshake.id,
+                                    { status: 'new' },
+                                    token
+                                );
                                 setStatus('new');
                             }
                             catch (err) {
@@ -397,7 +466,9 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                 {error && (
                     <div className='p-3 bg-red-50 border border-red-200 rounded-lg'>
                         <p className='text-sm text-red-700 flex items-center'>
-                            <span className='w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2 text-red-600'>!</span>
+                            <span className='w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2 text-red-600'>
+                                !
+                            </span>
                             {error}
                         </p>
                     </div>
@@ -412,7 +483,7 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
                     initialMessage={
                         handshake.post.type === 'gift'
                             ? "Hey I'd love to give you this, where can we meet?"
-                            : "Hey thanks for offering this, where can we meet?"
+                            : 'Hey thanks for offering this, where can we meet?'
                     }
                 />
             )}

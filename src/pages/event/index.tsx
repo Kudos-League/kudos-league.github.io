@@ -41,7 +41,5 @@ export default function EventDetailScreen() {
             </p>
         );
 
-    return (
-        <EventDetails event={event} setEvent={setEvent} />
-    );
+    return <EventDetails event={event} setEvent={setEvent} />;
 }

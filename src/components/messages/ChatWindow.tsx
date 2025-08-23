@@ -65,7 +65,9 @@ const ChatWindow: React.FC<Props> = ({
                     <SlideInOnScroll key={group[0].id} index={idx}>
                         <MessageGroup
                             messages={group}
-                            isOwn={!!user?.id && group[0].author?.id === user.id}
+                            isOwn={
+                                !!user?.id && group[0].author?.id === user.id
+                            }
                         />
                     </SlideInOnScroll>
                 ))}

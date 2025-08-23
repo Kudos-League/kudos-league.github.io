@@ -46,10 +46,10 @@ export default function Feed() {
             const filtered = posts.filter((p) => {
                 // Always exclude closed posts
                 if (p.status === 'closed') return false;
-                
+
                 // If 'all' is selected, include all non-closed posts
                 if (filterType === 'all') return true;
-                
+
                 // Filter by type: gifts or requests
                 return p.type === (filterType === 'gifts' ? 'gift' : 'request');
             });
@@ -112,7 +112,8 @@ export default function Feed() {
 
     const handleCreatePost = () => navigate('/create-post');
 
-    if (loading) return <div className='p-4 md:p-6 text-center'>Loading...</div>;
+    if (loading)
+        return <div className='p-4 md:p-6 text-center'>Loading...</div>;
     if (error) return <div className='p-4 md:p-6 text-red-500'>{error}</div>;
 
     return (
@@ -162,7 +163,7 @@ export default function Feed() {
                     >
                         Sort by distance
                     </Button>
-                    
+
                     <Button
                         onClick={() => setFilterOpen(!filterOpen)}
                         variant='secondary'
@@ -181,7 +182,10 @@ export default function Feed() {
                             className='text-sm'
                             variant='secondary'
                             onClick={() =>
-                                setTypeOfOrdering({ type: 'date', order: 'desc' })
+                                setTypeOfOrdering({
+                                    type: 'date',
+                                    order: 'desc'
+                                })
                             }
                         >
                             Newest
@@ -190,7 +194,10 @@ export default function Feed() {
                             className='text-sm'
                             variant='secondary'
                             onClick={() =>
-                                setTypeOfOrdering({ type: 'date', order: 'asc' })
+                                setTypeOfOrdering({
+                                    type: 'date',
+                                    order: 'asc'
+                                })
                             }
                         >
                             Oldest
@@ -252,11 +259,13 @@ export default function Feed() {
                 posts={results?.length ? results : orderedPosts}
                 showHandshakeShortcut
             />
-            
+
             {/* Empty State */}
             {!searchText && orderedPosts.length === 0 && !loading && (
                 <div className='text-center py-8'>
-                    <p className='text-gray-600 mb-4'>No posts match your current filters.</p>
+                    <p className='text-gray-600 mb-4'>
+                        No posts match your current filters.
+                    </p>
                     <button
                         onClick={() => setActiveTab('all')}
                         className='text-blue-600 hover:underline'

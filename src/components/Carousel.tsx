@@ -3,8 +3,8 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Button from './common/Button';
 
 type Props = {
-  images: string[];
-  interval?: number;
+    images: string[];
+    interval?: number;
 };
 
 const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
@@ -61,23 +61,27 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     // Width of the sliding track (100% per slide)
     const trackStyle = {
         width: `${total * 100}%`,
-        transform: `translateX(-${idx * (100 / total)}%)`,
+        transform: `translateX(-${idx * (100 / total)}%)`
     };
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto h-60 mb-6 overflow-hidden">
+        <div className='relative w-full max-w-2xl mx-auto h-60 mb-6 overflow-hidden'>
             {/* Track */}
             <div
-                className="h-full flex transition-transform duration-300 ease-in-out"
+                className='h-full flex transition-transform duration-300 ease-in-out'
                 style={trackStyle}
             >
                 {valid.map(({ src, orig }, i) => (
-                    <div key={`${orig}-${src}`} className="h-full" style={{ width: `${100 / total}%` }}>
-                        <div className="w-full h-full flex items-center justify-center">
+                    <div
+                        key={`${orig}-${src}`}
+                        className='h-full'
+                        style={{ width: `${100 / total}%` }}
+                    >
+                        <div className='w-full h-full flex items-center justify-center'>
                             <img
                                 src={getImagePath(src)}
                                 alt={`Post Image ${i + 1}`}
-                                className="max-h-60 w-auto h-full object-contain rounded-lg"
+                                className='max-h-60 w-auto h-full object-contain rounded-lg'
                                 onError={() => onImgError(orig)}
                             />
                         </div>
@@ -88,26 +92,26 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
             {total > 1 && (
                 <>
                     <Button
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10"
-                        variant="icon"
-                        shape="circle"
+                        className='absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10'
+                        variant='icon'
+                        shape='circle'
                         onClick={goLeft}
-                        aria-label="Previous image"
+                        aria-label='Previous image'
                     >
                         &#8592;
                     </Button>
 
                     <Button
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10"
-                        variant="icon"
-                        shape="circle"
+                        className='absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10'
+                        variant='icon'
+                        shape='circle'
                         onClick={goRight}
-                        aria-label="Next image"
+                        aria-label='Next image'
                     >
                         &#8594;
                     </Button>
 
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/40 px-2 py-1 rounded text-xs text-white">
+                    <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/40 px-2 py-1 rounded text-xs text-white'>
                         {idx + 1}/{total}
                     </div>
                 </>

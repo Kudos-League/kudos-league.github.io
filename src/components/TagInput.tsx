@@ -43,24 +43,25 @@ const TagInput: React.FC<TagInputProps> = ({
                     setIsLoading(false);
                     return;
                 }
-                
+
                 const response = await getTopTags(query, token);
-                
+
                 // Check if this is still the latest request
                 if (requestId === currentRequestRef.current) {
                     const filtered = response.data.filter(
-                        (tag: Tag) => !selectedTags.some((sel) => sel.name === tag.name)
+                        (tag: Tag) =>
+                            !selectedTags.some((sel) => sel.name === tag.name)
                     );
                     setSuggestedTags(filtered);
                 }
-            } 
+            }
             catch (e) {
                 console.error('Failed to fetch tags:', e);
                 // Only update state if this is still the current request
                 if (requestId === currentRequestRef.current) {
                     setSuggestedTags([]);
                 }
-            } 
+            }
             finally {
                 if (requestId === currentRequestRef.current) {
                     setIsLoading(false);
@@ -71,20 +72,23 @@ const TagInput: React.FC<TagInputProps> = ({
     );
 
     // Handle input changes and trigger suggestions
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setCurrentTagInput(value);
-        
-        // Increment request ID for race condition handling
-        currentRequestRef.current += 1;
-        const requestId = currentRequestRef.current;
-        
-        if (value && value.length >= 2) {
-            setIsLoading(true);
-        }
-        
-        fetchSuggestions(value, requestId);
-    }, [fetchSuggestions]);
+    const handleInputChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value;
+            setCurrentTagInput(value);
+
+            // Increment request ID for race condition handling
+            currentRequestRef.current += 1;
+            const requestId = currentRequestRef.current;
+
+            if (value && value.length >= 2) {
+                setIsLoading(true);
+            }
+
+            fetchSuggestions(value, requestId);
+        },
+        [fetchSuggestions]
+    );
 
     // Use useRef to track if we should call onTagsChange to prevent infinite loops
     const lastTagsRef = useRef<Tag[]>(selectedTags);
@@ -93,7 +97,9 @@ const TagInput: React.FC<TagInputProps> = ({
 
     useEffect(() => {
         // Only call onTagsChange if tags actually changed
-        if (JSON.stringify(selectedTags) !== JSON.stringify(lastTagsRef.current)) {
+        if (
+            JSON.stringify(selectedTags) !== JSON.stringify(lastTagsRef.current)
+        ) {
             lastTagsRef.current = selectedTags;
             onTagsChangeRef.current(selectedTags);
         }
@@ -109,9 +115,13 @@ const TagInput: React.FC<TagInputProps> = ({
     const handleAddTag = useCallback(() => {
         const trimmedInput = currentTagInput.trim();
         if (!trimmedInput) return;
-        
+
         // Check if tag already exists
-        if (selectedTags.some(tag => tag.name.toLowerCase() === trimmedInput.toLowerCase())) {
+        if (
+            selectedTags.some(
+                (tag) => tag.name.toLowerCase() === trimmedInput.toLowerCase()
+            )
+        ) {
             setCurrentTagInput('');
             setSuggestedTags([]);
             return;
@@ -121,50 +131,61 @@ const TagInput: React.FC<TagInputProps> = ({
             id: `custom-${Date.now()}`,
             name: trimmedInput
         };
-        
-        setSelectedTags(prev => [...prev, newTag]);
+
+        setSelectedTags((prev) => [...prev, newTag]);
         setCurrentTagInput('');
         setSuggestedTags([]);
-        
+
         // Use setTimeout to avoid cursor issues
         setTimeout(() => {
             inputRef.current?.focus();
         }, 0);
     }, [currentTagInput, selectedTags]);
 
-    const handleSelectSuggestion = useCallback((tag: Tag) => {
-        // Check if tag already exists
-        if (selectedTags.some(selected => selected.name.toLowerCase() === tag.name.toLowerCase())) {
-            return;
-        }
+    const handleSelectSuggestion = useCallback(
+        (tag: Tag) => {
+            // Check if tag already exists
+            if (
+                selectedTags.some(
+                    (selected) =>
+                        selected.name.toLowerCase() === tag.name.toLowerCase()
+                )
+            ) {
+                return;
+            }
 
-        setSelectedTags(prev => [...prev, tag]);
-        setCurrentTagInput('');
-        setSuggestedTags([]);
-        
-        // Use setTimeout to avoid cursor issues
-        setTimeout(() => {
-            inputRef.current?.focus();
-        }, 0);
-    }, [selectedTags]);
+            setSelectedTags((prev) => [...prev, tag]);
+            setCurrentTagInput('');
+            setSuggestedTags([]);
+
+            // Use setTimeout to avoid cursor issues
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 0);
+        },
+        [selectedTags]
+    );
 
     const handleRemoveTag = useCallback((id: string) => {
-        setSelectedTags(prev => prev.filter(tag => tag.id !== id));
+        setSelectedTags((prev) => prev.filter((tag) => tag.id !== id));
     }, []);
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddTag();
-        } 
-        else if (e.key === 'Escape') {
-            setSuggestedTags([]);
-        } 
-        else if (e.key === 'ArrowDown' && suggestedTags.length > 0) {
-            e.preventDefault();
-            // Could implement keyboard navigation here
-        }
-    }, [handleAddTag, suggestedTags.length]);
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddTag();
+            }
+            else if (e.key === 'Escape') {
+                setSuggestedTags([]);
+            }
+            else if (e.key === 'ArrowDown' && suggestedTags.length > 0) {
+                e.preventDefault();
+                // Could implement keyboard navigation here
+            }
+        },
+        [handleAddTag, suggestedTags.length]
+    );
 
     return (
         <div className='w-full space-y-3'>

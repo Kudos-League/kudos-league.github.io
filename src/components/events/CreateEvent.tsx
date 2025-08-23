@@ -15,10 +15,10 @@ export default function CreateEvent() {
     const [description, setDescription] = useState('');
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
-    
+
     const now = new Date();
-    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
-    
+    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
     const [startDate, setStartDate] = useState(now);
     const [endDate, setEndDate] = useState<Date | null>(oneDayLater);
     const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ export default function CreateEvent() {
         const errors: string[] = [];
         const warnings: string[] = [];
         const info: string[] = [];
-        
+
         if (!startDate) {
             errors.push('Start date is required');
             return { errors, warnings, info, isValid: false, canSubmit: false };
@@ -36,12 +36,16 @@ export default function CreateEvent() {
 
         const now = new Date();
         const startTime = new Date(startDate).getTime();
-        
+
         if (startTime < now.getTime() - 60000) {
             warnings.push('Start time is in the past');
         }
-        
-        const twoYearsFromNow = new Date(now.getFullYear() + 2, now.getMonth(), now.getDate());
+
+        const twoYearsFromNow = new Date(
+            now.getFullYear() + 2,
+            now.getMonth(),
+            now.getDate()
+        );
         if (startTime > twoYearsFromNow.getTime()) {
             warnings.push('Start time is more than 2 years in the future');
         }
@@ -53,13 +57,19 @@ export default function CreateEvent() {
 
         if (timeDiff > 0) {
             if (daysDiff > 0) {
-                info.push(`Event starts in ${daysDiff} day${daysDiff !== 1 ? 's' : ''}`);
+                info.push(
+                    `Event starts in ${daysDiff} day${daysDiff !== 1 ? 's' : ''}`
+                );
             }
             else if (hoursDiff > 0) {
-                info.push(`Event starts in ${hoursDiff} hour${hoursDiff !== 1 ? 's' : ''}`);
+                info.push(
+                    `Event starts in ${hoursDiff} hour${hoursDiff !== 1 ? 's' : ''}`
+                );
             }
             else if (minutesDiff > 0) {
-                info.push(`Event starts in ${minutesDiff} minute${minutesDiff !== 1 ? 's' : ''}`);
+                info.push(
+                    `Event starts in ${minutesDiff} minute${minutesDiff !== 1 ? 's' : ''}`
+                );
             }
             else {
                 info.push('Event starts very soon');
@@ -68,34 +78,50 @@ export default function CreateEvent() {
 
         if (endDate) {
             const endTime = new Date(endDate).getTime();
-            
+
             if (endTime <= startTime) {
                 errors.push('End time must be after start time');
             }
             else {
                 const durationMs = endTime - startTime;
                 const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-                const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-                
+                const durationMinutes = Math.floor(
+                    (durationMs % (1000 * 60 * 60)) / (1000 * 60)
+                );
+
                 if (durationMs < 15 * 60 * 1000) {
-                    warnings.push('Event duration is very short (less than 15 minutes)');
+                    warnings.push(
+                        'Event duration is very short (less than 15 minutes)'
+                    );
                 }
-                
-                const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+
+                const durationDays = Math.floor(
+                    durationMs / (1000 * 60 * 60 * 24)
+                );
                 if (durationDays > 0) {
-                    const remainingHours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const remainingHours = Math.floor(
+                        (durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+                    );
                     if (remainingHours > 0) {
-                        info.push(`Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}, ${remainingHours}h`);
+                        info.push(
+                            `Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}, ${remainingHours}h`
+                        );
                     }
                     else {
-                        info.push(`Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}`);
+                        info.push(
+                            `Event duration: ${durationDays} day${durationDays !== 1 ? 's' : ''}`
+                        );
                     }
                 }
                 else if (durationHours > 0) {
-                    info.push(`Event duration: ${durationHours}h ${durationMinutes}m`);
+                    info.push(
+                        `Event duration: ${durationHours}h ${durationMinutes}m`
+                    );
                 }
                 else {
-                    info.push(`Event duration: ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}`);
+                    info.push(
+                        `Event duration: ${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}`
+                    );
                 }
             }
         }
@@ -111,12 +137,17 @@ export default function CreateEvent() {
 
     const handleStartDateChange = (newStartDate: Date) => {
         setStartDate(newStartDate);
-        
-        if (endDate && new Date(endDate).getTime() <= new Date(newStartDate).getTime()) {
-            const suggestedEndDate = new Date(new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000); // 1 day later
+
+        if (
+            endDate &&
+            new Date(endDate).getTime() <= new Date(newStartDate).getTime()
+        ) {
+            const suggestedEndDate = new Date(
+                new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000
+            ); // 1 day later
             setEndDate(suggestedEndDate);
         }
-        
+
         setErrorMessages([]);
     };
 
@@ -163,7 +194,7 @@ export default function CreateEvent() {
         }
         catch (error: any) {
             console.error('Event creation error:', error);
-            
+
             if (error.response?.status === 400) {
                 const backendMessage = error.response?.data?.message;
                 if (typeof backendMessage === 'string') {
@@ -171,11 +202,15 @@ export default function CreateEvent() {
                 }
                 else if (backendMessage?.errors) {
                     const zodErrors = backendMessage.errors;
-                    const msgs = zodErrors.map((err: any) => `${err.field}: ${err.message}`);
+                    const msgs = zodErrors.map(
+                        (err: any) => `${err.field}: ${err.message}`
+                    );
                     setErrorMessages(msgs);
                 }
                 else {
-                    setErrorMessages(['Invalid data provided. Please check all fields.']);
+                    setErrorMessages([
+                        'Invalid data provided. Please check all fields.'
+                    ]);
                 }
             }
             else {
@@ -222,16 +257,19 @@ export default function CreateEvent() {
                 <input
                     type='checkbox'
                     checked={global}
-                    onChange={() => setGlobal(prev => !prev)}
+                    onChange={() => setGlobal((prev) => !prev)}
                 />
             </div>
 
             {!global && (
                 <div className='space-y-2'>
-                    <label className='block font-semibold'>Pick a Location</label>
+                    <label className='block font-semibold'>
+                        Pick a Location
+                    </label>
                     <p className='text-yellow-700 text-sm font-medium flex items-center'>
                         <span className='mr-2'>⚠️</span>
-                        The &nbsp;<u>EXACT</u>&nbsp; event location will be visible to all participants.
+                        The &nbsp;<u>EXACT</u>&nbsp; event location will be
+                        visible to all participants.
                     </p>
                     <MapDisplay
                         showAddressBar
@@ -247,13 +285,18 @@ export default function CreateEvent() {
                 </div>
             )}
 
-            <div className={`p-4 rounded-lg border-2 ${getValidationClasses(false, dateValidation.warnings.some(w => w.includes('past')))}`}>
+            <div
+                className={`p-4 rounded-lg border-2 ${getValidationClasses(
+                    false,
+                    dateValidation.warnings.some((w) => w.includes('past'))
+                )}`}
+            >
                 <UniversalDatePicker
                     label='Start Time'
                     date={startDate}
                     onChange={handleStartDateChange}
                 />
-                
+
                 {dateValidation.info.length > 0 && (
                     <div className='mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded'>
                         <div className='flex items-center gap-2'>
@@ -268,17 +311,22 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            <div className={`space-y-1 p-4 rounded-lg border-2 ${getValidationClasses(dateValidation.errors.some(e => e.includes('End time')), dateValidation.warnings.some(w => w.includes('duration')))}`}>
+            <div
+                className={`space-y-1 p-4 rounded-lg border-2 ${getValidationClasses(
+                    dateValidation.errors.some((e) => e.includes('End time')),
+                    dateValidation.warnings.some((w) => w.includes('duration'))
+                )}`}
+            >
                 {endDate !== null ? (
                     <>
                         <UniversalDatePicker
-                            label="End Time"
+                            label='End Time'
                             date={endDate}
                             onChange={handleEndDateChange}
                         />
-                        
+
                         <Button
-                            className="text-sm text-blue-600"
+                            className='text-sm text-blue-600'
                             onClick={() => setEndDate(null)}
                         >
                             Remove End Time (Make Ongoing)
@@ -286,9 +334,11 @@ export default function CreateEvent() {
                     </>
                 ) : (
                     <Button
-                        className="w-full text-sm text-blue-600 py-2"
+                        className='w-full text-sm text-blue-600 py-2'
                         onClick={() => {
-                            const suggestedEndDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000); // 1 day later by default
+                            const suggestedEndDate = new Date(
+                                startDate.getTime() + 24 * 60 * 60 * 1000
+                            ); // 1 day later by default
                             setEndDate(suggestedEndDate);
                         }}
                     >
@@ -297,19 +347,26 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {(dateValidation.errors.length > 0 || dateValidation.warnings.length > 0) && (
+            {(dateValidation.errors.length > 0 ||
+                dateValidation.warnings.length > 0) && (
                 <div className='space-y-2'>
                     {dateValidation.errors.map((error, i) => (
-                        <div key={`error-${i}`} className='bg-red-50 border border-red-200 rounded p-3'>
+                        <div
+                            key={`error-${i}`}
+                            className='bg-red-50 border border-red-200 rounded p-3'
+                        >
                             <p className='text-red-700 text-sm font-medium flex items-center'>
                                 <span className='mr-2'>❌</span>
                                 {error}
                             </p>
                         </div>
                     ))}
-                    
+
                     {dateValidation.warnings.map((warning, i) => (
-                        <div key={`warning-${i}`} className='bg-yellow-50 border border-yellow-200 rounded p-3'>
+                        <div
+                            key={`warning-${i}`}
+                            className='bg-yellow-50 border border-yellow-200 rounded p-3'
+                        >
                             <p className='text-yellow-700 text-sm font-medium flex items-center'>
                                 <span className='mr-2'>⚠️</span>
                                 {warning}
@@ -338,7 +395,7 @@ export default function CreateEvent() {
                         'Create Event'
                     )}
                 </Button>
-                
+
                 {!dateValidation.canSubmit && (
                     <p className='text-sm text-gray-600 text-center'>
                         Please fix the issues above to create your event

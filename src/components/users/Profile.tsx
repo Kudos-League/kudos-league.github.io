@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-    UserDTO,
-    PostDTO,
-    HandshakeDTO,
-    EventDTO
-} from '@/shared/api/types';
+import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -77,21 +72,19 @@ const Profile: React.FC<Props> = ({
 
             {/* Filter Buttons */}
             <div className='flex gap-4 justify-center'>
-                {Filters.map(
-                    (type) => (
-                        <Button
-                            key={type}
-                            onClick={() => setFilter(type as any)}
-                            className={`px-4 py-2 rounded ${
-                                filter === type
-                                    ? '!bg-blue-600 !text-white'
-                                    : '!bg-gray-200 !text-gray-700'
-                            }`}
-                        >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </Button>
-                    )
-                )}
+                {Filters.map((type) => (
+                    <Button
+                        key={type}
+                        onClick={() => setFilter(type as any)}
+                        className={`px-4 py-2 rounded ${
+                            filter === type
+                                ? '!bg-blue-600 !text-white'
+                                : '!bg-gray-200 !text-gray-700'
+                        }`}
+                    >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </Button>
+                ))}
             </div>
 
             {/* Filtered Content */}
@@ -112,7 +105,6 @@ const Profile: React.FC<Props> = ({
                             }}
                             showPostDetails
                         />
-
                     )}
                 </div>
             ) : filter === 'events' ? (
@@ -130,10 +122,9 @@ const Profile: React.FC<Props> = ({
             ) : (
                 <div className=''>
                     <PostList
-                        posts={posts
-                            .filter(
-                                (post) => filter === 'all' || post.type === filter
-                            )}
+                        posts={posts.filter(
+                            (post) => filter === 'all' || post.type === filter
+                        )}
                         showHandshakeShortcut
                     />
                 </div>

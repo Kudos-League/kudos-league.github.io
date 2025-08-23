@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
-import { useAuth } from "@/hooks/useAuth";
-import { EventDTO } from "@/shared/api/types";
+import { useAuth } from '@/hooks/useAuth';
+import { EventDTO } from '@/shared/api/types';
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
-import Button from "../common/Button";
+import Button from '../common/Button';
 
 type Props = {
     event: EventDTO;
     setEvent: (event: EventDTO) => void;
-}
+};
 
 export default function EventDetails({ event, setEvent }: Props) {
     const { user, token } = useAuth();
@@ -62,13 +62,13 @@ export default function EventDetails({ event, setEvent }: Props) {
             <h1 className='text-2xl font-bold'>{event.title}</h1>
             <p className='text-gray-700'>{event.description}</p>
             <p className='text-sm text-gray-500 italic'>
-                {format(toZonedTime(new Date(event.startTime), tz), "PPP p")}
+                {format(toZonedTime(new Date(event.startTime), tz), 'PPP p')}
                 {' – '}
                 {event.endTime
-                    ? format(toZonedTime(new Date(event.endTime), tz), "PPP p")
+                    ? format(toZonedTime(new Date(event.endTime), tz), 'PPP p')
                     : 'Ongoing'}
             </p>
-    
+
             {event.location?.regionID && (
                 <div className='my-4'>
                     <MapDisplay
@@ -78,7 +78,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     />
                 </div>
             )}
-    
+
             <h2 className='text-lg font-semibold'>Participants</h2>
             <div className='space-y-3'>
                 {event.participants?.length ? (
@@ -99,7 +99,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                                     onClick={handleLeave}
                                     className='ml-auto'
                                 >
-                                        Leave
+                                    Leave
                                 </Button>
                             )}
                         </div>
@@ -108,7 +108,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <p>No participants yet.</p>
                 )}
             </div>
-    
+
             {!event.participants?.some((p: any) => p.id === user?.id) && (
                 <Button
                     onClick={handleJoin}

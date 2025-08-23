@@ -83,24 +83,33 @@ const Layout: React.FC = () => {
             const hamburger = document.getElementById('hamburger-button');
             const dropdown = document.getElementById('profile-dropdown');
             const profileButton = document.getElementById('profile-button');
-            
+
             // Close mobile sidebar
-            if (sidebarOpen && sidebar && hamburger && 
-                !sidebar.contains(event.target as Node) && 
-                !hamburger.contains(event.target as Node)) {
+            if (
+                sidebarOpen &&
+                sidebar &&
+                hamburger &&
+                !sidebar.contains(event.target as Node) &&
+                !hamburger.contains(event.target as Node)
+            ) {
                 setSidebarOpen(false);
             }
-            
+
             // Close profile dropdown
-            if (showDropdown && dropdown && profileButton &&
+            if (
+                showDropdown &&
+                dropdown &&
+                profileButton &&
                 !dropdown.contains(event.target as Node) &&
-                !profileButton.contains(event.target as Node)) {
+                !profileButton.contains(event.target as Node)
+            ) {
                 setShowDropdown(false);
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, [sidebarOpen, showDropdown]);
 
     // Close sidebar and dropdown on route change
@@ -135,7 +144,11 @@ const Layout: React.FC = () => {
                     isLoggedIn={!!isLoggedIn}
                     user={user ?? undefined}
                     onLogout={handleLogout}
-                    brand={<span className="text-lg font-semibold text-gray-800 text-black dark:text-white">Kudos League</span>}
+                    brand={
+                        <span className='text-lg font-semibold text-gray-800 text-black dark:text-white'>
+                            Kudos League
+                        </span>
+                    }
                 />
 
                 <main className='flex-1 overflow-y-auto p-4 md:p-6'>

@@ -1,11 +1,17 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from 'redux_store/store';
 
 import {
     pushOne as pushAction,
     loadNotifications,
-    markAllRead as markAllReadThunk,
+    markAllRead as markAllReadThunk
 } from 'redux_store/slices/notifications.slice';
 
 import { NotificationPayload } from '@/shared/api/types';
@@ -14,14 +20,16 @@ import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
 
 type Ctx = {
-  state: { items: NotificationPayload[]; unread: number; loaded: boolean };
-  push: (n: NotificationPayload) => void;
-  markAllRead: () => Promise<void>;
+    state: { items: NotificationPayload[]; unread: number; loaded: boolean };
+    push: (n: NotificationPayload) => void;
+    markAllRead: () => Promise<void>;
 };
 
 const NotificationsContext = createContext<Ctx | null>(null);
 
-export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
+    children
+}) => {
     const dispatch = useDispatch();
     const state = useSelector((s: RootState) => s.notifications);
     const { user, token } = useAuth();
@@ -42,7 +50,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const handleConnect = () => {
             if (user?.id != null && joinedUserId.current !== user.id) {
-                if (joinedUserId.current != null) sock.emit('leaveUser', { userID: joinedUserId.current });
+                if (joinedUserId.current != null)
+                    sock.emit('leaveUser', { userID: joinedUserId.current });
                 sock.emit('joinUser', { userID: user.id });
                 joinedUserId.current = user.id;
             }
@@ -63,14 +72,17 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         }
     }, [dispatch, token, user?.id]);
 
-    const value = useMemo<Ctx>(() => ({
-        state,
-        push: (n) => dispatch(pushAction(n)),
-        markAllRead: async () => {
-            if (!token) return;
-            await dispatch(markAllReadThunk({ token }) as any);
-        },
-    }), [dispatch, state, token]);
+    const value = useMemo<Ctx>(
+        () => ({
+            state,
+            push: (n) => dispatch(pushAction(n)),
+            markAllRead: async () => {
+                if (!token) return;
+                await dispatch(markAllReadThunk({ token }) as any);
+            }
+        }),
+        [dispatch, state, token]
+    );
 
     return (
         <NotificationsContext.Provider value={value}>
@@ -81,6 +93,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export function useNotifications() {
     const ctx = useContext(NotificationsContext);
-    if (!ctx) throw new Error('useNotifications must be used inside NotificationsProvider');
+    if (!ctx)
+        throw new Error(
+            'useNotifications must be used inside NotificationsProvider'
+        );
     return ctx;
 }

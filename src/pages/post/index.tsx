@@ -41,16 +41,18 @@ const Post = () => {
         if (id) fetchPostDetails(Number(id));
     }, [id]);
 
-    return <PostDetails
-        id={id}
-        post={postDetails}
-        loading={loading}
-        error={error}
-        setPostDetails={setPostDetails}
-        liked={liked}
-        setLiked={setLiked}
-        fetchPostDetails={fetchPostDetails}
-    />;
+    return (
+        <PostDetails
+            id={id}
+            post={postDetails}
+            loading={loading}
+            error={error}
+            setPostDetails={setPostDetails}
+            liked={liked}
+            setLiked={setLiked}
+            fetchPostDetails={fetchPostDetails}
+        />
+    );
 };
 
 export default Post;

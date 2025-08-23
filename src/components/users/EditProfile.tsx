@@ -46,9 +46,9 @@ const EditProfile: React.FC<Props> = ({
             email: user.email,
             avatar: [],
             location: user.location || undefined,
-            tags: user.tags.map(t => t.name) || [],
+            tags: user.tags.map((t) => t.name) || [],
             about: user.settings?.about || '',
-            avatarURL: '',
+            avatarURL: ''
         }
     });
 
@@ -67,12 +67,12 @@ const EditProfile: React.FC<Props> = ({
                 return () => URL.revokeObjectURL(objectUrl);
             }
         }
-        
+
         if (watchedAvatarURL && watchedAvatarURL.trim()) {
             setPreviewUrl(watchedAvatarURL.trim());
             return;
         }
-        
+
         // Use original avatar
         setPreviewUrl(null);
     }, [watchedAvatar, watchedAvatarURL]);
@@ -158,7 +158,9 @@ const EditProfile: React.FC<Props> = ({
             }
             else if (Array.isArray(data.tags)) {
                 data.tags = data.tags
-                    .map((tag: any) => typeof tag === 'string' ? { name: tag.trim() } : tag)
+                    .map((tag: any) =>
+                        typeof tag === 'string' ? { name: tag.trim() } : tag
+                    )
                     .filter((tag: any) => tag?.name?.length > 0);
             }
 
@@ -181,7 +183,11 @@ const EditProfile: React.FC<Props> = ({
             if (!data.avatar) {
                 delete data.avatar;
             }
-            if (!data.avatarURL || typeof data.avatarURL !== 'string' || data.avatarURL.trim() === '') {
+            if (
+                !data.avatarURL ||
+                typeof data.avatarURL !== 'string' ||
+                data.avatarURL.trim() === ''
+            ) {
                 delete data.avatarURL;
             }
 
@@ -208,9 +214,10 @@ const EditProfile: React.FC<Props> = ({
             }
         }
         catch (err: any) {
-            const str = err.response?.data?.errors?.[0]?.message || 
-                err.response?.data?.message || 
-                err.message || 
+            const str =
+                err.response?.data?.errors?.[0]?.message ||
+                err.response?.data?.message ||
+                err.message ||
                 'Update failed';
 
             console.error('Profile update failed', err);
@@ -232,14 +239,16 @@ const EditProfile: React.FC<Props> = ({
                         onClick={onClose}
                         className='text-sm text-blue-600 hover:underline'
                     >
-                    ← Back to Profile
+                        ← Back to Profile
                     </button>
                 </div>
 
                 {toastMessage && (
                     <Alert
                         type={toastType === 'success' ? 'success' : 'danger'}
-                        title={toastType === 'success' ? 'Notification' : undefined}
+                        title={
+                            toastType === 'success' ? 'Notification' : undefined
+                        }
                         message={toastMessage}
                         show={!!toastMessage}
                         onClose={() => setToastMessage(null)}
@@ -250,18 +259,35 @@ const EditProfile: React.FC<Props> = ({
                 <div className='flex flex-col items-center mb-6'>
                     <div className='relative group'>
                         <PreviewAvatar />
-                        
+
                         {/* Edit Icon Overlay */}
                         <Button
                             variant='icon'
                             shape='circle'
-                            onClick={() => setShowImageOptions(!showImageOptions)}
+                            onClick={() =>
+                                setShowImageOptions(!showImageOptions)
+                            }
                             className='absolute bottom-0 right-0 p-2 shadow-lg w-8 h-8'
-                            title="Change profile picture"
+                            title='Change profile picture'
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <svg
+                                className='w-4 h-4'
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'
+                            >
+                                <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z'
+                                />
+                                <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M15 13a3 3 0 11-6 0 3 3 0 016 0z'
+                                />
                             </svg>
                         </Button>
 
@@ -269,20 +295,22 @@ const EditProfile: React.FC<Props> = ({
                         {showImageOptions && (
                             <div className='absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10 min-w-[280px]'>
                                 <div className='space-y-3'>
-                                    <h4 className='font-semibold text-gray-800'>Change Profile Picture</h4>
-                                    
+                                    <h4 className='font-semibold text-gray-800'>
+                                        Change Profile Picture
+                                    </h4>
+
                                     {/* File Upload Option */}
                                     <div>
                                         <input
                                             ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*"
+                                            type='file'
+                                            accept='image/*'
                                             onChange={handleFileSelect}
-                                            className="hidden"
-                                            id="avatar-file-input"
+                                            className='hidden'
+                                            id='avatar-file-input'
                                         />
                                         <label
-                                            htmlFor="avatar-file-input"
+                                            htmlFor='avatar-file-input'
                                             className='block w-full text-center bg-blue-50 text-blue-700 border border-blue-200 rounded px-3 py-2 cursor-pointer hover:bg-blue-100 transition-colors'
                                         >
                                             📁 Upload Image
@@ -294,8 +322,8 @@ const EditProfile: React.FC<Props> = ({
                                         <div className='flex gap-2'>
                                             <input
                                                 ref={urlInputRef}
-                                                type="text"
-                                                placeholder="Paste image URL..."
+                                                type='text'
+                                                placeholder='Paste image URL...'
                                                 className='flex-1 border border-gray-300 rounded px-3 py-2 text-sm'
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
@@ -314,9 +342,10 @@ const EditProfile: React.FC<Props> = ({
 
                                     {/* Action Buttons */}
                                     <div className='flex gap-2 pt-2 border-t'>
-                                        {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
+                                        {(watchedAvatar?.length > 0 ||
+                                            watchedAvatarURL?.trim()) && (
                                             <button
-                                                type="button"
+                                                type='button'
                                                 onClick={clearImage}
                                                 className='text-xs text-red-600 hover:text-red-800'
                                             >
@@ -324,7 +353,9 @@ const EditProfile: React.FC<Props> = ({
                                             </button>
                                         )}
                                         <Button
-                                            onClick={() => setShowImageOptions(false)}
+                                            onClick={() =>
+                                                setShowImageOptions(false)
+                                            }
                                             className='text-xs ml-auto'
                                             variant='secondary'
                                         >
@@ -342,7 +373,8 @@ const EditProfile: React.FC<Props> = ({
                     <p className='text-sm text-gray-500'>
                         {targetUser.kudos} Kudos
                     </p>
-                    {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
+                    {(watchedAvatar?.length > 0 ||
+                        watchedAvatarURL?.trim()) && (
                         <p className='text-xs text-green-600 mt-1'>
                             ✓ Image updated
                         </p>
@@ -358,7 +390,9 @@ const EditProfile: React.FC<Props> = ({
                 {/* Form Inputs - removed the separate profile picture section */}
                 <div className='space-y-6'>
                     <div>
-                        <label className='block font-semibold mb-1'>Email</label>
+                        <label className='block font-semibold mb-1'>
+                            Email
+                        </label>
                         <Input
                             name='email'
                             form={form}
@@ -370,7 +404,7 @@ const EditProfile: React.FC<Props> = ({
 
                     <div>
                         <label className='block font-semibold mb-1'>
-                        Description
+                            Description
                         </label>
                         <Input
                             name='about'
@@ -380,7 +414,7 @@ const EditProfile: React.FC<Props> = ({
                             multiline
                         />
                         <p className='text-xs text-gray-500 italic'>
-                        This will appear on your public profile.
+                            This will appear on your public profile.
                         </p>
                     </div>
 
@@ -393,12 +427,15 @@ const EditProfile: React.FC<Props> = ({
                             }}
                         />
                         <p className='text-xs text-gray-500 italic mt-2'>
-                            These tags appear on your profile. You can use interests, skills, or hobbies.
+                            These tags appear on your profile. You can use
+                            interests, skills, or hobbies.
                         </p>
                     </div>
 
                     <div>
-                        <label className='block font-semibold mb-1'>Location</label>
+                        <label className='block font-semibold mb-1'>
+                            Location
+                        </label>
                         <MapDisplay
                             regionID={targetUser.location?.regionID}
                             width={400}
@@ -429,10 +466,7 @@ const EditProfile: React.FC<Props> = ({
                         >
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>
-                        <Button
-                            onClick={onClose}
-                            variant='secondary'
-                        >
+                        <Button onClick={onClose} variant='secondary'>
                             Cancel
                         </Button>
                     </div>
@@ -441,8 +475,8 @@ const EditProfile: React.FC<Props> = ({
 
             {/* Click outside to close image options */}
             {showImageOptions && (
-                <div 
-                    className="fixed inset-0 z-0" 
+                <div
+                    className='fixed inset-0 z-0'
                     onClick={() => setShowImageOptions(false)}
                 />
             )}

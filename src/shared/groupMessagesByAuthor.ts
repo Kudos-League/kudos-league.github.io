@@ -1,4 +1,4 @@
-import type { MessageDTO } from "./api/types";
+import type { MessageDTO } from './api/types';
 
 export const groupMessagesByAuthor = (messages: MessageDTO[]) => {
     const groups: MessageDTO[][] = [];
@@ -8,10 +8,7 @@ export const groupMessagesByAuthor = (messages: MessageDTO[]) => {
         const current = messages[i];
         const prev = messages[i - 1];
 
-        if (
-            !prev ||
-            current.author?.id !== prev.author?.id
-        ) {
+        if (!prev || current.author?.id !== prev.author?.id) {
             if (currentGroup.length > 0) {
                 groups.push(currentGroup);
             }

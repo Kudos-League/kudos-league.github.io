@@ -7,7 +7,12 @@ import {
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { ChannelDTO, CreateMessageDTO, MessageDTO, UserDTO } from '@/shared/api/types';
+import {
+    ChannelDTO,
+    CreateMessageDTO,
+    MessageDTO,
+    UserDTO
+} from '@/shared/api/types';
 import Button from '../common/Button';
 
 interface ChatModalProps {
@@ -21,14 +26,16 @@ interface ChatModalProps {
 }
 
 // Helper function to safely parse dates
-const parseMessageDate = (date: string | Date | null | undefined): Date | null => {
+const parseMessageDate = (
+    date: string | Date | null | undefined
+): Date | null => {
     if (!date) return null;
-    
+
     // If it's already a Date object, return it
     if (date instanceof Date) {
         return isNaN(date.getTime()) ? null : date;
     }
-    
+
     // Try to parse string dates
     const parsed = new Date(date);
     return isNaN(parsed.getTime()) ? null : parsed;
@@ -43,19 +50,19 @@ const getMessageTimestamp = (msg: any): string | Date | null => {
 // Helper function for better date formatting
 const formatMessageTime = (date: string | Date | null | undefined): string => {
     const messageDate = parseMessageDate(date);
-    
+
     // Handle null/invalid dates
     if (!messageDate) {
         console.warn('Invalid or missing date in formatMessageTime:', date);
         return 'Unknown time';
     }
-    
+
     const now = new Date();
     const diffInMilliseconds = now.getTime() - messageDate.getTime();
     const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
-    
+
     // Debug logging - remove this once you've confirmed it's working
     console.log('Date formatting debug:', {
         originalDate: date,
@@ -64,79 +71,99 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
         diffInMinutes: diffInMinutes,
         diffInHours: diffInHours
     });
-    
+
     // Less than 1 minute ago
     if (diffInMinutes < 1) {
         return 'Just now';
     }
-    
+
     // Less than 1 hour ago
     if (diffInMinutes < 60) {
         return `${diffInMinutes}m ago`;
     }
-    
+
     // Less than 24 hours ago (same day)
     if (diffInHours < 24 && messageDate.getDate() === now.getDate()) {
-        return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return messageDate.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     }
-    
+
     // Yesterday
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (messageDate.getDate() === yesterday.getDate() && 
-        messageDate.getMonth() === yesterday.getMonth() && 
-        messageDate.getFullYear() === yesterday.getFullYear()) {
+    if (
+        messageDate.getDate() === yesterday.getDate() &&
+        messageDate.getMonth() === yesterday.getMonth() &&
+        messageDate.getFullYear() === yesterday.getFullYear()
+    ) {
         return `Yesterday ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
-    
+
     // Less than a week ago
     if (diffInDays < 7) {
-        const dayName = messageDate.toLocaleDateString([], { weekday: 'short' });
-        const time = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dayName = messageDate.toLocaleDateString([], {
+            weekday: 'short'
+        });
+        const time = messageDate.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
         return `${dayName} ${time}`;
     }
-    
+
     // Older than a week
-    return messageDate.toLocaleDateString([], { 
-        month: 'short', 
+    return messageDate.toLocaleDateString([], {
+        month: 'short',
         day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit' 
+        hour: '2-digit',
+        minute: '2-digit'
     });
 };
 
 // Helper function to check if we need a date separator
-const shouldShowDateSeparator = (currentMsg: MessageDTO, previousMsg: MessageDTO | null): boolean => {
+const shouldShowDateSeparator = (
+    currentMsg: MessageDTO,
+    previousMsg: MessageDTO | null
+): boolean => {
     if (!previousMsg) return true;
-    
+
     const currentDate = parseMessageDate(getMessageTimestamp(currentMsg));
     const previousDate = parseMessageDate(getMessageTimestamp(previousMsg));
-    
+
     // If either message has no valid date, don't show separator
     if (!currentDate || !previousDate) return false;
-    
-    return currentDate.getDate() !== previousDate.getDate() ||
-           currentDate.getMonth() !== previousDate.getMonth() ||
-           currentDate.getFullYear() !== previousDate.getFullYear();
+
+    return (
+        currentDate.getDate() !== previousDate.getDate() ||
+        currentDate.getMonth() !== previousDate.getMonth() ||
+        currentDate.getFullYear() !== previousDate.getFullYear()
+    );
 };
 
 // Helper function to format date separator
-const formatDateSeparator = (date: string | Date | null | undefined): string => {
+const formatDateSeparator = (
+    date: string | Date | null | undefined
+): string => {
     const dateObj = parseMessageDate(date);
-    
+
     if (!dateObj) return 'Unknown date';
-    
+
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const diffInDays = Math.floor(
+        (now.getTime() - dateObj.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (diffInDays === 0) return 'Today';
     if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return dateObj.toLocaleDateString([], { weekday: 'long' });
-    
-    return dateObj.toLocaleDateString([], { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+    if (diffInDays < 7)
+        return dateObj.toLocaleDateString([], { weekday: 'long' });
+
+    return dateObj.toLocaleDateString([], {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
     });
 };
 
@@ -225,15 +252,15 @@ export default function ChatModal({
         setLoading(true);
         try {
             const msgs = await getMessages(channelId, token);
-            
+
             // Debug: Log the raw messages from the API
             console.log('Raw messages from API:', msgs);
-            
+
             // Process messages but preserve original timestamps
-            const processedMessages: MessageDTO[] = msgs.map(msg => {
+            const processedMessages: MessageDTO[] = msgs.map((msg) => {
                 // Get the best available timestamp
                 const timestamp = getMessageTimestamp(msg);
-                
+
                 // Debug: Log each message's timestamp info
                 console.log('Processing message timestamps:', {
                     createdAt: msg.createdAt,
@@ -241,13 +268,13 @@ export default function ChatModal({
                     updatedAt: msg.updatedAt,
                     selectedTimestamp: timestamp
                 });
-                
+
                 return {
                     ...msg,
                     // Use the best available timestamp
                     createdAt: timestamp,
-                    author: msg.author || { 
-                        id: 0, 
+                    author: msg.author || {
+                        id: 0,
                         username: 'Unknown',
                         email: '',
                         admin: false,
@@ -258,7 +285,7 @@ export default function ChatModal({
                     }
                 };
             });
-            
+
             console.log('Processed messages:', processedMessages);
             setMessages(processedMessages);
         }
@@ -279,7 +306,7 @@ export default function ChatModal({
             setLoading(true);
             const msg: CreateMessageDTO = { content: messageInput };
             let response;
-            
+
             if (!selectedChannel || selectedChannel.id === -1) {
                 if (!recipientID || recipientID === 0) return;
                 response = await sendDirectMessage(+recipientID, msg, token);
@@ -302,14 +329,15 @@ export default function ChatModal({
                 if (!receiver) return;
                 response = await sendDirectMessage(receiver.id, msg, token);
             }
-            
+
             // Debug: Log the response from sending a message
             console.log('Send message response:', response);
-            
+
             const fullMessage: MessageDTO = {
                 ...response,
-                author: response.author || user || { 
-                    id: 0, 
+                author: response.author ||
+                    user || {
+                    id: 0,
                     username: 'Unknown',
                     email: '',
                     admin: false,
@@ -319,9 +347,10 @@ export default function ChatModal({
                     updatedAt: new Date()
                 },
                 // IMPORTANT: Preserve the server's timestamp if available, fallback to current time for new messages
-                createdAt: getMessageTimestamp(response) || new Date().toISOString()
+                createdAt:
+                    getMessageTimestamp(response) || new Date().toISOString()
             };
-            
+
             setMessages((prev) => [...prev, fullMessage]);
             setMessageInput('');
             onMessageSent?.();
@@ -359,7 +388,7 @@ export default function ChatModal({
                         Close
                     </Button>
                 </div>
-                
+
                 {/* Messages */}
                 <div
                     ref={scrollRef}
@@ -375,64 +404,86 @@ export default function ChatModal({
                             No messages yet.
                         </p>
                     )}
-                    {messages.filter(msg => msg && typeof msg === 'object').map((msg, i) => {
-                        // Don't override the timestamp - use what we have
-                        const safeMsg: MessageDTO = {
-                            ...msg,
-                            content: msg.content || '',
-                            author: msg.author || { 
-                                id: 0, 
-                                username: 'Unknown',
-                                email: '',
-                                admin: false,
-                                kudos: 0,
-                                locationID: null,
-                            } as UserDTO
-                        };
-                        
-                        const isOwn = safeMsg.author?.id === user?.id;
-                        const previousMsg = i > 0 ? messages[i - 1] : null;
-                        const showDateSeparator = shouldShowDateSeparator(safeMsg, previousMsg);
-                        
-                        // Get the best available timestamp for display
-                        const messageTimestamp = getMessageTimestamp(safeMsg);
-                        
-                        return (
-                            <React.Fragment key={`${safeMsg.id || 'temp'}-${i}`}>
-                                {/* Date Separator */}
-                                {showDateSeparator && (
-                                    <div className='flex items-center justify-center my-4'>
-                                        <div className='flex-1 border-t border-gray-300'></div>
-                                        <span className='px-3 text-xs text-gray-500 bg-gray-50'>
-                                            {formatDateSeparator(messageTimestamp)}
-                                        </span>
-                                        <div className='flex-1 border-t border-gray-300'></div>
-                                    </div>
-                                )}
-                                
-                                {/* Message */}
-                                <div
-                                    className={`max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
-                                        isOwn
-                                            ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto rounded-br-none'
-                                            : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
-                                    }`}
+                    {messages
+                        .filter((msg) => msg && typeof msg === 'object')
+                        .map((msg, i) => {
+                            // Don't override the timestamp - use what we have
+                            const safeMsg: MessageDTO = {
+                                ...msg,
+                                content: msg.content || '',
+                                author:
+                                    msg.author ||
+                                    ({
+                                        id: 0,
+                                        username: 'Unknown',
+                                        email: '',
+                                        admin: false,
+                                        kudos: 0,
+                                        locationID: null
+                                    } as UserDTO)
+                            };
+
+                            const isOwn = safeMsg.author?.id === user?.id;
+                            const previousMsg = i > 0 ? messages[i - 1] : null;
+                            const showDateSeparator = shouldShowDateSeparator(
+                                safeMsg,
+                                previousMsg
+                            );
+
+                            // Get the best available timestamp for display
+                            const messageTimestamp =
+                                getMessageTimestamp(safeMsg);
+
+                            return (
+                                <React.Fragment
+                                    key={`${safeMsg.id || 'temp'}-${i}`}
                                 >
-                                    <p>{safeMsg.content}</p>
-                                    <div 
-                                        className={`text-xs text-right mt-2 ${
-                                            isOwn ? 'text-teal-200' : 'text-zinc-400 dark:text-zinc-500'
+                                    {/* Date Separator */}
+                                    {showDateSeparator && (
+                                        <div className='flex items-center justify-center my-4'>
+                                            <div className='flex-1 border-t border-gray-300'></div>
+                                            <span className='px-3 text-xs text-gray-500 bg-gray-50'>
+                                                {formatDateSeparator(
+                                                    messageTimestamp
+                                                )}
+                                            </span>
+                                            <div className='flex-1 border-t border-gray-300'></div>
+                                        </div>
+                                    )}
+
+                                    {/* Message */}
+                                    <div
+                                        className={`max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
+                                            isOwn
+                                                ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto rounded-br-none'
+                                                : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                         }`}
-                                        title={messageTimestamp ? new Date(messageTimestamp).toLocaleString() : 'No timestamp available'}
                                     >
-                                        {formatMessageTime(messageTimestamp)}
+                                        <p>{safeMsg.content}</p>
+                                        <div
+                                            className={`text-xs text-right mt-2 ${
+                                                isOwn
+                                                    ? 'text-teal-200'
+                                                    : 'text-zinc-400 dark:text-zinc-500'
+                                            }`}
+                                            title={
+                                                messageTimestamp
+                                                    ? new Date(
+                                                        messageTimestamp
+                                                    ).toLocaleString()
+                                                    : 'No timestamp available'
+                                            }
+                                        >
+                                            {formatMessageTime(
+                                                messageTimestamp
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </React.Fragment>
-                        );
-                    })}
+                                </React.Fragment>
+                            );
+                        })}
                 </div>
-                
+
                 {/* Input */}
                 <div className='flex items-center gap-2'>
                     <textarea

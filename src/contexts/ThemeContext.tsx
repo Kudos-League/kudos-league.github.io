@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
-type ThemeContextValue = { theme: Theme; toggleTheme: () => void; setThemeExplicit: (t: Theme) => void; };
+type ThemeContextValue = {
+    theme: Theme;
+    toggleTheme: () => void;
+    setThemeExplicit: (t: Theme) => void;
+};
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -12,7 +16,9 @@ function getInitialTheme(): Theme {
 
     const stored = localStorage.getItem('theme');
     if (stored === 'light' || stored === 'dark') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -32,14 +38,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const stored = localStorage.getItem('theme');
         if (stored === 'light' || stored === 'dark') return;
 
-        const handler = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
+        const handler = (e: MediaQueryListEvent) =>
+            setTheme(e.matches ? 'dark' : 'light');
         mql.addEventListener('change', handler);
         return () => mql.removeEventListener('change', handler);
     }, []);
 
     useEffect(() => {
         const onStorage = (e: StorageEvent) => {
-            if (e.key === 'theme' && (e.newValue === 'light' || e.newValue === 'dark')) {
+            if (
+                e.key === 'theme' &&
+                (e.newValue === 'light' || e.newValue === 'dark')
+            ) {
                 setTheme(e.newValue);
             }
         };
@@ -47,7 +57,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return () => window.removeEventListener('storage', onStorage);
     }, []);
 
-    const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const toggleTheme = () =>
+        setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
     const setThemeExplicit = (t: Theme) => setTheme(t);
 
     return (

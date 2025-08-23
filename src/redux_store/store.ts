@@ -8,7 +8,7 @@ export const store = configureStore({
     reducer: {
         auth: authReducer,
         posts: postsReducer,
-        notifications: notificationsReducer,
+        notifications: notificationsReducer
     }
 });
 

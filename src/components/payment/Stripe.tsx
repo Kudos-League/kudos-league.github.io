@@ -77,10 +77,7 @@ export default function StripeWeb() {
                     Support Us with a Donation
                 </h1>
                 <DonationAmountPicker onAmountChange={setDonationAmount} />
-                <Button
-                    onClick={handlePayment}
-                    disabled={!loading}
-                >
+                <Button onClick={handlePayment} disabled={!loading}>
                     Donate
                 </Button>
             </div>

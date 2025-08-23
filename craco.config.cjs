@@ -7,7 +7,7 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 module.exports = {
     webpack: {
         alias: {
-            '@': path.resolve(__dirname, 'src'),
+            '@': path.resolve(__dirname, 'src')
         },
         configure: (webpackConfig) => {
             webpackConfig.optimization.minimize = true;
@@ -18,24 +18,24 @@ module.exports = {
                         mangle: false,
                         format: {
                             beautify: true,
-                            comments: true,
-                        },
-                    },
-                }),
+                            comments: true
+                        }
+                    }
+                })
             ];
 
             webpackConfig.plugins.push(
                 new BundleAnalyzerPlugin({
                     analyzerMode: 'disabled',
                     generateStatsFile: true,
-                    statsFilename: 'stats.json',
+                    statsFilename: 'stats.json'
                 })
             );
 
             return webpackConfig;
-        },
+        }
     },
     babel: {
-        plugins: [],
-    },
+        plugins: []
+    }
 };

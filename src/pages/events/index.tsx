@@ -6,7 +6,7 @@ import { EventDTO } from '@/shared/api/types';
 export default function EventsPage() {
     const [events, setEvents] = useState<EventDTO[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     useEffect(() => {
         const fetch = async () => {
             try {
@@ -25,13 +25,8 @@ export default function EventsPage() {
     }, []);
 
     if (loading) {
-        return (
-            <p className="text-center text-lg">Loading events...</p>
-        )
+        return <p className='text-center text-lg'>Loading events...</p>;
     }
 
-    return (
-        <Events events={events} />
-    );
+    return <Events events={events} />;
 }
-

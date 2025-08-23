@@ -35,17 +35,23 @@ export default function NotificationsToast() {
 
     const { type, message } = (() => {
         if (latest.type === 'direct-message') {
-            return { type: 'info' as const, message: `New DM: ${latest.message?.content ?? ''}` };
+            return {
+                type: 'info' as const,
+                message: `New DM: ${latest.message?.content ?? ''}`
+            };
         }
-        return { type: 'info' as const, message: `Reply: ${latest.message?.content ?? ''}` };
+        return {
+            type: 'info' as const,
+            message: `Reply: ${latest.message?.content ?? ''}`
+        };
     })();
 
     return (
         <div
-            aria-live="assertive"
-            className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 py-6 sm:items-start sm:p-6"
+            aria-live='assertive'
+            className='pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 py-6 sm:items-start sm:p-6'
         >
-            <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
+            <div className='flex w-full flex-col items-center space-y-4 sm:items-end'>
                 <Alert
                     type={type}
                     title={type === 'info' ? 'Notification' : undefined}

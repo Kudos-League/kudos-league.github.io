@@ -27,14 +27,9 @@ export const Filters = [
 export type FilterType = (typeof Filters)[number];
 
 export const getFilters = (isSelf: boolean) => {
-    const common = [
-        FiltersEnum.All,
-        FiltersEnum.Events
-    ] as const;
+    const common = [FiltersEnum.All, FiltersEnum.Events] as const;
 
-    return isSelf
-        ? [...common, FiltersEnum.RequestsGifts] as const
-        : common;
+    return isSelf ? ([...common, FiltersEnum.RequestsGifts] as const) : common;
 };
 
 export const MAX_FILE_SIZE_MB = 5;

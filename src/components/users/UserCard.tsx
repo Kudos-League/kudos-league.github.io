@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import Tippy from '@tippyjs/react/headless';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheckIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
+import {
+    ShieldCheckIcon,
+    ShieldExclamationIcon
+} from '@heroicons/react/24/outline';
 
 import AvatarComponent from '@/components/users/Avatar';
 import { getImagePath } from '@/shared/api/config';
@@ -32,7 +35,11 @@ function fmtDate(d?: Date | string) {
     if (!d) return '';
     const date = typeof d === 'string' ? new Date(d) : d;
     if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+    return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+    });
 }
 
 const UserCard: React.FC<Props> = ({
@@ -49,7 +56,7 @@ const UserCard: React.FC<Props> = ({
     subtitle,
     centered = false,
     nameClassName = '',
-    subtitleClassName = '',
+    subtitleClassName = ''
 }) => {
     const navigate = useNavigate();
     const username = user?.username || 'Anonymous';
@@ -61,7 +68,7 @@ const UserCard: React.FC<Props> = ({
             'truncate',
             'hover:underline',
             'cursor-pointer',
-            nameClassName,
+            nameClassName
         ].join(' ');
 
         const nameEl = (
@@ -74,13 +81,17 @@ const UserCard: React.FC<Props> = ({
         );
 
         // When centered + subtitle, stack vertically
-        const wrapperClasses = centered && subtitle
-            ? 'flex flex-col items-center text-center gap-1'
-            : 'flex items-center gap-2';
+        const wrapperClasses =
+            centered && subtitle
+                ? 'flex flex-col items-center text-center gap-1'
+                : 'flex items-center gap-2';
 
         // Avatar
         const avatar = (
-            <div onClick={() => user?.id && navigate(`/user/${user.id}`)} className="cursor-pointer">
+            <div
+                onClick={() => user?.id && navigate(`/user/${user.id}`)}
+                className='cursor-pointer'
+            >
                 <AvatarComponent
                     username={username}
                     avatar={user?.avatar ? getImagePath(user.avatar) : null}
@@ -91,10 +102,21 @@ const UserCard: React.FC<Props> = ({
 
         // Content block: name + optional subtitle
         const content = (
-            <div className={centered && subtitle ? 'min-w-0 flex flex-col items-center' : 'min-w-0'}>
+            <div
+                className={
+                    centered && subtitle
+                        ? 'min-w-0 flex flex-col items-center'
+                        : 'min-w-0'
+                }
+            >
                 {nameEl}
                 {subtitle ? (
-                    <div className={['text-xs text-gray-500 dark:text-gray-400 truncate', subtitleClassName].join(' ')}>
+                    <div
+                        className={[
+                            'text-xs text-gray-500 dark:text-gray-400 truncate',
+                            subtitleClassName
+                        ].join(' ')}
+                    >
                         {subtitle}
                     </div>
                 ) : null}
@@ -102,11 +124,7 @@ const UserCard: React.FC<Props> = ({
         );
 
         if (triggerVariant === 'name') {
-            return (
-                <div className={wrapperClasses}>
-                    {content}
-                </div>
-            );
+            return <div className={wrapperClasses}>{content}</div>;
         }
 
         return (
@@ -116,19 +134,30 @@ const UserCard: React.FC<Props> = ({
             </div>
         );
     }, [
-        triggerVariant, large, user?.id, user?.avatar, username, navigate,
-        subtitle, centered, nameClassName, subtitleClassName
+        triggerVariant,
+        large,
+        user?.id,
+        user?.avatar,
+        username,
+        navigate,
+        subtitle,
+        centered,
+        nameClassName,
+        subtitleClassName
     ]);
 
     const tippyTrigger =
-        triggerMode === 'hover' ? 'mouseenter'
-            : triggerMode === 'click' ? 'click'
-                : triggerMode === 'focus' ? 'focus'
+        triggerMode === 'hover'
+            ? 'mouseenter'
+            : triggerMode === 'click'
+                ? 'click'
+                : triggerMode === 'focus'
+                    ? 'focus'
                     : 'mouseenter focus';
 
     return (
         <Tippy
-            placement="auto"
+            placement='auto'
             offset={[0, sideOffset]}
             appendTo={() => document.body}
             interactive={interactive}
@@ -140,7 +169,9 @@ const UserCard: React.FC<Props> = ({
                 const el = inst.popper.firstElementChild as HTMLElement | null;
                 if (!el) return;
                 el.removeAttribute('data-open');
-                requestAnimationFrame(() => el.setAttribute('data-open', 'true'));
+                requestAnimationFrame(() =>
+                    el.setAttribute('data-open', 'true')
+                );
             }}
             onHidden={(inst) => {
                 const el = inst.popper.firstElementChild as HTMLElement | null;
@@ -165,74 +196,123 @@ const UserCard: React.FC<Props> = ({
                         "[data-placement^='bottom']:-translate-y-2",
                         "data-[open='true']:opacity-100",
                         "data-[open='true']:scale-100",
-                        "data-[open='true']:translate-y-0",
+                        "data-[open='true']:translate-y-0"
                     ].join(' ')}
-                    style={{ ['--card-w' as any]: `${panelWidth}px` } as React.CSSProperties}
+                    style={
+                        {
+                            ['--card-w' as any]: `${panelWidth}px`
+                        } as React.CSSProperties
+                    }
                 >
                     {user ? (
-                        <div className="flex items-start gap-3">
+                        <div className='flex items-start gap-3'>
                             <AvatarComponent
                                 username={username}
-                                avatar={user.avatar ? getImagePath(user.avatar) : null}
+                                avatar={
+                                    user.avatar
+                                        ? getImagePath(user.avatar)
+                                        : null
+                                }
                                 size={40}
                             />
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2">
+                            <div className='min-w-0'>
+                                <div className='flex items-center gap-2'>
                                     <button
-                                        onClick={() => user.id && navigate(`/user/${user.id}`)}
-                                        className="text-sm font-bold hover:underline truncate"
-                                        title="View profile"
+                                        onClick={() =>
+                                            user.id &&
+                                            navigate(`/user/${user.id}`)
+                                        }
+                                        className='text-sm font-bold hover:underline truncate'
+                                        title='View profile'
                                     >
                                         {username}
                                     </button>
 
                                     {user.admin ? (
-                                        <Pill tone="success" size="sm" leftIcon={<ShieldCheckIcon className="h-4 w-4" />}>
+                                        <Pill
+                                            tone='success'
+                                            size='sm'
+                                            leftIcon={
+                                                <ShieldCheckIcon className='h-4 w-4' />
+                                            }
+                                        >
                                             Admin
                                         </Pill>
                                     ) : null}
 
                                     {user.isEmailVerified ? (
-                                        <Pill tone="info" size="sm" leftIcon={<ShieldCheckIcon className="h-4 w-4" />}>
+                                        <Pill
+                                            tone='info'
+                                            size='sm'
+                                            leftIcon={
+                                                <ShieldCheckIcon className='h-4 w-4' />
+                                            }
+                                        >
                                             Verified
                                         </Pill>
                                     ) : (
-                                        <Pill tone="danger" size="sm" leftIcon={<ShieldExclamationIcon className="h-4 w-4" />}>
+                                        <Pill
+                                            tone='danger'
+                                            size='sm'
+                                            leftIcon={
+                                                <ShieldExclamationIcon className='h-4 w-4' />
+                                            }
+                                        >
                                             Not Verified
                                         </Pill>
                                     )}
                                 </div>
 
-                                <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
-                                    <div className="truncate">
-                                        <span className="opacity-70">Kudos:</span> {typeof user.kudos === 'number' ? user.kudos : 0}
+                                <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
+                                    <div className='truncate'>
+                                        <span className='opacity-70'>
+                                            Kudos:
+                                        </span>{' '}
+                                        {typeof user.kudos === 'number'
+                                            ? user.kudos
+                                            : 0}
                                     </div>
-                                    <div className="truncate">
-                                        <span className="opacity-70">Joined:</span> {fmtDate(user.createdAt) || '—'}
+                                    <div className='truncate'>
+                                        <span className='opacity-70'>
+                                            Joined:
+                                        </span>{' '}
+                                        {fmtDate(user.createdAt) || '—'}
                                     </div>
                                     {user.discordID ? (
-                                        <div className="truncate col-span-2">
-                                            <span className="opacity-70">Discord:</span> {user.discordID}
+                                        <div className='truncate col-span-2'>
+                                            <span className='opacity-70'>
+                                                Discord:
+                                            </span>{' '}
+                                            {user.discordID}
                                         </div>
                                     ) : null}
                                     {user.googleID ? (
-                                        <div className="truncate col-span-2">
-                                            <span className="opacity-70">Google:</span> {user.googleID}
+                                        <div className='truncate col-span-2'>
+                                            <span className='opacity-70'>
+                                                Google:
+                                            </span>{' '}
+                                            {user.googleID}
                                         </div>
                                     ) : null}
                                     {user.email ? (
-                                        <div className="truncate col-span-2">
-                                            <span className="opacity-70">Email:</span> {user.email}
+                                        <div className='truncate col-span-2'>
+                                            <span className='opacity-70'>
+                                                Email:
+                                            </span>{' '}
+                                            {user.email}
                                         </div>
                                     ) : null}
                                 </div>
 
-                                <div className="mt-3">
+                                <div className='mt-3'>
                                     <button
-                                        onClick={() => user.id && navigate(`/user/${user.id}`)}
-                                        className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                        onClick={() =>
+                                            user.id &&
+                                            navigate(`/user/${user.id}`)
+                                        }
+                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                             bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
-                                            hover:opacity-90 active:opacity-80 transition"
+                                            hover:opacity-90 active:opacity-80 transition'
                                     >
                                         View Profile
                                     </button>
@@ -240,9 +320,11 @@ const UserCard: React.FC<Props> = ({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center py-6">
-                            <div className="h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin" />
-                            <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-300">Loading…</span>
+                        <div className='flex items-center justify-center py-6'>
+                            <div className='h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin' />
+                            <span className='ml-2 text-xs text-neutral-600 dark:text-neutral-300'>
+                                Loading…
+                            </span>
                         </div>
                     )}
                 </div>
@@ -250,9 +332,11 @@ const UserCard: React.FC<Props> = ({
         >
             <div
                 className={[
-                    centered && subtitle ? 'inline-flex w-full flex-col items-center text-center gap-2' : 'inline-flex items-center gap-2',
+                    centered && subtitle
+                        ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                        : 'inline-flex items-center gap-2',
                     'text-neutral-900 dark:text-neutral-100',
-                    className,
+                    className
                 ].join(' ')}
             >
                 {trigger}

@@ -15,16 +15,16 @@ import { SubmitHandler, useForm } from 'react-hook-form';
  * type (gift/request), optional image files, tags and category.
  */
 type FormValues = {
-  title: string;
-  body: string;
-  type: 'gift' | 'request';
-  files?: File[];
-  tags: string[];
-  categoryID: number;
+    title: string;
+    body: string;
+    type: 'gift' | 'request';
+    files?: File[];
+    tags: string[];
+    categoryID: number;
 };
 
 type Props = {
-  setShowLoginForm: (show: boolean) => void;
+    setShowLoginForm: (show: boolean) => void;
 };
 
 /**
@@ -33,7 +33,9 @@ type Props = {
  * support, teal accents, rounded controls and improved modals.
  */
 export default function CreatePost({ setShowLoginForm }: Props) {
-    const form = useForm<FormValues>({ defaultValues: { tags: [], categoryID: 0 } });
+    const form = useForm<FormValues>({
+        defaultValues: { tags: [], categoryID: 0 }
+    });
     const { isLoggedIn, token } = useAuth();
     const { addPost } = usePosts();
     const navigate = useNavigate();
@@ -56,8 +58,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     }, [selectedImages, form]);
 
     /**
-   * Convert tag objects into plain names before storing in form state.
-   */
+     * Convert tag objects into plain names before storing in form state.
+     */
     const handleTagsChange = useCallback(
         (tags: { id: string; name: string }[]) => {
             const tagNames = tags.map((t) => t.name);
@@ -67,20 +69,23 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     );
 
     /**
-   * Basic file validation for images: ensure count and size constraints.
-   */
+     * Basic file validation for images: ensure count and size constraints.
+     */
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
-        if (files.length > MAX_FILE_COUNT) return `Max ${MAX_FILE_COUNT} files allowed.`;
-        const tooLarge = files.find((f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
         if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
         return null;
     };
 
     /**
-   * Handle image selection from the file input.  Selected images are stored
-   * in state and validated against the constraints.
-   */
+     * Handle image selection from the file input.  Selected images are stored
+     * in state and validated against the constraints.
+     */
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files) return;
@@ -98,23 +103,25 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     };
 
     /**
-   * Remove an image by its index from the selected images array.
-   */
+     * Remove an image by its index from the selected images array.
+     */
     const removeImage = (indexToRemove: number) => {
-        setSelectedImages((prev) => prev.filter((_, index) => index !== indexToRemove));
+        setSelectedImages((prev) =>
+            prev.filter((_, index) => index !== indexToRemove)
+        );
     };
 
     /**
-   * Create a temporary URL for previewing an image in the UI.
-   */
+     * Create a temporary URL for previewing an image in the UI.
+     */
     const createImagePreview = (file: File) => {
         return URL.createObjectURL(file);
     };
 
     /**
-   * Submit the form to create a new post.  Performs validation and calls
-   * the addPost hook.  If the user is not logged in the login form is shown.
-   */
+     * Submit the form to create a new post.  Performs validation and calls
+     * the addPost hook.  If the user is not logged in the login form is shown.
+     */
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         if (!isLoggedIn) return setShowLoginForm(true);
         const fileError = validateFiles(selectedImages);
@@ -127,7 +134,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             tags: data.tags,
             categoryID: data.categoryID,
             files: selectedImages,
-            location,
+            location
         };
         try {
             await addPost(newPost, token).unwrap();
@@ -157,7 +164,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     }`}
                     onClick={() => setPostType('gift')}
                 >
-          Give stuff
+                    Give stuff
                 </button>
                 <button
                     className={`px-4 py-2 rounded transition ${
@@ -167,13 +174,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     }`}
                     onClick={() => setPostType('request')}
                 >
-          Request stuff
+                    Request stuff
                 </button>
                 <button
                     onClick={() => setShowModal(true)}
                     className='text-teal-600 dark:text-teal-400 underline ml-auto'
                 >
-          ℹ️ Info
+                    ℹ️ Info
                 </button>
             </div>
 
@@ -182,13 +189,14 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 <div className='fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center'>
                     <div className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-w-md w-full'>
                         <p className='text-gray-800 dark:text-gray-200'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur et mi risus...
+                            Lorem ipsum dolor sit amet, consectetur adipiscing
+                            elit. Curabitur et mi risus...
                         </p>
                         <button
                             onClick={() => setShowModal(false)}
                             className='mt-4 px-4 py-2 bg-teal-600 dark:bg-teal-700 text-white rounded hover:bg-teal-700 dark:hover:bg-teal-600 transition'
                         >
-              Close
+                            Close
                         </button>
                     </div>
                 </div>
@@ -211,13 +219,16 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             />
 
             {/* Category selector */}
-            <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>Category</label>
+            <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>
+                Category
+            </label>
             <select
                 className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                 {...form.register('categoryID', {
                     required: 'Please select a category',
                     valueAsNumber: true,
-                    validate: (value) => value > 0 || 'Please select a valid category',
+                    validate: (value) =>
+                        value > 0 || 'Please select a valid category'
                 })}
             >
                 <option value=''>Select a category</option>
@@ -237,7 +248,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             {/* Image upload section */}
             <div>
                 <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
-          Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
+                    Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
                 </label>
                 <input
                     type='file'
@@ -262,7 +273,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                     className='absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold transition-colors'
                                     title='Remove image'
                                 >
-                  ×
+                                    ×
                                 </button>
                                 <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
                                     {file.name}
@@ -280,14 +291,20 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             />
 
             {/* Location */}
-            <label className='block text-sm font-semibold mt-4 text-gray-800 dark:text-gray-200'>Location</label>
+            <label className='block text-sm font-semibold mt-4 text-gray-800 dark:text-gray-200'>
+                Location
+            </label>
             <MapDisplay
                 showAddressBar
                 coordinates={undefined}
                 height={300}
                 shouldGetYourLocation
                 onLocationChange={(data) => {
-                    if (data) setLocation({ regionID: data.placeID, name: data.name });
+                    if (data)
+                        setLocation({
+                            regionID: data.placeID,
+                            name: data.name
+                        });
                 }}
             />
 
@@ -300,7 +317,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 onClick={form.handleSubmit(onSubmit)}
                 className='mt-4 px-6 py-2 bg-teal-600 dark:bg-teal-700 text-white rounded hover:bg-teal-700 dark:hover:bg-teal-600 transition'
             >
-        Create
+                Create
             </button>
         </div>
     );

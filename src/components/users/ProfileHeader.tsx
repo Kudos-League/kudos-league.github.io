@@ -72,18 +72,12 @@ const ProfileHeader: React.FC<Props> = ({
 
             <div className='flex justify-center gap-4 mt-6'>
                 {isLoggedIn && !isSelf && (
-                    <Button
-                        onClick={onStartDM}
-                        variant='secondary'
-                    >
+                    <Button onClick={onStartDM} variant='secondary'>
                         💬 Message
                     </Button>
                 )}
                 {isSelf && (
-                    <Button
-                        onClick={onEditProfile}
-                        variant='secondary'
-                    >
+                    <Button onClick={onEditProfile} variant='secondary'>
                         ⚙️ Edit
                     </Button>
                 )}

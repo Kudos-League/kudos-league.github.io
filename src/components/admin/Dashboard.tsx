@@ -6,12 +6,9 @@ import Button from '../common/Button';
 type Props = {
     reports: any[];
     setReports: React.Dispatch<React.SetStateAction<any[]>>;
-}
+};
 
-export default function Dashboard({
-    reports,
-    setReports
-}: Props) {
+export default function Dashboard({ reports, setReports }: Props) {
     const { token } = useAuth();
 
     const handleDeleteReport = async (reportID: number) => {
@@ -32,7 +29,7 @@ export default function Dashboard({
         try {
             await updateReportStatus(reportID, status, token);
             setReports((prev: any[]) =>
-                prev.map(r => (r.id === reportID ? { ...r, status } : r))
+                prev.map((r) => (r.id === reportID ? { ...r, status } : r))
             );
         }
         catch (err) {

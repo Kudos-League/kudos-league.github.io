@@ -45,10 +45,5 @@ export default function AdminDashboard() {
         return <p className='text-red-600'>{error}</p>;
     }
 
-    return (
-        <Dashboard
-            reports={reports}
-            setReports={setReports}
-        />
-    );
+    return <Dashboard reports={reports} setReports={setReports} />;
 }

@@ -2,17 +2,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 type Props = {
-  children: React.ReactNode;
-  /** Stagger index for sequential delay */
-  index?: number;
-  /** How much extra delay per index, in ms */
-  delayStep?: number; // default 60
-  /** Animate only once? */
-  once?: boolean; // default true
-  /** IntersectionObserver options */
-  threshold?: number; 
-  rootMargin?: string;
-  className?: string;
+    children: React.ReactNode;
+    /** Stagger index for sequential delay */
+    index?: number;
+    /** How much extra delay per index, in ms */
+    delayStep?: number; // default 60
+    /** Animate only once? */
+    once?: boolean; // default true
+    /** IntersectionObserver options */
+    threshold?: number;
+    rootMargin?: string;
+    className?: string;
 };
 
 export default function SlideInOnScroll({
@@ -22,7 +22,7 @@ export default function SlideInOnScroll({
     once = true,
     threshold = 0.15,
     rootMargin = '0px 0px -10% 0px',
-    className = '',
+    className = ''
 }: Props) {
     const ref = useRef<HTMLDivElement | null>(null);
     const [visible, setVisible] = useState(false);
@@ -32,7 +32,9 @@ export default function SlideInOnScroll({
         if (!el) return;
 
         // Respect reduced motion
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const prefersReduced = window.matchMedia(
+            '(prefers-reduced-motion: reduce)'
+        ).matches;
         if (prefersReduced) {
             setVisible(true);
             return;
@@ -66,8 +68,10 @@ export default function SlideInOnScroll({
                 // accessibility
                 'motion-reduce:transition-none motion-reduce:transform-none',
                 // from -> to
-                visible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6',
-                className,
+                visible
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-6',
+                className
             ].join(' ')}
             style={{ transitionDelay: `${index * delayStep}ms` }}
         >

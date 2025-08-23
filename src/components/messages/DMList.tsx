@@ -25,24 +25,24 @@ const DMList: React.FC<Props> = ({
         if (!lastMessage || !lastMessage.content) {
             return 'No messages yet';
         }
-        
+
         const content = lastMessage.content.trim();
         if (content.length <= 32) {
             return content;
         }
-        
+
         return content.substring(0, 32) + '...';
     };
 
     const getMessageTimestamp = (lastMessage: any) => {
         if (!lastMessage) return null;
-        
+
         const date = new Date(lastMessage.createdAt || lastMessage.updatedAt);
         if (isNaN(date.getTime())) return null;
-        
+
         const now = new Date();
         const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-        
+
         if (diffInHours < 1) {
             const diffInMinutes = Math.floor(diffInHours * 60);
             return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes}m ago`;
@@ -57,7 +57,9 @@ const DMList: React.FC<Props> = ({
 
     return (
         <div className='w-1/3 border-r border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 h-full flex flex-col p-4'>
-            <h2 className='text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4'>Direct Messages</h2>
+            <h2 className='text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4'>
+                Direct Messages
+            </h2>
 
             <input
                 type='text'
@@ -70,17 +72,19 @@ const DMList: React.FC<Props> = ({
             <div className='overflow-y-auto flex-1 space-y-2'>
                 {filteredChannels.length === 0 && (
                     <p className='text-sm text-gray-500'>
-                        {channels.length === 0 
-                            ? 'No conversations found.' 
+                        {channels.length === 0
+                            ? 'No conversations found.'
                             : 'No matches found.'}
                     </p>
                 )}
                 {filteredChannels.map((channel) => {
                     const user = channel.otherUser;
                     const isSelected = selectedChannel?.id === channel.id;
-                    const lastMessageText = formatLastMessage(channel.lastMessage);
+                    const lastMessageText = formatLastMessage(
+                        channel.lastMessage
+                    );
                     const timestamp = getMessageTimestamp(channel.lastMessage);
-                    
+
                     return (
                         <div
                             key={channel.id}
@@ -96,22 +100,24 @@ const DMList: React.FC<Props> = ({
                                 username={user.username}
                                 size={40}
                             />
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-baseline">
+                            <div className='flex-1 min-w-0'>
+                                <div className='flex justify-between items-baseline'>
                                     <p className='font-semibold text-zinc-900 dark:text-zinc-100 truncate'>
                                         {user.username}
                                     </p>
                                     {timestamp && (
-                                        <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0">
+                                        <span className='text-xs text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0'>
                                             {timestamp}
                                         </span>
                                     )}
                                 </div>
-                                <p className={`text-sm truncate ${
-                                    channel.lastMessage?.content 
-                                        ? 'text-zinc-600 dark:text-zinc-400' 
-                                        : 'text-zinc-400 dark:text-zinc-500 italic'
-                                }`}>
+                                <p
+                                    className={`text-sm truncate ${
+                                        channel.lastMessage?.content
+                                            ? 'text-zinc-600 dark:text-zinc-400'
+                                            : 'text-zinc-400 dark:text-zinc-500 italic'
+                                    }`}
+                                >
                                     {lastMessageText}
                                 </p>
                             </div>
