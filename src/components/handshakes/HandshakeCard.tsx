@@ -193,15 +193,10 @@ const HandshakeCard: React.FC<Props> = ({ handshake, userID, showPostDetails, on
 
     return (
         <>
-            <div className={`border border-gray-200 p-6 rounded-xl shadow-sm bg-white hover:shadow-md transition-shadow duration-200 ${showPostDetails && 'space-y-4'}`}>
+            <div className={`border border-gray-200 p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${showPostDetails && 'space-y-4'}`}>
                 <div className='flex justify-between items-start'>
                     <div className='font-semibold'>
-                        <UserCard
-                            username={senderUser?.username}
-                            avatar={senderUser?.avatar}
-                            userID={senderUser?.id}
-                            large={!showPostDetails}
-                        />
+                        <UserCard user={senderUser} large={!showPostDetails} />
                     </div>
 
                     <div className='flex items-start gap-2 ml-4'>

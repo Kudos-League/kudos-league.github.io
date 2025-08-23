@@ -10,7 +10,7 @@ import {
     ArrowRightOnRectangleIcon,
     UserPlusIcon
 } from '@heroicons/react/24/outline';
-import Sidebar from './Sidebar';
+// import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 type FooterLinkProps = {
@@ -33,7 +33,7 @@ const LayoutFooter: React.FC = () => {
     const { isLoggedIn, user } = useAuth();
 
     return (
-        <footer className='bg-white border-t border-gray-200 px-4 py-2 text-sm text-gray-700 md:hidden'>
+        <footer className='border-t border-gray-200 px-4 py-2 text-sm text-gray-700 md:hidden'>
             <div className='flex justify-around items-center gap-4'>
                 {isLoggedIn ? (
                     <>
@@ -117,6 +117,7 @@ const Layout: React.FC = () => {
 
     return (
         <div className='flex h-screen'>
+            {/*
             <Sidebar
                 open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
@@ -125,15 +126,16 @@ const Layout: React.FC = () => {
                 isAdmin={!!user?.admin}
                 brand={<span className="text-lg font-semibold text-gray-800">Kudos League</span>}
             />
+            */}
 
             {/* Main Content */}
-            <div className='flex-1 flex flex-col min-w-0 lg:pl-72'>
+            <div className='flex-1 flex flex-col min-w-0'>
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
                     isLoggedIn={!!isLoggedIn}
                     user={user ?? undefined}
                     onLogout={handleLogout}
-                    brand={<span className="text-lg font-semibold text-gray-800 dark:text-white">Kudos League</span>}
+                    brand={<span className="text-lg font-semibold text-gray-800 text-black dark:text-white">Kudos League</span>}
                 />
 
                 <main className='flex-1 overflow-y-auto p-4 md:p-6'>

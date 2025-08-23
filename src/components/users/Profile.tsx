@@ -15,7 +15,7 @@ import EditProfile from '@/components/users/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
-import PostList from '@/components/posts/PostList';
+import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 
 type Props = {

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { ChannelDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
 import MessageGroup from './MessageGroup';
+import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
 
@@ -26,13 +27,11 @@ const ChatWindow: React.FC<Props> = ({
         () => groupMessagesByAuthor(messages),
         [messages]
     );
-    const [scrolledOnce, setScrolledOnce] = useState(false);
+    // Always scroll to bottom when messages change
 
     useEffect(() => {
-        if (!scrolledOnce && messages.length) {
-            bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-            setScrolledOnce(true);
-            return;
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
 
@@ -62,12 +61,13 @@ const ChatWindow: React.FC<Props> = ({
 
             {/* Message list */}
             <div className='flex-1 overflow-y-auto p-4 bg-gray-50'>
-                {groupedMessages.map((group) => (
-                    <MessageGroup
-                        key={group[0].id}
-                        messages={group}
-                        isOwn={!!user?.id && group[0].author?.id === user.id}
-                    />
+                {groupedMessages.map((group, idx) => (
+                    <SlideInOnScroll key={group[0].id} index={idx}>
+                        <MessageGroup
+                            messages={group}
+                            isOwn={!!user?.id && group[0].author?.id === user.id}
+                        />
+                    </SlideInOnScroll>
                 ))}
                 <div ref={bottomRef} />
             </div>

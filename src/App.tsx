@@ -3,12 +3,13 @@ import React from 'react';
 import { Suspense } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from 'redux_store/store';
-import { AuthProvider, useAuth } from '@/hooks/useAuth';
-import AppNavigator from '@/components/navigation/AppNavigator';
-
 import { ErrorBoundary } from 'react-error-boundary';
 import { BrowserRouter } from 'react-router-dom';
+
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import AppNavigator from '@/components/navigation/AppNavigator';
 
 function ErrorFallback() {
     return <div>Error loading</div>;
@@ -24,7 +25,9 @@ export default function App() {
                 >
                     <AuthProvider>
                         <NotificationsProvider>
-                            <AppCore />
+                            <ThemeProvider>
+                                <AppCore />
+                            </ThemeProvider>
                         </NotificationsProvider>
                     </AuthProvider>
                 </ErrorBoundary>

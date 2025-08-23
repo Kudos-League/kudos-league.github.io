@@ -337,16 +337,16 @@ export default function ChatModal({
     if (!isChatOpen) return null;
 
     return (
-        <div className='fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center'>
-            <div className='bg-white rounded-lg shadow-lg w-full max-w-lg p-4 max-h-[90vh] flex flex-col'>
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+            <div className='bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] flex flex-col transition-transform duration-300'>
                 {/* Header */}
-                <div className='flex justify-between items-center border-b pb-2 mb-3'>
-                    <h2 className='text-lg font-semibold'>
+                <div className='flex justify-between items-center border-b border-zinc-200 dark:border-zinc-700 pb-3 mb-4'>
+                    <h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>
                         {selectedChannel?.otherUser?.username ||
                             'Direct Message'}
                     </h2>
                     <Button
-                        className='text-sm text-red-500 hover:underline'
+                        className='text-sm text-red-500 hover:text-red-600'
                         onClick={() => {
                             if (selectedChannel && selectedChannel.id !== -1) {
                                 leaveChannel(selectedChannel.id);
@@ -363,7 +363,7 @@ export default function ChatModal({
                 {/* Messages */}
                 <div
                     ref={scrollRef}
-                    className='flex-1 overflow-y-auto space-y-2 border rounded p-3 bg-gray-50 mb-3'
+                    className='flex-1 overflow-y-auto space-y-3 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-4'
                 >
                     {loading && (
                         <p className='text-center text-gray-400'>
@@ -412,16 +412,16 @@ export default function ChatModal({
                                 
                                 {/* Message */}
                                 <div
-                                    className={`max-w-xs p-2 rounded-lg text-sm ${
+                                    className={`max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
                                         isOwn
-                                            ? 'bg-blue-600 text-white self-end ml-auto'
-                                            : 'bg-white border self-start'
+                                            ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto rounded-br-none'
+                                            : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                     }`}
                                 >
                                     <p>{safeMsg.content}</p>
                                     <div 
-                                        className={`text-xs text-right mt-1 ${
-                                            isOwn ? 'text-blue-100' : 'text-gray-400'
+                                        className={`text-xs text-right mt-2 ${
+                                            isOwn ? 'text-teal-200' : 'text-zinc-400 dark:text-zinc-500'
                                         }`}
                                         title={messageTimestamp ? new Date(messageTimestamp).toLocaleString() : 'No timestamp available'}
                                     >
@@ -439,16 +439,16 @@ export default function ChatModal({
                         rows={2}
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
-                        className='flex-1 border rounded px-3 py-2'
+                        className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
                         placeholder='Type your message...'
                     />
                     <Button
                         disabled={!validateMessage(messageInput) || loading}
                         onClick={sendMessage}
-                        className={`px-4 py-2 rounded text-white ${
+                        className={`px-4 py-2 rounded-lg text-white transition-colors ${
                             validateMessage(messageInput) && !loading
-                                ? 'bg-blue-600 hover:bg-blue-700'
-                                : 'bg-gray-400 cursor-not-allowed'
+                                ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
+                                : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
                         }`}
                     >
                         Send

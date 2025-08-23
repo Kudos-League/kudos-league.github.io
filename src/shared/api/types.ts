@@ -273,6 +273,8 @@ export interface Tag {
 
 export interface UserDTO {
     id: number;
+    discordID: string | null;
+    googleID: string | null;
     username: string;
     email: string;
     avatar?: string | null;
@@ -285,6 +287,8 @@ export interface UserDTO {
     badges: Badge[];
     location?: MapCoordinates;
     settings?: UserSettingsDTO | null;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export const NotificationType = {

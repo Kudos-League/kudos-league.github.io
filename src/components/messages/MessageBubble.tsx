@@ -12,10 +12,10 @@ const MessageBubble: React.FC<Props> = ({ message, isOwn = false }) => {
         <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}>
             <div className={`max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
                 <div
-                    className={`px-4 py-2 rounded-lg text-sm whitespace-pre-wrap break-words ${
+                    className={`px-4 py-3 rounded-xl text-sm whitespace-pre-wrap break-words shadow-sm transition-colors transform-gpu ${
                         isOwn
-                            ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                            ? 'bg-teal-600 dark:bg-teal-500 text-white rounded-br-none'
+                            : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-300 dark:border-zinc-600'
                     }`}
                 >
                     <p>{message.content}</p>

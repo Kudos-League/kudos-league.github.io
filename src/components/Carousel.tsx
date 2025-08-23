@@ -28,6 +28,10 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
         if (idx > total - 1) setIdx(total - 1);
     }, [total, idx]);
 
+    const goRight = useCallback(() => {
+        setIdx((i) => (i + 1) % total);
+    }, [total]);
+
     useEffect(() => {
         const timer = setInterval(() => {
             goRight();
@@ -41,10 +45,6 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
 
     const goLeft = useCallback(() => {
         setIdx((i) => (i - 1 + total) % total);
-    }, [total]);
-
-    const goRight = useCallback(() => {
-        setIdx((i) => (i + 1) % total);
     }, [total]);
 
     const onImgError = useCallback(

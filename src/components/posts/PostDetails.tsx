@@ -450,13 +450,7 @@ export default function PostDetails(props: Props) {
     return (
         <div className='max-w-4xl mx-auto p-4'>
             {/* Header / Avatar */}
-            <UserCard
-                userID={postDetails.sender?.id}
-                avatar={postDetails.sender?.avatar}
-                username={postDetails.sender?.username}
-                kudos={postDetails.sender?.kudos}
-                large
-            />
+            <UserCard user={postDetails.sender} large />
 
             {/* Post Title and Badges */}
             <div className='mb-4'>
@@ -598,7 +592,7 @@ export default function PostDetails(props: Props) {
                             Save Changes
                         </Button>
                         <Button
-                            // variant='secondary' // TODO: Looks invisible due to colours behind
+                            variant='secondary'
                             onClick={() => setIsEditing(false)}
                         >
                             Cancel
@@ -633,7 +627,7 @@ export default function PostDetails(props: Props) {
             )}
 
             {/* Comments */}
-            <div className='bg-white shadow p-4 rounded mb-6'>
+            <div className='shadow p-4 rounded mb-6'>
                 <MessageList
                     title='Comments'
                     messages={postDetails.messages || []}
@@ -660,7 +654,7 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Handshakes */}
-            <div className='bg-white shadow p-4 rounded mb-6'>
+            <div className='shadow p-4 rounded mb-6'>
                 <h2 className='text-lg font-bold mb-2'>{postDetails.type === 'request' ? 'Offered By' : 'Requested By'}</h2>
 
                 <Handshakes
@@ -732,7 +726,7 @@ export default function PostDetails(props: Props) {
                         <div className='flex justify-end gap-2'>
                             <Button
                                 onClick={() => setReportModalVisible(false)}
-                                // variant='secondary'
+                                variant='secondary'
                             >
                                 Cancel
                             </Button>

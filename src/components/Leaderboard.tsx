@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
 import Button from './common/Button';
+import { UserDTO } from '@/shared/api/types';
 
 type LeaderboardUser = {
     id: number;
@@ -140,13 +141,7 @@ export default function Leaderboard() {
                     >
  
                         <div className='flex-1 ml-4'>
-                            <UserCard
-                                userID={entry.id}
-                                avatar={entry.avatar}
-                                username={entry.username}
-                                kudos={entry.totalKudos}
-                                large={true}
-                            />
+                            <UserCard user={{ ...entry } as any as UserDTO} large={true} />
                             <p className='text-sm text-gray-500'>
                                 {entry.location?.name || ''}
                             </p>

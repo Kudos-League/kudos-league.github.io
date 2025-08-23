@@ -326,7 +326,7 @@ const EditProfile: React.FC<Props> = ({
                                         <Button
                                             onClick={() => setShowImageOptions(false)}
                                             className='text-xs ml-auto'
-                                            // variant='secondary'
+                                            variant='secondary'
                                         >
                                             Close
                                         </Button>
@@ -431,7 +431,7 @@ const EditProfile: React.FC<Props> = ({
                         </Button>
                         <Button
                             onClick={onClose}
-                            // variant='secondary'
+                            variant='secondary'
                         >
                             Cancel
                         </Button>

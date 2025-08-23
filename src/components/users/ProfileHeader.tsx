@@ -74,7 +74,7 @@ const ProfileHeader: React.FC<Props> = ({
                 {isLoggedIn && !isSelf && (
                     <Button
                         onClick={onStartDM}
-                        // variant='secondary'
+                        variant='secondary'
                     >
                         💬 Message
                     </Button>
@@ -82,7 +82,7 @@ const ProfileHeader: React.FC<Props> = ({
                 {isSelf && (
                     <Button
                         onClick={onEditProfile}
-                        // variant='secondary'
+                        variant='secondary'
                     >
                         ⚙️ Edit
                     </Button>

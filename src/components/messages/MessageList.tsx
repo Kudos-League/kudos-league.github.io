@@ -147,9 +147,9 @@ const MessageList: React.FC<Props> = ({
         const showDeleteButton = canDeleteMessage(msg);
 
         return (
-            <div key={msg.id} className="border-b border-gray-200 py-3 last:border-b-0">
+            <div key={msg.id} className="border-b border-zinc-200 dark:border-zinc-700 py-3 last:border-b-0">
                 <div className="mb-2 flex justify-between items-start">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {msg.author?.username || `User ${msg.authorID}`}
                     </span>
                     
@@ -216,7 +216,7 @@ const MessageList: React.FC<Props> = ({
                         </p>
                     </div>
                 ) : (
-                    <div className="text-gray-800 whitespace-pre-wrap">
+                    <div className="text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap">
                         {msg.content}
                     </div>
                 )}

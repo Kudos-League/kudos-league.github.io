@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
 import MessageGroup from './MessageGroup';
+import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
 
@@ -127,14 +128,15 @@ export default function PublicChat() {
                             No messages in this channel.
                         </p>
                     ) : (
-                        groupedMessages.map((group) => (
-                            <MessageGroup
-                                key={group[0].id}
-                                messages={group}
-                                isOwn={group[0].author?.id === user?.id}
-                                compact
-                                isPublic
-                            />
+                        groupedMessages.map((group, idx) => (
+                            <SlideInOnScroll key={group[0].id} index={idx}>
+                                <MessageGroup
+                                    messages={group}
+                                    isOwn={group[0].author?.id === user?.id}
+                                    compact
+                                    isPublic
+                                />
+                            </SlideInOnScroll>
                         ))
                     )}
                 </div>

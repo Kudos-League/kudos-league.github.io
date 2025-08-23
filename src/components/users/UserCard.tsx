@@ -1,83 +1,227 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import Tippy from '@tippyjs/react/headless';
 import { useNavigate } from 'react-router-dom';
-import AvatarComponent from '@/components/users/Avatar';
+import { ShieldCheckIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
 
-interface UserCardProps {
-    userID?: number;
-    username: string | null;
-    avatar: string | null | undefined;
-    kudos?: number;
-    createdAt?: Date;
-    large?: boolean;
+import AvatarComponent from '@/components/users/Avatar';
+import { getImagePath } from '@/shared/api/config';
+import Pill from '@/components/common/Pill';
+
+import type { UserDTO } from '@/shared/api/types';
+
+type TriggerVariant = 'name' | 'avatar-name';
+
+interface Props {
+  user?: UserDTO;
+  large?: boolean;
+  triggerVariant?: TriggerVariant;
+  className?: string;
+  hoverDelayOpenMs?: number;
+  hoverDelayCloseMs?: number;
+  panelWidth?: number;
+  sideOffset?: number;
+  interactive?: boolean;
+  triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
 }
 
-const UserCard: React.FC<UserCardProps> = ({
-    userID,
-    username,
-    avatar,
-    kudos,
-    createdAt,
-    large = false
+function fmtDate(d?: Date | string) {
+    if (!d) return '';
+    const date = typeof d === 'string' ? new Date(d) : d;
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+}
+
+const UserCard: React.FC<Props> = ({
+    user,
+    large = false,
+    triggerVariant = 'avatar-name',
+    className = '',
+    hoverDelayOpenMs = 60,
+    hoverDelayCloseMs = 120,
+    panelWidth = 320,
+    sideOffset = 10,
+    interactive = true,
+    triggerMode = 'hover+focus',
 }) => {
     const navigate = useNavigate();
+    const username = user?.username || 'Anonymous';
 
-    const goToProfile = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        if (userID) navigate(`/user/${userID}`);
-    };
+    const trigger = useMemo(() => {
+        const nameEl = (
+            <span
+                className={[
+                    'font-semibold',
+                    large ? 'text-lg' : 'text-sm',
+                    'truncate',
+                    'hover:underline',
+                    'cursor-pointer',
+                ].join(' ')}
+                onClick={() => user?.id && navigate(`/user/${user.id}`)}
+            >
+                {username}
+            </span>
+        );
 
-    if (large) {
+        if (triggerVariant === 'name') return <div className="flex items-center gap-2">{nameEl}</div>;
+
         return (
-            <div className='flex items-center gap-4'>
-                <div onClick={goToProfile} className='cursor-pointer'>
+            <div className="flex items-center gap-2">
+                <div onClick={() => user?.id && navigate(`/user/${user.id}`)} className="cursor-pointer">
                     <AvatarComponent
-                        username={username || 'Anonymous'}
-                        avatar={avatar}
-                        size={50}
-                        onClick={goToProfile}
+                        username={username}
+                        avatar={user?.avatar ? getImagePath(user.avatar) : null}
+                        size={large ? 48 : 28}
                     />
                 </div>
-                <div>
-                    <h2
-                        className='font-bold text-lg cursor-pointer hover:underline'
-                        onClick={goToProfile}
-                    >
-                        {username || 'Anonymous'}
-                    </h2>
-                    {typeof kudos === 'number' && (
-                        <p className='text-sm text-gray-500'>Kudos: {kudos}</p>
-                    )}
-                </div>
+                {nameEl}
             </div>
         );
-    }
+    }, [triggerVariant, large, user?.id, user?.avatar, username, navigate]);
+
+    const tippyTrigger =
+    triggerMode === 'hover' ? 'mouseenter'
+        : triggerMode === 'click' ? 'click'
+            : triggerMode === 'focus' ? 'focus'
+                : 'mouseenter focus';
 
     return (
-        <div className='flex items-center gap-3 text-sm'>
-            <div onClick={goToProfile} className='cursor-pointer'>
-                <AvatarComponent
-                    username={username || 'Anonymous'}
-                    avatar={avatar}
-                    size={32}
-                />
-            </div>
-            <div className='flex flex-col'>
-                <span
-                    className='font-semibold cursor-pointer hover:underline'
-                    onClick={goToProfile}
+        <Tippy
+            placement="auto"
+            offset={[0, sideOffset]}
+            appendTo={() => document.body}
+            interactive={interactive}
+            delay={[hoverDelayOpenMs, hoverDelayCloseMs]}
+            trigger={tippyTrigger}
+            animation={false}
+            duration={0}
+
+            onMount={(inst) => {
+                const el = inst.popper.firstElementChild as HTMLElement | null;
+                if (!el) return;
+                el.removeAttribute('data-open');
+                requestAnimationFrame(() => el.setAttribute('data-open', 'true'));
+            }}
+
+            onHidden={(inst) => {
+                const el = inst.popper.firstElementChild as HTMLElement | null;
+                if (!el) return;
+                el.removeAttribute('data-open');
+                return new Promise<void>((resolve) => {
+                    const done = () => resolve();
+                    el.addEventListener('transitionend', done, { once: true });
+                    setTimeout(done, 250);
+                });
+            }}
+
+            render={(attrs) => (
+                <div
+                    {...attrs}
+                    tabIndex={-1}
+                    className={[
+                        'rounded-2xl shadow-2xl ring-1 ring-black/5',
+                        'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md',
+                        'p-3 w-[var(--card-w)] z-[1000] pointer-events-auto',
+                        // start hidden: low opacity + offset from opposite side
+                        'opacity-0 scale-[0.99] transition-all duration-150',
+                        "[data-placement^='top']:translate-y-2",      // placed on top => start from below
+                        "[data-placement^='bottom']:-translate-y-2",  // placed on bottom => start from above
+                        // visible state: fade in + slide to 0
+                        "data-[open='true']:opacity-100",
+                        "data-[open='true']:scale-100",
+                        "data-[open='true']:translate-y-0",
+                    ].join(' ')}
+                    style={{ ['--card-w' as any]: `${panelWidth}px` } as React.CSSProperties}
                 >
-                    {username || 'Anonymous'}
-                </span>
-                {typeof kudos === 'number' && (
-                    <span className='text-gray-500 text-xs'>Kudos: {kudos}</span>
-                )}
-                {createdAt && (
-                    <span className='text-gray-400 text-xs'>
-                        {createdAt.toLocaleString()}
-                    </span>
-                )}
+                    {user ? (
+                        <div className="flex items-start gap-3">
+                            <AvatarComponent
+                                username={username}
+                                avatar={user.avatar ? getImagePath(user.avatar) : null}
+                                size={40}
+                            />
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => user.id && navigate(`/user/${user.id}`)}
+                                        className="text-sm font-bold hover:underline truncate"
+                                        title="View profile"
+                                    >
+                                        {username}
+                                    </button>
+
+                                    {user.admin ? (
+                                        <Pill tone="success" size="sm" leftIcon={<ShieldCheckIcon className="h-4 w-4" />}>
+                                            Admin
+                                        </Pill>
+                                    ) : null}
+
+                                    {user.isEmailVerified ? (
+                                        <Pill tone="info" size="sm" leftIcon={<ShieldCheckIcon className="h-4 w-4" />}>
+                                            Verified
+                                        </Pill>
+                                    ) : (
+                                        <Pill tone="danger" size="sm" leftIcon={<ShieldExclamationIcon className="h-4 w-4" />}>
+                                            Not Verified
+                                        </Pill>
+                                    )}
+                                </div>
+
+                                <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
+                                    <div className="truncate">
+                                        <span className="opacity-70">Kudos:</span> {typeof user.kudos === 'number' ? user.kudos : 0}
+                                    </div>
+                                    <div className="truncate">
+                                        <span className="opacity-70">Joined:</span> {fmtDate(user.createdAt) || '—'}
+                                    </div>
+                                    {user.discordID ? (
+                                        <div className="truncate col-span-2">
+                                            <span className="opacity-70">Discord:</span> {user.discordID}
+                                        </div>
+                                    ) : null}
+                                    {user.googleID ? (
+                                        <div className="truncate col-span-2">
+                                            <span className="opacity-70">Google:</span> {user.googleID}
+                                        </div>
+                                    ) : null}
+                                    {user.email ? (
+                                        <div className="truncate col-span-2">
+                                            <span className="opacity-70">Email:</span> {user.email}
+                                        </div>
+                                    ) : null}
+                                </div>
+
+                                <div className="mt-3">
+                                    <button
+                                        onClick={() => user.id && navigate(`/user/${user.id}`)}
+                                        className="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                            bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
+                                            hover:opacity-90 active:opacity-80 transition"
+                                    >
+                                        View Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center py-6">
+                            <div className="h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin" />
+                            <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-300">Loading…</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        >
+            <div
+                className={[
+                    'inline-flex items-center',
+                    large ? 'gap-3' : 'gap-2',
+                    'text-neutral-900 dark:text-neutral-100',
+                    className,
+                ].join(' ')}
+            >
+                {trigger}
             </div>
-        </div>
+        </Tippy>
     );
 };
 

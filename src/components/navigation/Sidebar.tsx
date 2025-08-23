@@ -80,8 +80,8 @@ function NavList({
                             onClick={onClick}
                             className={classNames(
                                 active
-                                    ? 'bg-gray-50 text-indigo-600 dark:bg-white/5 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white',
+                                    ? 'bg-teal-50 text-teal-700 dark:bg-teal-500/20 dark:text-teal-200'
+                                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-teal-700 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-teal-200',
                                 'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold',
                             )}
                         >
@@ -89,8 +89,8 @@ function NavList({
                                 aria-hidden="true"
                                 className={classNames(
                                     active
-                                        ? 'text-indigo-600 dark:text-white'
-                                        : 'text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white',
+                                        ? 'text-teal-700 dark:text-teal-200'
+                                        : 'text-zinc-400 group-hover:text-teal-700 dark:group-hover:text-teal-200',
                                     'size-6 shrink-0',
                                 )}
                             />
@@ -128,7 +128,7 @@ export default function AppSidebar({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <DialogBackdrop className="fixed inset-0 bg-gray-900/80" />
+                    <DialogBackdrop className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 flex">
@@ -162,9 +162,7 @@ export default function AppSidebar({
                             </TransitionChild>
 
                             <div className="relative flex grow flex-col gap-y-5 overflow-y-auto px-6 pb-4
-                        bg-white dark:bg-gray-900
-                        dark:ring dark:ring-white/10
-                        dark:before:pointer-events-none dark:before:absolute dark:before:inset-0 dark:before:bg-black/10">
+                        bg-white/90 dark:bg-zinc-900/80 backdrop-blur-lg ring-1 ring-zinc-900/5 dark:ring-white/10">
                                 <div className="relative flex h-16 shrink-0 items-center">
                                     {brand ?? (
                                         <>
@@ -185,8 +183,7 @@ export default function AppSidebar({
             {/* Desktop sidebar */}
             <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col">
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto px-6
-                        border-r border-gray-200 dark:border-white/10
-                        bg-white dark:bg-gray-900">
+                        bg-white/90 dark:bg-zinc-900/80 backdrop-blur-lg ring-1 ring-zinc-900/5 dark:ring-white/10">
                     <div className="flex h-16 shrink-0 items-center">
                         {brand ?? (
                             <>

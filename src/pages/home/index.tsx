@@ -4,7 +4,7 @@ import { usePosts } from '@/hooks/usePosts';
 import { searchPosts } from '@/shared/api/actions';
 import CurrentEvent from '@/components/events/CurrentEvent';
 import { PostDTO } from '@/shared/api/types';
-import PostList from '@/components/posts/PostList';
+import PostList from '@/components/posts/PostsContainer';
 import Button from '@/components/common/Button';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
@@ -124,7 +124,7 @@ export default function Feed() {
                 <h1 className='text-xl font-bold'>Welcome to Kudos League!</h1>
                 <Button
                     onClick={handleCreatePost}
-                    // variant='secondary'
+                    variant='secondary'
                     className='whitespace-nowrap self-start sm:self-auto'
                 >
                     + Gift / Request
@@ -175,11 +175,11 @@ export default function Feed() {
 
             {/* Advanced Filter Options */}
             {filterOpen && (
-                <div className='p-4 border rounded bg-gray-50'>
+                <div className='p-4 border rounded'>
                     <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2'>
                         <Button
                             className='text-sm'
-                            // variant='secondary'
+                            variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({ type: 'date', order: 'desc' })
                             }
@@ -188,7 +188,7 @@ export default function Feed() {
                         </Button>
                         <Button
                             className='text-sm'
-                            // variant='secondary'
+                            variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({ type: 'date', order: 'asc' })
                             }
@@ -197,7 +197,7 @@ export default function Feed() {
                         </Button>
                         <Button
                             className='text-sm'
-                            // variant='secondary'
+                            variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({
                                     type: 'distance',
@@ -209,7 +209,7 @@ export default function Feed() {
                         </Button>
                         <Button
                             className='text-sm'
-                            // variant='secondary'
+                            variant='secondary'
                             onClick={() =>
                                 setTypeOfOrdering({
                                     type: 'kudos',

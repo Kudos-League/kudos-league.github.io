@@ -31,7 +31,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({ messages, isOwn = false, co
         <div className='mb-4'>
             {(!isOwn || isPublic) && (
                 <div
-                    className={`text-sm text-gray-500 font-semibold mb-1 ${
+                    className={`text-sm font-semibold mb-1 text-zinc-500 dark:text-zinc-400 ${
                         isOwn ? 'text-right mr-1' : 'text-left ml-1'
                     }`}
                 >
@@ -49,7 +49,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({ messages, isOwn = false, co
             ))}
 
             <div
-                className={`text-xs text-gray-400 opacity-70 mt-1 ${
+                className={`text-xs text-zinc-400 dark:text-zinc-500 opacity-70 mt-1 ${
                     isOwn ? 'text-right' : 'text-left'
                 }`}
             >
