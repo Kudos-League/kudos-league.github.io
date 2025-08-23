@@ -9,6 +9,7 @@ import TagInput from '@/components/TagInput';
 import { getCategories } from '@/shared/api/actions';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import DropdownPicker from '@/components/forms/DropdownPicker';
 
 /**
  * Form values for creating a new post.  The form collects title, body,
@@ -218,27 +219,23 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 multiline
             />
 
-            {/* Category selector */}
             <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>
                 Category
             </label>
-            <select
-                className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                {...form.register('categoryID', {
-                    required: 'Please select a category',
-                    valueAsNumber: true,
-                    validate: (value) =>
-                        value > 0 || 'Please select a valid category'
-                })}
-            >
-                <option value=''>Select a category</option>
-                {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                    </option>
-                ))}
-            </select>
-
+            <DropdownPicker
+                options={categories.map((cat) => ({
+                    label: cat.name,
+                    value: String(cat.id)
+                }))}
+                value={String(form.watch('categoryID') || '')}
+                onChange={(val) =>
+                    form.setValue('categoryID', parseInt(val), {
+                        shouldValidate: true,
+                        shouldDirty: true
+                    })
+                }
+                placeholder="Select a category"
+            />
             {form.formState.errors.categoryID && (
                 <p className='text-red-600 text-sm mt-1'>
                     {form.formState.errors.categoryID.message}

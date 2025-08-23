@@ -250,7 +250,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             style={{ position: 'relative', width, height, overflow: 'visible' }}
         >
             {showBanner && (
-                <div className='absolute left-0 top-50 w-full bg-white p-2 text-center font-semibold text-gray-800 z-[1001] shadow'>
+                <div className='absolute left-0 top-50 w-full bg-white p-2 text-center font-semibold text-gray-800 z-[6] shadow'>
                     {bannerText}
                 </div>
             )}
@@ -261,14 +261,14 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         top: showBanner ? 40 : 10,
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        zIndex: 999,
+                        zIndex: 5,
                         width: 300
                     }}
                 >
                     <input
                         type='text'
                         placeholder='Search address'
-                        className='w-full p-2 rounded border border-gray-300 bg-white z-10'
+                        className='w-full p-2 rounded border border-gray-300 bg-white'
                         value={searchInput}
                         onFocus={() => setIsSearching(true)}
                         onBlur={() =>
