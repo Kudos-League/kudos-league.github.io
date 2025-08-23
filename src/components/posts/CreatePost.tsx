@@ -234,7 +234,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                         shouldDirty: true
                     })
                 }
-                placeholder="Select a category"
+                placeholder='Select a category'
             />
             {form.formState.errors.categoryID && (
                 <p className='text-red-600 text-sm mt-1'>
