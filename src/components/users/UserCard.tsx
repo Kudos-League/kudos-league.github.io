@@ -12,16 +12,20 @@ import type { UserDTO } from '@/shared/api/types';
 type TriggerVariant = 'name' | 'avatar-name';
 
 interface Props {
-  user?: UserDTO;
-  large?: boolean;
-  triggerVariant?: TriggerVariant;
-  className?: string;
-  hoverDelayOpenMs?: number;
-  hoverDelayCloseMs?: number;
-  panelWidth?: number;
-  sideOffset?: number;
-  interactive?: boolean;
-  triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
+    user?: UserDTO;
+    large?: boolean;
+    triggerVariant?: TriggerVariant;
+    className?: string;
+    hoverDelayOpenMs?: number;
+    hoverDelayCloseMs?: number;
+    panelWidth?: number;
+    sideOffset?: number;
+    interactive?: boolean;
+    triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
+    subtitle?: React.ReactNode;
+    centered?: boolean;
+    nameClassName?: string;
+    subtitleClassName?: string;
 }
 
 function fmtDate(d?: Date | string) {
@@ -42,47 +46,85 @@ const UserCard: React.FC<Props> = ({
     sideOffset = 10,
     interactive = true,
     triggerMode = 'hover+focus',
+    subtitle,
+    centered = false,
+    nameClassName = '',
+    subtitleClassName = '',
 }) => {
     const navigate = useNavigate();
     const username = user?.username || 'Anonymous';
 
     const trigger = useMemo(() => {
+        const baseNameClasses = [
+            'font-semibold',
+            large ? 'text-lg' : 'text-sm',
+            'truncate',
+            'hover:underline',
+            'cursor-pointer',
+            nameClassName,
+        ].join(' ');
+
         const nameEl = (
             <span
-                className={[
-                    'font-semibold',
-                    large ? 'text-lg' : 'text-sm',
-                    'truncate',
-                    'hover:underline',
-                    'cursor-pointer',
-                ].join(' ')}
+                className={baseNameClasses}
                 onClick={() => user?.id && navigate(`/user/${user.id}`)}
             >
                 {username}
             </span>
         );
 
-        if (triggerVariant === 'name') return <div className="flex items-center gap-2">{nameEl}</div>;
+        // When centered + subtitle, stack vertically
+        const wrapperClasses = centered && subtitle
+            ? 'flex flex-col items-center text-center gap-1'
+            : 'flex items-center gap-2';
 
-        return (
-            <div className="flex items-center gap-2">
-                <div onClick={() => user?.id && navigate(`/user/${user.id}`)} className="cursor-pointer">
-                    <AvatarComponent
-                        username={username}
-                        avatar={user?.avatar ? getImagePath(user.avatar) : null}
-                        size={large ? 48 : 28}
-                    />
-                </div>
-                {nameEl}
+        // Avatar
+        const avatar = (
+            <div onClick={() => user?.id && navigate(`/user/${user.id}`)} className="cursor-pointer">
+                <AvatarComponent
+                    username={username}
+                    avatar={user?.avatar ? getImagePath(user.avatar) : null}
+                    size={large ? 48 : 28}
+                />
             </div>
         );
-    }, [triggerVariant, large, user?.id, user?.avatar, username, navigate]);
+
+        // Content block: name + optional subtitle
+        const content = (
+            <div className={centered && subtitle ? 'min-w-0 flex flex-col items-center' : 'min-w-0'}>
+                {nameEl}
+                {subtitle ? (
+                    <div className={['text-xs text-gray-500 dark:text-gray-400 truncate', subtitleClassName].join(' ')}>
+                        {subtitle}
+                    </div>
+                ) : null}
+            </div>
+        );
+
+        if (triggerVariant === 'name') {
+            return (
+                <div className={wrapperClasses}>
+                    {content}
+                </div>
+            );
+        }
+
+        return (
+            <div className={wrapperClasses}>
+                {avatar}
+                {content}
+            </div>
+        );
+    }, [
+        triggerVariant, large, user?.id, user?.avatar, username, navigate,
+        subtitle, centered, nameClassName, subtitleClassName
+    ]);
 
     const tippyTrigger =
-    triggerMode === 'hover' ? 'mouseenter'
-        : triggerMode === 'click' ? 'click'
-            : triggerMode === 'focus' ? 'focus'
-                : 'mouseenter focus';
+        triggerMode === 'hover' ? 'mouseenter'
+            : triggerMode === 'click' ? 'click'
+                : triggerMode === 'focus' ? 'focus'
+                    : 'mouseenter focus';
 
     return (
         <Tippy
@@ -94,14 +136,12 @@ const UserCard: React.FC<Props> = ({
             trigger={tippyTrigger}
             animation={false}
             duration={0}
-
             onMount={(inst) => {
                 const el = inst.popper.firstElementChild as HTMLElement | null;
                 if (!el) return;
                 el.removeAttribute('data-open');
                 requestAnimationFrame(() => el.setAttribute('data-open', 'true'));
             }}
-
             onHidden={(inst) => {
                 const el = inst.popper.firstElementChild as HTMLElement | null;
                 if (!el) return;
@@ -112,7 +152,6 @@ const UserCard: React.FC<Props> = ({
                     setTimeout(done, 250);
                 });
             }}
-
             render={(attrs) => (
                 <div
                     {...attrs}
@@ -121,11 +160,9 @@ const UserCard: React.FC<Props> = ({
                         'rounded-2xl shadow-2xl ring-1 ring-black/5',
                         'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md',
                         'p-3 w-[var(--card-w)] z-[1000] pointer-events-auto',
-                        // start hidden: low opacity + offset from opposite side
                         'opacity-0 scale-[0.99] transition-all duration-150',
-                        "[data-placement^='top']:translate-y-2",      // placed on top => start from below
-                        "[data-placement^='bottom']:-translate-y-2",  // placed on bottom => start from above
-                        // visible state: fade in + slide to 0
+                        "[data-placement^='top']:translate-y-2",
+                        "[data-placement^='bottom']:-translate-y-2",
                         "data-[open='true']:opacity-100",
                         "data-[open='true']:scale-100",
                         "data-[open='true']:translate-y-0",
@@ -213,8 +250,7 @@ const UserCard: React.FC<Props> = ({
         >
             <div
                 className={[
-                    'inline-flex items-center',
-                    large ? 'gap-3' : 'gap-2',
+                    centered && subtitle ? 'inline-flex w-full flex-col items-center text-center gap-2' : 'inline-flex items-center gap-2',
                     'text-neutral-900 dark:text-neutral-100',
                     className,
                 ].join(' ')}
