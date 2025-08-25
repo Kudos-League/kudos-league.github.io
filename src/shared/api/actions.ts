@@ -254,18 +254,23 @@ export async function getUserEvents(
 
 /** @throws {AxiosError} */
 export async function updateUser(
-    request: Partial<UserDTO>,
+    request: Partial<UserDTO> | FormData,
     id = 'me',
     token: string
 ) {
     if (!token) throw Error('Invalid token');
-    const formData = toFormData(request);
-    const response = await instance.patch(`/users/${id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
-        }
+
+    const body = request instanceof FormData ? request : toFormData(request);
+
+    /*
+    Array.from(body.entries()).forEach(([k, v]) => {
+        console.log('{updateUser}', k, v instanceof File ? `(file: ${v.name})` : v);
     });
+    */
+
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+    const response = await instance.patch(`/users/${id}`, body, { headers });
     return response.data;
 }
 

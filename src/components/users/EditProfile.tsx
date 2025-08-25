@@ -12,6 +12,7 @@ import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import TagInput from '@/components/TagInput';
 import Alert from '@/components/common/Alert';
 import Button from '../common/Button';
+import deepEqual from '@/shared/deepEqual';
 
 interface Props {
     targetUser: UserDTO;
@@ -19,6 +20,84 @@ interface Props {
     userSettings?: any;
     onClose: () => void;
 }
+
+const computeChanged = (
+    values: ProfileFormValues,
+    dirty: any,
+    user: UserDTO
+) => {
+    const changed: any = {};
+
+    if (dirty.email && values.email?.trim() && values.email.trim() !== (user.email || '')) {
+        changed.email = values.email.trim();
+    }
+
+    if (dirty.about) {
+        const about = (values.about || '').trim();
+        if (about && about !== (user.settings?.about || '')) {
+            changed.about = about;
+        }
+    }
+
+    // tags (string[] -> [{ name }]) and compare to original
+    if (dirty.tags) {
+        const origTagObjs = (user.tags || []).map(t => ({ name: (t.name || '').trim() })).filter(t => t.name);
+        const newTagObjs = (Array.isArray(values.tags) ? values.tags : [])
+            .map((t: any) => (typeof t === 'string' ? t.trim() : t?.name?.trim()))
+            .filter(Boolean)
+            .map((name: string) => ({ name }));
+
+        // only set if actually different
+        if (!deepEqual(newTagObjs, origTagObjs)) {
+            changed.tags = newTagObjs;
+        }
+    }
+
+    // location (compare to original without client-only flags)
+    if (dirty.location && values.location) {
+        const newLoc = { ...values.location };
+        delete (newLoc as any).changed;
+        if (!deepEqual(newLoc, user.location || null)) {
+            changed.location = newLoc;
+        }
+    }
+
+    // avatar (file or URL)
+    const avatarDirty = !!dirty.avatar || !!dirty.avatarURL;
+    if (avatarDirty) {
+        const arr = Array.isArray(values.avatar) ? values.avatar : (values.avatar ? [values.avatar] : []);
+        const fileOrString = arr[0];
+
+        if (fileOrString instanceof File) {
+            changed.avatar = fileOrString;
+        }
+        else if (typeof values.avatarURL === 'string' && values.avatarURL.trim()) {
+            changed.avatar = values.avatarURL.trim();
+        }
+    }
+
+    return changed;
+};
+
+const PreviewAvatar = ({ previewUrl, targetUser }: { previewUrl: string | null; targetUser: UserDTO }) => {
+    if (previewUrl) {
+        return (
+            <img
+                src={previewUrl}
+                alt={targetUser.username || 'User'}
+                className='rounded-full object-cover'
+                style={{ width: 100, height: 100 }}
+            />
+        );
+    }
+    return (
+        <AvatarComponent
+            avatar={targetUser.avatar}
+            username={targetUser.username}
+            size={100}
+        />
+    );
+};
 
 const EditProfile: React.FC<Props> = ({
     targetUser,
@@ -36,37 +115,39 @@ const EditProfile: React.FC<Props> = ({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const urlInputRef = useRef<HTMLInputElement>(null);
-
-    // extra settings stubs state
+    const [logoutPassword, setLogoutPassword] = useState('');
     const [pwForm, setPwForm] = useState({
         current: '',
         next: '',
         confirm: ''
     });
-    const [logoutPassword, setLogoutPassword] = useState('');
 
     const targetUserID = targetUser?.id;
     const form = useForm<ProfileFormValues>({
+        mode: 'onChange',
+        reValidateMode: 'onChange',
         defaultValues: {
             email: user.email,
             avatar: [],
             location: user.location || undefined,
-            tags: user.tags.map((t) => t.name) || [],
+            tags: user.tags.map(t => t.name) || [],
             about: user.settings?.about || '',
             avatarURL: ''
         }
     });
+    const watchedAvatar = form.watch('avatar');
+    const watchedAvatarURL = form.watch('avatarURL');
+    const effectiveChanges = React.useMemo(() => {
+        const values = form.getValues();
+        return computeChanged(values, form.formState.dirtyFields, user);
+    }, [form.watch(), form.formState.dirtyFields]);
+    const canSave = Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
 
-    // toast auto-hide
     useEffect(() => {
         if (!toastMessage) return;
         const t = setTimeout(() => setToastMessage(null), 3000);
         return () => clearTimeout(t);
     }, [toastMessage]);
-
-    // watch avatar inputs for preview
-    const watchedAvatar = form.watch('avatar');
-    const watchedAvatarURL = form.watch('avatarURL');
 
     useEffect(() => {
         if (watchedAvatar && watchedAvatar.length > 0) {
@@ -84,11 +165,11 @@ const EditProfile: React.FC<Props> = ({
         setPreviewUrl(null);
     }, [watchedAvatar, watchedAvatarURL]);
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
         if (files && files.length > 0) {
-            form.setValue('avatar', [files[0]]);
-            form.setValue('avatarURL', '');
+            form.setValue('avatar', [files[0]], { shouldDirty: true, shouldValidate: true });
+            form.setValue('avatarURL', '', { shouldDirty: true, shouldValidate: true });
             setShowImageOptions(false);
         }
     };
@@ -96,120 +177,69 @@ const EditProfile: React.FC<Props> = ({
     const handleURLSubmit = () => {
         const url = urlInputRef.current?.value?.trim();
         if (url) {
-            form.setValue('avatarURL', url);
-            form.setValue('avatar', []);
+            form.setValue('avatarURL', url, { shouldDirty: true, shouldValidate: true });
+            form.setValue('avatar', [], { shouldDirty: true, shouldValidate: true });
             setShowImageOptions(false);
             if (urlInputRef.current) urlInputRef.current.value = '';
         }
     };
 
     const clearImage = () => {
-        form.setValue('avatar', []);
-        form.setValue('avatarURL', '');
+        form.setValue('avatar', [], { shouldDirty: true, shouldValidate: true });
+        form.setValue('avatarURL', '', { shouldDirty: true, shouldValidate: true });
         setPreviewUrl(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        if (urlInputRef.current) urlInputRef.current.value = '';
+        fileInputRef.current && (fileInputRef.current.value = '');
+        urlInputRef.current && (urlInputRef.current.value = '');
         setShowImageOptions(false);
     };
 
-    const PreviewAvatar = () => {
-        if (previewUrl) {
-            return (
-                <img
-                    src={previewUrl}
-                    alt={targetUser.username || 'User'}
-                    className='rounded-full object-cover'
-                    style={{ width: 100, height: 100 }}
-                />
-            );
-        }
-        return (
-            <AvatarComponent
-                avatar={targetUser.avatar}
-                username={targetUser.username}
-                size={100}
-            />
-        );
-    };
+    const handleFormSubmit = async () => {
+        const values = form.getValues();
+        const changed = computeChanged(values, form.formState.dirtyFields, user);
 
-    const handleFormSubmit = async (data: any) => {
+        if (Object.keys(changed).length === 0) {
+            setToastType('error');
+            setToastMessage('No changes to save.');
+            return;
+        }
+
         setLoading(true);
         setIsSubmitting(true);
         setToastMessage(null);
 
         try {
-            // tags to { name }
-            if (typeof data.tags === 'string') {
-                data.tags = data.tags
-                    .split(',')
-                    .map((tag: string) => tag.trim())
-                    .filter((tag: string) => tag.length > 0)
-                    .map((tag: string) => ({ name: tag }));
-            }
-            else if (Array.isArray(data.tags)) {
-                data.tags = data.tags
-                    .map((tag: any) =>
-                        typeof tag === 'string' ? { name: tag.trim() } : tag
-                    )
-                    .filter((tag: any) => tag?.name?.length > 0);
+            const hasFile = changed.avatar instanceof File;
+            let payload: any = changed;
+
+            if (hasFile) {
+                const fd = new FormData();
+                if (changed.email) fd.append('email', changed.email);
+                if (changed.about) fd.append('about', changed.about);
+                if (changed.avatar) fd.append('avatar', changed.avatar as File);
+                if (changed.tags) fd.append('tags', JSON.stringify(changed.tags));
+                if (changed.location) fd.append('location', JSON.stringify(changed.location));
+                payload = fd;
             }
 
-            // avatar normalization
-            if (!data.avatar?.length && data.avatarURL?.trim()) {
-                data.avatar = [data.avatarURL.trim()];
-            }
-            if (data.avatar?.[0] instanceof File) {
-                delete data.avatarURL;
-            }
-            if (!data.about || data.about.trim() === '') delete data.about;
-            if (Array.isArray(data.avatar) && data.avatar.length > 0) {
-                data.avatar = data.avatar[0];
-            }
-            if (!data.avatar) delete data.avatar;
-            if (
-                !data.avatarURL ||
-                typeof data.avatarURL !== 'string' ||
-                data.avatarURL.trim() === ''
-            ) {
-                delete data.avatarURL;
-            }
-
-            // location normalization
-            if (!data.location?.changed) {
-                delete data.location;
-            }
-            else {
-                delete data.location.changed;
-            }
-
-            try {
-                const updatedUser = await updateUser(
-                    data,
-                    targetUserID.toString(),
-                    token
-                );
-                updateUserCache(updatedUser);
-                setTargetUser?.(updatedUser);
-                setToastType('success');
-                setToastMessage('Profile updated');
-                onClose();
-                window.location.reload();
-            }
-            finally {
-                setLoading(false);
-            }
+            const updatedUser = await updateUser(payload, targetUserID.toString(), token);
+            updateUserCache(updatedUser);
+            setTargetUser?.(updatedUser);
+            setToastType('success');
+            setToastMessage('Profile updated');
+            onClose();
+            window.location.reload();
         }
         catch (err: any) {
             const str =
-                err.response?.data?.errors?.[0]?.message ||
-                err.response?.data?.message ||
-                err.message ||
+                err?.response?.data?.errors?.[0]?.message ||
+                err?.response?.data?.message ||
+                err?.message ||
                 'Update failed';
-
             setToastType('error');
             setToastMessage(str);
         }
         finally {
+            setLoading(false);
             setIsSubmitting(false);
         }
     };
@@ -275,13 +305,11 @@ const EditProfile: React.FC<Props> = ({
                     <div className='md:col-span-2'>
                         {/* Avatar */}
                         <div className='col-span-full flex items-center gap-6 mb-6'>
-                            <PreviewAvatar />
+                            <PreviewAvatar previewUrl={previewUrl} targetUser={targetUser} />
                             <div className='relative'>
                                 <Button
                                     variant='secondary'
-                                    onClick={() =>
-                                        setShowImageOptions((v) => !v)
-                                    }
+                                    onClick={() => setShowImageOptions((v) => !v)}
                                 >
                                     Change avatar
                                 </Button>
@@ -289,7 +317,7 @@ const EditProfile: React.FC<Props> = ({
                                     <div className='absolute left-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg p-4 z-10'>
                                         <div className='space-y-3'>
                                             <p className='font-medium text-gray-900 dark:text-white'>
-                                                Change Profile Picture
+                                            Change Profile Picture
                                             </p>
 
                                             {/* File Upload */}
@@ -306,7 +334,7 @@ const EditProfile: React.FC<Props> = ({
                                                     htmlFor='avatar-file-input'
                                                     className='block w-full text-center bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-3 py-2 cursor-pointer hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:border-white/10'
                                                 >
-                                                    📁 Upload Image
+                                                📁 Upload Image
                                                 </label>
                                             </div>
 
@@ -318,21 +346,16 @@ const EditProfile: React.FC<Props> = ({
                                                     placeholder='Paste image URL...'
                                                     className='flex-1 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter')
-                                                            handleURLSubmit();
+                                                        if (e.key === 'Enter') handleURLSubmit();
                                                     }}
                                                 />
-                                                <Button
-                                                    onClick={handleURLSubmit}
-                                                    className='text-sm'
-                                                >
+                                                <Button onClick={handleURLSubmit} className='text-sm'>
                                                     Apply
                                                 </Button>
                                             </div>
 
                                             <div className='flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/10'>
-                                                {(watchedAvatar?.length > 0 ||
-                                                    watchedAvatarURL?.trim()) && (
+                                                {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
                                                     <button
                                                         type='button'
                                                         onClick={clearImage}
@@ -344,11 +367,7 @@ const EditProfile: React.FC<Props> = ({
                                                 <Button
                                                     variant='secondary'
                                                     className='text-xs ml-auto'
-                                                    onClick={() =>
-                                                        setShowImageOptions(
-                                                            false
-                                                        )
-                                                    }
+                                                    onClick={() => setShowImageOptions(false)}
                                                 >
                                                     Close
                                                 </Button>
@@ -360,7 +379,7 @@ const EditProfile: React.FC<Props> = ({
                         </div>
 
                         {/* Main form */}
-                        <div className='space-y-6'>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className='space-y-6'>
                             <div>
                                 <label className='block font-semibold mb-1 text-gray-900 dark:text-white'>
                                     Email
@@ -369,8 +388,7 @@ const EditProfile: React.FC<Props> = ({
                                     name='email'
                                     form={form}
                                     label=''
-                                    registerOptions={{ required: true }}
-                                    placeholder='Enter your email'
+                                    placeholder={user.email}
                                 />
                             </div>
 
@@ -394,15 +412,15 @@ const EditProfile: React.FC<Props> = ({
                                 <TagInput
                                     initialTags={form.watch('tags')}
                                     onTagsChange={(tags) => {
-                                        const tagNames = tags.map(
-                                            (t) => t.name
-                                        );
-                                        form.setValue('tags', tagNames);
+                                        const next = tags.map(t => t.name);
+                                        const prev = form.getValues('tags') || [];
+                                        if (JSON.stringify(next) !== JSON.stringify(prev)) {
+                                            form.setValue('tags', next, { shouldDirty: true, shouldValidate: true });
+                                        }
                                     }}
                                 />
                                 <p className='text-xs text-gray-500 italic mt-2'>
-                                    These tags appear on your profile. Use
-                                    interests, skills, or hobbies.
+                                    These tags appear on your profile. Use interests, skills, or hobbies.
                                 </p>
                             </div>
 
@@ -418,14 +436,22 @@ const EditProfile: React.FC<Props> = ({
                                     exactLocation
                                     shouldGetYourLocation
                                     onLocationChange={(data) => {
+                                        if (!data.changed) {
+                                            return;
+                                        }
+    
                                         if (data.coordinates) {
                                             setLocation(data.coordinates);
-                                            const obj = {
+                                            const next = {
                                                 ...data.coordinates,
                                                 name: data.name,
-                                                regionID: data.placeID
+                                                regionID: data.placeID,
                                             };
-                                            form.setValue('location', obj);
+                                            const prev = form.getValues('location') || null;
+                                            const changed = !deepEqual(next, prev);
+                                            if (changed) {
+                                                form.setValue('location', next, { shouldDirty: true, shouldValidate: true });
+                                            }
                                         }
                                     }}
                                 />
@@ -433,21 +459,28 @@ const EditProfile: React.FC<Props> = ({
 
                             <div className='flex gap-3 pt-2'>
                                 <Button
-                                    onClick={form.handleSubmit(
-                                        handleFormSubmit
-                                    )}
-                                    disabled={loading || isSubmitting}
+                                    type='submit'
+                                    disabled={!canSave}
                                     variant='success'
                                 >
-                                    {isSubmitting
-                                        ? 'Saving...'
-                                        : 'Save Changes'}
+                                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                                 </Button>
+
                                 <Button variant='secondary' onClick={onClose}>
                                     Cancel
                                 </Button>
                             </div>
-                        </div>
+
+                            {Object.keys(form.formState.errors).length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    {Object.entries(form.formState.errors).map(([field, error]) => (
+                                        <p key={field} className="text-sm text-red-600">
+                                            {field}: {error?.message || 'Invalid value'}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
+                        </form>
                     </div>
                 </div>
 
