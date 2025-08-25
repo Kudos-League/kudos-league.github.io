@@ -6,7 +6,7 @@ import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
 import { useAuth } from '@/hooks/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
-import EditProfile from '@/components/users/EditProfile';
+import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import { createDMChannel } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
