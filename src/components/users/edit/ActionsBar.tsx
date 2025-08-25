@@ -16,4 +16,4 @@ const ActionsBar: React.FC<{
     </div>
 );
 
-export default ActionsBar;
+export default React.memo(ActionsBar);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import useLocation from '@/hooks/useLocation';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,12 +65,16 @@ const EditProfile: React.FC<Props> = ({
             avatarURL: ''
         }
     });
-    const watchedAvatar = form.watch('avatar');
-    const watchedAvatarURL = form.watch('avatarURL');
+    const { control, formState } = form;
+    const avatar = useWatch({ control, name: 'avatar' });
+    const avatarURL = useWatch({ control, name: 'avatarURL' });
+    const tags = useWatch({ control, name: 'tags' });
+    const locationValue = useWatch({ control, name: 'location' });
     const effectiveChanges = React.useMemo(() => {
         const values = form.getValues();
-        return computeChanged(values, form.formState.dirtyFields, user);
-    }, [form.watch(), form.formState.dirtyFields]);
+        return computeChanged(values, formState.dirtyFields, user);
+    }, [user, formState.dirtyFields, avatar, avatarURL, tags, locationValue]);
+
     const canSave = Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
 
     useEffect(() => {
@@ -80,31 +84,37 @@ const EditProfile: React.FC<Props> = ({
     }, [toastMessage]);
 
     useEffect(() => {
-        if (watchedAvatar && watchedAvatar.length > 0) {
-            const file = watchedAvatar[0];
+        let objectUrl: string | undefined;
+
+        if (avatar && (avatar as File[]).length > 0) {
+            const file = (avatar as File[])[0];
             if (file instanceof File) {
-                const objectUrl = URL.createObjectURL(file);
+                objectUrl = URL.createObjectURL(file);
                 setPreviewUrl(objectUrl);
-                return () => URL.revokeObjectURL(objectUrl);
             }
         }
-        if (watchedAvatarURL && watchedAvatarURL.trim()) {
-            setPreviewUrl(watchedAvatarURL.trim());
-            return;
+        else if (typeof avatarURL === 'string' && avatarURL.trim()) {
+            setPreviewUrl(avatarURL.trim());
         }
-        setPreviewUrl(null);
-    }, [watchedAvatar, watchedAvatarURL]);
+        else {
+            setPreviewUrl(null);
+        }
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        return () => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [avatar, avatarURL]);
+
+    const handleFileSelect = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
             form.setValue('avatar', [files[0]], { shouldDirty: true, shouldValidate: true });
             form.setValue('avatarURL', '', { shouldDirty: true, shouldValidate: true });
             setShowImageOptions(false);
         }
-    };
+    }, [form]);
 
-    const handleURLSubmit = () => {
+    const handleURLSubmit = React.useCallback(() => {
         const url = urlInputRef.current?.value?.trim();
         if (url) {
             form.setValue('avatarURL', url, { shouldDirty: true, shouldValidate: true });
@@ -112,16 +122,16 @@ const EditProfile: React.FC<Props> = ({
             setShowImageOptions(false);
             if (urlInputRef.current) urlInputRef.current.value = '';
         }
-    };
+    }, [form]);
 
-    const clearImage = () => {
+    const clearImage = React.useCallback(() => {
         form.setValue('avatar', [], { shouldDirty: true, shouldValidate: true });
         form.setValue('avatarURL', '', { shouldDirty: true, shouldValidate: true });
         setPreviewUrl(null);
         fileInputRef.current && (fileInputRef.current.value = '');
         urlInputRef.current && (urlInputRef.current.value = '');
         setShowImageOptions(false);
-    };
+    }, [form]);
 
     const handleFormSubmit = async () => {
         const values = form.getValues();
@@ -154,6 +164,17 @@ const EditProfile: React.FC<Props> = ({
             const updatedUser = await updateUser(payload, targetUserID.toString(), token);
             updateUserCache(updatedUser);
             setTargetUser?.(updatedUser);
+            setPreviewUrl(null);
+
+            form.reset({
+                email: updatedUser.email,
+                avatar: [],
+                avatarURL: '',
+                about: updatedUser.settings?.about || '',
+                tags: (updatedUser.tags || []).map(t => t.name),
+                location: updatedUser.location || undefined,
+            }, { keepDirty: false, keepTouched: false });
+
             setToastType('success');
             setToastMessage('Profile updated');
             onClose();
@@ -174,7 +195,6 @@ const EditProfile: React.FC<Props> = ({
         }
     };
 
-    /* ---------- stub handlers for extra sections ---------- */
     const handleChangePassword = (e: React.FormEvent) => {
         e.preventDefault();
         if (!pwForm.next || pwForm.next !== pwForm.confirm) {
@@ -223,8 +243,8 @@ const EditProfile: React.FC<Props> = ({
                                 open={showImageOptions}
                                 fileInputRef={fileInputRef}
                                 urlInputRef={urlInputRef}
-                                watchedAvatar={watchedAvatar as any}
-                                watchedAvatarURL={watchedAvatarURL as any}
+                                watchedAvatar={avatar as any}
+                                watchedAvatarURL={avatarURL as any}
                                 onFileChange={handleFileSelect}
                                 onURLSubmit={handleURLSubmit}
                                 onClear={clearImage}
@@ -247,9 +267,9 @@ const EditProfile: React.FC<Props> = ({
                             help="These tags appear on your profile. Use interests, skills, or hobbies."
                         >
                             <TagInput
-                                initialTags={form.watch('tags')}
-                                onTagsChange={(tags) => {
-                                    const next = tags.map((t) => t.name);
+                                initialTags={tags}
+                                onTagsChange={(nextTags) => {
+                                    const next = nextTags.map((t) => t.name);
                                     const prev = form.getValues('tags') || [];
                                     if (JSON.stringify(next) !== JSON.stringify(prev)) {
                                         form.setValue('tags', next, { shouldDirty: true, shouldValidate: true });

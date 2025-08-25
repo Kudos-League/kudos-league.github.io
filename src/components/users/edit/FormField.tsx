@@ -14,4 +14,4 @@ const FormField: React.FC<{
     </div>
 );
 
-export default FormField;
+export default React.memo(FormField);

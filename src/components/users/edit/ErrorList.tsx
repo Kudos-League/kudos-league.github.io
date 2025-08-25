@@ -14,4 +14,4 @@ const ErrorList: React.FC<{ errors: Record<string, any> }> = ({ errors }) => {
     );
 };
 
-export default ErrorList;
+export default React.memo(ErrorList);

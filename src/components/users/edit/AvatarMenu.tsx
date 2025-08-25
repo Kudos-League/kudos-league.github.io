@@ -73,4 +73,4 @@ const AvatarMenu: React.FC<{
         </div>
     );
 
-export default AvatarMenu;
+export default React.memo(AvatarMenu);

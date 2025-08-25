@@ -13,4 +13,4 @@ const PageHeader: React.FC<{ onBack: () => void }> = ({ onBack }) => (
     </div>
 );
 
-export default PageHeader;
+export default React.memo(PageHeader);

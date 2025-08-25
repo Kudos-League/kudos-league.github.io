@@ -22,4 +22,4 @@ const SettingsSection: React.FC<{
     </div>
 );
 
-export default SettingsSection;
+export default React.memo(SettingsSection);

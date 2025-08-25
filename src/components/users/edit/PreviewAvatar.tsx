@@ -2,7 +2,7 @@ import React from 'react';
 import AvatarComponent from '../Avatar';
 import type { UserDTO } from '@/shared/api/types';
 
-export default function PreviewAvatar({ previewUrl, targetUser }: { previewUrl: string | null; targetUser: UserDTO }) {
+function PreviewAvatar({ previewUrl, targetUser }: { previewUrl: string | null; targetUser: UserDTO }) {
     if (previewUrl) {
         return (
             <img
@@ -21,3 +21,5 @@ export default function PreviewAvatar({ previewUrl, targetUser }: { previewUrl: 
         />
     );
 }
+
+export default React.memo(PreviewAvatar);
