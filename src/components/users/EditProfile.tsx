@@ -99,6 +99,156 @@ const PreviewAvatar = ({ previewUrl, targetUser }: { previewUrl: string | null; 
     );
 };
 
+const PageHeader: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-white/10">
+        <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Account Settings</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Update your profile and preferences.</p>
+        </div>
+        <Button variant="secondary" onClick={onBack}>
+            ← Back
+        </Button>
+    </div>
+);
+
+const SettingsSection: React.FC<{
+  title: string;
+  description?: string;
+  noBorder?: boolean;
+  children: React.ReactNode;
+}> = ({ title, description, noBorder, children }) => (
+    <div
+        className={
+            'grid gap-y-10 gap-x-8 px-6 py-10 md:grid-cols-3 ' +
+      (noBorder ? '' : 'border-b border-gray-200 dark:border-white/10')
+        }
+    >
+        <div>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+            {description ? (
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+            ) : null}
+        </div>
+        <div className="md:col-span-2">{children}</div>
+    </div>
+);
+
+const FormField: React.FC<{
+  label?: string;
+  help?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ label, help, children }) => (
+    <div>
+        {label ? (
+            <label className="block font-semibold mb-1 text-gray-900 dark:text-white">{label}</label>
+        ) : null}
+        {children}
+        {help ? <p className="text-xs text-gray-500 italic mt-2">{help}</p> : null}
+    </div>
+);
+
+const AvatarMenu: React.FC<{
+  open: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  urlInputRef: React.RefObject<HTMLInputElement>;
+  watchedAvatar?: File[];
+  watchedAvatarURL?: string;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onURLSubmit: () => void;
+  onClear: () => void;
+  onClose: () => void;
+}> = ({
+    open,
+    fileInputRef,
+    urlInputRef,
+    watchedAvatar,
+    watchedAvatarURL,
+    onFileChange,
+    onURLSubmit,
+    onClear,
+    onClose
+}) =>
+    !open ? null : (
+        <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg p-4 z-10">
+            <div className="space-y-3">
+                <p className="font-medium text-gray-900 dark:text-white">Change Profile Picture</p>
+
+                {/* File Upload */}
+                <div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={onFileChange}
+                        className="hidden"
+                        id="avatar-file-input"
+                    />
+                    <label
+                        htmlFor="avatar-file-input"
+                        className="block w-full text-center bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-3 py-2 cursor-pointer hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:border-white/10"
+                    >
+                        📁 Upload Image
+                    </label>
+                </div>
+
+                {/* URL input */}
+                <div className="flex gap-2">
+                    <input
+                        ref={urlInputRef}
+                        type="text"
+                        placeholder="Paste image URL..."
+                        className="flex-1 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        onKeyDown={(e) => e.key === 'Enter' && onURLSubmit()}
+                    />
+                    <Button onClick={onURLSubmit} className="text-sm">
+                        Apply
+                    </Button>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/10">
+                    {(watchedAvatar?.length || (watchedAvatarURL || '').trim()) ? (
+                        <button type="button" onClick={onClear} className="text-xs text-red-600 hover:text-red-700">
+                            Remove Image
+                        </button>
+                    ) : null}
+                    <Button variant="secondary" className="text-xs ml-auto" onClick={onClose}>
+                        Close
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
+const ErrorList: React.FC<{ errors: Record<string, any> }> = ({ errors }) => {
+    const keys = Object.keys(errors || {});
+    if (!keys.length) return null;
+    return (
+        <div className="mt-4 space-y-2">
+            {keys.map((field) => (
+                <p key={field} className="text-sm text-red-600">
+                    {field}: {errors[field]?.message || 'Invalid value'}
+                </p>
+            ))}
+        </div>
+    );
+};
+
+const ActionsBar: React.FC<{
+  canSave: boolean;
+  isSubmitting: boolean;
+  onCancel: () => void;
+}> = ({ canSave, isSubmitting, onCancel }) => (
+    <div className="flex gap-3 pt-2">
+        <Button type="submit" disabled={!canSave} variant="success">
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
+        </Button>
+        <Button variant="secondary" onClick={onCancel}>
+      Cancel
+        </Button>
+    </div>
+);
+
+
 const EditProfile: React.FC<Props> = ({
     targetUser,
     onClose,
@@ -275,348 +425,161 @@ const EditProfile: React.FC<Props> = ({
 
     return (
         <>
-            <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg'>
-                {/* Sticky-ish page header */}
-                <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-white/10'>
-                    <div>
-                        <h2 className='text-xl font-bold text-gray-900 dark:text-white'>
-                            Account Settings
-                        </h2>
-                        <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Update your profile and preferences.
-                        </p>
-                    </div>
-                    <Button variant='secondary' onClick={onClose}>
-                        ← Back
-                    </Button>
-                </div>
+            <div className="max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg">
+                <PageHeader onBack={onClose} />
 
-                {/* Personal Info / Profile Editing */}
-                <div className='grid gap-y-10 gap-x-8 px-6 py-10 md:grid-cols-3 border-b border-gray-200 dark:border-white/10'>
-                    <div>
-                        <h3 className='text-base font-semibold text-gray-900 dark:text-white'>
-                            Personal Information
-                        </h3>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                            Use a valid email and keep your profile fresh.
-                        </p>
-                    </div>
-
-                    <div className='md:col-span-2'>
-                        {/* Avatar */}
-                        <div className='col-span-full flex items-center gap-6 mb-6'>
-                            <PreviewAvatar previewUrl={previewUrl} targetUser={targetUser} />
-                            <div className='relative'>
-                                <Button
-                                    variant='secondary'
-                                    onClick={() => setShowImageOptions((v) => !v)}
-                                >
-                                    Change avatar
-                                </Button>
-                                {showImageOptions && (
-                                    <div className='absolute left-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg p-4 z-10'>
-                                        <div className='space-y-3'>
-                                            <p className='font-medium text-gray-900 dark:text-white'>
-                                            Change Profile Picture
-                                            </p>
-
-                                            {/* File Upload */}
-                                            <div>
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type='file'
-                                                    accept='image/*'
-                                                    onChange={handleFileSelect}
-                                                    className='hidden'
-                                                    id='avatar-file-input'
-                                                />
-                                                <label
-                                                    htmlFor='avatar-file-input'
-                                                    className='block w-full text-center bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-3 py-2 cursor-pointer hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:border-white/10'
-                                                >
-                                                📁 Upload Image
-                                                </label>
-                                            </div>
-
-                                            {/* URL input */}
-                                            <div className='flex gap-2'>
-                                                <input
-                                                    ref={urlInputRef}
-                                                    type='text'
-                                                    placeholder='Paste image URL...'
-                                                    className='flex-1 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleURLSubmit();
-                                                    }}
-                                                />
-                                                <Button onClick={handleURLSubmit} className='text-sm'>
-                                                    Apply
-                                                </Button>
-                                            </div>
-
-                                            <div className='flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/10'>
-                                                {(watchedAvatar?.length > 0 || watchedAvatarURL?.trim()) && (
-                                                    <button
-                                                        type='button'
-                                                        onClick={clearImage}
-                                                        className='text-xs text-red-600 hover:text-red-700'
-                                                    >
-                                                        Remove Image
-                                                    </button>
-                                                )}
-                                                <Button
-                                                    variant='secondary'
-                                                    className='text-xs ml-auto'
-                                                    onClick={() => setShowImageOptions(false)}
-                                                >
-                                                    Close
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                <SettingsSection
+                    title="Personal Information"
+                    description="Use a valid email and keep your profile fresh."
+                >
+                    {/* Avatar */}
+                    <div className="col-span-full flex items-center gap-6 mb-6">
+                        <PreviewAvatar previewUrl={previewUrl} targetUser={targetUser} />
+                        <div className="relative">
+                            <Button variant="secondary" onClick={() => setShowImageOptions((v) => !v)}>
+                                Change avatar
+                            </Button>
+                            <AvatarMenu
+                                open={showImageOptions}
+                                fileInputRef={fileInputRef}
+                                urlInputRef={urlInputRef}
+                                watchedAvatar={watchedAvatar as any}
+                                watchedAvatarURL={watchedAvatarURL as any}
+                                onFileChange={handleFileSelect}
+                                onURLSubmit={handleURLSubmit}
+                                onClear={clearImage}
+                                onClose={() => setShowImageOptions(false)}
+                            />
                         </div>
-
-                        {/* Main form */}
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className='space-y-6'>
-                            <div>
-                                <label className='block font-semibold mb-1 text-gray-900 dark:text-white'>
-                                    Email
-                                </label>
-                                <Input
-                                    name='email'
-                                    form={form}
-                                    label=''
-                                    placeholder={user.email}
-                                />
-                            </div>
-
-                            <div>
-                                <label className='block font-semibold mb-1 text-gray-900 dark:text-white'>
-                                    Description
-                                </label>
-                                <Input
-                                    name='about'
-                                    form={form}
-                                    label=''
-                                    placeholder='Write a short bio...'
-                                    multiline
-                                />
-                                <p className='text-xs text-gray-500 italic'>
-                                    This will appear on your public profile.
-                                </p>
-                            </div>
-
-                            <div>
-                                <TagInput
-                                    initialTags={form.watch('tags')}
-                                    onTagsChange={(tags) => {
-                                        const next = tags.map(t => t.name);
-                                        const prev = form.getValues('tags') || [];
-                                        if (JSON.stringify(next) !== JSON.stringify(prev)) {
-                                            form.setValue('tags', next, { shouldDirty: true, shouldValidate: true });
-                                        }
-                                    }}
-                                />
-                                <p className='text-xs text-gray-500 italic mt-2'>
-                                    These tags appear on your profile. Use interests, skills, or hobbies.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className='block font-semibold mb-1 text-gray-900 dark:text-white'>
-                                    Location
-                                </label>
-                                <MapDisplay
-                                    regionID={targetUser.location?.regionID}
-                                    width={400}
-                                    height={300}
-                                    showAddressBar
-                                    exactLocation
-                                    shouldGetYourLocation
-                                    onLocationChange={(data) => {
-                                        if (!data.changed) {
-                                            return;
-                                        }
-    
-                                        if (data.coordinates) {
-                                            setLocation(data.coordinates);
-                                            const next = {
-                                                ...data.coordinates,
-                                                name: data.name,
-                                                regionID: data.placeID,
-                                            };
-                                            const prev = form.getValues('location') || null;
-                                            const changed = !deepEqual(next, prev);
-                                            if (changed) {
-                                                form.setValue('location', next, { shouldDirty: true, shouldValidate: true });
-                                            }
-                                        }
-                                    }}
-                                />
-                            </div>
-
-                            <div className='flex gap-3 pt-2'>
-                                <Button
-                                    type='submit'
-                                    disabled={!canSave}
-                                    variant='success'
-                                >
-                                    {isSubmitting ? 'Saving...' : 'Save Changes'}
-                                </Button>
-
-                                <Button variant='secondary' onClick={onClose}>
-                                    Cancel
-                                </Button>
-                            </div>
-
-                            {Object.keys(form.formState.errors).length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                    {Object.entries(form.formState.errors).map(([field, error]) => (
-                                        <p key={field} className="text-sm text-red-600">
-                                            {field}: {error?.message || 'Invalid value'}
-                                        </p>
-                                    ))}
-                                </div>
-                            )}
-                        </form>
-                    </div>
-                </div>
-
-                {/* Change password */}
-                <div className='grid gap-y-10 gap-x-8 px-6 py-10 md:grid-cols-3 border-b border-gray-200 dark:border-white/10'>
-                    <div>
-                        <h3 className='text-base font-semibold text-gray-900 dark:text-white'>
-                            Change password
-                        </h3>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                            Update the password associated with your account.
-                        </p>
                     </div>
 
-                    <form
-                        className='md:col-span-2 space-y-6'
-                        onSubmit={handleChangePassword}
-                    >
-                        <div>
-                            <label className='block text-sm font-medium text-gray-900 dark:text-white'>
-                                Current password
-                            </label>
+                    {/* Main form */}
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+                        <FormField label="Email">
+                            <Input name="email" form={form} label="" placeholder={user.email} />
+                        </FormField>
+
+                        <FormField label="Description" help="This will appear on your public profile.">
+                            <Input name="about" form={form} label="" placeholder="Write a short bio..." multiline />
+                        </FormField>
+
+                        <FormField
+                            help="These tags appear on your profile. Use interests, skills, or hobbies."
+                        >
+                            <TagInput
+                                initialTags={form.watch('tags')}
+                                onTagsChange={(tags) => {
+                                    const next = tags.map((t) => t.name);
+                                    const prev = form.getValues('tags') || [];
+                                    if (JSON.stringify(next) !== JSON.stringify(prev)) {
+                                        form.setValue('tags', next, { shouldDirty: true, shouldValidate: true });
+                                    }
+                                }}
+                            />
+                        </FormField>
+
+                        <FormField label="Location">
+                            <MapDisplay
+                                regionID={targetUser.location?.regionID}
+                                width={400}
+                                height={300}
+                                showAddressBar
+                                exactLocation
+                                shouldGetYourLocation
+                                onLocationChange={(data) => {
+                                    if (!data.changed) return;
+                                    if (data.coordinates) {
+                                        setLocation(data.coordinates);
+                                        const next = { ...data.coordinates, name: data.name, regionID: data.placeID };
+                                        const prev = form.getValues('location') || null;
+                                        const changed = !deepEqual(next, prev);
+                                        if (changed) {
+                                            form.setValue('location', next, { shouldDirty: true, shouldValidate: true });
+                                        }
+                                    }
+                                }}
+                            />
+                        </FormField>
+
+                        <ActionsBar canSave={canSave} isSubmitting={isSubmitting} onCancel={onClose} />
+
+                        <ErrorList errors={form.formState.errors as any} />
+                    </form>
+                </SettingsSection>
+
+                <SettingsSection
+                    title="Change password"
+                    description="Update the password associated with your account."
+                >
+                    <form className="space-y-6" onSubmit={handleChangePassword}>
+                        <FormField label="Current password">
                             <input
-                                type='password'
+                                type="password"
                                 value={pwForm.current}
-                                onChange={(e) =>
-                                    setPwForm((s) => ({
-                                        ...s,
-                                        current: e.target.value
-                                    }))
-                                }
-                                className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                onChange={(e) => setPwForm((s) => ({ ...s, current: e.target.value }))}
+                                className="mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10"
                             />
-                        </div>
-                        <div className='grid sm:grid-cols-2 gap-6'>
-                            <div>
-                                <label className='block text-sm font-medium text-gray-900 dark:text-white'>
-                                    New password
-                                </label>
+                        </FormField>
+
+                        <div className="grid sm:grid-cols-2 gap-6">
+                            <FormField label="New password">
                                 <input
-                                    type='password'
+                                    type="password"
                                     value={pwForm.next}
-                                    onChange={(e) =>
-                                        setPwForm((s) => ({
-                                            ...s,
-                                            next: e.target.value
-                                        }))
-                                    }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10'
+                                    onChange={(e) => setPwForm((s) => ({ ...s, next: e.target.value }))}
+                                    className="mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10"
                                 />
-                            </div>
-                            <div>
-                                <label className='block text-sm font-medium text-gray-900 dark:text-white'>
-                                    Confirm password
-                                </label>
+                            </FormField>
+                            <FormField label="Confirm password">
                                 <input
-                                    type='password'
+                                    type="password"
                                     value={pwForm.confirm}
-                                    onChange={(e) =>
-                                        setPwForm((s) => ({
-                                            ...s,
-                                            confirm: e.target.value
-                                        }))
-                                    }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10'
+                                    onChange={(e) => setPwForm((s) => ({ ...s, confirm: e.target.value }))}
+                                    className="mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10"
                                 />
-                            </div>
+                            </FormField>
                         </div>
 
-                        <Button type='submit'>Save</Button>
+                        <Button type="submit">Save</Button>
                     </form>
-                </div>
+                </SettingsSection>
 
-                {/* Log out other sessions */}
-                <div className='grid gap-y-10 gap-x-8 px-6 py-10 md:grid-cols-3 border-b border-gray-200 dark:border-white/10'>
-                    <div>
-                        <h3 className='text-base font-semibold text-gray-900 dark:text-white'>
-                            Log out other sessions
-                        </h3>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                            Enter your password to log out from other devices.
-                        </p>
-                    </div>
-
-                    <form
-                        className='md:col-span-2 space-y-6'
-                        onSubmit={handleLogoutOtherSessions}
-                    >
-                        <div>
-                            <label className='block text-sm font-medium text-gray-900 dark:text-white'>
-                                Your password
-                            </label>
+                <SettingsSection
+                    title="Log out other sessions"
+                    description="Enter your password to log out from other devices."
+                >
+                    <form className="space-y-6" onSubmit={handleLogoutOtherSessions}>
+                        <FormField label="Your password">
                             <input
-                                type='password'
+                                type="password"
                                 value={logoutPassword}
-                                onChange={(e) =>
-                                    setLogoutPassword(e.target.value)
-                                }
-                                className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                onChange={(e) => setLogoutPassword(e.target.value)}
+                                className="mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10"
                             />
-                        </div>
-                        <Button type='submit'>Log out other sessions</Button>
+                        </FormField>
+                        <Button type="submit">Log out other sessions</Button>
                     </form>
-                </div>
+                </SettingsSection>
 
-                {/* Delete account */}
-                <div className='grid gap-y-10 gap-x-8 px-6 py-10 md:grid-cols-3'>
-                    <div>
-                        <h3 className='text-base font-semibold text-gray-900 dark:text-white'>
-                            Delete account
-                        </h3>
-                        <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                            This cannot be undone. All information will be
-                            permanently removed.
-                        </p>
-                    </div>
-
-                    <form
-                        className='md:col-span-2 flex items-start'
-                        onSubmit={handleDeleteAccount}
-                    >
-                        <Button type='submit' variant='danger'>
+                <SettingsSection
+                    title="Delete account"
+                    description="This cannot be undone. All information will be permanently removed."
+                    noBorder
+                >
+                    <form className="flex items-start" onSubmit={handleDeleteAccount}>
+                        <Button type="submit" variant="danger">
                             Yes, delete my account
                         </Button>
                     </form>
-                </div>
+                </SettingsSection>
             </div>
 
             {/* Global toast */}
             {toastMessage && (
-                <div className='fixed bottom-4 left-1/2 -translate-x-1/2 z-50'>
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
                     <Alert
                         type={toastType === 'success' ? 'success' : 'danger'}
-                        title={
-                            toastType === 'success' ? 'Notification' : undefined
-                        }
+                        title={toastType === 'success' ? 'Notification' : undefined}
                         message={toastMessage}
                         show={!!toastMessage}
                         onClose={() => setToastMessage(null)}
@@ -625,12 +588,7 @@ const EditProfile: React.FC<Props> = ({
             )}
 
             {/* click-away for avatar menu */}
-            {showImageOptions && (
-                <div
-                    className='fixed inset-0 z-0'
-                    onClick={() => setShowImageOptions(false)}
-                />
-            )}
+            {showImageOptions && <div className="fixed inset-0 z-0" onClick={() => setShowImageOptions(false)} />}
         </>
     );
 };
