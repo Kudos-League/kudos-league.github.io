@@ -12,12 +12,18 @@ export default function PostsInfinite({
     activeTab,
     ordering,
 }: {
-  filters: { includeSender?: boolean; includeTags?: boolean; limit?: number };
+  filters: { includeSender?: boolean; includeTags?: boolean; limit?: number; query?: string };
   activeTab: PostFilterType;
   ordering: Ordering;
 }) {
-    const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePostsInfiniteQuery(filters);
+    const {
+        data,
+        isLoading,
+        isError,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = usePostsInfiniteQuery(filters);
 
     const flat = React.useMemo(
         () => data?.pages.flatMap((p) => p.data) ?? [],
@@ -31,20 +37,15 @@ export default function PostsInfinite({
           : flat.filter((p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request'));
 
         const cmp = {
-            date: (a: any, b: any) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            distance: () => Math.random() - 0.5, // TODO: real distance sort when you have coords
+            date: (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            distance: () => Math.random() - 0.5, // TODO
             kudos: (a: any, b: any) => (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0),
         }[ordering.type];
 
-        const sorted = [...filtered].sort((a, b) =>
-            ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)
-        );
-
-        return sorted;
+        return [...filtered].sort((a, b) => (ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)));
     }, [flat, activeTab, ordering]);
 
-    if (isLoading) return <Spinner text="Loading posts…" />;
+    if (isLoading) return <Spinner />;
     if (isError) return <div className="p-4 text-red-600">Failed to load posts.</div>;
 
     return (

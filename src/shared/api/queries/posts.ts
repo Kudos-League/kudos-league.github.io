@@ -5,12 +5,15 @@ import type { PostDTO } from '@/shared/api/types';
 export const qk = {
     posts: (filters?: { includeTags?: boolean; includeSender?: boolean }) => ['posts', filters] as const,
     search: (query: string) => ['postSearch', query] as const,
+    postsInfinite: (f?: any) => ['posts', 'infinite', f] as const
 };
 
+type CursorPage = { data: PostDTO[]; nextCursor?: number; limit: number };
+
 export type PostsPage = {
-  data: PostDTO[];
-  nextCursor?: number | null;
-  limit: number;
+    data: PostDTO[];
+    nextCursor?: number | null;
+    limit: number;
 };
 
 export function usePostsQuery(filters?: { includeTags?: boolean; includeSender?: boolean }) {
@@ -32,16 +35,24 @@ export function useSearchPostsQuery(query: string) {
     });
 }
 
-
-export function usePostsInfiniteQuery(filters?: { includeTags?: boolean; includeSender?: boolean; limit?: number }) {
-    return useInfiniteQuery<PostsPage>({
-        queryKey: qk.posts(filters),
+export function usePostsInfiniteQuery(filters?: {
+    includeSender?: boolean;
+    includeTags?: boolean;
+    limit?: number;
+    query?: string;
+}) {
+    return useInfiniteQuery({
+        queryKey: qk.postsInfinite(filters),
         queryFn: ({ pageParam }) =>
-            apiGet<PostsPage>('/posts', {
-                params: { ...filters, cursor: pageParam ?? undefined, limit: filters?.limit ?? 10 },
+            apiGet<CursorPage>('/posts', {
+                params: {
+                    ...filters,
+                    cursor: pageParam ?? undefined,
+                    limit: filters?.limit ?? 10,
+                },
             }),
         initialPageParam: undefined as number | undefined,
-        getNextPageParam: (last) => (last.nextCursor ?? undefined),
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         staleTime: 60_000,
     });
 }

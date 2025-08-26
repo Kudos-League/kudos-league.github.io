@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function Spinner({ text = 'Processing...', className = '' }: { text?: string, className?: string }) {
+export default function Spinner({ text = '', className = '' }: { text?: string, className?: string }) {
     return (
         <div className={`flex items-center justify-center h-full w-full p-3 ${className}`}>
             <div className="flex items-center gap-3">
