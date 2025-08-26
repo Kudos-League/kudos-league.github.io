@@ -262,12 +262,6 @@ export async function updateUser(
 
     const body = request instanceof FormData ? request : toFormData(request);
 
-    /*
-    Array.from(body.entries()).forEach(([k, v]) => {
-        console.log('{updateUser}', k, v instanceof File ? `(file: ${v.name})` : v);
-    });
-    */
-
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
     const response = await instance.patch(`/users/${id}`, body, { headers });

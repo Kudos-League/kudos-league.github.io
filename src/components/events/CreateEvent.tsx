@@ -1,17 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { createEvent } from '@/shared/api/actions';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
 import Button from '@/components/common/Button';
-import { extractApiErrors } from '@/shared/httpErrors';
-
+import { useCreateEvent } from '@/shared/api/mutations/events';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
-    const { token } = useAuth();
+
+    const createEvent = useCreateEvent();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -23,7 +21,6 @@ export default function CreateEvent() {
 
     const [startDate, setStartDate] = useState(now);
     const [endDate, setEndDate] = useState<Date | null>(oneDayLater);
-    const [loading, setLoading] = useState(false);
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
     const dateValidation = useMemo(() => {
@@ -161,51 +158,30 @@ export default function CreateEvent() {
     const onSubmit = async () => {
         setErrorMessages([]);
 
-        if (!token) {
-            setErrorMessages(['You must be logged in to create an event.']);
-            return;
-        }
-
         if (!dateValidation.canSubmit) {
-            const allIssues = [
+            setErrorMessages([
                 ...dateValidation.errors,
                 ...(title.trim() ? [] : ['Title is required']),
-                ...(description.trim() ? [] : ['Description is required'])
-            ];
-            setErrorMessages(allIssues);
+                ...(description.trim() ? [] : ['Description is required']),
+                ...(global || location?.regionID ? [] : ['Location is required when Global is off']),
+            ]);
             return;
         }
-
-        setLoading(true);
 
         const payload: CreateEventDTO = {
             title: title.trim(),
             description: description.trim(),
-            location: {
-                ...location,
-                regionID: location?.regionID ?? null,
-                global
-            },
+            location: { ...location, regionID: location?.regionID ?? null, global },
             startTime: startDate,
-            endTime: endDate
+            endTime: endDate,
         };
 
         try {
-            await createEvent(payload, token);
+            await createEvent.mutateAsync(payload);
             navigate('/events');
         }
-        catch (error: any) {
-            console.error('Event creation error:', error);
-
-            if (error.response?.status === 400) {
-                setErrorMessages(extractApiErrors(error));
-            }
-            else {
-                setErrorMessages(['Failed to create event. Please try again.']);
-            }
-        }
-        finally {
-            setLoading(false);
+        catch (msgs: any) {
+            setErrorMessages((msgs as string[]) ?? ['Failed to create event']);
         }
     };
 
@@ -367,13 +343,13 @@ export default function CreateEvent() {
                 <Button
                     onClick={onSubmit}
                     className={`w-full px-4 py-3 rounded text-white font-medium transition-all ${
-                        dateValidation.canSubmit && !loading
+                        dateValidation.canSubmit && !createEvent.isPending
                             ? 'bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md'
                             : 'bg-gray-400 cursor-not-allowed'
                     }`}
-                    disabled={!dateValidation.canSubmit || loading}
+                    disabled={!dateValidation.canSubmit || createEvent.isPending}
                 >
-                    {loading ? (
+                    {createEvent.isPending ? (
                         <div className='flex items-center justify-center gap-2'>
                             <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
                             Creating Event...
@@ -390,13 +366,19 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {errorMessages.length > 0 && (
+            {(errorMessages?.length && !createEvent.isError) ? (
                 <div className='bg-red-100 border border-red-300 rounded p-4'>
                     {errorMessages.map((msg, i) => (
                         <p key={i} className='text-red-700 text-sm'>
                             {msg}
                         </p>
                     ))}
+                </div>
+            ) : null}
+
+            {createEvent.isError && Array.isArray(createEvent.error) && createEvent.error.length > 0 && (
+                <div className='bg-red-100 border border-red-300 rounded p-4'>
+                    <p className='text-red-700 text-sm'>{createEvent.error.join(', ')}</p>
                 </div>
             )}
         </div>

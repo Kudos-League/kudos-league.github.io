@@ -1,32 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Events from '@/components/events/Events';
-import { getEvents } from '@/shared/api/actions';
-import { EventDTO } from '@/shared/api/types';
+import { useEvents } from '@/shared/api/queries/events';
 
 export default function EventsPage() {
-    const [events, setEvents] = useState<EventDTO[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: events, isLoading, error } = useEvents({ filter: 'all' });
 
-    useEffect(() => {
-        const fetch = async () => {
-            try {
-                const res = await getEvents({ filter: 'all' });
-                setEvents(res);
-            }
-            catch (e) {
-                console.error('Failed to fetch events:', e);
-            }
-            finally {
-                setLoading(false);
-            }
-        };
-
-        fetch();
-    }, []);
-
-    if (loading) {
-        return <p className='text-center text-lg'>Loading events...</p>;
+    if (isLoading) {
+        return <p className="text-center text-lg">Loading events...</p>;
     }
 
-    return <Events events={events} />;
+    if (error) {
+        return (
+            <p className="text-center text-red-600">
+                Failed to fetch events
+            </p>
+        );
+    }
+
+    return <Events events={events ?? []} />;
 }

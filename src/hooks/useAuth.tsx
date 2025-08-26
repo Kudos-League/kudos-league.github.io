@@ -4,6 +4,7 @@ import { useAppDispatch } from 'redux_store/hooks';
 import { getUserDetails, login, register } from '@/shared/api/actions';
 import { UserDTO } from '@/shared/api/types';
 import { isJwt } from '@/shared/constants';
+import { setAuthToken } from '@/shared/api/httpClient';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -36,6 +37,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const dispatch = useAppDispatch();
 
     const token = authState?.token || null;
+
+    setAuthToken(token);
 
     const loginHandler = async ({
         username,
