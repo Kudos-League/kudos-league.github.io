@@ -5,7 +5,9 @@ import { createEvent } from '@/shared/api/actions';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
-import Button from '../common/Button';
+import Button from '@/components/common/Button';
+import { extractApiErrors } from '@/shared/httpErrors';
+
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -196,22 +198,7 @@ export default function CreateEvent() {
             console.error('Event creation error:', error);
 
             if (error.response?.status === 400) {
-                const backendMessage = error.response?.data?.message;
-                if (typeof backendMessage === 'string') {
-                    setErrorMessages([backendMessage]);
-                }
-                else if (backendMessage?.errors) {
-                    const zodErrors = backendMessage.errors;
-                    const msgs = zodErrors.map(
-                        (err: any) => `${err.field}: ${err.message}`
-                    );
-                    setErrorMessages(msgs);
-                }
-                else {
-                    setErrorMessages([
-                        'Invalid data provided. Please check all fields.'
-                    ]);
-                }
+                setErrorMessages(extractApiErrors(error));
             }
             else {
                 setErrorMessages(['Failed to create event. Please try again.']);
