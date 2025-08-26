@@ -9,6 +9,7 @@ export type CreatePostDTO = {
     type: string;
     files?: File[];
     categoryID: number;
+    location?: LocationDTO | null;
 };
 
 export type LocationDTO = {
