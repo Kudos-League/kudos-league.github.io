@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import AppNavigator from '@/components/navigation/AppNavigator';
 import queryClient from './shared/api/client';
+import Spinner from './components/common/Spinner';
 
 function ErrorFallback() {
     return <div>Error loading</div>;
@@ -46,7 +47,7 @@ function AppCore() {
     const { loading } = useAuth();
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <Spinner text='Logging in...' />;
     }
 
     return (

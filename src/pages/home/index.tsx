@@ -6,6 +6,7 @@ import CurrentEvent from '@/components/events/CurrentEvent';
 import { PostDTO } from '@/shared/api/types';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '@/components/common/Button';
+import Spinner from '@/components/common/Spinner';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -112,9 +113,13 @@ export default function Feed() {
 
     const handleCreatePost = () => navigate('/create-post');
 
-    if (loading)
-        return <div className='p-4 md:p-6 text-center'>Loading...</div>;
-    if (error) return <div className='p-4 md:p-6 text-red-500'>{error}</div>;
+    if (loading) {
+        return <Spinner text='Loading home page...' />;
+    }
+        
+    if (error) {
+        return <div className='p-4 md:p-6 text-red-500'>{error}</div>;
+    }
 
     return (
         <div className='max-w-4xl mx-auto space-y-4'>

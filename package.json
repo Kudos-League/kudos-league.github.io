@@ -24,6 +24,7 @@
         "@types/react-dom": "^19.1.5",
         "axios": "^1.9.0",
         "clsx": "^2.1.1",
+        "daisyui": "4",
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
         "dayjs": "^1.11.13",

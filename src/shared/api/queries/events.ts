@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, UseQueryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { apiGet } from '@/shared/api/apiClient';
 import type { EventDTO } from '@/shared/api/types';
 
@@ -15,7 +15,7 @@ export function useEvents(
     filters?: Filters,
     options?: Omit<UseQueryOptions<EventDTO[], unknown, EventDTO[], EventsKey>, 'queryKey' | 'queryFn'>
 ) {
-    return useQuery<EventDTO[], unknown, EventDTO[], EventsKey>({
+    return useSuspenseQuery<EventDTO[], unknown, EventDTO[], EventsKey>({
         queryKey: qk.events(filters),
         queryFn: () => apiGet<EventDTO[]>('/events', { params: filters }),
         ...options,
