@@ -51,6 +51,7 @@
         "build:dev": "NODE_ENV=production dotenv -e .env.dev -- yarn build",
         "build:prod": "NODE_ENV=production dotenv -e .env.live -- yarn build",
         "test": "craco test",
+        "test:e2e": "playwright test",
         "eject": "react-scripts eject"
     },
     "eslintConfig": {

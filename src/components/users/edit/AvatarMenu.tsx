@@ -61,7 +61,7 @@ const AvatarMenu: React.FC<{
 
                 <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/10">
                     {(watchedAvatar?.length || (watchedAvatarURL || '').trim()) ? (
-                        <button type="button" onClick={onClear} className="text-xs text-red-600 hover:text-red-700">
+                        <button data-testid="remove-avatar" type="button" onClick={onClear} className="text-xs text-red-600 hover:text-red-700">
 							Remove Image
                         </button>
                     ) : null}

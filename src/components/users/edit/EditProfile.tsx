@@ -260,7 +260,7 @@ const EditProfile: React.FC<Props> = ({
                         </FormField>
 
                         <FormField label="Description" help="This will appear on your public profile.">
-                            <Input name="about" form={form} label="" placeholder="Write a short bio..." multiline />
+                            <Input data-testid="about" name="about" form={form} label="" placeholder="Write a short bio..." multiline />
                         </FormField>
 
                         <FormField
