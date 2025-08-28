@@ -1,10 +1,14 @@
 name: Deploy if tests succeed
 
 on:
-    workflow_run:
-        #workflows:
-        #    - 'E2E Tests'
-        #types: [completed]
+    # workflow_run:
+    #     workflows:
+    #         - 'E2E Tests'
+    #     types: [completed]
+    #     branches:
+    #         - main
+    #         - dev
+    push:
         branches:
             - main
             - dev
