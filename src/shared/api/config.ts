@@ -3,8 +3,11 @@ export enum Environment {
     DEV
 }
 
-const BACKEND_URI = process.env.REACT_APP_BACKEND_URI ?? 'http://localhost';
-const WSS_URI = process.env.REACT_APP_WSS_URI ?? 'ws://localhost';
+const BACKEND_URI = process.env.REACT_APP_BACKEND_URI;
+const WSS_URI = process.env.REACT_APP_WSS_URI;
+
+if (!BACKEND_URI) throw new Error('Missing REACT_APP_BACKEND_URI at build time');
+if (!WSS_URI) throw new Error('Missing REACT_APP_WSS_URI at build time');
 
 export function getEndpointUrl(): string {
     return BACKEND_URI;
