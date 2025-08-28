@@ -5,10 +5,12 @@ import { CORS, bootstrapAuth } from './utils/auth';
 
 const SAVE_BTN = /save changes/i;
 const ONE_BY_ONE_PNG =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/af9eAsAAAAASUVORK5CYII=';
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/af9eAsAAAAASUVORK5CYII=';
 
 test.describe('Edit Profile', () => {
-    test('save disabled until change; about edit enables save & is sent', async ({ page }) => {
+    test('save disabled until change; about edit enables save & is sent', async ({
+        page
+    }) => {
         await navigateToEdit(page);
 
         const save = page.getByRole('button', { name: SAVE_BTN });
@@ -29,7 +31,9 @@ test.describe('Edit Profile', () => {
         await patch;
     });
 
-    test('avatar upload enables save and sends multipart with file', async ({ page }) => {
+    test('avatar upload enables save and sends multipart with file', async ({
+        page
+    }) => {
         await navigateToEdit(page);
 
         await page.getByRole('button', { name: /change avatar/i }).click();
@@ -39,7 +43,7 @@ test.describe('Edit Profile', () => {
             name: fileName,
             mimeType: 'image/png',
             // @ts-ignore
-            buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64'),
+            buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64')
         });
 
         const save = page.getByRole('button', { name: SAVE_BTN });
@@ -55,7 +59,9 @@ test.describe('Edit Profile', () => {
         await patch;
     });
 
-    test('removing uploaded avatar disables save again (no other changes)', async ({ page }) => {
+    test('removing uploaded avatar disables save again (no other changes)', async ({
+        page
+    }) => {
         await navigateToEdit(page);
 
         await page.getByRole('button', { name: /change avatar/i }).click();
@@ -63,7 +69,7 @@ test.describe('Edit Profile', () => {
             name: 'avatar.png',
             mimeType: 'image/png',
             // @ts-ignore
-            buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64'),
+            buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64')
         });
 
         const save = page.getByRole('button', { name: SAVE_BTN });
@@ -83,7 +89,7 @@ test.describe('Edit Profile', () => {
 });
 
 async function navigateToEdit(page: Page) {
-    page.on('pageerror', e => console.log('pageerror:', e));
+    page.on('pageerror', (e) => console.log('pageerror:', e));
     // page.on('console', m => m.type() === 'error' && console.log('console error:', m.text()));
 
     await bootstrapAuth(page, 1);
@@ -93,19 +99,26 @@ async function navigateToEdit(page: Page) {
     await expect(edit).toBeVisible({ timeout: 10_000 });
     await edit.click();
 
-    await expect(page.getByTestId('account-settings')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('account-settings')).toBeVisible({
+        timeout: 10_000
+    });
 }
 
 function getEditButton(page: Page) {
     const byTid = page.getByTestId('edit-profile');
-    return byTid.filter({ hasText: /edit/i }).first().or(
-        page.getByRole('button', { name: /edit/i }).first()
-    );
+    return byTid
+        .filter({ hasText: /edit/i })
+        .first()
+        .or(page.getByRole('button', { name: /edit/i }).first());
 }
 
 function waitForUserPatch(
     page: Page,
-    assert: (data: { request: Request; headers: Record<string,string>; bodyText: string }) => void
+    assert: (data: {
+        request: Request;
+        headers: Record<string, string>;
+        bodyText: string;
+    }) => void
 ) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<void>(async (resolve) => {
@@ -115,7 +128,9 @@ function waitForUserPatch(
 
             const headers = req.headers();
             const buf = req.postDataBuffer();
-            const bodyText = buf ? buf.toString('utf8') : (req.postData() ?? '');
+            const bodyText = buf
+                ? buf.toString('utf8')
+                : (req.postData() ?? '');
             assert({ request: req, headers, bodyText });
 
             await route.fulfill({
@@ -127,11 +142,10 @@ function waitForUserPatch(
                     settings: {},
                     tags: [],
                     location: null,
-                    avatar: null,
-                }),
+                    avatar: null
+                })
             });
             resolve();
         });
     });
 }
-

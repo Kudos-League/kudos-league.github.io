@@ -1,7 +1,10 @@
 type BuildMode = 'json' | 'form' | 'auto';
 
 function isFileish(v: unknown): v is File | Blob {
-    return typeof File !== 'undefined' && v instanceof File || typeof Blob !== 'undefined' && v instanceof Blob;
+    return (
+        (typeof File !== 'undefined' && v instanceof File) ||
+        (typeof Blob !== 'undefined' && v instanceof Blob)
+    );
 }
 function isPlainObject(v: unknown) {
     return Object.prototype.toString.call(v) === '[object Object]';
@@ -24,7 +27,9 @@ export function toFormData(obj: Record<string, any>): FormData {
         }
         else if (Array.isArray(val)) {
             // append arrays with bracket syntax; for primitives we serialize JSON to keep BE happy
-            const containsObjects = val.some(v => isPlainObject(v) || Array.isArray(v) || isFileish(v));
+            const containsObjects = val.some(
+                (v) => isPlainObject(v) || Array.isArray(v) || isFileish(v)
+            );
             if (containsObjects) {
                 val.forEach((v, i) => append(`${key}[${i}]`, v));
             }
@@ -49,7 +54,10 @@ export function buildBody(
     body: any,
     mode: BuildMode
 ): { data: any; headers: Record<string, string> } {
-    if (mode === 'form' || (mode === 'auto' && (body instanceof FormData || hasFileDeep(body)))) {
+    if (
+        mode === 'form' ||
+        (mode === 'auto' && (body instanceof FormData || hasFileDeep(body)))
+    ) {
         const data = body instanceof FormData ? body : toFormData(body ?? {});
         return { data, headers: { 'Content-Type': 'multipart/form-data' } };
     }

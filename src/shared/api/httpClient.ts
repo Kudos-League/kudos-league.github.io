@@ -9,8 +9,8 @@ export const http = axios.create({
 });
 
 http.interceptors.response.use(
-    r => r,
-    err => {
+    (r) => r,
+    (err) => {
         (err as any).__messages = extractApiErrors(err);
         return Promise.reject(err);
     }
@@ -21,5 +21,5 @@ export function setAuthToken(token?: string) {
     const newHeader = token && `Bearer ${token}`;
     if (newHeader !== http.defaults.headers.common['Authorization']) {
         http.defaults.headers.common['Authorization'] = newHeader;
-    }   
+    }
 }

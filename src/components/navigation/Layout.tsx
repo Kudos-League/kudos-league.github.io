@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { routes } from '@/routes';
 
 import {
     HomeIcon,
@@ -10,7 +11,6 @@ import {
     ArrowRightOnRectangleIcon,
     UserPlusIcon
 } from '@heroicons/react/24/outline';
-// import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 type FooterLinkProps = {
@@ -37,10 +37,18 @@ const LayoutFooter: React.FC = () => {
             <div className='flex justify-around items-center gap-4'>
                 {isLoggedIn ? (
                     <>
-                        <FooterLink to='/' icon={HomeIcon} label='Home' />
-                        <FooterLink to='/dms' icon={EnvelopeIcon} label='DMs' />
                         <FooterLink
-                            to={`/user/${user.id}`}
+                            to={routes.home}
+                            icon={HomeIcon}
+                            label='Home'
+                        />
+                        <FooterLink
+                            to={routes.dms}
+                            icon={EnvelopeIcon}
+                            label='DMs'
+                        />
+                        <FooterLink
+                            to={routes.user[user!.id]}
                             icon={UserCircleIcon}
                             label='My Profile'
                         />
@@ -48,17 +56,17 @@ const LayoutFooter: React.FC = () => {
                 ) : (
                     <>
                         <FooterLink
-                            to='/about'
+                            to={routes.about}
                             icon={InformationCircleIcon}
                             label='About'
                         />
                         <FooterLink
-                            to='/login'
+                            to={routes.login}
                             icon={ArrowRightOnRectangleIcon}
                             label='Login'
                         />
                         <FooterLink
-                            to='/sign-up'
+                            to={routes.signUp}
                             icon={UserPlusIcon}
                             label='Register'
                         />
@@ -76,7 +84,6 @@ const Layout: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Close sidebar and dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const sidebar = document.getElementById('mobile-sidebar');
@@ -84,7 +91,6 @@ const Layout: React.FC = () => {
             const dropdown = document.getElementById('profile-dropdown');
             const profileButton = document.getElementById('profile-button');
 
-            // Close mobile sidebar
             if (
                 sidebarOpen &&
                 sidebar &&
@@ -95,7 +101,6 @@ const Layout: React.FC = () => {
                 setSidebarOpen(false);
             }
 
-            // Close profile dropdown
             if (
                 showDropdown &&
                 dropdown &&
@@ -112,7 +117,6 @@ const Layout: React.FC = () => {
             document.removeEventListener('mousedown', handleClickOutside);
     }, [sidebarOpen, showDropdown]);
 
-    // Close sidebar and dropdown on route change
     useEffect(() => {
         setSidebarOpen(false);
         setShowDropdown(false);
@@ -121,23 +125,11 @@ const Layout: React.FC = () => {
     const handleLogout = () => {
         logout();
         setShowDropdown(false);
-        navigate('/'); // Redirect to home page after logout
+        navigate(routes.home);
     };
 
     return (
         <div className='flex h-screen'>
-            {/*
-            <Sidebar
-                open={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-                onLinkClick={() => setSidebarOpen(false)}
-                isLoggedIn={!!isLoggedIn}
-                isAdmin={!!user?.admin}
-                brand={<span className="text-lg font-semibold text-gray-800">Kudos League</span>}
-            />
-            */}
-
-            {/* Main Content */}
             <div className='flex-1 flex flex-col min-w-0'>
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}

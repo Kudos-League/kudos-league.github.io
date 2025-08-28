@@ -9,48 +9,45 @@ import {
 import {
     BellIcon,
     ChevronDownIcon,
-    XMarkIcon,
-    UserCircleIcon
+    XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
+import { routes } from '@/routes';
 
-// Type definition for navigation items
 type NavItem = {
     name: string;
     to: string;
 };
 
-// Build navigation items depending on authentication state and admin status
 function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
-    const base: NavItem[] = [{ name: 'Main', to: '/' }];
+    const base: NavItem[] = [{ name: 'Main', to: routes.home }];
     if (isLoggedIn) {
         base.push(
-            { name: 'DMs', to: '/dms' },
-            { name: 'Create', to: '/create-post' },
-            { name: 'Donate', to: '/donate' },
-            { name: 'Leaderboard', to: '/leaderboard' },
-            { name: 'Forum', to: '/chat' },
-            { name: 'Events', to: '/events' }
+            { name: 'DMs', to: routes.dms },
+            { name: 'Create', to: routes.createPost },
+            { name: 'Donate', to: routes.donate },
+            { name: 'Leaderboard', to: routes.leaderboard },
+            { name: 'Forum', to: routes.chat },
+            { name: 'Events', to: routes.events }
         );
         if (isAdmin) {
-            base.push({ name: 'Admin', to: '/admin' });
+            base.push({ name: 'Admin', to: routes.admin });
         }
     }
     else {
         base.push(
-            { name: 'About', to: '/about' },
-            { name: 'Login', to: '/login' },
-            { name: 'Register', to: '/sign-up' }
+            { name: 'About', to: routes.about },
+            { name: 'Login', to: routes.login },
+            { name: 'Register', to: routes.signUp }
         );
     }
     return base;
 }
 
-// Individual nav item with gradient underline for the active route
 function NavItemComponent({
     href,
     children
@@ -60,9 +57,10 @@ function NavItemComponent({
 }) {
     const location = useLocation();
     const isActive =
-        href === '/'
-            ? location.pathname === '/'
+        href === routes.home
+            ? location.pathname === routes.home
             : location.pathname.startsWith(href);
+
     return (
         <li>
             <Link
@@ -83,7 +81,6 @@ function NavItemComponent({
     );
 }
 
-// Desktop navigation container
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
         <nav className='hidden md:block'>
@@ -98,7 +95,6 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
     );
 }
 
-// Mobile navigation via Popover
 function MobileNavigation({ items }: { items: NavItem[] }) {
     return (
         <Popover className='md:hidden'>
@@ -143,7 +139,6 @@ function MobileNavigation({ items }: { items: NavItem[] }) {
     );
 }
 
-// Theme toggle button using our custom theme context
 function ThemeToggleButton() {
     const { theme, toggleTheme } = useTheme();
     const other = theme === 'dark' ? 'light' : 'dark';
@@ -185,10 +180,11 @@ function ThemeToggleButton() {
     );
 }
 
-// Dropdown menu for authenticated users
 function UserMenu({ onLogout }: { onLogout: () => void }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
+    const profileHref = user ? routes.user[user.id] : routes.login;
+
     return (
         <div className='relative'>
             <button
@@ -208,7 +204,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
                     className='absolute right-0 z-50 mt-2 w-40 rounded-lg bg-white shadow-lg ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:ring-white/10'
                 >
                     <Link
-                        to='/profile'
+                        to={profileHref}
                         onClick={() => setOpen(false)}
                         className='block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
                     >
@@ -229,7 +225,6 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-// Notification icon placeholder
 function NotificationsIcon() {
     return (
         <button
@@ -255,21 +250,20 @@ export default function Navbar({
     onLogout,
     brand
 }: NavbarProps) {
-    // compute navigation based on login state
     const navItems = useMemo(
         () => useAppNav(isLoggedIn, user?.admin),
         [isLoggedIn, user]
     );
+
     return (
         <header className='sticky top-0 z-50 flex justify-between items-center gap-4 bg-transparent px-4 py-4 backdrop-blur-md'>
-            {/* Brand on the left */}
             <div className='flex items-center'>{brand || <></>}</div>
-            {/* Center navigation: mobile popover and desktop list */}
+
             <div className='flex flex-1 justify-end md:justify-center'>
                 <MobileNavigation items={navItems} />
                 <DesktopNavigation items={navItems} />
             </div>
-            {/* Right-hand actions: theme toggle, notifications, profile or login buttons */}
+
             <div className='flex items-center gap-2'>
                 <ThemeToggleButton />
                 {isLoggedIn ? (
@@ -280,13 +274,13 @@ export default function Navbar({
                 ) : (
                     <div className='flex items-center gap-2'>
                         <Link
-                            to='/login'
+                            to={routes.login}
                             className='rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                         >
                             Login
                         </Link>
                         <Link
-                            to='/sign-up'
+                            to={routes.signUp}
                             className='rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
                         >
                             Register

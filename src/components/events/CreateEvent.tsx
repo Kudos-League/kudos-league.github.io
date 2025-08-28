@@ -163,7 +163,9 @@ export default function CreateEvent() {
                 ...dateValidation.errors,
                 ...(title.trim() ? [] : ['Title is required']),
                 ...(description.trim() ? [] : ['Description is required']),
-                ...(global || location?.regionID ? [] : ['Location is required when Global is off']),
+                ...(global || location?.regionID
+                    ? []
+                    : ['Location is required when Global is off'])
             ]);
             return;
         }
@@ -171,9 +173,13 @@ export default function CreateEvent() {
         const payload: CreateEventDTO = {
             title: title.trim(),
             description: description.trim(),
-            location: { ...location, regionID: location?.regionID ?? null, global },
+            location: {
+                ...location,
+                regionID: location?.regionID ?? null,
+                global
+            },
             startTime: startDate,
-            endTime: endDate,
+            endTime: endDate
         };
 
         try {
@@ -347,7 +353,9 @@ export default function CreateEvent() {
                             ? 'bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md'
                             : 'bg-gray-400 cursor-not-allowed'
                     }`}
-                    disabled={!dateValidation.canSubmit || createEvent.isPending}
+                    disabled={
+                        !dateValidation.canSubmit || createEvent.isPending
+                    }
                 >
                     {createEvent.isPending ? (
                         <div className='flex items-center justify-center gap-2'>
@@ -366,7 +374,7 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            {(errorMessages?.length && !createEvent.isError) ? (
+            {errorMessages?.length && !createEvent.isError ? (
                 <div className='bg-red-100 border border-red-300 rounded p-4'>
                     {errorMessages.map((msg, i) => (
                         <p key={i} className='text-red-700 text-sm'>
@@ -376,9 +384,13 @@ export default function CreateEvent() {
                 </div>
             ) : null}
 
-            {createEvent.isError && Array.isArray(createEvent.error) && createEvent.error.length > 0 && (
+            {createEvent.isError &&
+                Array.isArray(createEvent.error) &&
+                createEvent.error.length > 0 && (
                 <div className='bg-red-100 border border-red-300 rounded p-4'>
-                    <p className='text-red-700 text-sm'>{createEvent.error.join(', ')}</p>
+                    <p className='text-red-700 text-sm'>
+                        {createEvent.error.join(', ')}
+                    </p>
                 </div>
             )}
         </div>

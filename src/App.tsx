@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { Suspense } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from 'redux_store/store';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -14,31 +13,37 @@ import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import AppNavigator from '@/components/navigation/AppNavigator';
 import queryClient from './shared/api/client';
 import Spinner from './components/common/Spinner';
+import Alert from './components/common/Alert';
 
-function ErrorFallback() {
-    return <div>Error loading</div>;
+function ErrorFallback({ error }: { error: string[] }) {
+    return (
+        <Alert
+            className='w-full'
+            type='danger'
+            title='Error loading page'
+            message={error.join('\n')}
+        />
+    );
 }
 
 export default function App() {
     return (
         <ReduxProvider store={store}>
-            <Suspense fallback={<div>Loading app...</div>}>
-                <ErrorBoundary
-                    FallbackComponent={ErrorFallback}
-                    onError={console.error}
-                >
-                    <AuthProvider>
-                        <QueryClientProvider client={queryClient}>
-                            <NotificationsProvider>
-                                <ThemeProvider>
-                                    <AppCore />
-                                </ThemeProvider>
-                            </NotificationsProvider>
-                            <ReactQueryDevtools initialIsOpen={false} />
-                        </QueryClientProvider>
-                    </AuthProvider>
-                </ErrorBoundary>
-            </Suspense>
+            <ErrorBoundary
+                FallbackComponent={ErrorFallback}
+                onError={console.error}
+            >
+                <AuthProvider>
+                    <QueryClientProvider client={queryClient}>
+                        <NotificationsProvider>
+                            <ThemeProvider>
+                                <AppCore />
+                            </ThemeProvider>
+                        </NotificationsProvider>
+                        <ReactQueryDevtools initialIsOpen={false} />
+                    </QueryClientProvider>
+                </AuthProvider>
+            </ErrorBoundary>
         </ReduxProvider>
     );
 }
@@ -56,5 +61,3 @@ function AppCore() {
         </BrowserRouter>
     );
 }
-
-// noop

@@ -1,5 +1,5 @@
-import type { ProfileFormValues, UserDTO } from "@/shared/api/types";
-import deepEqual from "@/shared/deepEqual";
+import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
+import deepEqual from '@/shared/deepEqual';
 
 export default function computeChanged(
     values: ProfileFormValues,
@@ -8,7 +8,11 @@ export default function computeChanged(
 ) {
     const changed: any = {};
 
-    if (dirty.email && values.email?.trim() && values.email.trim() !== (user.email || '')) {
+    if (
+        dirty.email &&
+        values.email?.trim() &&
+        values.email.trim() !== (user.email || '')
+    ) {
         changed.email = values.email.trim();
     }
 
@@ -21,9 +25,13 @@ export default function computeChanged(
 
     // tags (string[] -> [{ name }]) and compare to original
     if (dirty.tags) {
-        const origTagObjs = (user.tags || []).map(t => ({ name: (t.name || '').trim() })).filter(t => t.name);
+        const origTagObjs = (user.tags || [])
+            .map((t) => ({ name: (t.name || '').trim() }))
+            .filter((t) => t.name);
         const newTagObjs = (Array.isArray(values.tags) ? values.tags : [])
-            .map((t: any) => (typeof t === 'string' ? t.trim() : t?.name?.trim()))
+            .map((t: any) =>
+                typeof t === 'string' ? t.trim() : t?.name?.trim()
+            )
             .filter(Boolean)
             .map((name: string) => ({ name }));
 
@@ -45,13 +53,20 @@ export default function computeChanged(
     // avatar (file or URL)
     const avatarDirty = !!dirty.avatar || !!dirty.avatarURL;
     if (avatarDirty) {
-        const arr = Array.isArray(values.avatar) ? values.avatar : (values.avatar ? [values.avatar] : []);
+        const arr = Array.isArray(values.avatar)
+            ? values.avatar
+            : values.avatar
+                ? [values.avatar]
+                : [];
         const fileOrString = arr[0];
 
         if (fileOrString instanceof File) {
             changed.avatar = fileOrString;
         }
-        else if (typeof values.avatarURL === 'string' && values.avatarURL.trim()) {
+        else if (
+            typeof values.avatarURL === 'string' &&
+            values.avatarURL.trim()
+        ) {
             changed.avatar = values.avatarURL.trim();
         }
     }

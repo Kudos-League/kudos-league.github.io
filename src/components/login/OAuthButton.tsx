@@ -23,8 +23,8 @@ export default function OAuthButton({ provider }: { provider: Provider }) {
             className={`w-10 h-10 rounded-full ${bg} text-white font-bold text-lg flex items-center justify-center`}
             title={label}
             aria-label={label}
-            shape="circle"
-            variant="icon"
+            shape='circle'
+            variant='icon'
         >
             {text}
         </Button>

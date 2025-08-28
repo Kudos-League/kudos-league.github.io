@@ -4,15 +4,16 @@ const ORIGIN = 'http://localhost:3000';
 export const CORS = {
     'access-control-allow-origin': ORIGIN,
     'access-control-allow-credentials': 'true',
-    'access-control-allow-headers': 'authorization, content-type, x-requested-with',
+    'access-control-allow-headers':
+        'authorization, content-type, x-requested-with',
     'access-control-allow-methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS',
-    vary: 'Origin',
+    vary: 'Origin'
 };
 
 const E2E_JWT =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-  'eyJpZCI6MSwidXNlcm5hbWUiOiJlMmUtdXNlciJ9.' +
-  'sig';
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+    'eyJpZCI6MSwidXNlcm5hbWUiOiJlMmUtdXNlciJ9.' +
+    'sig';
 
 export async function bootstrapAuth(page: Page, userId = 1) {
     const ctx = page.context();
@@ -26,21 +27,28 @@ export async function bootstrapAuth(page: Page, userId = 1) {
         tags: [],
         location: null,
         avatar: null,
-        badges: [],
+        badges: []
     };
 
-    await page.addInitScript((args: (string | number)[]) => {
-        const [key, token, now] = args as [string, string, number];
-        localStorage.setItem(
-            key,
-            JSON.stringify({ token, username: 'e2e-user', tokenTimestamp: now })
-        );
-    }, ['web_auth_state', E2E_JWT, Date.now()]);
+    await page.addInitScript(
+        (args: (string | number)[]) => {
+            const [key, token, now] = args as [string, string, number];
+            localStorage.setItem(
+                key,
+                JSON.stringify({
+                    token,
+                    username: 'e2e-user',
+                    tokenTimestamp: now
+                })
+            );
+        },
+        ['web_auth_state', E2E_JWT, Date.now()]
+    );
 
     const json = (body: any) => ({
         status: 200,
         headers: { 'content-type': 'application/json', ...CORS },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
     });
 
     await ctx.route('**/*', async (route: Route, req: Request) => {
@@ -61,7 +69,8 @@ export async function bootstrapAuth(page: Page, userId = 1) {
         }
 
         if (/\/users\/me(\?|$)/.test(url)) return route.fulfill(json(user));
-        if (new RegExp(`/users/${userId}(\\?|$)`).test(url)) return route.fulfill(json(user));
+        if (new RegExp(`/users/${userId}(\\?|$)`).test(url))
+            return route.fulfill(json(user));
         if (/\/users\/\d+(\?|$)/.test(url)) return route.fulfill(json(user));
 
         if (/\/notifications(\?|$)/.test(url)) return route.fulfill(json([]));
@@ -69,7 +78,8 @@ export async function bootstrapAuth(page: Page, userId = 1) {
         if (/\/events/.test(url)) return route.fulfill(json([]));
         if (/\/posts/.test(url)) return route.fulfill(json([]));
 
-        if (url.includes('/socket.io/')) return route.fulfill({ status: 204, headers: CORS });
+        if (url.includes('/socket.io/'))
+            return route.fulfill({ status: 204, headers: CORS });
 
         return route.fulfill(json({ ok: true, stub: true, url }));
     });

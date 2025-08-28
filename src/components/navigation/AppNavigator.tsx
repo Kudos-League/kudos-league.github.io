@@ -3,9 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Layout from './Layout';
 import Spinner from '../common/Spinner';
+import { routes } from '@/routes';
 
 const Home = lazy(() => import('@/pages/home'));
-const Success = lazy(() => import('@/pages/donate/sucess'));
+const Success = lazy(() => import('@/pages/donate/success'));
 const Cancel = lazy(() => import('@/pages/donate/cancel'));
 const Post = lazy(() => import('@/pages/post'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
@@ -27,24 +28,33 @@ function AppNavigator() {
         <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
-                    <Route path='/' element={<Home />} />
-                    <Route path='/donate' element={<DonatePage />} />
-                    <Route path='/success' element={<Success />} />
-                    <Route path='/cancel' element={<Cancel />} />
+                    <Route path={routes.home} element={<Home />} />
+                    <Route path={routes.donate} element={<DonatePage />} />
+                    <Route path={routes.success} element={<Success />} />
+                    <Route path={routes.cancel} element={<Cancel />} />
                     <Route path='/post/:id' element={<Post />} />
-                    <Route path='/create-post' element={<CreatePost />} />
+                    <Route path={routes.createPost} element={<CreatePost />} />
                     <Route path='/user/:id' element={<Profile />} />
                     <Route path='/event/:id' element={<EventDetails />} />
-                    <Route path='/events' element={<EventsPage />} />
-                    <Route path='/create-event' element={<CreateEvent />} />
-                    <Route path='/chat' element={<PublicChat />} />
-                    <Route path='/dms' element={<DMChat />} />
+                    <Route path={routes.events} element={<EventsPage />} />
+                    <Route
+                        path={routes.createEvent}
+                        element={<CreateEvent />}
+                    />
+                    <Route path={routes.chat} element={<PublicChat />} />
+                    <Route path={routes.dms} element={<DMChat />} />
                     <Route path='/dms/:id?' element={<DMChat />} />
-                    <Route path='/leaderboard' element={<Leaderboard />} />
-                    <Route path='/admin' element={<AdminDashboard />} />
-                    <Route path='/login' element={<SignIn />} />
-                    <Route path='/sign-up' element={<SignUp />} />
-                    <Route path='*' element={<Navigate to='/' replace />} />
+                    <Route
+                        path={routes.leaderboard}
+                        element={<Leaderboard />}
+                    />
+                    <Route path={routes.admin} element={<AdminDashboard />} />
+                    <Route path={routes.login} element={<SignIn />} />
+                    <Route path={routes.signUp} element={<SignUp />} />
+                    <Route
+                        path='*'
+                        element={<Navigate to={routes.home} replace />}
+                    />
                 </Route>
             </Routes>
         </Suspense>

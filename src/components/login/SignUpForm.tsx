@@ -8,20 +8,16 @@ import { Alert, PasswordInput, TextInput, TinyHelpLink } from './fields';
 import OAuthGroup from './OAuthGroup';
 
 type SignUpFormValues = {
-  username: string;
-  email: string;
+    username: string;
+    email: string;
 };
 
 type SignUpFormProps = {
-  onSuccess?: () => void;
-  onError?: (message: string) => void;
+    onSuccess?: () => void;
+    onError?: (message: string) => void;
 };
 
-function AccessGate({
-    onContinue
-}: {
-  onContinue: () => void;
-}) {
+function AccessGate({ onContinue }: { onContinue: () => void }) {
     const [accessPassword, setAccessPassword] = useState('');
     const [accessError, setAccessError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -38,22 +34,26 @@ function AccessGate({
     };
 
     return (
-        <Auth title="Access Required">
-            <form onSubmit={handleAccessSubmit} className="space-y-6">
+        <Auth title='Access Required'>
+            <form onSubmit={handleAccessSubmit} className='space-y-6'>
                 <TextInput
-                    placeholder="Access Password"
-                    aria-label="Access Password"
-                    type="password"
+                    placeholder='Access Password'
+                    aria-label='Access Password'
+                    type='password'
                     onChange={(e) => setAccessPassword(e.target.value)}
                 />
-                <Button type="submit" className="w-full">Continue</Button>
+                <Button type='submit' className='w-full'>
+                    Continue
+                </Button>
 
-                <p className="text-center text-sm/6 text-gray-500 dark:text-gray-400">
+                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
                     Already have an account?{' '}
-                    <TinyHelpLink onClick={() => navigate('/login')}>Log In</TinyHelpLink>
+                    <TinyHelpLink onClick={() => navigate('/login')}>
+                        Log In
+                    </TinyHelpLink>
                 </p>
 
-                {accessError && <Alert tone="error">{accessError}</Alert>}
+                {accessError && <Alert tone='error'>{accessError}</Alert>}
             </form>
         </Auth>
     );
@@ -73,15 +73,22 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const [errorMessage, setError] = useState<string | null>(null);
     const [successMessage, setSuccess] = useState<string | null>(null);
 
-    if (!authorized) return <AccessGate onContinue={() => setAuthorized(true)} />;
+    if (!authorized)
+        return <AccessGate onContinue={() => setAuthorized(true)} />;
 
     const onSubmit = async () => {
         const { username, email } = form.getValues();
 
-        if (!username || !email || !pw) return setError('Missing required fields: username, email, password');
-        if (username.length < 3) return setError('Username must be at least 3 characters long.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Please enter a valid email address.');
-        if (pw.length < 6) return setError('Password must be at least 6 characters long.');
+        if (!username || !email || !pw)
+            return setError(
+                'Missing required fields: username, email, password'
+            );
+        if (username.length < 3)
+            return setError('Username must be at least 3 characters long.');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+            return setError('Please enter a valid email address.');
+        if (pw.length < 6)
+            return setError('Password must be at least 6 characters long.');
         if (pw !== cpw) return setError('Passwords do not match.');
         setError(null);
 
@@ -109,37 +116,37 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     };
 
     return (
-        <Auth title="Create your account">
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        <Auth title='Create your account'>
+            <form onSubmit={(e) => e.preventDefault()} className='space-y-6'>
                 <div>
-                    <div className="col-span-2">
+                    <div className='col-span-2'>
                         <TextInput
-                            rounded="top"
-                            placeholder="Username"
-                            aria-label="Username"
+                            rounded='top'
+                            placeholder='Username'
+                            aria-label='Username'
                             {...form.register('username')}
                         />
                     </div>
                     <TextInput
-                        rounded="none"
-                        placeholder="Email"
-                        aria-label="Email"
-                        type="email"
+                        rounded='none'
+                        placeholder='Email'
+                        aria-label='Email'
+                        type='email'
                         {...form.register('email')}
                     />
                     <PasswordInput
-                        rounded="none"
-                        placeholder="Password"
-                        aria-label="Password"
+                        rounded='none'
+                        placeholder='Password'
+                        aria-label='Password'
                         visible={pwVisible}
                         setVisible={setPwVisible}
                         value={pw}
                         onChange={(e) => setPw(e.target.value)}
                     />
                     <PasswordInput
-                        rounded="bottom"
-                        placeholder="Confirm Password"
-                        aria-label="Confirm Password"
+                        rounded='bottom'
+                        placeholder='Confirm Password'
+                        aria-label='Confirm Password'
                         visible={cpwVisible}
                         setVisible={setCpwVisible}
                         value={cpw}
@@ -148,24 +155,30 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                 </div>
 
                 <Button
-                    type="button"
+                    type='button'
                     onClick={onSubmit}
                     disabled={isVerifying}
-                    className="w-full"
+                    className='w-full'
                 >
                     {isVerifying ? 'Loading...' : 'Sign Up'}
                 </Button>
 
-                <p className="text-center text-sm/6 text-gray-500 dark:text-gray-400">or sign up with</p>
+                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                    or sign up with
+                </p>
                 <OAuthGroup />
 
-                <p className="text-center text-sm/6 text-gray-500 dark:text-gray-400">
-          Already have an account?{' '}
-                    <TinyHelpLink onClick={() => navigate('/login')}>Log In</TinyHelpLink>
+                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                    Already have an account?{' '}
+                    <TinyHelpLink onClick={() => navigate('/login')}>
+                        Log In
+                    </TinyHelpLink>
                 </p>
 
-                {errorMessage && <Alert tone="error">{errorMessage}</Alert>}
-                {successMessage && <Alert tone="success">{successMessage}</Alert>}
+                {errorMessage && <Alert tone='error'>{errorMessage}</Alert>}
+                {successMessage && (
+                    <Alert tone='success'>{successMessage}</Alert>
+                )}
             </form>
         </Auth>
     );

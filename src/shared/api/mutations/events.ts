@@ -20,7 +20,7 @@ export function useCreateEvent() {
         onSuccess: (created) => {
             qc.invalidateQueries({ queryKey: qk.events(undefined) });
             qc.setQueryData(qk.event(created.id as number), created);
-        },
+        }
     });
 }
 
@@ -55,6 +55,6 @@ export function useJoinEvent(eventId: number) {
         onSettled: () => {
             qc.invalidateQueries({ queryKey: qk.event(eventId) });
             qc.invalidateQueries({ queryKey: qk.events(undefined) });
-        },
+        }
     });
 }

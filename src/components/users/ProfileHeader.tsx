@@ -77,7 +77,11 @@ const ProfileHeader: React.FC<Props> = ({
                     </Button>
                 )}
                 {isSelf && (
-                    <Button data-testid="edit-profile" onClick={onEditProfile} variant='secondary'>
+                    <Button
+                        data-testid='edit-profile'
+                        onClick={onEditProfile}
+                        variant='secondary'
+                    >
                         ⚙️ Edit
                     </Button>
                 )}

@@ -1,7 +1,7 @@
 export default function deepEqual(a: any, b: any): boolean {
     if (a === b) return true;
     if (typeof a !== typeof b) return false;
-    if (a && b && typeof a === "object") {
+    if (a && b && typeof a === 'object') {
         if (Array.isArray(a)) {
             if (!Array.isArray(b) || a.length !== b.length) return false;
             return a.every((v, i) => deepEqual(v, b[i]));

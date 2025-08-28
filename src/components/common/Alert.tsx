@@ -22,6 +22,7 @@ export interface AlertProps {
     onClick?: () => void;
     onAfterLeave?: () => void;
     closable?: boolean;
+    className?: string;
 }
 
 const iconByType: Record<AlertType, React.ElementType> = {
@@ -53,7 +54,8 @@ const Alert: React.FC<AlertProps> = ({
     onClose,
     onClick,
     onAfterLeave,
-    closable = false
+    closable = false,
+    className
 }) => {
     const Icon = iconByType[type];
     const accent = accentByType[type];
@@ -71,7 +73,7 @@ const Alert: React.FC<AlertProps> = ({
             afterLeave={onAfterLeave}
         >
             <div
-                className='pointer-events-auto w-fit min-w-[300px] rounded-lg bg-white shadow-lg outline-1 outline-black/5 dark:bg-gray-800 dark:-outline-offset-1 dark:outline-white/10'
+                className={`${className} pointer-events-auto w-fit min-w-[300px] rounded-lg bg-white shadow-lg outline-1 outline-black/5 dark:bg-gray-800 dark:-outline-offset-1 dark:outline-white/10`}
                 role='status'
             >
                 <div className='p-4'>

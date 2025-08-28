@@ -11,18 +11,18 @@ export default defineConfig({
         baseURL: 'http://localhost:3000',
         trace: 'on-first-retry',
         geolocation: { latitude: 37.7749, longitude: -122.4194 },
-        permissions: ['geolocation'],
+        permissions: ['geolocation']
     },
     webServer: {
-        command: 'yarn start',             // runs your craco start
+        command: 'yarn start', // runs your craco start
         url: 'http://localhost:3000',
         timeout: 240_000,
         reuseExistingServer: !process.env.CI,
-        env: { PORT: '3000', BROWSER: 'none', CI: 'true' },
+        env: { PORT: '3000', BROWSER: 'none', CI: 'true' }
     },
     projects: [
         // { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
         // { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
-        { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
-    ],
+        { name: 'webkit', use: { ...devices['Desktop Safari'] } }
+    ]
 });

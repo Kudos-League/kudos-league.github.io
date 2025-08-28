@@ -262,7 +262,9 @@ export async function updateUser(
 
     const body = request instanceof FormData ? request : toFormData(request);
 
-    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`
+    };
 
     const response = await instance.patch(`/users/${id}`, body, { headers });
     return response.data;

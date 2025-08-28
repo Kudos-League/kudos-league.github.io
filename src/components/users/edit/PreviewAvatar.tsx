@@ -2,7 +2,13 @@ import React from 'react';
 import AvatarComponent from '../Avatar';
 import type { UserDTO } from '@/shared/api/types';
 
-function PreviewAvatar({ previewUrl, targetUser }: { previewUrl: string | null; targetUser: UserDTO }) {
+function PreviewAvatar({
+    previewUrl,
+    targetUser
+}: {
+    previewUrl: string | null;
+    targetUser: UserDTO;
+}) {
     if (previewUrl) {
         return (
             <img
