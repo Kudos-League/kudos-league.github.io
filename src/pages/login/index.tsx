@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import Login from '@/components/login/Login';
+import Login from '@/components/login/LoginForm';
 
 export default function LoginPage() {
     const navigate = useNavigate();
