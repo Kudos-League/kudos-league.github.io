@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    HandThumbUpIcon,
-    HandThumbDownIcon
-} from '@heroicons/react/24/solid';
+import { HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/solid';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -21,8 +18,14 @@ import {
 } from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
 
-import type { ChannelDTO, CreateHandshakeDTO, PostDTO, LocationDTO } from "@/shared/api/types";
+import type {
+    ChannelDTO,
+    CreateHandshakeDTO,
+    PostDTO,
+    LocationDTO
+} from '@/shared/api/types';
 import Pill from '../common/Pill';
+import Button from '../common/Button';
 
 interface Props {
     id?: string;
@@ -38,13 +41,13 @@ interface Props {
 
 function EditPostButton({ onClick }: { onClick: () => void }) {
     return (
-        <button
+        <Button
             onClick={onClick}
-            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
         >
-            <PencilSquareIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <PencilSquareIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
             Edit
-        </button>
+        </Button>
     );
 }
 
@@ -62,9 +65,9 @@ export default function PostDetails(props: Props) {
     const { user, token } = useAuth();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({ 
-        title: '', 
-        body: '', 
+    const [editData, setEditData] = useState({
+        title: '',
+        body: '',
         tags: [] as string[],
         location: null as LocationDTO | null
     });
@@ -82,23 +85,35 @@ export default function PostDetails(props: Props) {
         null
     );
 
-    // Add this helper function at the top of your PostDetails component, 
+    // Add this helper function at the top of your PostDetails component,
     // right after the imports and before the main component function:
 
-    const sortHandshakesWithUserFirst = (handshakes: any[], userId?: number) => {
+    const sortHandshakesWithUserFirst = (
+        handshakes: any[],
+        userId?: number
+    ) => {
         if (!userId || !handshakes?.length) return handshakes || [];
-        
+
         return [...handshakes].sort((a, b) => {
             // Check if handshake belongs to current user (as sender or receiver)
-            const aIsUser = a.senderID === userId || a.receiverID === userId || a.recipientID === userId;
-            const bIsUser = b.senderID === userId || b.receiverID === userId || b.recipientID === userId;
-            
+            const aIsUser =
+                a.senderID === userId ||
+                a.receiverID === userId ||
+                a.recipientID === userId;
+            const bIsUser =
+                b.senderID === userId ||
+                b.receiverID === userId ||
+                b.recipientID === userId;
+
             // User's handshakes first
             if (aIsUser && !bIsUser) return -1;
             if (!aIsUser && bIsUser) return 1;
-        
+
             // If both or neither are user's, sort by creation date (newest first)
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return (
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            );
         });
     };
 
@@ -106,7 +121,11 @@ export default function PostDetails(props: Props) {
         if (!token || !postDetails) return;
 
         try {
-            const updated = await updatePost(postDetails.id, { status: newStatus }, token);
+            const updated = await updatePost(
+                postDetails.id,
+                { status: newStatus },
+                token
+            );
             console.log('Post status updated:', updated);
             setPostDetails({ ...postDetails, status: updated.status });
         }
@@ -317,11 +336,11 @@ export default function PostDetails(props: Props) {
     const handleMessageUpdate = (updatedMessage: any) => {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
-        
-            const updatedMessages = (prev.messages || []).map(msg => 
+
+            const updatedMessages = (prev.messages || []).map((msg) =>
                 msg.id === updatedMessage.id ? updatedMessage : msg
             );
-        
+
             return {
                 ...prev,
                 messages: updatedMessages
@@ -332,9 +351,11 @@ export default function PostDetails(props: Props) {
     const handleMessageDelete = (deletedMessageId: number) => {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
-        
-            const filteredMessages = (prev.messages || []).filter(msg => msg.id !== deletedMessageId);
-        
+
+            const filteredMessages = (prev.messages || []).filter(
+                (msg) => msg.id !== deletedMessageId
+            );
+
             return {
                 ...prev,
                 messages: filteredMessages
@@ -346,7 +367,9 @@ export default function PostDetails(props: Props) {
         if (!postDetails) return;
         setPostDetails((prev: any) => ({
             ...prev!,
-            handshakes: prev!.handshakes.filter((h: { id: number; }) => h.id !== id)
+            handshakes: prev!.handshakes.filter(
+                (h: { id: number }) => h.id !== id
+            )
         }));
     };
 
@@ -359,11 +382,7 @@ export default function PostDetails(props: Props) {
         }
 
         try {
-            await reportPost(
-                postDetails.id,
-                reportReason.trim(),
-                token
-            );
+            await reportPost(postDetails.id, reportReason.trim(), token);
             alert('Post reported successfully.');
             setReportModalVisible(false);
             setReportReason('');
@@ -391,11 +410,11 @@ export default function PostDetails(props: Props) {
 
     const handleStartEdit = () => {
         if (!postDetails) return;
-        
+
         setEditData({
             title: postDetails.title,
             body: postDetails.body,
-            tags: postDetails.tags?.map(tag => tag.name) || [],
+            tags: postDetails.tags?.map((tag) => tag.name) || [],
             location: postDetails.location || null
         });
         setIsEditing(true);
@@ -403,16 +422,19 @@ export default function PostDetails(props: Props) {
 
     const handleSaveEdit = async () => {
         if (!postDetails) return;
-        
+
         try {
             const updateData: any = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags,
+                tags: editData.tags
             };
 
             // Only include location if it was changed
-            if (editData.location && editData.location !== postDetails.location) {
+            if (
+                editData.location &&
+                editData.location !== postDetails.location
+            ) {
                 updateData.location = editData.location;
             }
 
@@ -426,7 +448,7 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    if (loading){
+    if (loading) {
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
     }
 
@@ -434,12 +456,14 @@ export default function PostDetails(props: Props) {
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
-                <button
-                    className='bg-blue-500 text-white px-4 py-2 rounded mt-4'
-                    onClick={() => postDetails?.id && fetchPostDetails(postDetails.id)}
+                <Button
+                    className='mt-4'
+                    onClick={() =>
+                        postDetails?.id && fetchPostDetails(postDetails.id)
+                    }
                 >
                     Retry
-                </button>
+                </Button>
             </div>
         );
     }
@@ -449,26 +473,32 @@ export default function PostDetails(props: Props) {
     return (
         <div className='max-w-4xl mx-auto p-4'>
             {/* Header / Avatar */}
-            <UserCard
-                userID={postDetails.sender?.id}
-                avatar={postDetails.sender?.avatar}
-                username={postDetails.sender?.username}
-                kudos={postDetails.sender?.kudos}
-                large
-            />
+            <UserCard user={postDetails.sender} large />
 
             {/* Post Title and Badges */}
             <div className='mb-4'>
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                     {postDetails.status === 'closed' && (
-                        <span className="bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded">
+                        <span className='bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded'>
                             CLOSED
                         </span>
                     )}
-                    <h1 className="text-2xl font-bold">{postDetails.title}</h1>
+                    <h1 className='text-2xl font-bold'>{postDetails.title}</h1>
 
-                    {user?.id === postDetails.sender?.id && postDetails.status !== 'closed' && (
+                    {user?.id === postDetails.sender?.id &&
+                        postDetails.status !== 'closed' && (
                         <EditPostButton onClick={handleStartEdit} />
+                    )}
+
+                    {postDetails.status !== 'closed' &&
+                        user?.id === postDetails.sender?.id && (
+                        <Button
+                            onClick={handleClosePost}
+                            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
+                            variant='danger'
+                        >
+                                Close Post
+                        </Button>
                     )}
                 </div>
 
@@ -491,73 +521,83 @@ export default function PostDetails(props: Props) {
                         <Pill key={i} name={tag.name} />
                     ))}
                 </div>
-
-                {postDetails.status !== 'closed' && user?.id === postDetails.sender?.id && (
-                    <button
-                        onClick={handleClosePost}
-                        className="bg-red-600 text-white px-4 py-2 rounded mt-2"
-                    >
-                        Close Post
-                    </button>
-                )}
             </div>
 
             {/* Like, Dislike, Report */}
             <div className='flex gap-4 items-center my-4 flex-wrap'>
-                <button
+                <Button
                     onClick={handleLike}
                     disabled={liked === true}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
-                        ${liked === true ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300'}`}
+                    shape='pill'
+                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
+                        ${liked === true ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
                 >
-                    <HandThumbUpIcon className="w-4 h-4" />
+                    <HandThumbUpIcon className='w-4 h-4' />
                     Like
-                </button>
+                </Button>
 
-                <button
+                <Button
                     onClick={handleDislike}
                     disabled={liked === false}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm
-                    ${liked === false ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300'}`}
+                    shape='pill'
+                    variant='danger'
+                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
+                    ${liked === false ? 'bg-gray-200 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
                 >
-                    <HandThumbDownIcon className="w-4 h-4" />
+                    <HandThumbDownIcon className='w-4 h-4' />
                     Dislike
-                </button>
+                </Button>
 
-                <button
+                <Button
                     onClick={() => setReportModalVisible(true)}
-                    className='flex items-center gap-1 px-3 py-1 rounded-full border transition text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300'
+                    variant='warning'
+                    shape='pill'
+                    className='flex items-center gap-1 text-sm'
                 >
                     <ExclamationTriangleIcon className='w-4 h-4' />
                     Report
-                </button>
+                </Button>
             </div>
 
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className="bg-white p-6 border rounded-lg mb-6 space-y-4">
-                    <h3 className="text-lg font-semibold">Edit Post</h3>
-                    
+                <div className='bg-white p-6 border rounded-lg mb-6 space-y-4'>
+                    <h3 className='text-lg font-semibold'>Edit Post</h3>
+
                     {/* Title */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">Title</label>
+                        <label className='block text-sm font-medium mb-1'>
+                            Title
+                        </label>
                         <input
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             value={editData.title}
-                            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                            placeholder="Enter post title"
+                            onChange={(e) =>
+                                setEditData({
+                                    ...editData,
+                                    title: e.target.value
+                                })
+                            }
+                            placeholder='Enter post title'
                         />
                     </div>
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <label className='block text-sm font-medium mb-1'>
+                            Description
+                        </label>
                         <textarea
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             rows={4}
                             value={editData.body}
-                            onChange={(e) => setEditData({ ...editData, body: e.target.value })}
-                            placeholder="Enter post description"
+                            onChange={(e) =>
+                                setEditData({
+                                    ...editData,
+                                    body: e.target.value
+                                })
+                            }
+                            placeholder='Enter post description'
                         />
                     </div>
 
@@ -571,7 +611,9 @@ export default function PostDetails(props: Props) {
 
                     {/* Location */}
                     <div>
-                        <label className="block text-sm font-medium mb-2">Location</label>
+                        <label className='block text-sm font-medium mb-2'>
+                            Location
+                        </label>
                         <MapDisplay
                             showAddressBar
                             regionID={editData.location?.regionID}
@@ -583,19 +625,16 @@ export default function PostDetails(props: Props) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            onClick={handleSaveEdit}
-                        >
+                    <div className='flex gap-3 pt-4'>
+                        <Button variant='success' onClick={handleSaveEdit}>
                             Save Changes
-                        </button>
-                        <button
-                            className="border border-gray-300 px-6 py-2 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        </Button>
+                        <Button
+                            variant='secondary'
                             onClick={() => setIsEditing(false)}
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : (
@@ -603,7 +642,8 @@ export default function PostDetails(props: Props) {
                     <p>{postDetails.body}</p>
                     {postDetails.rewardOffers?.[0]?.kudosFinal && (
                         <p className='mt-2 font-semibold text-blue-600'>
-                            Final Kudos: {postDetails.rewardOffers[0].kudosFinal}
+                            Final Kudos:{' '}
+                            {postDetails.rewardOffers[0].kudosFinal}
                         </p>
                     )}
                 </div>
@@ -626,7 +666,7 @@ export default function PostDetails(props: Props) {
             )}
 
             {/* Comments */}
-            <div className='bg-white shadow p-4 rounded mb-6'>
+            <div className='shadow p-4 rounded mb-6'>
                 <MessageList
                     title='Comments'
                     messages={postDetails.messages || []}
@@ -644,7 +684,7 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user} 
+                    showSendMessage={!!user}
                     allowDelete={!!user}
                     allowEdit={!!user}
                     onMessageUpdate={handleMessageUpdate}
@@ -653,12 +693,19 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Handshakes */}
-            <div className='bg-white shadow p-4 rounded mb-6'>
-                <h2 className='text-lg font-bold mb-2'>{postDetails.type === 'request' ? 'Offered By' : 'Requested By'}</h2>
+            <div className='shadow p-4 rounded mb-6'>
+                <h2 className='text-lg font-bold mb-2'>
+                    {postDetails.type === 'request'
+                        ? 'Offered By'
+                        : 'Requested By'}
+                </h2>
 
                 <Handshakes
                     handshakes={sortHandshakesWithUserFirst(
-                        postDetails.handshakes?.map(h => ({ ...h, post: postDetails })) || [],
+                        postDetails.handshakes?.map((h) => ({
+                            ...h,
+                            post: postDetails
+                        })) || [],
                         user?.id
                     )}
                     currentUserId={user?.id}
@@ -669,28 +716,34 @@ export default function PostDetails(props: Props) {
                             prevDetails
                                 ? {
                                     ...prevDetails,
-                                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                                    handshakes: [
+                                        ...(prevDetails.handshakes || []),
+                                        newHandshake
+                                    ]
                                 }
                                 : prevDetails
                         )
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails
-                /> 
+                />
                 {/* Create handshake button if not the sender */}
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some(h => h.sender?.id === user?.id) && (
+                    !postDetails.handshakes?.some(
+                        (h) => h.sender?.id === user?.id
+                    ) && (
                     <div className='mt-4 flex justify-center'>
-                        <button
+                        <Button
                             onClick={handleSubmitHandshake}
-                            className='bg-blue-600 text-white px-4 py-2 rounded'
                             disabled={creatingHandshake}
                         >
                             {creatingHandshake
                                 ? 'Creating...'
-                                : postDetails.type === 'gift' ? 'Request This' : 'Gift This'}
-                        </button>
+                                : postDetails.type === 'gift'
+                                    ? 'Request This'
+                                    : 'Gift This'}
+                        </Button>
                     </div>
                 )}
             </div>
@@ -724,18 +777,15 @@ export default function PostDetails(props: Props) {
                             onChange={(e) => setReportReason(e.target.value)}
                         />
                         <div className='flex justify-end gap-2'>
-                            <button
+                            <Button
                                 onClick={() => setReportModalVisible(false)}
-                                className='px-4 py-2 bg-gray-300 rounded hover:bg-gray-400'
+                                variant='secondary'
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={handleReport}
-                                className='px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700'
-                            >
+                            </Button>
+                            <Button onClick={handleReport} variant='danger'>
                                 Submit
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -750,12 +800,12 @@ export default function PostDetails(props: Props) {
                             alt='Preview'
                             className='max-w-full max-h-[90vh] rounded shadow-lg'
                         />
-                        <button
+                        <Button
                             onClick={() => setModalVisible(false)}
                             className='absolute top-2 right-2 text-white bg-black bg-opacity-50 px-3 py-1 rounded hover:bg-opacity-75'
                         >
                             Close
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import GoogleLoginButton from './GoogleLoginButton';
 import DiscordLoginButton from './DiscordLoginButton';
+import Button from '../common/Button';
 
 type SignUpFormProps = {
     onSuccess?: () => void;
@@ -43,13 +44,15 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         const timestamp = new Date().toLocaleTimeString();
         const logMessage = `[${timestamp}] ${message}`;
         console.log(logMessage);
-        setDebugLogs(prev => [...prev, logMessage]);
+        setDebugLogs((prev) => [...prev, logMessage]);
     };
 
     const handleAccessSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        addLog(`Access password attempt: ${accessPassword ? '[PROVIDED]' : '[EMPTY]'}`);
-        
+        addLog(
+            `Access password attempt: ${accessPassword ? '[PROVIDED]' : '[EMPTY]'}`
+        );
+
         if (accessPassword === 'kudos') {
             setIsAuthorized(true);
             setAccessError(null);
@@ -63,13 +66,17 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
     const onSubmit = async () => {
         const { username, email } = form.getValues();
-        
+
         addLog('=== SIGN UP ATTEMPT STARTED ===');
         addLog(`Username: ${username || '[EMPTY]'}`);
         addLog(`Email: ${email || '[EMPTY]'}`);
         addLog(`Password length: ${formPassword.value?.length || 0}`);
-        addLog(`Confirm password length: ${confirmPassword.value?.length || 0}`);
-        addLog(`Passwords match: ${formPassword.value === confirmPassword.value}`);
+        addLog(
+            `Confirm password length: ${confirmPassword.value?.length || 0}`
+        );
+        addLog(
+            `Passwords match: ${formPassword.value === confirmPassword.value}`
+        );
 
         // Client-side validation
         if (!username || !email || !formPassword.value) {
@@ -77,7 +84,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             if (!username) missingFields.push('username');
             if (!email) missingFields.push('email');
             if (!formPassword.value) missingFields.push('password');
-            
+
             const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
             setErrorMessage(errorMsg);
             addLog(`VALIDATION ERROR: ${errorMsg}`);
@@ -100,7 +107,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             return;
         }
 
-        // Username validation  
+        // Username validation
         if (username.length < 3) {
             const errorMsg = 'Username must be at least 3 characters long.';
             setErrorMessage(errorMsg);
@@ -123,13 +130,17 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             await registerUser(username, email, formPassword.value);
             setErrorMessage(null);
             setSuccessMessage(null);
-            
+
             addLog('Calling registerUser function...');
-            const result = await registerUser(username, email, formPassword.value);
-            
+            const result = await registerUser(
+                username,
+                email,
+                formPassword.value
+            );
+
             addLog(`Register result type: ${typeof result}`);
             addLog(`Register result: ${JSON.stringify(result)}`);
-            
+
             if (result && typeof result === 'string') {
                 // Email verification message
                 addLog('Registration successful - email verification required');
@@ -148,40 +159,48 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             addLog('=== REGISTRATION ERROR ===');
             addLog(`Error type: ${typeof err}`);
             addLog(`Error message: ${err?.message || 'Unknown'}`);
-            addLog(`Error response: ${JSON.stringify(err?.response?.data || 'No response data')}`);
+            addLog(
+                `Error response: ${JSON.stringify(err?.response?.data || 'No response data')}`
+            );
             addLog(`Error status: ${err?.response?.status || 'No status'}`);
-            addLog(`Full error: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`);
-            
+            addLog(
+                `Full error: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`
+            );
+
             setIsVerifying(false);
-            
+
             let message = 'Sign-up failed';
-            
+
             // Try to extract meaningful error message
             if (err?.response?.data?.message) {
                 message = err.response.data.message;
                 addLog(`Using response message: ${message}`);
-            } 
+            }
             else if (err?.message) {
                 message = err.message;
                 addLog(`Using error message: ${message}`);
             }
-            
+
             setErrorMessage(message);
             onError?.(message);
         }
     };
 
     // Show debug logs in development
-    const showDebugLogs = process.env.NODE_ENV === 'development' || debugLogs.length > 0;
+    const showDebugLogs =
+        process.env.NODE_ENV === 'development' || debugLogs.length > 0;
 
     // Password gate screen
     if (!isAuthorized) {
         return (
             <div className='min-h-screen flex items-center justify-center relative'>
                 <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
-                    <h1 className='text-3xl font-bold text-center mb-6'>Access Required</h1>
+                    <h1 className='text-3xl font-bold text-center mb-6'>
+                        Access Required
+                    </h1>
                     <p className='text-gray-600 text-center mb-6'>
-                        Please enter the access password to continue with sign-up.
+                        Please enter the access password to continue with
+                        sign-up.
                     </p>
 
                     <form onSubmit={handleAccessSubmit} className='space-y-4'>
@@ -192,13 +211,10 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             value={accessPassword}
                             onChange={(e) => setAccessPassword(e.target.value)}
                         />
-                        
-                        <button
-                            type='submit'
-                            className='w-full py-3 rounded text-white font-bold bg-blue-600 hover:bg-blue-700'
-                        >
+
+                        <Button type='submit' className='w-full'>
                             Continue
-                        </button>
+                        </Button>
 
                         <div className='text-center text-sm mt-4'>
                             Already have an account?{' '}
@@ -232,7 +248,9 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
             <div className='min-h-screen flex items-center justify-center relative'>
                 <div className='bg-white p-8 rounded-lg shadow-lg max-w-md w-full'>
-                    <h1 className='text-3xl font-bold text-center mb-6'>Sign Up</h1>
+                    <h1 className='text-3xl font-bold text-center mb-6'>
+                        Sign Up
+                    </h1>
 
                     <form
                         onSubmit={(e) => e.preventDefault()}
@@ -253,7 +271,9 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             <input
                                 className='w-full p-3 rounded bg-gray-100 pr-10'
                                 placeholder='Password'
-                                type={formPassword.visible ? 'text' : 'password'}
+                                type={
+                                    formPassword.visible ? 'text' : 'password'
+                                }
                                 value={formPassword.value}
                                 onChange={(e) =>
                                     setFormPassword({
@@ -280,7 +300,11 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             <input
                                 className='w-full p-3 rounded bg-gray-100 pr-10'
                                 placeholder='Confirm Password'
-                                type={confirmPassword.visible ? 'text' : 'password'}
+                                type={
+                                    confirmPassword.visible
+                                        ? 'text'
+                                        : 'password'
+                                }
                                 value={confirmPassword.value}
                                 onChange={(e) =>
                                     setConfirmPassword({
@@ -304,7 +328,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             </button>
                         </div>
 
-                        <button
+                        <Button
                             type='button'
                             onClick={onSubmit}
                             disabled={isVerifying}
@@ -315,9 +339,9 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             }`}
                         >
                             {isVerifying ? 'Loading...' : 'Sign Up'}
-                        </button>
+                        </Button>
                         <p className='text-center text-sm text-gray-500'>
-                        or sign up with
+                            or sign up with
                         </p>
 
                         <div className='flex justify-center gap-4'>
@@ -326,13 +350,13 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         </div>
 
                         <div className='text-center text-sm mt-4'>
-                        Already have an account?{' '}
+                            Already have an account?{' '}
                             <button
                                 type='button'
                                 onClick={() => navigate('/login')}
                                 className='text-blue-500 font-bold'
                             >
-                            Log In
+                                Log In
                             </button>
                         </div>
 
@@ -358,22 +382,25 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         <div className='mt-6 p-3 bg-gray-50 border rounded'>
                             <details>
                                 <summary className='text-sm font-medium text-gray-700 cursor-pointer'>
-                                Debug Logs ({debugLogs.length})
+                                    Debug Logs ({debugLogs.length})
                                 </summary>
                                 <div className='mt-2 max-h-40 overflow-y-auto text-xs font-mono'>
                                     {debugLogs.map((log, index) => (
-                                        <div key={index} className='py-1 border-b border-gray-200 last:border-b-0'>
+                                        <div
+                                            key={index}
+                                            className='py-1 border-b border-gray-200 last:border-b-0'
+                                        >
                                             {log}
                                         </div>
                                     ))}
                                 </div>
-                                <button
+                                <Button
                                     type='button'
                                     onClick={() => setDebugLogs([])}
                                     className='mt-2 text-xs text-red-600 hover:text-red-800'
                                 >
-                                Clear Logs
-                                </button>
+                                    Clear Logs
+                                </Button>
                             </details>
                         </div>
                     )}

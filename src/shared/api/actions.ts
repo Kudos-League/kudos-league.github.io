@@ -42,10 +42,7 @@ function toFormData(dto: Record<string, any>): FormData {
         ) {
             val.forEach((f) => fd.append(key, f));
         }
-        else if (
-            Array.isArray(val) &&
-            typeof val[0] !== 'object'
-        ) {
+        else if (Array.isArray(val) && typeof val[0] !== 'object') {
             // Primitive array (e.g., tags: string[])
             fd.append(key, JSON.stringify(val)); // Send as JSON string
         }
@@ -211,7 +208,10 @@ export async function updateUserSettings(settingsData: any, token: string) {
 }
 
 /** @throws {AxiosError} */
-export async function getUserHandshakes(id: number | string = 'me', token: string) {
+export async function getUserHandshakes(
+    id: number | string = 'me',
+    token: string
+) {
     // Fetch sent handshakes
     const sentResponse = await instance.get(`/handshakes/by-sender/${id}`, {
         headers: {
@@ -237,11 +237,11 @@ export async function getUserEvents(
     id: string | number = 'me',
     token: string,
     filters?: {
-		startDate?: string;
-		endDate?: string;
-		location?: string;
-		filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
-	}
+        startDate?: string;
+        endDate?: string;
+        location?: string;
+        filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
+    }
 ): Promise<EventDTO[]> {
     const queryString = filters ? toQueryParams(filters) : '';
     const response = await instance.get(`/users/${id}/events${queryString}`, {
@@ -254,18 +254,17 @@ export async function getUserEvents(
 
 /** @throws {AxiosError} */
 export async function updateUser(
-    request: Partial<UserDTO>,
+    request: Partial<UserDTO> | FormData,
     id = 'me',
     token: string
 ) {
     if (!token) throw Error('Invalid token');
-    const formData = toFormData(request);
-    const response = await instance.patch(`/users/${id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
-        }
-    });
+
+    const body = request instanceof FormData ? request : toFormData(request);
+
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+    const response = await instance.patch(`/users/${id}`, body, { headers });
     return response.data;
 }
 
@@ -316,7 +315,6 @@ export async function sendMessage(
     return response.data;
 }
 
-
 /** @throws {AxiosError} */
 export async function updateMessage(
     id: number,
@@ -346,7 +344,6 @@ export async function deleteMessage(
     });
     return response.data;
 }
-
 
 export async function createRewardOffer(
     request: CreateRewardOfferDTO,
@@ -613,10 +610,10 @@ export async function leaveEvent(
 
 /** @throws {AxiosError} */
 export async function getEvents(filters?: {
-	startDate?: string;
-	endDate?: string;
-	location?: string;
-	filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
+    startDate?: string;
+    endDate?: string;
+    location?: string;
+    filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
 }): Promise<EventDTO[]> {
     const queryString = filters ? toQueryParams(filters) : '';
     const response = await instance.get(`/events${queryString}`);
@@ -768,7 +765,7 @@ export async function fetchNotifications(token: string, limit = 50) {
     const res = await instance.get('/notifications', {
         params: { limit },
         headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
+        withCredentials: true
     });
     return res.data;
 }
@@ -776,6 +773,6 @@ export async function fetchNotifications(token: string, limit = 50) {
 export async function markAllNotificationsRead(token: string) {
     await instance.post('/notifications/mark-all-read', null, {
         headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
+        withCredentials: true
     });
 }

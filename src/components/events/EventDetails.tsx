@@ -1,17 +1,18 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
-import { useAuth } from "@/hooks/useAuth";
-import { EventDTO } from "@/shared/api/types";
+import { useAuth } from '@/hooks/useAuth';
+import { EventDTO } from '@/shared/api/types';
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
+import Button from '../common/Button';
 
 type Props = {
     event: EventDTO;
     setEvent: (event: EventDTO) => void;
-}
+};
 
 export default function EventDetails({ event, setEvent }: Props) {
     const { user, token } = useAuth();
@@ -61,13 +62,13 @@ export default function EventDetails({ event, setEvent }: Props) {
             <h1 className='text-2xl font-bold'>{event.title}</h1>
             <p className='text-gray-700'>{event.description}</p>
             <p className='text-sm text-gray-500 italic'>
-                {format(toZonedTime(new Date(event.startTime), tz), "PPP p")}
+                {format(toZonedTime(new Date(event.startTime), tz), 'PPP p')}
                 {' – '}
                 {event.endTime
-                    ? format(toZonedTime(new Date(event.endTime), tz), "PPP p")
+                    ? format(toZonedTime(new Date(event.endTime), tz), 'PPP p')
                     : 'Ongoing'}
             </p>
-    
+
             {event.location?.regionID && (
                 <div className='my-4'>
                     <MapDisplay
@@ -77,7 +78,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     />
                 </div>
             )}
-    
+
             <h2 className='text-lg font-semibold'>Participants</h2>
             <div className='space-y-3'>
                 {event.participants?.length ? (
@@ -93,12 +94,13 @@ export default function EventDetails({ event, setEvent }: Props) {
                             />
                             <span className='font-medium'>{p.username}</span>
                             {p.id === user?.id && (
-                                <button
+                                <Button
+                                    variant='danger'
                                     onClick={handleLeave}
-                                    className='ml-auto px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600'
+                                    className='ml-auto'
                                 >
-                                        Leave
-                                </button>
+                                    Leave
+                                </Button>
                             )}
                         </div>
                     ))
@@ -106,15 +108,15 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <p>No participants yet.</p>
                 )}
             </div>
-    
+
             {!event.participants?.some((p: any) => p.id === user?.id) && (
-                <button
+                <Button
                     onClick={handleJoin}
                     disabled={joining}
-                    className='mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
+                    className='mt-6'
                 >
                     {joining ? 'Joining...' : 'Join Event'}
-                </button>
+                </Button>
             )}
         </div>
     );

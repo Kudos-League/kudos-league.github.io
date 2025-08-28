@@ -4,6 +4,7 @@ import { useAppDispatch } from 'redux_store/hooks';
 import { getUserDetails, login, register } from '@/shared/api/actions';
 import { UserDTO } from '@/shared/api/types';
 import { isJwt } from '@/shared/constants';
+import { setAuthToken } from '@/shared/api/httpClient';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -13,14 +14,17 @@ type AuthContextType = {
     user: UserDTO | null;
     isLoggedIn: boolean;
     loading: boolean;
-    login: (credentials: { username: string; password: string }) => Promise<void>;
+    login: (credentials: {
+        username: string;
+        password: string;
+    }) => Promise<void>;
     logout: () => Promise<void>;
     register: (
         username: string,
         email: string,
         password: string
     ) => Promise<any>;
-    updateUser: (updated: Partial<UserDTO>) => void; 
+    updateUser: (updated: Partial<UserDTO>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,7 +38,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const token = authState?.token || null;
 
-    const loginHandler = async ({username, password,token}: {username?: string; password?: string; token?: string}) => {
+    setAuthToken(token);
+
+    const loginHandler = async ({
+        username,
+        password,
+        token
+    }: {
+        username?: string;
+        password?: string;
+        token?: string;
+    }) => {
         setErrorMessage(null);
 
         if (!token && (!username || !password)) {
@@ -49,13 +63,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         try {
             if (token && isJwt(token)) {
-                const auth: AuthState = { token, username: '', tokenTimestamp: Date.now() };
+                const auth: AuthState = {
+                    token,
+                    username: '',
+                    tokenTimestamp: Date.now()
+                };
                 setAuthState(auth);
                 dispatch(updateAuth(auth));
                 localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
                 return;
             }
-  
+
             const response = await login({ username, password, token });
             const newAuthState: AuthState = {
                 token: response.data.token,
@@ -108,7 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(true);
             try {
                 const url = new URL(window.location.href);
-                const tok  = url.searchParams.get('token');
+                const tok = url.searchParams.get('token');
 
                 if (tok) {
                     window.history.replaceState({}, '', url.pathname);
@@ -125,13 +143,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 if (isJwt(authState?.token ?? '')) {
-                    const profile = await getUserDetails('me', authState!.token);
+                    const profile = await getUserDetails(
+                        'me',
+                        authState!.token
+                    );
                     setUserProfile(profile);
                     if (!authState!.username) {
-                        const patched = { ...authState!, username: profile.username };
+                        const patched = {
+                            ...authState!,
+                            username: profile.username
+                        };
                         setAuthState(patched);
                         dispatch(updateAuth(patched));
-                        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(patched));
+                        localStorage.setItem(
+                            AUTH_STORAGE_KEY,
+                            JSON.stringify(patched)
+                        );
                     }
                 }
             }

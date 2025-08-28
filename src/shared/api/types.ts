@@ -9,6 +9,7 @@ export type CreatePostDTO = {
     type: string;
     files?: File[];
     categoryID: number;
+    location?: LocationDTO | null;
 };
 
 export type LocationDTO = {
@@ -273,6 +274,8 @@ export interface Tag {
 
 export interface UserDTO {
     id: number;
+    discordID: string | null;
+    googleID: string | null;
     username: string;
     email: string;
     avatar?: string | null;
@@ -285,25 +288,30 @@ export interface UserDTO {
     badges: Badge[];
     location?: MapCoordinates;
     settings?: UserSettingsDTO | null;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
-    POST_REPLY: 'post-reply',
+    POST_REPLY: 'post-reply'
 } as const;
 
-export type NotificationTypeKeys = typeof NotificationType[keyof typeof NotificationType];
+export type NotificationTypeKeys =
+    (typeof NotificationType)[keyof typeof NotificationType];
 
 export type DirectMessageNotification = {
-  type: typeof NotificationType.DIRECT_MESSAGE;
-  channelID: number;
-  message: MessageDTO;
+    type: typeof NotificationType.DIRECT_MESSAGE;
+    channelID: number;
+    message: MessageDTO;
 };
 
 export type PostReplyNotification = {
-  type: typeof NotificationType.POST_REPLY;
-  postID: number;
-  message: MessageDTO;
+    type: typeof NotificationType.POST_REPLY;
+    postID: number;
+    message: MessageDTO;
 };
 
-export type NotificationPayload = DirectMessageNotification | PostReplyNotification;
+export type NotificationPayload =
+    | DirectMessageNotification
+    | PostReplyNotification;

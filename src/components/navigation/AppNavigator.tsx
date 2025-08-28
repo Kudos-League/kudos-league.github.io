@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Layout from './Layout';
+import Spinner from '../common/Spinner';
 
 const Home = lazy(() => import('@/pages/home'));
 const Success = lazy(() => import('@/pages/donate/sucess'));
@@ -21,10 +22,9 @@ const Leaderboard = lazy(() => import('@/components/Leaderboard'));
 const DMChat = lazy(() => import('@/components/messages/DMChat'));
 const PublicChat = lazy(() => import('@/components/messages/PublicChat'));
 
-
 function AppNavigator() {
     return (
-        <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
+        <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path='/' element={<Home />} />

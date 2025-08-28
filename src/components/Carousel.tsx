@@ -1,67 +1,120 @@
 import { getImagePath } from '@/shared/api/config';
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import Button from './common/Button';
 
 type Props = {
     images: string[];
+    interval?: number;
 };
 
-const ImageCarousel: React.FC<Props> = ({ images }) => {
-    // Track images that failed to load
+const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
+    // Track failures by original index
     const [failed, setFailed] = useState<Set<number>>(new Set());
+    // Current slide index within *valid* list
     const [idx, setIdx] = useState(0);
 
-    // Only keep non-failed images
-    const validImages = useMemo(
-        () => images.filter((_, i) => !failed.has(i)),
-        [images, failed]
+    // Build a mapped list so we can relate valid slides back to original indices
+    const valid = useMemo(() => {
+        return images
+            .map((src, orig) => ({ src, orig }))
+            .filter(({ orig }) => !failed.has(orig));
+    }, [images, failed]);
+
+    const total = valid.length;
+
+    // Clamp idx if list shrinks (e.g., an image failed)
+    useEffect(() => {
+        if (total === 0) return;
+        if (idx > total - 1) setIdx(total - 1);
+    }, [total, idx]);
+
+    const goRight = useCallback(() => {
+        setIdx((i) => (i + 1) % total);
+    }, [total]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            goRight();
+        }, interval);
+
+        return () => clearInterval(timer);
+    }, [interval, total]);
+
+    // Nothing to render
+    if (total === 0) return null;
+
+    const goLeft = useCallback(() => {
+        setIdx((i) => (i - 1 + total) % total);
+    }, [total]);
+
+    const onImgError = useCallback(
+        (origIndex: number) => {
+            setFailed((prev) => {
+                const next = new Set(prev);
+                next.add(origIndex);
+                return next;
+            });
+        },
+        [setFailed]
     );
 
-    // Don't render if no images
-    if (!validImages.length) return null;
-
-    const total = validImages.length;
-    const showIdx = Math.min(idx, total - 1);
-
-    const goLeft = () => setIdx((i) => (i === 0 ? total - 1 : i - 1));
-    const goRight = () => setIdx((i) => (i === total - 1 ? 0 : i + 1));
-
-    const handleError = (failedIdx: number) => {
-        setFailed((prev) => new Set(prev).add(images.indexOf(validImages[showIdx])));
+    // Width of the sliding track (100% per slide)
+    const trackStyle = {
+        width: `${total * 100}%`,
+        transform: `translateX(-${idx * (100 / total)}%)`
     };
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto flex items-center justify-center h-60 mb-6">
-            {total > 1 && (
-                <button
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-700 bg-opacity-60 hover:bg-opacity-90 text-white rounded-full p-2 z-10"
-                    onClick={goLeft}
-                    aria-label="Previous image"
-                >
-                    &#8592;
-                </button>
-            )}
-            <div className="flex-1 flex items-center justify-center h-full">
-                <img
-                    src={getImagePath(validImages[showIdx])}
-                    alt={`Post Image ${showIdx + 1}`}
-                    className="object-cover rounded-lg max-h-60 max-w-full transition-all"
-                    style={{ minWidth: 200 }}
-                    onError={() => handleError(showIdx)}
-                />
+        <div className='relative w-full max-w-2xl mx-auto h-60 mb-6 overflow-hidden'>
+            {/* Track */}
+            <div
+                className='h-full flex transition-transform duration-300 ease-in-out'
+                style={trackStyle}
+            >
+                {valid.map(({ src, orig }, i) => (
+                    <div
+                        key={`${orig}-${src}`}
+                        className='h-full'
+                        style={{ width: `${100 / total}%` }}
+                    >
+                        <div className='w-full h-full flex items-center justify-center'>
+                            <img
+                                src={getImagePath(src)}
+                                alt={`Post Image ${i + 1}`}
+                                className='max-h-60 w-auto h-full object-contain rounded-lg'
+                                onError={() => onImgError(orig)}
+                            />
+                        </div>
+                    </div>
+                ))}
             </div>
+
             {total > 1 && (
-                <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 bg-opacity-60 hover:bg-opacity-90 text-white rounded-full p-2 z-10"
-                    onClick={goRight}
-                    aria-label="Next image"
-                >
-                    &#8594;
-                </button>
-            )}
-            {total > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-40 px-2 py-1 rounded text-xs text-white">
-                    {showIdx + 1}/{total}
-                </div>
+                <>
+                    <Button
+                        className='absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10'
+                        variant='icon'
+                        shape='circle'
+                        onClick={goLeft}
+                        aria-label='Previous image'
+                    >
+                        &#8592;
+                    </Button>
+
+                    <Button
+                        className='absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10'
+                        variant='icon'
+                        shape='circle'
+                        onClick={goRight}
+                        aria-label='Next image'
+                    >
+                        &#8594;
+                    </Button>
+
+                    <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/40 px-2 py-1 rounded text-xs text-white'>
+                        {idx + 1}/{total}
+                    </div>
+                </>
             )}
         </div>
     );

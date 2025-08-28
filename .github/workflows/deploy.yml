@@ -1,61 +1,61 @@
 name: Deploy if tests succeed
 
 on:
-  workflow_run:
-    workflows:
-      - "E2E Tests"
-    types: [completed]
-    branches:
-      - main
-      - dev
+    workflow_run:
+        workflows:
+            - 'E2E Tests'
+        types: [completed]
+        branches:
+            - main
+            - dev
 
 jobs:
-  deploy:
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository &&
-      contains(fromJson('["main","dev"]'), github.event.workflow_run.head_branch || '')
+    deploy:
+        if: >
+            github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            contains(fromJson('["main","dev"]'), github.event.workflow_run.head_branch || '')
 
-    runs-on: ubuntu-latest
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Dump workflow_run payload
-        run: |
-          echo '${{ toJson(github.event.workflow_run) }}'
+        steps:
+            - name: Dump workflow_run payload
+              run: |
+                  echo '${{ toJson(github.event.workflow_run) }}'
 
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.workflow_run.head_sha }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'npm'
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
+                  cache: 'npm'
 
-      - name: Enable Corepack and Yarn 4
-        run: |
-          corepack enable
-          corepack prepare yarn@4.7.0 --activate
+            - name: Enable Corepack and Yarn 4
+              run: |
+                  corepack enable
+                  corepack prepare yarn@4.7.0 --activate
 
-      - name: Install deps
-        run: yarn install --immutable
+            - name: Install deps
+              run: yarn install --immutable
 
-      - name: Build (branch-specific)
-        run: |
-          if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
-            echo "Building for production"
-            CI=false yarn build:prod
-          else
-            echo "Building for dev"
-            CI=false yarn build:dev
-          fi
+            - name: Build (branch-specific)
+              run: |
+                  if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
+                    echo "Building for production"
+                    CI=false yarn build:prod
+                  else
+                    echo "Building for dev"
+                    CI=false yarn build:dev
+                  fi
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ secrets.CF_PROJECT_NAME }}
-          directory: build
-          branch: ${{ github.event.workflow_run.head_branch }}
-          wranglerVersion: '4'
+            - name: Deploy to Cloudflare Pages
+              uses: cloudflare/pages-action@v1
+              with:
+                  apiToken: ${{ secrets.CF_API_TOKEN }}
+                  accountId: ${{ secrets.CF_ACCOUNT_ID }}
+                  projectName: ${{ secrets.CF_PROJECT_NAME }}
+                  directory: build
+                  branch: ${{ github.event.workflow_run.head_branch }}
+                  wranglerVersion: '4'

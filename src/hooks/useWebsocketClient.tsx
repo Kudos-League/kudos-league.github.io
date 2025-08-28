@@ -20,7 +20,7 @@ export function getSocket(token: string) {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 10000,
-        autoConnect: true,
+        autoConnect: true
         // forceNew: true,
     });
     return socket;

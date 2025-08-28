@@ -12,7 +12,9 @@ export default function DMChat() {
     const { id: targetUserId } = useParams<{ id: string }>();
     const { user, token } = useAuth();
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
-    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
+    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
+        null
+    );
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const { state: notifState } = useNotifications();
@@ -27,62 +29,82 @@ export default function DMChat() {
         if (!n) return;
 
         if (n.type === 'direct-message') {
-            setChannels(prev =>
-                prev.map(c => c.id === n.channelID ? { ...c, lastMessage: n.message } : c)
+            setChannels((prev) =>
+                prev.map((c) =>
+                    c.id === n.channelID ? { ...c, lastMessage: n.message } : c
+                )
             );
 
             if (selectedChannel?.id === n.channelID) {
                 const msg = n.message;
-                setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+                setMessages((prev) =>
+                    prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
+                );
             }
         }
-
     }, [notifState.items, selectedChannel?.id]);
 
     useEffect(() => {
         if (user && token) {
-            getUserDetails(user.id, token, { dmChannels: true }).then(async (res) => {
-                const formatted = res.dmChannels
-                    .map((channel) => {
-                        const otherUser = channel.users.find((u) => u.id !== user.id);
-                        return otherUser ? { ...channel, otherUser } : null;
-                    })
-                    .filter(Boolean) as ChannelDTO[];
+            getUserDetails(user.id, token, { dmChannels: true }).then(
+                async (res) => {
+                    const formatted = res.dmChannels
+                        .map((channel) => {
+                            const otherUser = channel.users.find(
+                                (u) => u.id !== user.id
+                            );
+                            return otherUser ? { ...channel, otherUser } : null;
+                        })
+                        .filter(Boolean) as ChannelDTO[];
 
-                // Fetch the last message for each channel
-                const channelsWithLastMessage = await Promise.all(
-                    formatted.map(async (channel) => {
-                        try {
-                            const channelMessages = await getMessages(channel.id, token);
-                            const lastMessage = channelMessages && channelMessages.length > 0 
-                                ? channelMessages[channelMessages.length - 1] 
-                                : null;
-                            
-                            return {
-                                ...channel,
-                                lastMessage
-                            };
-                        }
-                        catch (error) {
-                            console.error(`Error fetching messages for channel ${channel.id}:`, error);
-                            return channel; // Return channel without lastMessage if fetch fails
-                        }
-                    })
-                );
+                    // Fetch the last message for each channel
+                    const channelsWithLastMessage = await Promise.all(
+                        formatted.map(async (channel) => {
+                            try {
+                                const channelMessages = await getMessages(
+                                    channel.id,
+                                    token
+                                );
+                                const lastMessage =
+                                    channelMessages &&
+                                    channelMessages.length > 0
+                                        ? channelMessages[
+                                            channelMessages.length - 1
+                                        ]
+                                        : null;
 
-                setChannels(channelsWithLastMessage);
-
-                if (targetUserId) {
-                    const matchedChannel = channelsWithLastMessage.find((channel) =>
-                        channel.users.some((u) => u.id === +targetUserId)
+                                return {
+                                    ...channel,
+                                    lastMessage
+                                };
+                            }
+                            catch (error) {
+                                console.error(
+                                    `Error fetching messages for channel ${channel.id}:`,
+                                    error
+                                );
+                                return channel; // Return channel without lastMessage if fetch fails
+                            }
+                        })
                     );
 
-                    if (matchedChannel) {
-                        joinChannel(matchedChannel.id);
-                        setSelectedChannel(matchedChannel);
+                    setChannels(channelsWithLastMessage);
+
+                    if (targetUserId) {
+                        const matchedChannel = channelsWithLastMessage.find(
+                            (channel) =>
+                                channel.users.some(
+                                    (u) => u.id === +targetUserId
+                                )
+                        );
+
+                        if (matchedChannel) {
+                            joinChannel(matchedChannel.id);
+                            setSelectedChannel(matchedChannel);
+                        }
                     }
                 }
-            });
+            );
         }
     }, [user, token, targetUserId]);
 
@@ -90,9 +112,9 @@ export default function DMChat() {
     useEffect(() => {
         if (messages.length > 0 && selectedChannel) {
             const lastMessage = messages[messages.length - 1];
-            setChannels(prevChannels => 
-                prevChannels.map(channel => 
-                    channel.id === selectedChannel.id 
+            setChannels((prevChannels) =>
+                prevChannels.map((channel) =>
+                    channel.id === selectedChannel.id
                         ? { ...channel, lastMessage }
                         : channel
                 )
@@ -115,7 +137,7 @@ export default function DMChat() {
     };
 
     return (
-        <div className='flex h-full'>
+        <div className='flex h-full bg-white dark:bg-zinc-900'>
             <DMList
                 channels={channels}
                 onSearch={setSearchQuery}

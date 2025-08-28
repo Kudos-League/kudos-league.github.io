@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Socket } from 'socket.io-client';
 import { Events } from 'shared/constants';
-import { getMessages, sendDirectMessage, sendMessage } from 'shared/api/actions';
+import {
+    getMessages,
+    sendDirectMessage,
+    sendMessage
+} from 'shared/api/actions';
 import type { MessageDTO, NotificationPayload } from 'shared/api/types';
 import { useAuth } from './useAuth';
 import { getSocket } from './useWebsocketClient';
 
 type UseWebSocketArgs = {
-  messages: MessageDTO[];
-  setMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>>;
-  onNotification?: (n: NotificationPayload) => void;
+    messages: MessageDTO[];
+    setMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>>;
+    onNotification?: (n: NotificationPayload) => void;
 };
 
 export const useWebSocket = ({
     messages,
     setMessages,
-    onNotification,
+    onNotification
 }: UseWebSocketArgs) => {
     const { user, token } = useAuth();
     const socketRef = useRef<Socket | null>(null);
@@ -44,7 +48,10 @@ export const useWebSocket = ({
         if (currentUserId != null && (sock.connected || isConnected)) {
             if (joinedUserId.current !== currentUserId) {
                 // leave previous user room if we switched accounts
-                if (joinedUserId.current != null && joinedUserId.current !== currentUserId) {
+                if (
+                    joinedUserId.current != null &&
+                    joinedUserId.current !== currentUserId
+                ) {
                     sock.emit('leaveUser', { userID: joinedUserId.current });
                 }
                 console.log('[WS] joinUser', currentUserId);
@@ -63,14 +70,23 @@ export const useWebSocket = ({
         const handleConnect = () => {
             setIsConnected(true);
             clearPolling();
-            if (currentUserId != null) sock.emit('joinUser', { userID: currentUserId });
-            if (activeChannelId.current != null) sock.emit('joinChannel', { channelID: activeChannelId.current });
+            if (currentUserId != null)
+                sock.emit('joinUser', { userID: currentUserId });
+            if (activeChannelId.current != null)
+                sock.emit('joinChannel', {
+                    channelID: activeChannelId.current
+                });
         };
 
         const handleConnectError = (err: any) => {
             setIsConnected(false);
             // surface what socket.io gives you
-            console.error('[WS] connect_error', err?.message, err?.description, err?.context);
+            console.error(
+                '[WS] connect_error',
+                err?.message,
+                err?.description,
+                err?.context
+            );
         };
 
         const handleDisconnect = (reason: string) => {
@@ -79,7 +95,9 @@ export const useWebSocket = ({
         };
 
         const handleNewMessage = (m: MessageDTO) => {
-            setMessages(prev => (prev.some(x => x.id === m.id) ? prev : [...prev, m]));
+            setMessages((prev) =>
+                prev.some((x) => x.id === m.id) ? prev : [...prev, m]
+            );
         };
 
         // attach listeners ONCE
@@ -105,76 +123,115 @@ export const useWebSocket = ({
         };
     }, [token, currentUserId, clearPolling, setMessages, onNotification]);
 
-    const actuallyJoin = useCallback((channelID: number, sock: Socket, tokenNonNull: string) => {
-        const onJoined = (data: { channelID: number; success: boolean }) => {
-            if (data.channelID === channelID && data.success) {
-                getMessages(channelID, tokenNonNull).then(list => list?.length && setMessages(list));
-            }
-        };
-        sock.once('joinedChannel', onJoined);
-        sock.emit('joinChannel', { channelID });
-    }, [setMessages]);
+    const actuallyJoin = useCallback(
+        (channelID: number, sock: Socket, tokenNonNull: string) => {
+            const onJoined = (data: {
+                channelID: number;
+                success: boolean;
+            }) => {
+                if (data.channelID === channelID && data.success) {
+                    getMessages(channelID, tokenNonNull).then(
+                        (list) => list?.length && setMessages(list)
+                    );
+                }
+            };
+            sock.once('joinedChannel', onJoined);
+            sock.emit('joinChannel', { channelID });
+        },
+        [setMessages]
+    );
 
-    const startPolling = useCallback((channelID: number, tokenNonNull: string) => {
-        clearPolling();
-        pollInterval.current = setInterval(async () => {
+    const startPolling = useCallback(
+        (channelID: number, tokenNonNull: string) => {
+            clearPolling();
+            pollInterval.current = setInterval(async () => {
+                try {
+                    const fresh = await getMessages(channelID, tokenNonNull);
+                    if (fresh?.length) setMessages(fresh);
+                }
+                catch (err) {
+                    console.error('[Polling] Failed to fetch messages:', err);
+                }
+            }, 1000);
+        },
+        [clearPolling, setMessages]
+    );
+
+    const joinChannel = useCallback(
+        (channelID: number) => {
+            if (!token) {
+                console.warn('[WebSocket] No token available');
+                return;
+            }
+
+            activeChannelId.current = channelID;
+            setMessages([]);
+
+            const sock = socketRef.current;
+            const connected = !!sock && (sock.connected || isConnected);
+
+            if (!sock || !connected) {
+                pendingJoins.current.add(channelID);
+                startPolling(channelID, token);
+                return;
+            }
+
+            clearPolling();
+            actuallyJoin(channelID, sock, token);
+        },
+        [
+            token,
+            isConnected,
+            setMessages,
+            clearPolling,
+            actuallyJoin,
+            startPolling
+        ]
+    );
+
+    const leaveChannel = useCallback(
+        (channelID: number) => {
+            const sock = socketRef.current;
+            if (sock) sock.emit('leaveChannel', { channelID });
+            if (activeChannelId.current === channelID)
+                activeChannelId.current = null;
+            pendingJoins.current.delete(channelID);
+            clearPolling();
+        },
+        [clearPolling]
+    );
+
+    const send = useCallback(
+        async ({
+            channel,
+            receiverID,
+            content
+        }: {
+            channel?: { id: number };
+            receiverID?: number;
+            content: string;
+        }) => {
+            if (!token) return;
             try {
-                const fresh = await getMessages(channelID, tokenNonNull);
-                if (fresh?.length) setMessages(fresh);
+                const newMsg = receiverID
+                    ? await sendDirectMessage(receiverID, { content }, token)
+                    : await sendMessage(
+                        { channelID: channel!.id, content },
+                        token
+                    );
+
+                setMessages((prev) =>
+                    prev.some((m) => m.id === newMsg.id)
+                        ? prev
+                        : [...prev, newMsg]
+                );
             }
             catch (err) {
-                console.error('[Polling] Failed to fetch messages:', err);
+                console.error('[WebSocket] Failed to send message', err);
             }
-        }, 1000);
-    }, [clearPolling, setMessages]);
-
-    const joinChannel = useCallback((channelID: number) => {
-        if (!token) {
-            console.warn('[WebSocket] No token available');
-            return;
-        }
-
-        activeChannelId.current = channelID;
-        setMessages([]);
-
-        const sock = socketRef.current;
-        const connected = !!sock && (sock.connected || isConnected);
-
-        if (!sock || !connected) {
-            pendingJoins.current.add(channelID);
-            startPolling(channelID, token);
-            return;
-        }
-
-        clearPolling();
-        actuallyJoin(channelID, sock, token);
-    }, [token, isConnected, setMessages, clearPolling, actuallyJoin, startPolling]);
-
-    const leaveChannel = useCallback((channelID: number) => {
-        const sock = socketRef.current;
-        if (sock) sock.emit('leaveChannel', { channelID });
-        if (activeChannelId.current === channelID) activeChannelId.current = null;
-        pendingJoins.current.delete(channelID);
-        clearPolling();
-    }, [clearPolling]);
-
-    const send = useCallback(async ({ channel, receiverID, content }: {
-        channel?: { id: number };
-        receiverID?: number;
-        content: string;
-    }) => {
-        if (!token) return;
-        try {
-            const newMsg = receiverID
-                ? await sendDirectMessage(receiverID, { content }, token)
-                : await sendMessage({ channelID: channel!.id, content }, token);
-
-            setMessages(prev => (prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
-        }
-        catch (err) {
-            console.error('[WebSocket] Failed to send message', err);
-        }
-    }, [token, setMessages]);
+        },
+        [token, setMessages]
+    );
 
     return {
         socket: socketRef.current,
@@ -182,6 +239,6 @@ export const useWebSocket = ({
         joinChannel,
         leaveChannel,
         send,
-        isConnected: socketRef.current?.connected ?? isConnected,
+        isConnected: socketRef.current?.connected ?? isConnected
     };
 };

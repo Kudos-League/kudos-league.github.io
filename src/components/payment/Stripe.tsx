@@ -4,6 +4,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import DonationAmountPicker from './DonationAmountPicker';
 import { getEndpointUrl } from 'shared/api/config';
 import { useAuth } from '@/hooks/useAuth';
+import Button from '../common/Button';
 
 export default function StripeWeb() {
     const { token } = useAuth();
@@ -76,13 +77,9 @@ export default function StripeWeb() {
                     Support Us with a Donation
                 </h1>
                 <DonationAmountPicker onAmountChange={setDonationAmount} />
-                <button
-                    onClick={handlePayment}
-                    disabled={!loading}
-                    className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-                >
+                <Button onClick={handlePayment} disabled={!loading}>
                     Donate
-                </button>
+                </Button>
             </div>
         </FormProvider>
     );

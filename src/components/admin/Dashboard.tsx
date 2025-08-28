@@ -1,16 +1,14 @@
 import { useAuth } from '@/hooks/useAuth';
 import { deleteReport, updateReportStatus } from '@/shared/api/actions';
 import React from 'react';
+import Button from '../common/Button';
 
 type Props = {
     reports: any[];
     setReports: React.Dispatch<React.SetStateAction<any[]>>;
-}
+};
 
-export default function Dashboard({
-    reports,
-    setReports
-}: Props) {
+export default function Dashboard({ reports, setReports }: Props) {
     const { token } = useAuth();
 
     const handleDeleteReport = async (reportID: number) => {
@@ -31,7 +29,7 @@ export default function Dashboard({
         try {
             await updateReportStatus(reportID, status, token);
             setReports((prev: any[]) =>
-                prev.map(r => (r.id === reportID ? { ...r, status } : r))
+                prev.map((r) => (r.id === reportID ? { ...r, status } : r))
             );
         }
         catch (err) {
@@ -67,36 +65,35 @@ export default function Dashboard({
                                 </div>
 
                                 <div className='flex gap-2 text-sm'>
-                                    <button
+                                    <Button
                                         onClick={() =>
                                             handleUpdateStatus(
                                                 report.id,
                                                 'ignored'
                                             )
                                         }
-                                        className='text-orange-600 hover:underline'
                                     >
                                         Ignore
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant='success'
                                         onClick={() =>
                                             handleUpdateStatus(
                                                 report.id,
                                                 'resolved'
                                             )
                                         }
-                                        className='text-green-600 hover:underline'
                                     >
                                         Resolve
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant='danger'
                                         onClick={() =>
                                             handleDeleteReport(report.id)
                                         }
-                                        className='text-red-600 hover:underline'
                                     >
                                         Delete
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
 

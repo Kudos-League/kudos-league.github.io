@@ -35,7 +35,8 @@ export default function Input<T extends FieldValues>({
     value,
     multipleFiles = true,
     multiline = false,
-    onValueChange
+    onValueChange,
+    ...props
 }: Props<T>) {
     const defaultValue: PathValue<T, Path<T>> = type === 'dropdown'
         ? (options?.[0]?.value as PathValue<T, Path<T>>)
@@ -96,6 +97,7 @@ export default function Input<T extends FieldValues>({
             </label>
             {multiline ? (
                 <textarea
+                    {...props}
                     id={name}
                     value={field.value}
                     onChange={(e) => {
@@ -108,6 +110,7 @@ export default function Input<T extends FieldValues>({
                 />
             ) : (
                 <input
+                    {...props}
                     id={name}
                     type={type === 'password' ? 'password' : 'text'}
                     value={value ?? field.value}

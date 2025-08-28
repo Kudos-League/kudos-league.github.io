@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Alert from './Alert';
+import Alert from '@/components/common/Alert';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { NotificationPayload } from '@/shared/api/types';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,7 @@ export default function NotificationsToast() {
         }
     }, [state.items]);
 
-    if (!visible || !latest) return null;
+    if (!latest) return null;
 
     const go = () => {
         if (latest.type === 'direct-message') {
@@ -33,16 +33,33 @@ export default function NotificationsToast() {
         setVisible(false);
     };
 
+    const { type, message } = (() => {
+        if (latest.type === 'direct-message') {
+            return {
+                type: 'info' as const,
+                message: `New DM: ${latest.message?.content ?? ''}`
+            };
+        }
+        return {
+            type: 'info' as const,
+            message: `Reply: ${latest.message?.content ?? ''}`
+        };
+    })();
+
     return (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
-            <div onClick={go} className="cursor-pointer">
+        <div
+            aria-live='assertive'
+            className='pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 py-6 sm:items-start sm:p-6'
+        >
+            <div className='flex w-full flex-col items-center space-y-4 sm:items-end'>
                 <Alert
-                    type="info"
-                    message={
-                        latest.type === 'direct-message'
-                            ? `New DM: ${latest.message?.content ?? ''}`
-                            : `Reply: ${latest.message?.content ?? ''}`
-                    }
+                    type={type}
+                    title={type === 'info' ? 'Notification' : undefined}
+                    message={message}
+                    show={visible}
+                    onClose={() => setVisible(false)}
+                    onClick={go}
+                    onAfterLeave={() => setLatest(null)}
                 />
             </div>
         </div>

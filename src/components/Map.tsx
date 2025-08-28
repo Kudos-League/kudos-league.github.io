@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleMap, Circle, Marker, useJsApiLoader } from '@react-google-maps/api';
+import {
+    GoogleMap,
+    Circle,
+    Marker,
+    useJsApiLoader
+} from '@react-google-maps/api';
 import debounce from '@/shared/debounce';
 import useUserLocation from '@/hooks/useLocation';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
@@ -27,7 +32,7 @@ interface MapComponentPropsBase {
     regionID?: string;
     shouldGetYourLocation?: boolean;
     onLocationChange?: (data: LocationData) => void;
-    approximateRadiusMeters?: number; 
+    approximateRadiusMeters?: number;
 }
 
 type MapComponentProps =
@@ -80,7 +85,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     approximateRadiusMeters = 3200
 }) => {
     const { location: userLocation, errorMsg } = useUserLocation();
-    const fallback = coordinates ?? (shouldGetYourLocation ? userLocation : null);
+    const fallback =
+        coordinates ?? (shouldGetYourLocation ? userLocation : null);
     const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(
         fallback ?? DEFAULT_CENTER
     );
@@ -93,8 +99,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const suppressSearchRef = useRef(false);
-    const autoServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-    const placesRef      = useRef<google.maps.places.PlacesService | null>(null);
+    const autoServiceRef =
+        useRef<google.maps.places.AutocompleteService | null>(null);
+    const placesRef = useRef<google.maps.places.PlacesService | null>(null);
     const placeLibRef = useRef<google.maps.PlacesLibrary | null>(null);
 
     const { isLoaded } = useJsApiLoader({
@@ -105,20 +112,30 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     useEffect(() => {
         if (!isLoaded || !window.google?.maps?.places) return;
         (async () => {
-            placeLibRef.current = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+            placeLibRef.current = (await google.maps.importLibrary(
+                'places'
+            )) as google.maps.PlacesLibrary;
         })();
-        autoServiceRef.current  = new google.maps.places.AutocompleteService();
-        const dummyDiv          = document.createElement('div');
-        placesRef.current       = new google.maps.places.PlacesService(dummyDiv);
+        autoServiceRef.current = new google.maps.places.AutocompleteService();
+        const dummyDiv = document.createElement('div');
+        placesRef.current = new google.maps.places.PlacesService(dummyDiv);
     }, [isLoaded]);
 
     useEffect(() => {
         if (regionID) {
             const alreadySet =
-                Math.abs((mapCoordinates?.latitude ?? 0) - (fallback?.latitude ?? 0)) < 0.0001 &&
-                Math.abs((mapCoordinates?.longitude ?? 0) - (fallback?.longitude ?? 0)) < 0.0001;
+                Math.abs(
+                    (mapCoordinates?.latitude ?? 0) - (fallback?.latitude ?? 0)
+                ) < 0.0001 &&
+                Math.abs(
+                    (mapCoordinates?.longitude ?? 0) -
+                        (fallback?.longitude ?? 0)
+                ) < 0.0001;
 
-            if (alreadySet && (!coordinates?.regionID || coordinates.regionID !== regionID)) {
+            if (
+                alreadySet &&
+                (!coordinates?.regionID || coordinates.regionID !== regionID)
+            ) {
                 setLoading(true);
                 fetchCoordinatesFromRegionID(regionID)
                     .then((coords) => {
@@ -143,9 +160,17 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     if (placesRef.current) {
                         await new Promise<void>((resolve) => {
                             placesRef.current!.getDetails(
-                                { placeId: regionID, fields: ['name', 'formatted_address'] },
+                                {
+                                    placeId: regionID,
+                                    fields: ['name', 'formatted_address']
+                                },
                                 (det, status) => {
-                                    if (status === google.maps.places.PlacesServiceStatus.OK && det) {
+                                    if (
+                                        status ===
+                                            google.maps.places
+                                                .PlacesServiceStatus.OK &&
+                                        det
+                                    ) {
                                         business = det.name ?? '';
                                         formatted = det.formatted_address ?? '';
                                     }
@@ -155,9 +180,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         });
                     }
 
-                    const label = business && !formatted.startsWith(business)
-                        ? `${business}, ${formatted}`
-                        : (formatted || business);
+                    const label =
+                        business && !formatted.startsWith(business)
+                            ? `${business}, ${formatted}`
+                            : formatted || business;
 
                     setMapCoordinates(coords);
                     onLocationChange?.({
@@ -180,7 +206,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         }
     }, [userLocation]);
 
-
     useEffect(() => {
         if (!isLoaded || !searchInput || suppressSearchRef.current) return;
         if (searchInput.length < 3) {
@@ -201,8 +226,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     if (!isLoaded) return <p>Loading Google Maps...</p>;
 
     const center = {
-        lat: (mapCoordinates?.latitude ?? DEFAULT_CENTER.latitude),
-        lng: (mapCoordinates?.longitude ?? DEFAULT_CENTER.longitude)
+        lat: mapCoordinates?.latitude ?? DEFAULT_CENTER.latitude,
+        lng: mapCoordinates?.longitude ?? DEFAULT_CENTER.longitude
     };
 
     // const isValidCoordinates = mapCoordinates?.latitude != null && mapCoordinates?.longitude != null;
@@ -214,61 +239,103 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const showBanner = showAddressBar && (hasLabel || !!effectiveError);
 
     // pick the text in priority order
-    const bannerText = (effectiveError || displayLabel || '');
+    const bannerText = effectiveError || displayLabel || '';
 
     if (loading) {
         return <p>Loading map...</p>;
     }
 
     return (
-        <div style={{ position: 'relative', width, height, overflow: 'visible' }}>
+        <div
+            style={{ position: 'relative', width, height, overflow: 'visible' }}
+        >
             {showBanner && (
-                <div
-                    className="absolute left-0 top-50 w-full bg-white p-2 text-center font-semibold text-gray-800 z-[1001] shadow"
-                >
+                <div className='absolute left-0 top-50 w-full bg-white p-2 text-center font-semibold text-gray-800 z-[6] shadow'>
                     {bannerText}
                 </div>
             )}
             {showAddressBar && (
-                <div style={{ position: 'absolute', top: showBanner ? 40 : 10, left: '50%', transform: 'translateX(-50%)', zIndex: 999, width: 300 }}>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: showBanner ? 40 : 10,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 5,
+                        width: 300
+                    }}
+                >
                     <input
                         type='text'
                         placeholder='Search address'
-                        className="w-full p-2 rounded border border-gray-300 bg-white z-10"
+                        className='w-full p-2 rounded border border-gray-300 bg-white'
                         value={searchInput}
                         onFocus={() => setIsSearching(true)}
-                        onBlur={() => setTimeout(() => setIsSearching(false), 100)}
+                        onBlur={() =>
+                            setTimeout(() => setIsSearching(false), 100)
+                        }
                         onChange={(e) => setSearchInput(e.target.value)}
                     />
                     {suggestions.length > 0 && (
-                        <ul className="absolute top-full left-0 right-0 bg-white border border-gray-300 max-h-52 overflow-y-auto z-[1000] shadow-md">
+                        <ul className='absolute top-full left-0 right-0 bg-white border border-gray-300 max-h-52 overflow-y-auto z-[1000] shadow-md'>
                             {suggestions.map((suggestion, index) => (
                                 <li
-                                    className="p-2 cursor-pointer border-b border-gray-100 hover:bg-gray-100"
+                                    className='p-2 cursor-pointer border-b border-gray-100 hover:bg-gray-100'
                                     key={suggestion.place_id}
                                     onClick={() => {
                                         placesRef.current!.getDetails(
-                                            { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address', 'name', 'place_id'] },
+                                            {
+                                                placeId: suggestion.place_id,
+                                                fields: [
+                                                    'geometry',
+                                                    'formatted_address',
+                                                    'name',
+                                                    'place_id'
+                                                ]
+                                            },
                                             (det, status) => {
-                                                if (status !== google.maps.places.PlacesServiceStatus.OK || !det?.geometry?.location) return;
+                                                if (
+                                                    status !==
+                                                        google.maps.places
+                                                            .PlacesServiceStatus
+                                                            .OK ||
+                                                    !det?.geometry?.location
+                                                )
+                                                    return;
 
-                                                const newLat = det.geometry.location.lat();
-                                                const newLng = det.geometry.location.lng();
+                                                const newLat =
+                                                    det.geometry.location.lat();
+                                                const newLng =
+                                                    det.geometry.location.lng();
                                                 const coords = {
                                                     latitude: newLat,
                                                     longitude: newLng,
                                                     changed:
-                                                        Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
-                                                        Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                                                        Math.abs(
+                                                            newLat -
+                                                                mapCoordinates.latitude
+                                                        ) > 1e-5 ||
+                                                        Math.abs(
+                                                            newLng -
+                                                                mapCoordinates.longitude
+                                                        ) > 1e-5
                                                 };
 
                                                 const business = det.name ?? '';
-                                                const formatted = det.formatted_address ?? suggestion.description ?? '';
-                                                const label = business && !formatted.startsWith(business)
-                                                    ? `${business}, ${formatted}`
-                                                    : (formatted || business);
+                                                const formatted =
+                                                    det.formatted_address ??
+                                                    suggestion.description ??
+                                                    '';
+                                                const label =
+                                                    business &&
+                                                    !formatted.startsWith(
+                                                        business
+                                                    )
+                                                        ? `${business}, ${formatted}`
+                                                        : formatted || business;
 
-                                                suppressSearchRef.current = true;
+                                                suppressSearchRef.current =
+                                                    true;
                                                 setSuggestions([]);
                                                 setMapCoordinates(coords);
                                                 setSearchInput(label);
@@ -277,13 +344,21 @@ const MapDisplay: React.FC<MapComponentProps> = ({
 
                                                 onLocationChange?.({
                                                     coordinates: coords,
-                                                    placeID: det.place_id ?? suggestion.place_id,
+                                                    placeID:
+                                                        det.place_id ??
+                                                        suggestion.place_id,
                                                     name: label,
-                                                    businessName: business || undefined,
+                                                    businessName:
+                                                        business || undefined,
                                                     changed: coords.changed
                                                 });
 
-                                                setTimeout(() => (suppressSearchRef.current = false), 500);
+                                                setTimeout(
+                                                    () =>
+                                                        (suppressSearchRef.current =
+                                                            false),
+                                                    500
+                                                );
                                             }
                                         );
                                     }}
@@ -301,7 +376,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 zoom={12}
                 options={{
                     disableDefaultUI: true,
-                    clickableIcons: false,
+                    clickableIcons: false
                     /*
                     styles: [
                         {
@@ -351,11 +426,25 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                 if (placeID && placesRef.current) {
                                     await new Promise<void>((resolve) => {
                                         placesRef.current!.getDetails(
-                                            { placeId: placeID, fields: ['name', 'formatted_address'] },
+                                            {
+                                                placeId: placeID,
+                                                fields: [
+                                                    'name',
+                                                    'formatted_address'
+                                                ]
+                                            },
                                             (det, status) => {
-                                                if (status === google.maps.places.PlacesServiceStatus.OK && det) {
+                                                if (
+                                                    status ===
+                                                        google.maps.places
+                                                            .PlacesServiceStatus
+                                                            .OK &&
+                                                    det
+                                                ) {
                                                     business = det.name ?? '';
-                                                    formatted = det.formatted_address ?? formatted;
+                                                    formatted =
+                                                        det.formatted_address ??
+                                                        formatted;
                                                 }
                                                 resolve();
                                             }
@@ -363,11 +452,16 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     });
                                 }
 
-                                const label = business && !formatted.startsWith(business)
-                                    ? `${business}, ${formatted}`
-                                    : (formatted || business);
+                                const label =
+                                    business && !formatted.startsWith(business)
+                                        ? `${business}, ${formatted}`
+                                        : formatted || business;
 
-                                const coords = { latitude: newLat, longitude: newLng, changed: true };
+                                const coords = {
+                                    latitude: newLat,
+                                    longitude: newLng,
+                                    changed: true
+                                };
 
                                 suppressSearchRef.current = true;
                                 setSuggestions([]);
@@ -382,7 +476,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     changed: true
                                 });
 
-                                setTimeout(() => { suppressSearchRef.current = false; }, 500);
+                                setTimeout(() => {
+                                    suppressSearchRef.current = false;
+                                }, 500);
                             }
                             catch (err) {
                                 console.error('Reverse geocoding failed', err);
@@ -394,7 +490,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         center={center}
                         radius={approximateRadiusMeters}
                         options={circleOptions}
-                    /> 
+                    />
                 )}
             </GoogleMap>
         </div>

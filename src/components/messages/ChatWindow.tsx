@@ -2,7 +2,9 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { ChannelDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
 import MessageGroup from './MessageGroup';
+import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
+import Button from '../common/Button';
 
 interface Props {
     user: UserDTO | null;
@@ -25,13 +27,11 @@ const ChatWindow: React.FC<Props> = ({
         () => groupMessagesByAuthor(messages),
         [messages]
     );
-    const [scrolledOnce, setScrolledOnce] = useState(false);
+    // Always scroll to bottom when messages change
 
     useEffect(() => {
-        if (!scrolledOnce && messages.length) {
-            bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-            setScrolledOnce(true);
-            return;
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
 
@@ -49,24 +49,27 @@ const ChatWindow: React.FC<Props> = ({
         <div className='w-2/3 flex flex-col h-full'>
             {/* Header */}
             <div className='flex items-center justify-between px-4 py-3 border-b bg-white'>
-                <button
+                <Button
                     onClick={onBack}
                     className='text-blue-600 font-semibold text-sm'
                 >
                     ← Back
-                </button>
+                </Button>
                 <h2 className='text-lg font-bold'>{otherUser?.username}</h2>
                 <div className='w-16' /> {/* spacer */}
             </div>
 
             {/* Message list */}
             <div className='flex-1 overflow-y-auto p-4 bg-gray-50'>
-                {groupedMessages.map((group) => (
-                    <MessageGroup
-                        key={group[0].id}
-                        messages={group}
-                        isOwn={!!user?.id && group[0].author?.id === user.id}
-                    />
+                {groupedMessages.map((group, idx) => (
+                    <SlideInOnScroll key={group[0].id} index={idx}>
+                        <MessageGroup
+                            messages={group}
+                            isOwn={
+                                !!user?.id && group[0].author?.id === user.id
+                            }
+                        />
+                    </SlideInOnScroll>
                 ))}
                 <div ref={bottomRef} />
             </div>
@@ -89,7 +92,7 @@ const ChatWindow: React.FC<Props> = ({
                         }
                     }}
                 />
-                <button
+                <Button
                     onClick={() => {
                         if (!messageInput.trim()) return;
                         onSend(messageInput.trim());
@@ -98,7 +101,7 @@ const ChatWindow: React.FC<Props> = ({
                     className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
                 >
                     Send
-                </button>
+                </Button>
             </div>
         </div>
     );

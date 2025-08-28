@@ -5,7 +5,7 @@ import {
     getUserDetails,
     getUserEvents,
     getUserHandshakes,
-    getUserPosts,
+    getUserPosts
 } from '@/shared/api/actions';
 import Profile from '@/components/users/Profile';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,7 +49,9 @@ export default function UserProfile() {
                         }),
                         getUserPosts(targetUserID, authState.token),
                         // getUserHandshakes(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, { filter: 'all' })
+                        getUserEvents(targetUserID, authState.token, {
+                            filter: 'all'
+                        })
                     ]);
 
                     setUser(fetchedUser);
@@ -65,7 +67,9 @@ export default function UserProfile() {
                 if (!posts.length) {
                     const [fetchedPosts, fetchedEvents] = await Promise.all([
                         getUserPosts(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, { filter: 'all' })
+                        getUserEvents(targetUserID, authState.token, {
+                            filter: 'all'
+                        })
                     ]);
                     setPosts(fetchedPosts);
                     setEvents(fetchedEvents);
@@ -105,11 +109,7 @@ export default function UserProfile() {
     }
 
     if (error) {
-        return (
-            <div className='text-red-600 text-center mt-10'>
-                {error}
-            </div>
-        );
+        return <div className='text-red-600 text-center mt-10'>{error}</div>;
     }
 
     return (
