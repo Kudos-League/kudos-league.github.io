@@ -2,6 +2,7 @@ import React from 'react';
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   rounded?: 'top' | 'bottom' | 'both' | 'none';
+  className?: string;
 };
 
 const baseInput =
@@ -27,7 +28,7 @@ export function PasswordInput({
     setVisible,
     className = '',
     ...props
-}: InputProps & { visible: boolean; setVisible: (v: boolean) => void }) {
+}: InputProps & { visible: boolean; setVisible: (v: boolean) => void; className?: string }) {
     return (
         <div className={rounded === 'bottom' ? '-mt-px' : ''}>
             <div className="relative">
