@@ -2,6 +2,7 @@ import * as React from 'react';
 import { usePostsInfiniteQuery } from '@/shared/api/queries/posts';
 import PostsContainer from './PostsContainer';
 import Spinner from '../common/Spinner';
+import Alert from '../common/Alert';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -49,7 +50,8 @@ export default function PostsInfinite({
             date: (a: any, b: any) =>
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime(),
-            distance: () => Math.random() - 0.5, // TODO
+            // TODO: replace with real distance sort
+            distance: () => Math.random() - 0.5,
             kudos: (a: any, b: any) =>
                 (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0)
         }[ordering.type];
@@ -59,22 +61,45 @@ export default function PostsInfinite({
         );
     }, [flat, activeTab, ordering]);
 
+    const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+
+    React.useEffect(() => {
+        const el = sentinelRef.current;
+        if (!el) return;
+
+        if (!hasNextPage) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (!first?.isIntersecting) return;
+                if (isFetchingNextPage) return;
+                fetchNextPage();
+            },
+            {
+                root: null,
+                rootMargin: '200px',
+                threshold: 0
+            }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage, visible.length]);
+
     if (isLoading) return <Spinner />;
-    if (isError)
-        return <div className='p-4 text-red-600'>Failed to load posts.</div>;
+    if (isError) return <Alert type='danger' message='Failed to load posts.' />;
 
     return (
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex justify-center'>
-                {hasNextPage && (
-                    <button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className='px-4 py-2 rounded bg-gray-200 hover:bg-gray-300'
-                    >
-                        {isFetchingNextPage ? 'Loading…' : 'Load more'}
-                    </button>
+                {isFetchingNextPage ? (
+                    <Spinner text='Loading more...' />
+                ) : hasNextPage ? (
+                    <div ref={sentinelRef} style={{ height: 1, width: 1 }} />
+                ) : (
+                    <div className='h-2' />
                 )}
             </div>
         </>
