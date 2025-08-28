@@ -56,3 +56,5 @@ function AppCore() {
         </BrowserRouter>
     );
 }
+
+// noop
