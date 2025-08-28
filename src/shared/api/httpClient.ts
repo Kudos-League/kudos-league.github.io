@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { extractApiErrors } from '@/shared/httpErrors';
+import { getEndpointUrl } from './config';
 
 export const http = axios.create({
-    baseURL: process.env.REACT_APP_API_BASE ?? 'http://localhost',
+    baseURL: getEndpointUrl(),
     withCredentials: true,
     responseType: 'json'
 });
