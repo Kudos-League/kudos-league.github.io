@@ -36,7 +36,7 @@ export function useAuthRedirect(requireAdmin = false) {
         isLoggedIn,
         user,
         loading,
-        isAuthorized: isLoggedIn && (!requireAdmin || user?.admin),
+        isAuthorized: isLoggedIn && (!requireAdmin || user?.admin)
     };
 }
 

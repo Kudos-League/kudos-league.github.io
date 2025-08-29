@@ -16,7 +16,7 @@ export default function UserProfile() {
     const { user: userProfile, authState } = useAuth();
     const { id: routeID } = useParams<{ id: string }>();
     const { isAuthorized, loading: authLoading } = useAuthRedirect();
-    
+
     const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
     const targetUserID = routeID ? Number(routeID) : userProfile?.id;
 
@@ -40,19 +40,16 @@ export default function UserProfile() {
                     setUser(userProfile);
                 }
                 else {
-                    const [
-                        fetchedUser,
-                        fetchedPosts,
-                        fetchedEvents
-                    ] = await Promise.all([
-                        getUserDetails(targetUserID, authState.token, {
-                            settings: true
-                        }),
-                        getUserPosts(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, {
-                            filter: 'all'
-                        })
-                    ]);
+                    const [fetchedUser, fetchedPosts, fetchedEvents] =
+                        await Promise.all([
+                            getUserDetails(targetUserID, authState.token, {
+                                settings: true
+                            }),
+                            getUserPosts(targetUserID, authState.token),
+                            getUserEvents(targetUserID, authState.token, {
+                                filter: 'all'
+                            })
+                        ]);
 
                     setUser(fetchedUser);
                     setPosts(fetchedPosts);
@@ -90,7 +87,15 @@ export default function UserProfile() {
         if (isAuthorized) {
             fetchUser();
         }
-    }, [targetUserID, authState?.token, isAuthorized, isViewingOwnProfile, userProfile, posts.length, handshakes.length]);
+    }, [
+        targetUserID,
+        authState?.token,
+        isAuthorized,
+        isViewingOwnProfile,
+        userProfile,
+        posts.length,
+        handshakes.length
+    ]);
 
     // Don't render anything while auth is loading or if not authorized (redirect will happen)
     if (authLoading || !isAuthorized) {

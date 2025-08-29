@@ -17,7 +17,7 @@ export default function EventDetailScreen() {
     useEffect(() => {
         const fetch = async () => {
             if (!isAuthorized) return;
-            
+
             try {
                 const res = await getEventDetails(eventID);
                 setEvent(res.data);

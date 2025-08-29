@@ -45,9 +45,10 @@ export function usePostsInfiniteQuery(filters?: {
     includeTags?: boolean;
     limit?: number;
     query?: string;
+    sort?: 'date' | 'tags' | 'location' | 'kudos';
 }) {
     return useInfiniteQuery({
-        queryKey: qk.postsInfinite(filters),
+        queryKey: ['posts', 'infinite', filters],
         queryFn: ({ pageParam }) =>
             apiGet<CursorPage>('/posts', {
                 params: {
