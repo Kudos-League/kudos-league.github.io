@@ -12,6 +12,10 @@ export type CreatePostDTO = {
     location?: LocationDTO | null;
 };
 
+export type UpdatePostDTO = Omit<Partial<PostDTO>, 'tags'> & {
+    tags: string[]
+};
+
 export type LocationDTO = {
     id?: number;
     name?: string | null;

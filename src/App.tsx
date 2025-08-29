@@ -14,6 +14,7 @@ import AppNavigator from '@/components/navigation/AppNavigator';
 import queryClient from './shared/api/client';
 import Spinner from './components/common/Spinner';
 import Alert from './components/common/Alert';
+import AlertHost from '@/components/common/AlertHost';
 
 function ErrorFallback({ error }: { error: string[] }) {
     return (
@@ -38,6 +39,7 @@ export default function App() {
                         <NotificationsProvider>
                             <ThemeProvider>
                                 <AppCore />
+                                <AlertHost />
                             </ThemeProvider>
                         </NotificationsProvider>
                         <ReactQueryDevtools initialIsOpen={false} />

@@ -10,19 +10,16 @@ import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
-import {
-    createHandshake,
-    likePost,
-    reportPost,
-    updatePost
-} from '@/shared/api/actions';
 import { useAuth } from '@/hooks/useAuth';
+import Alert from '@/components/common/Alert';
+import { useUpdatePost, useLikePost, useReportPost, useCreateHandshake } from '@/shared/api/mutations/posts';
 
 import type {
     ChannelDTO,
     CreateHandshakeDTO,
     PostDTO,
-    LocationDTO
+    LocationDTO,
+    UpdatePostDTO
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
@@ -63,6 +60,11 @@ export default function PostDetails(props: Props) {
     } = props;
 
     const { user, token } = useAuth();
+
+    const updatePostMut = useUpdatePost();
+    const likeMut = useLikePost();
+    const reportMut = useReportPost();
+    const createHsMut = useCreateHandshake();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({
@@ -118,20 +120,13 @@ export default function PostDetails(props: Props) {
     };
 
     const updateStatus = async (newStatus: string) => {
-        if (!token || !postDetails) return;
-
+        if (!postDetails) return;
         try {
-            const updated = await updatePost(
-                postDetails.id,
-                { status: newStatus },
-                token
-            );
-            console.log('Post status updated:', updated);
+            const updated = await updatePostMut.mutateAsync({ id: postDetails.id, data: { status: newStatus } });
             setPostDetails({ ...postDetails, status: updated.status });
         }
         catch (err) {
             console.error('Failed to update post status:', err);
-            alert('Failed to update post status.');
         }
     };
 
@@ -139,27 +134,23 @@ export default function PostDetails(props: Props) {
 
     const handleLike = async () => {
         if (!postDetails || liked === true) return;
-
         try {
-            await likePost(postDetails.id, true, token);
-            setLiked(true);
+            await likeMut.mutateAsync({ id: postDetails.id, like: true });
+            setLiked?.(true);
         }
         catch (err) {
             console.error('Failed to like post:', err);
-            alert('Failed to like the post.');
         }
     };
 
     const handleDislike = async () => {
         if (!postDetails || liked === false) return;
-
         try {
-            await likePost(postDetails.id, false, token);
-            setLiked(false);
+            await likeMut.mutateAsync({ id: postDetails.id, like: false });
+            setLiked?.(false);
         }
         catch (err) {
             console.error('Failed to dislike post:', err);
-            alert('Failed to dislike the post.');
         }
     };
 
@@ -228,36 +219,20 @@ export default function PostDetails(props: Props) {
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const response = await createHandshake(handshakeData, token);
-
-            if (!response || !response.data) {
-                console.error(
-                    'Invalid response from createHandshake:',
-                    response
-                );
-                throw new Error('Invalid response from server');
-            }
-
-            const newHandshake = response.data;
-
-            console.log('Handshake created successfully:', newHandshake);
+            const { data: newHandshake } = await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
+                handshakes: [...(prevDetails?.handshakes || []), newHandshake],
             }));
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
-
+            alert('Handshake created successfully! You can now coordinate the details with the post owner.');
             setIsChatOpen(false);
             setPendingRecipientID(null);
-            fetchPostDetails(postDetails.id);
+            fetchPostDetails?.(postDetails.id);
         }
         catch (error) {
             console.error('Error creating handshake:', error);
-            alert('Failed to create handshake. Please try again.');
         }
         finally {
             setCreatingHandshake(false);
@@ -298,35 +273,19 @@ export default function PostDetails(props: Props) {
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const response = await createHandshake(handshakeData, token);
-
-            if (!response || !response.data) {
-                console.error(
-                    'Invalid response from createHandshake:',
-                    response
-                );
-                throw new Error('Invalid response from server');
-            }
-
-            const newHandshake = response.data;
-
-            console.log('Handshake created successfully:', newHandshake);
+            const { data: newHandshake } = await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
+                handshakes: [...(prevDetails?.handshakes || []), newHandshake],
             }));
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
-
+            alert('Handshake created successfully! You can now coordinate the details with the post owner.');
             setPendingRecipientID(null);
-            fetchPostDetails(postDetails.id);
+            fetchPostDetails?.(postDetails.id);
         }
         catch (error) {
             console.error('Error creating handshake:', error);
-            alert('Failed to create handshake. Please try again.');
         }
         finally {
             setCreatingHandshake(false);
@@ -374,22 +333,20 @@ export default function PostDetails(props: Props) {
     };
 
     const handleReport = async () => {
-        if (!token || !postDetails) return;
-
+        if (!postDetails) return;
         if (!reportReason.trim()) {
             alert('Please enter a reason for reporting.');
             return;
         }
 
         try {
-            await reportPost(postDetails.id, reportReason.trim(), token);
+            await reportMut.mutateAsync({ id: postDetails.id, reason: reportReason.trim() });
             alert('Post reported successfully.');
             setReportModalVisible(false);
             setReportReason('');
         }
         catch (e) {
             console.error('Failed to report:', e);
-            alert('Failed to submit report. Try again later.');
         }
     };
 
@@ -424,27 +381,22 @@ export default function PostDetails(props: Props) {
         if (!postDetails) return;
 
         try {
-            const updateData: any = {
+            const updateData: Partial<UpdatePostDTO> = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags
+                tags: editData.tags,
             };
 
-            // Only include location if it was changed
-            if (
-                editData.location &&
-                editData.location !== postDetails.location
-            ) {
+            if (editData.location && editData.location !== postDetails.location) {
                 updateData.location = editData.location;
             }
 
-            const updated = await updatePost(postDetails.id, updateData, token);
+            const updated = await updatePostMut.mutateAsync({ id: postDetails.id, data: updateData });
             setPostDetails({ ...postDetails, ...updated });
             setIsEditing(false);
         }
         catch (err) {
-            alert('Failed to save changes.');
-            console.error(err);
+            console.error('Failed to save changes', err);
         }
     };
 
@@ -479,16 +431,15 @@ export default function PostDetails(props: Props) {
             <div className='mb-4'>
                 <div className='flex items-center gap-2'>
                     {postDetails.status === 'closed' && (
-                        <span className='bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded'>
+                        <Pill tone='danger'>
                             CLOSED
-                        </span>
+                        </Pill>
                     )}
                     <h1 className='text-2xl font-bold'>{postDetails.title}</h1>
 
                     {user?.id === postDetails.sender?.id &&
-                        postDetails.status !== 'closed' && (
                         <EditPostButton onClick={handleStartEdit} />
-                    )}
+                    }
 
                     {postDetails.status !== 'closed' &&
                         user?.id === postDetails.sender?.id && (
@@ -497,7 +448,7 @@ export default function PostDetails(props: Props) {
                             className='inline-flex items-center gap-1 text-sm font-semibold shadow'
                             variant='danger'
                         >
-                                Close Post
+                            Close Post
                         </Button>
                     )}
                 </div>
