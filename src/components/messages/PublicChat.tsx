@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { getMessages, getPublicChannels } from '@/shared/api/actions';
+import useAuthRedirect from '@/hooks/useAuthRedirect';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
@@ -10,6 +11,7 @@ import Button from '../common/Button';
 
 export default function PublicChat() {
     const { token, user } = useAuth();
+    const { isAuthorized, loading: authLoading } = useAuthRedirect();
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         null
     );
@@ -37,7 +39,7 @@ export default function PublicChat() {
 
     useEffect(() => {
         const fetchChannels = async () => {
-            if (!token) return;
+            if (!token || !isAuthorized) return;
 
             try {
                 const publicChannels = await getPublicChannels(token);
@@ -51,8 +53,10 @@ export default function PublicChat() {
             }
         };
 
-        fetchChannels();
-    }, []);
+        if (isAuthorized) {
+            fetchChannels();
+        }
+    }, [isAuthorized, token]);
 
     const selectChannel = async (channel: ChannelDTO) => {
         setSelectedChannel(channel);
@@ -83,6 +87,11 @@ export default function PublicChat() {
         await send({ channel: selectedChannel, content: messageInput });
         setMessageInput('');
     };
+
+    // Don't render anything while auth is loading or if not authorized (redirect will happen)
+    if (authLoading || !isAuthorized) {
+        return null;
+    }
 
     return (
         <div className='flex h-full bg-white overflow-hidden'>

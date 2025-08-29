@@ -2,6 +2,7 @@ import React from 'react';
 import Events from '@/components/events/Events';
 import { QueryBoundary } from '@/components/common/QueryBoundary';
 import { useEvents } from '@/shared/api/queries/events';
+import useAuthRedirect from '@/hooks/useAuthRedirect';
 
 function EventsContent() {
     const { data: events } = useEvents({ filter: 'all' });
@@ -9,6 +10,13 @@ function EventsContent() {
 }
 
 export default function EventsPage() {
+    const { isAuthorized, loading: authLoading } = useAuthRedirect();
+
+    // Don't render anything while auth is loading or if not authorized (redirect will happen)
+    if (authLoading || !isAuthorized) {
+        return null;
+    }
+
     return (
         <QueryBoundary
             fallback={<p className='text-center text-lg'>Loading events…</p>}

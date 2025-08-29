@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getEventDetails } from '@/shared/api/actions';
 import EventDetails from '@/components/events/EventDetails';
+import useAuthRedirect from '@/hooks/useAuthRedirect';
 
 export default function EventDetailScreen() {
     const { id } = useParams<{ id: string }>();
+    const { isAuthorized, loading: authLoading } = useAuthRedirect();
 
     const [event, setEvent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -14,6 +16,8 @@ export default function EventDetailScreen() {
 
     useEffect(() => {
         const fetch = async () => {
+            if (!isAuthorized) return;
+            
             try {
                 const res = await getEventDetails(eventID);
                 setEvent(res.data);
@@ -27,19 +31,27 @@ export default function EventDetailScreen() {
             }
         };
 
-        if (eventID) fetch();
-    }, [eventID]);
+        if (eventID && isAuthorized) {
+            fetch();
+        }
+    }, [eventID, isAuthorized]);
+
+    // Don't render anything while auth is loading or if not authorized (redirect will happen)
+    if (authLoading || !isAuthorized) {
+        return null;
+    }
 
     if (loading) {
         return <p className='text-center mt-10 text-lg'>Loading event...</p>;
     }
 
-    if (error || !event)
+    if (error || !event) {
         return (
             <p className='text-center text-red-500'>
                 {error || 'Event not found.'}
             </p>
         );
+    }
 
     return <EventDetails event={event} setEvent={setEvent} />;
 }
