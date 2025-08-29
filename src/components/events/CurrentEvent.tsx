@@ -6,6 +6,7 @@ import EventCard from './EventCard';
 import Button from '../common/Button';
 import { useEvents } from '@/shared/api/queries/events';
 import type { EventDTO } from '@/shared/api/types';
+import Dropdown from '../common/Dropdown';
 
 interface LocationSetupModalProps {
     isOpen: boolean;
@@ -215,17 +216,12 @@ export default function CurrentEvent() {
                 </Button>
 
                 <div className='relative'>
-                    <select
+                    <Dropdown
                         value={timeFilter}
-                        onChange={(e) => setTimeFilter(e.target.value as any)}
-                        className='border rounded px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
-                    >
-                        {TIME_FILTERS.map((f) => (
-                            <option key={f.value} value={f.value}>
-                                {f.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setTimeFilter}
+                        options={TIME_FILTERS}
+                        label="Time"
+                    />
                 </div>
             </div>
 
