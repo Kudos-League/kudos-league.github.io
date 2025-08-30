@@ -8,6 +8,7 @@ on:
     #     branches:
     #         - main
     #         - dev
+
     push:
         branches:
             - main
@@ -15,7 +16,7 @@ on:
 
 jobs:
     deploy:
-        #if: >
+        # if: >
         #    github.event.workflow_run.conclusion == 'success' &&
         #    github.event.workflow_run.head_repository.full_name == github.repository &&
         #    contains(fromJson('["main","dev"]'), github.event.workflow_run.head_branch || '')
@@ -23,13 +24,13 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - name: Dump workflow_run payload
-              run: |
-                  echo '${{ toJson(github.event.workflow_run) }}'
+            #- name: Dump workflow_run payload
+            #  run: |
+            #      echo '${{ toJson(github.event.workflow_run) }}'
 
             - uses: actions/checkout@v4
               with:
-                  ref: ${{ github.event.workflow_run.head_sha }}
+                  ref: ${{ github.sha }}
 
             - uses: actions/setup-node@v4
               with:
@@ -46,7 +47,7 @@ jobs:
 
             - name: Build (branch-specific)
               run: |
-                  if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
+                  if [ "${{ github.ref_name }}" = "main" ]; then
                     echo "Building for production"
                     CI=false yarn build:prod
                   else
@@ -61,5 +62,5 @@ jobs:
                   accountId: ${{ secrets.CF_ACCOUNT_ID }}
                   projectName: ${{ secrets.CF_PROJECT_NAME }}
                   directory: build
-                  branch: ${{ github.event.workflow_run.head_branch }}
+                  branch: ${{ github.ref_name }}
                   wranglerVersion: '4'
