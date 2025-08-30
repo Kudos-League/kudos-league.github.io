@@ -20,7 +20,7 @@ export function getWSSURL(): string {
     const base = isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
     const u = new URL('/socket.io', base);
     if (isHttps) u.port = '';
-    return u.toString();
+    return u.origin;
 }
 
 export function getImagePath(avatarPath?: string | null): string | null {
