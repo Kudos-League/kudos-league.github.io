@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 import { FiltersEnum, FilterType, getFilters } from '@/shared/constants';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';

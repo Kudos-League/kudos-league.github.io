@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { EventDTO } from '@/shared/api/types';
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
 import { getImagePath } from '@/shared/api/config';

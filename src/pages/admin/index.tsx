@@ -1,128 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/useAuth';
+import { getReports } from '@/shared/api/actions';
+import Dashboard from '@/components/admin/Dashboard';
 
-import {
-    getUserDetails,
-    getUserEvents,
-    getUserHandshakes,
-    getUserPosts
-} from '@/shared/api/actions';
-import Profile from '@/components/users/Profile';
-import useAuthRedirect from '@/hooks/useAuthRedirect';
-import { useAuth } from '@/hooks/useAuth';
-import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
-
-export default function UserProfile() {
-    const { user: userProfile, authState } = useAuth();
-    const { id: routeID } = useParams<{ id: string }>();
-    const { isAuthorized, loading: authLoading } = useAuthRedirect();
-
-    const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
-    const targetUserID = routeID ? Number(routeID) : userProfile?.id;
-
-    const [user, setUser] = useState<UserDTO | null>(null);
-    const [posts, setPosts] = useState<PostDTO[]>([]);
-    const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]);
-    const [events, setEvents] = useState<EventDTO[]>([]);
+export default function AdminDashboard() {
+    const { token, user } = useAuth();
+    const [reports, setReports] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            setError(null);
-
-            if (!targetUserID || !authState?.token) {
-                setError('Missing user ID or token.');
+        const fetchReports = async () => {
+            if (!token || !user?.admin) {
+                setError('Admin access required.');
+                setLoading(false);
                 return;
             }
 
             try {
-                if (isViewingOwnProfile && userProfile) {
-                    setUser(userProfile);
-                }
-                else {
-                    const [fetchedUser, fetchedPosts, fetchedEvents] =
-                        await Promise.all([
-                            getUserDetails(targetUserID, authState.token, {
-                                settings: true
-                            }),
-                            getUserPosts(targetUserID, authState.token),
-                            getUserEvents(targetUserID, authState.token, {
-                                filter: 'all'
-                            })
-                        ]);
-
-                    setUser(fetchedUser);
-                    setPosts(fetchedPosts);
-                    setEvents(fetchedEvents);
-
-                    return;
-                }
-
-                // Only fetch posts/events if not already loaded
-                if (!posts.length) {
-                    const [fetchedPosts, fetchedEvents] = await Promise.all([
-                        getUserPosts(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, {
-                            filter: 'all'
-                        })
-                    ]);
-                    setPosts(fetchedPosts);
-                    setEvents(fetchedEvents);
-                }
-
-                if (isViewingOwnProfile && !handshakes.length) {
-                    const fetchedHandshakes = await getUserHandshakes(
-                        targetUserID,
-                        authState.token
-                    );
-                    setHandshakes(fetchedHandshakes);
-                }
+                const data = await getReports(token);
+                setReports(data);
             }
-            catch (e) {
-                console.error(e);
-                setError('Failed to load user details.');
+            catch (err) {
+                console.error(err);
+                setError('Failed to load reports.');
+            }
+            finally {
+                setLoading(false);
             }
         };
 
-        if (isAuthorized) {
-            fetchUser();
-        }
-    }, [
-        targetUserID,
-        authState?.token,
-        isAuthorized,
-        isViewingOwnProfile,
-        userProfile,
-        posts.length,
-        handshakes.length
-    ]);
+        fetchReports();
+    }, [token, user]);
 
-    // Don't render anything while auth is loading or if not authorized (redirect will happen)
-    if (authLoading || !isAuthorized) {
-        return null;
-    }
-
-    if (!user) {
+    if (loading) {
         return (
             <div className='text-center mt-10 text-gray-500'>
-                Loading user details...
+                Loading reports...
             </div>
         );
     }
 
     if (error) {
-        return <div className='text-red-600 text-center mt-10'>{error}</div>;
+        return <p className='text-red-600'>{error}</p>;
     }
 
-    return (
-        <div className='max-w-5xl mx-auto px-4 py-8'>
-            <Profile
-                user={user}
-                posts={posts}
-                handshakes={handshakes}
-                events={events}
-                setUser={setUser}
-            />
-        </div>
-    );
+    return <Dashboard reports={reports} setReports={setReports} />;
 }

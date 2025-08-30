@@ -10,7 +10,7 @@ import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import Alert from '@/components/common/Alert';
 import { useUpdatePost, useLikePost, useReportPost, useCreateHandshake } from '@/shared/api/mutations/posts';
 
@@ -155,11 +155,6 @@ export default function PostDetails(props: Props) {
     };
 
     const startDMChat = async (recipientId: number) => {
-        if (!token) {
-            console.error('No token found');
-            return;
-        }
-
         try {
             if (user && recipientId) {
                 setIsChatOpen(true);

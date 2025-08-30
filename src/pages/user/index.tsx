@@ -8,7 +8,7 @@ import {
     getUserPosts
 } from '@/shared/api/actions';
 import Profile from '@/components/users/Profile';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {

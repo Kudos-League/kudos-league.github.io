@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Layout from './Layout';
 import Spinner from '../common/Spinner';
+import RequireAuth from './RequireAuth';
+import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 
 const Home = lazy(() => import('@/pages/home'));
@@ -25,36 +27,132 @@ const PublicChat = lazy(() => import('@/components/messages/PublicChat'));
 
 function AppNavigator() {
     return (
-        <Suspense fallback={<Spinner text='Loading app...' />}>
+        <Suspense fallback={<Spinner text="Loading app..." />}>
             <Routes>
-                <Route path='' element={<Layout />}>
+                <Route path="" element={<Layout />}>
                     <Route path={routes.home} element={<Home />} />
-                    <Route path={routes.donate} element={<DonatePage />} />
                     <Route path={routes.success} element={<Success />} />
                     <Route path={routes.cancel} element={<Cancel />} />
-                    <Route path='/post/:id' element={<Post />} />
-                    <Route path={routes.createPost} element={<CreatePost />} />
-                    <Route path='/user/:id' element={<Profile />} />
-                    <Route path='/event/:id' element={<EventDetails />} />
-                    <Route path={routes.events} element={<EventsPage />} />
+
+                    <Route
+                        path={routes.donate}
+                        element={
+                            <RequireAuth>
+                                <DonatePage />
+                            </RequireAuth>
+                        }
+                    />
+
+                    <Route
+                        path="/post/:id"
+                        element={
+                            <RequireAuth>
+                                <Post />
+                            </RequireAuth>
+                        }
+                    />
+
+                    <Route
+                        path={routes.createPost}
+                        element={
+                            <RequireAuth>
+                                <CreatePost />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path="/user/:id"
+                        element={
+                            <RequireAuth>
+                                <Profile />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path="/event/:id"
+                        element={
+                            <RequireAuth>
+                                <EventDetails />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.events}
+                        element={
+                            <RequireAuth>
+                                <EventsPage />
+                            </RequireAuth>
+                        }
+                    />
                     <Route
                         path={routes.createEvent}
-                        element={<CreateEvent />}
+                        element={
+                            <RequireAuth>
+                                <CreateEvent />
+                            </RequireAuth>
+                        }
                     />
-                    <Route path={routes.chat} element={<PublicChat />} />
-                    <Route path={routes.dms} element={<DMChat />} />
-                    <Route path='/dms/:id?' element={<DMChat />} />
+                    <Route
+                        path={routes.chat}
+                        element={
+                            <RequireAuth>
+                                <PublicChat />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.dms}
+                        element={
+                            <RequireAuth>
+                                <DMChat />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path="/dms/:id?"
+                        element={
+                            <RequireAuth>
+                                <DMChat />
+                            </RequireAuth>
+                        }
+                    />
                     <Route
                         path={routes.leaderboard}
-                        element={<Leaderboard />}
+                        element={
+                            <RequireAuth>
+                                <Leaderboard />
+                            </RequireAuth>
+                        }
                     />
-                    <Route path={routes.admin} element={<AdminDashboard />} />
-                    <Route path={routes.login} element={<SignIn />} />
-                    <Route path={routes.signUp} element={<SignUp />} />
                     <Route
-                        path='*'
-                        element={<Navigate to={routes.home} replace />}
+                        path={routes.admin}
+                        element={
+                            <RequireAuth
+                                allow={({ isLoggedIn, isAdmin }) => isLoggedIn && isAdmin}
+                            >
+                                <AdminDashboard />
+                            </RequireAuth>
+                        }
                     />
+
+                    <Route
+                        path={routes.login}
+                        element={
+                            <PublicOnly>
+                                <SignIn />
+                            </PublicOnly>
+                        }
+                    />
+                    <Route
+                        path={routes.signUp}
+                        element={
+                            <PublicOnly>
+                                <SignUp />
+                            </PublicOnly>
+                        }
+                    />
+
+                    <Route path="*" element={<Navigate to={routes.home} replace />} />
                 </Route>
             </Routes>
         </Suspense>

@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { deleteReport, updateReportStatus } from '@/shared/api/actions';
 import React from 'react';
 import Button from '../common/Button';

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getUserDetails, getMessages } from '@/shared/api/actions';
-import useAuthRedirect from '@/hooks/useAuthRedirect';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
 import DMList from './DMList';
@@ -12,7 +11,6 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 export default function DMChat() {
     const { id: targetUserId } = useParams<{ id: string }>();
     const { user, token } = useAuth();
-    const { isAuthorized, loading: authLoading } = useAuthRedirect();
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         null
@@ -47,7 +45,7 @@ export default function DMChat() {
     }, [notifState.items, selectedChannel?.id]);
 
     useEffect(() => {
-        if (user && token && isAuthorized) {
+        if (user && token) {
             getUserDetails(user.id, token, { dmChannels: true }).then(
                 async (res) => {
                     const formatted = res.dmChannels
@@ -108,7 +106,7 @@ export default function DMChat() {
                 }
             );
         }
-    }, [user, token, targetUserId, isAuthorized]);
+    }, [user, token, targetUserId]);
 
     // Update channel's lastMessage when new messages arrive
     useEffect(() => {
@@ -137,11 +135,6 @@ export default function DMChat() {
 
         await send({ receiverID: receiver.id, content });
     };
-
-    // Don't render anything while auth is loading or if not authorized (redirect will happen)
-    if (authLoading || !isAuthorized) {
-        return null;
-    }
 
     return (
         <div className='flex h-full bg-white dark:bg-zinc-900'>

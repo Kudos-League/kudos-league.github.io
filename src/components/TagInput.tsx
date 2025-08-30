@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import debounce from 'lodash/debounce';
 import { getTopTags } from '@/shared/api/actions';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import Button from './common/Button';
 
 interface Tag {

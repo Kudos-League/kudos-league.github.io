@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X, MapPin, User, Edit3 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import dayjs from 'dayjs';
 import EventCard from './EventCard';
 import Button from '../common/Button';

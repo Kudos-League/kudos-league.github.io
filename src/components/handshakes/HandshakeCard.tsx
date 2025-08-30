@@ -14,7 +14,7 @@ import {
 import type { HandshakeDTO, UserDTO, MessageDTO } from '@/shared/api/types';
 import type { CreateRewardOfferDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';

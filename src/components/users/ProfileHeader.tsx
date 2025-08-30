@@ -1,7 +1,7 @@
 import React from 'react';
 import Tippy from '@tippyjs/react';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import MapDisplay from '@/components/Map';
 import AvatarComponent from '@/components/users/Avatar';
 import { UserDTO } from '@/shared/api/types';

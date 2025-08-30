@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
 import type { EventDTO, CreateEventDTO } from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 
 export function useCreateEvent() {
     const { token } = useAuth();

@@ -9,7 +9,7 @@ import {
     updateMessage,
     deleteMessage
 } from '@/shared/api/actions';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 

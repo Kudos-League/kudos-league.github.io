@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
-import { useAuth } from '@/hooks/useAuth';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -13,7 +12,6 @@ type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
 
 export default function Feed() {
     const navigate = useNavigate();
-    const { isLoggedIn } = useAuth();
     const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
         type: 'date',
@@ -34,17 +32,6 @@ export default function Feed() {
         limit: 10
     } as const;
 
-    const handleCreatePost = () => {
-        if (!isLoggedIn) {
-            // Redirect to login with return URL
-            const returnUrl = encodeURIComponent('/create-post');
-            navigate(`/login?returnUrl=${returnUrl}`);
-        }
-        else {
-            navigate('/create-post');
-        }
-    };
-
     return (
         <div className='max-w-4xl mx-auto space-y-4'>
             <CurrentEvent />
@@ -52,7 +39,7 @@ export default function Feed() {
             <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4'>
                 <h1 className='text-xl font-bold'>Welcome to Kudos League!</h1>
                 <Button
-                    onClick={handleCreatePost}
+                    onClick={() => navigate('/create-post')}
                     variant='secondary'
                     className='whitespace-nowrap self-start sm:self-auto'
                 >

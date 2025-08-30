@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import useLocation from '@/hooks/useLocation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { updateUser } from '@/shared/api/actions';
 
 import Input from '@/components/forms/Input';

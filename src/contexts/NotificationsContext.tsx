@@ -15,7 +15,7 @@ import {
 } from 'redux_store/slices/notifications.slice';
 
 import { NotificationPayload } from '@/shared/api/types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
 

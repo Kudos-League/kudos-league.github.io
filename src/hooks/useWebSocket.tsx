@@ -7,7 +7,7 @@ import {
     sendMessage
 } from 'shared/api/actions';
 import type { MessageDTO, NotificationPayload } from 'shared/api/types';
-import { useAuth } from './useAuth';
+import { useAuth } from '../contexts/useAuth';
 import { getSocket } from './useWebsocketClient';
 
 type UseWebSocketArgs = {

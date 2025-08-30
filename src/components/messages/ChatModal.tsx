@@ -5,7 +5,7 @@ import {
     sendDirectMessage
 } from 'shared/api/actions';
 import { useAppSelector } from 'redux_store/hooks';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import {
     ChannelDTO,

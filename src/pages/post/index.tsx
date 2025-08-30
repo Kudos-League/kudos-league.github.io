@@ -4,13 +4,11 @@ import { useAppSelector } from 'redux_store/hooks';
 
 import { getPostDetails } from '@/shared/api/actions';
 import PostDetails from '@/components/posts/PostDetails';
-import useAuthRedirect from '@/hooks/useAuthRedirect';
 
 import type { PostDTO } from '@/shared/api/types';
 
 const Post = () => {
     const { id } = useParams<{ id: string }>();
-    const { isAuthorized, loading: authLoading } = useAuthRedirect();
     const token = useAppSelector((state) => state.auth.token);
 
     const [postDetails, setPostDetails] = useState<PostDTO | null>(null);
@@ -19,12 +17,6 @@ const Post = () => {
     const [liked, setLiked] = useState<boolean | null>(null);
 
     const fetchPostDetails = async (postID: number) => {
-        if (!token) {
-            setError('No token found. Please log in.');
-            setLoading(false);
-            return;
-        }
-
         try {
             const data = await getPostDetails(token, postID);
             setPostDetails(data);
@@ -40,15 +32,8 @@ const Post = () => {
     };
 
     useEffect(() => {
-        if (id && isAuthorized) {
-            fetchPostDetails(Number(id));
-        }
-    }, [id, isAuthorized]);
-
-    // Don't render anything while auth is loading or if not authorized (redirect will happen)
-    if (authLoading || !isAuthorized) {
-        return null;
-    }
+        if (id) fetchPostDetails(Number(id));
+    }, [id]);
 
     return (
         <PostDetails

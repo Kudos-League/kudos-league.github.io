@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchLeaderboard } from 'shared/api/actions';
-import { useAuth } from '@/hooks/useAuth';
-import useAuthRedirect from '@/hooks/useAuthRedirect';
+import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
 import Button from './common/Button';
@@ -23,7 +22,6 @@ const TIME_FILTERS = [
 
 export default function Leaderboard() {
     const { user, token } = useAuth();
-    const { isAuthorized, loading: authLoading } = useAuthRedirect();
     const navigate = useNavigate();
 
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
@@ -57,15 +55,8 @@ export default function Leaderboard() {
     };
 
     useEffect(() => {
-        if (isAuthorized) {
-            loadLeaderboard();
-        }
-    }, [useLocal, timeFilter, isAuthorized]);
-
-    // Don't render anything while auth is loading or if not authorized (redirect will happen)
-    if (authLoading || !isAuthorized) {
-        return null;
-    }
+        loadLeaderboard();
+    }, [useLocal, timeFilter]);
 
     return (
         <div className='max-w-3xl mx-auto p-6'>

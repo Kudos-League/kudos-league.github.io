@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getImagePath } from '@/shared/api/config';
 import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import Pill from '@/components/common/Pill';
 

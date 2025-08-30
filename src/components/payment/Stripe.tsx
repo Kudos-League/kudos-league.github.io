@@ -3,7 +3,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { FormProvider, useForm } from 'react-hook-form';
 import DonationAmountPicker from './DonationAmountPicker';
 import { getEndpointUrl } from 'shared/api/config';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/useAuth';
 import Button from '../common/Button';
 
 export default function StripeWeb() {
