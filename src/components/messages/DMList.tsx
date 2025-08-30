@@ -1,6 +1,7 @@
 import React from 'react';
 import AvatarComponent from '../users/Avatar';
 import { ChannelDTO } from '@/shared/api/types';
+import UserCard from '../users/UserCard';
 
 interface Props {
     channels: ChannelDTO[];
@@ -95,15 +96,10 @@ const DMList: React.FC<Props> = ({
                                     : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
                             }`}
                         >
-                            <AvatarComponent
-                                avatar={user.avatar}
-                                username={user.username}
-                                size={40}
-                            />
                             <div className='flex-1 min-w-0'>
                                 <div className='flex justify-between items-baseline'>
                                     <p className='font-semibold text-zinc-900 dark:text-zinc-100 truncate'>
-                                        {user.username}
+                                        <UserCard user={user} />
                                     </p>
                                     {timestamp && (
                                         <span className='text-xs text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0'>

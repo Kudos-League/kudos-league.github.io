@@ -12,6 +12,7 @@ type AuthContextType = {
     token: string | null;
     authState: AuthState | null;
     user: UserDTO | null;
+    name: string;
     isLoggedIn: boolean;
     loading: boolean;
     login: (credentials: {
@@ -215,6 +216,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 authState,
                 isLoggedIn: !!userProfile,
                 user: userProfile,
+                name: userProfile?.displayName ?? userProfile?.username ?? '',
                 loading,
                 login: loginHandler,
                 logout: logoutHandler,

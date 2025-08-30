@@ -59,7 +59,7 @@ const UserCard: React.FC<Props> = ({
     subtitleClassName = ''
 }) => {
     const navigate = useNavigate();
-    const username = user?.username || 'Anonymous';
+    const username = user?.displayName || user?.username || 'Anonymous';
 
     const trigger = useMemo(() => {
         const baseNameClasses = [

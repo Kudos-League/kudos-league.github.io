@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
+import UserCard from '../users/UserCard';
 
 interface Props {
     messages: MessageDTO[];
@@ -168,7 +169,7 @@ const MessageList: React.FC<Props> = ({
             >
                 <div className='mb-2 flex justify-between items-start'>
                     <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                        {msg.author?.username || `User ${msg.authorID}`}
+                        <UserCard user={msg.author} />
                     </span>
 
                     {/* Action buttons */}

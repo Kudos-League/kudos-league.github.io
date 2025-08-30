@@ -51,6 +51,8 @@ export interface CustomFile extends File {
 
 export type ProfileFormValues = {
     about?: string;
+    username?: string;
+    displayName?: string;
     email: string;
     avatar: File[];
     avatarURL?: string;
@@ -280,6 +282,7 @@ export interface UserDTO {
     id: number;
     discordID: string | null;
     googleID: string | null;
+    displayName?: string | null;
     username: string;
     email: string;
     avatar?: string | null;

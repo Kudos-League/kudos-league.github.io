@@ -53,49 +53,39 @@ const EditProfile: React.FC<Props> = ({
     });
 
     const targetUserID = targetUser?.id;
-    
-    // Function to get initial form values from targetUser
-    const getInitialValues = (userData: UserDTO): ProfileFormValues => ({
-        email: userData.email || '',
+    const defaults = React.useMemo(() => ({
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
         avatar: [],
-        location: userData.location || undefined,
-        tags: userData.tags?.map((t) => t.name) || [],
-        about: userData.settings?.about || '',
+        location: user.location || undefined,
+        tags: user.tags.map(t => t.name) || [],
+        about: user.settings?.about || '',
         avatarURL: ''
-    });
-
+    }), [user.id]);
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
-        defaultValues: getInitialValues(targetUser)
+        defaultValues: defaults
     });
-
-    const { control, formState, reset } = form;
+    const { control } = form;
+    const allValues = useWatch({ control }); 
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
-    const locationValue = useWatch({ control, name: 'location' });
 
-    // Reset form when targetUser changes
-    useEffect(() => {
-        if (targetUser) {
-            const newValues = getInitialValues(targetUser);
-            reset(newValues, { 
-                keepDirty: false, 
-                keepTouched: false,
-                keepErrors: false 
-            });
-        }
-    }, [targetUser, reset]);
+    const baselineRef = React.useRef(defaults);
 
     const effectiveChanges = React.useMemo(() => {
-        const values = form.getValues();
-        return computeChanged(values, formState.dirtyFields, targetUser);
-    }, [targetUser, formState.dirtyFields, avatar, avatarURL, tags, locationValue]);
+        return computeChanged(form.getValues(), baselineRef.current);
+    }, [allValues]);
 
-    const canSave =
-        Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
+    const canSave =  Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
 
+    useEffect(() => {
+        form.reset(defaults, { keepDirty: false, keepTouched: false });
+    }, [user?.id]);
+    
     useEffect(() => {
         if (!toastMessage) return;
         const t = setTimeout(() => setToastMessage(null), 3000);
@@ -174,12 +164,7 @@ const EditProfile: React.FC<Props> = ({
     }, [form]);
 
     const handleFormSubmit = async () => {
-        const values = form.getValues();
-        const changed = computeChanged(
-            values,
-            form.formState.dirtyFields,
-            targetUser
-        );
+        const changed = effectiveChanges;
 
         if (Object.keys(changed).length === 0) {
             setToastType('error');
@@ -198,6 +183,8 @@ const EditProfile: React.FC<Props> = ({
             if (hasFile) {
                 const fd = new FormData();
                 if (changed.email) fd.append('email', changed.email);
+                if (changed.username) fd.append('username', changed.username);
+                if (changed.displayName) fd.append('displayName', changed.displayName);
                 if (changed.about) fd.append('about', changed.about);
                 if (changed.avatar) fd.append('avatar', changed.avatar as File);
                 if (changed.tags)
@@ -221,12 +208,19 @@ const EditProfile: React.FC<Props> = ({
             setTargetUser?.(updatedUser);
             setPreviewUrl(null);
 
-            // Reset form with new values
-            const newValues = getInitialValues(updatedUser);
-            form.reset(newValues, { 
-                keepDirty: false, 
-                keepTouched: false 
-            });
+            form.reset(
+                {
+                    email: updatedUser.email,
+                    displayName: updatedUser.displayName || '',
+                    username: updatedUser.username || '',
+                    avatar: [],
+                    avatarURL: '',
+                    about: updatedUser.settings?.about || '',
+                    tags: (updatedUser.tags || []).map((t) => t.name),
+                    location: updatedUser.location || undefined
+                },
+                { keepDirty: false, keepTouched: false }
+            );
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
@@ -326,6 +320,24 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={targetUser.email || 'Enter email address'}
+                            />
+                        </FormField>
+
+                        <FormField label='Username'>
+                            <Input
+                                name='username'
+                                form={form}
+                                label=''
+                                placeholder={user.username}
+                            />
+                        </FormField>
+
+                        <FormField label='Display Name'>
+                            <Input
+                                name='displayName'
+                                form={form}
+                                label=''
+                                placeholder={user.displayName}
                             />
                         </FormField>
 

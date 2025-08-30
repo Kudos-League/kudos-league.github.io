@@ -5,6 +5,7 @@ import MessageGroup from './MessageGroup';
 import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
+import UserCard from '../users/UserCard';
 
 interface Props {
     user: UserDTO | null;
@@ -55,7 +56,7 @@ const ChatWindow: React.FC<Props> = ({
                 >
                     ← Back
                 </Button>
-                <h2 className='text-lg font-bold'>{otherUser?.username}</h2>
+                <h2 className='text-lg font-bold'><UserCard user={otherUser} /></h2>
                 <div className='w-16' /> {/* spacer */}
             </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
+import UserCard from '../users/UserCard';
 
 interface MessageGroupProps {
     messages: MessageDTO[];
@@ -18,8 +19,8 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     if (messages.length === 0) return null;
 
     const author = messages[0].author;
-    const authorName =
-        isPublic && isOwn ? 'You' : author?.username || 'Anonymous';
+    const authorName = isPublic && isOwn ? 'You' : author?.username || 'Anonymous';
+    const AuthorCard = <UserCard triggerVariant='name' user={{ ...author, username: authorName }} />;
 
     // TODO: Why is createdAt null???
     const createdAt = messages[0].createdAt
@@ -42,7 +43,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                         isOwn ? 'text-right mr-1' : 'text-left ml-1'
                     }`}
                 >
-                    {authorName}
+                    {AuthorCard}
                 </div>
             )}
 
