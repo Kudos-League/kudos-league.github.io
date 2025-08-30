@@ -6,6 +6,8 @@ export enum Environment {
 const BACKEND_URI = process.env.REACT_APP_BACKEND_URI;
 const WSS_URI = process.env.REACT_APP_WSS_URI;
 
+const isHttps = BACKEND_URI.startsWith('https://');
+
 if (!BACKEND_URI)
     throw new Error('Missing REACT_APP_BACKEND_URI at build time');
 if (!WSS_URI) throw new Error('Missing REACT_APP_WSS_URI at build time');
@@ -15,8 +17,10 @@ export function getEndpointUrl(): string {
 }
 
 export function getWSSURL(): string {
-    const isHttps = BACKEND_URI.startsWith('https://');
-    return isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
+    const base = isHttps ? WSS_URI.replace('ws://', 'wss://') : WSS_URI;
+    const u = new URL('/socket.io', base);
+    if (isHttps) u.port = '';
+    return u.toString();
 }
 
 export function getImagePath(avatarPath?: string | null): string | null {
