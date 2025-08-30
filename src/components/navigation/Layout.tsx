@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/useAuth';
 import { routes } from '@/routes';
 
 import {
@@ -12,6 +11,7 @@ import {
     UserPlusIcon
 } from '@heroicons/react/24/outline';
 import Navbar from './Navbar';
+import { useAuth } from '@/contexts/useAuth';
 
 type FooterLinkProps = {
     to: string;
@@ -137,9 +137,12 @@ const Layout: React.FC = () => {
                     user={user ?? undefined}
                     onLogout={handleLogout}
                     brand={
-                        <span className='text-lg font-semibold text-gray-800 text-black dark:text-white'>
+                        <Link 
+                            to={routes.home}
+                            className='text-lg font-semibold text-gray-800 text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer'
+                        >
                             Kudos League
-                        </span>
+                        </Link>
                     }
                 />
 
