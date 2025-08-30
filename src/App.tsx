@@ -10,6 +10,9 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider, useAuth } from '@/contexts/useAuth';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { WebSocketProvider } from '@/contexts/WebSocketContext';
+import ConnectingOverlay from '@/components/common/ConnectingOverlay';
+
 import AppNavigator from '@/components/navigation/AppNavigator';
 import queryClient from './shared/api/client';
 import Spinner from './components/common/Spinner';
@@ -38,8 +41,11 @@ export default function App() {
                     <QueryClientProvider client={queryClient}>
                         <NotificationsProvider>
                             <ThemeProvider>
-                                <AppCore />
-                                <AlertHost />
+                                <WebSocketProvider>
+                                    <AppCore />
+                                    <AlertHost />
+                                    <ConnectingOverlay />
+                                </WebSocketProvider>
                             </ThemeProvider>
                         </NotificationsProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
@@ -52,10 +58,7 @@ export default function App() {
 
 function AppCore() {
     const { loading } = useAuth();
-
-    if (loading) {
-        return <Spinner text='Logging in...' />;
-    }
+    if (loading) return <Spinner text='Logging in...' />;
 
     return (
         <BrowserRouter>

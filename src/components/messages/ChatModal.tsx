@@ -6,7 +6,7 @@ import {
 } from 'shared/api/actions';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
-import { useWebSocket } from '@/hooks/useWebSocket';
+// import { useWebSocket } from '@/hooks/useWebSocket';
 import {
     ChannelDTO,
     CreateMessageDTO,
@@ -14,6 +14,7 @@ import {
     UserDTO
 } from '@/shared/api/types';
 import Button from '../common/Button';
+import { useWebSocketContext } from '@/contexts/WebSocketContext';
 
 interface ChatModalProps {
     isChatOpen: boolean;
@@ -176,19 +177,19 @@ export default function ChatModal({
     initialMessage = "Hello! I'm interested in your post.",
     onMessageSent
 }: ChatModalProps) {
+    const { user } = useAuth();
+    const { messages, setMessages, joinChannel, leaveChannel } =
+        useWebSocketContext();
+
     const [messageInput, setMessageInput] = useState(initialMessage);
-    const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         initialSelected || null
     );
-    const token = useAppSelector((s) => s.auth.token);
-    const { user } = useAuth();
-    const { joinChannel, leaveChannel } = useWebSocket({
-        messages,
-        setMessages
-    });
     const scrollRef = useRef<HTMLDivElement>(null);
+    const token = useAppSelector((s) => s.auth.token);
+
+    const channelID = selectedChannel?.id ?? null;
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -211,6 +212,8 @@ export default function ChatModal({
             joinChannel(selectedChannel.id);
             return () => leaveChannel(selectedChannel.id);
         }
+
+        return () => leaveChannel(channelID);
     }, [selectedChannel]);
 
     const fetchExistingChannel = async (recipientId: number) => {

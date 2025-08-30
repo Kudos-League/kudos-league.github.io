@@ -1,4 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode
+} from 'react';
 import { Socket } from 'socket.io-client';
 import { Events } from 'shared/constants';
 import {
@@ -7,27 +16,51 @@ import {
     sendMessage
 } from 'shared/api/actions';
 import type { MessageDTO, NotificationPayload } from 'shared/api/types';
-import { useAuth } from '../contexts/useAuth';
-import { getSocket } from './useWebsocketClient';
+import { useAuth } from './useAuth';
+import { getSocket } from '@/hooks/useWebsocketClient';
 
-type UseWebSocketArgs = {
+type Ctx = {
+    socket: Socket | null;
     messages: MessageDTO[];
     setMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>>;
-    onNotification?: (n: NotificationPayload) => void;
+    joinChannel: (channelID: number) => void;
+    leaveChannel: (channelID: number) => void;
+    send: (args: {
+        channel?: { id: number };
+        receiverID?: number;
+        content: string;
+    }) => Promise<void>;
+    isConnected: boolean;
+    isConnecting: boolean;
+    connectingText: string | null;
+    snoozeConnectingOverlay: () => void;
 };
 
-export const useWebSocket = ({
-    messages,
-    setMessages,
+const WebSocketContext = createContext<Ctx | null>(null);
+
+export function WebSocketProvider({
+    children,
     onNotification
-}: UseWebSocketArgs) => {
+}: {
+    children: ReactNode;
+    onNotification?: (n: NotificationPayload) => void;
+}) {
     const { user, token } = useAuth();
     const socketRef = useRef<Socket | null>(null);
+
+    const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+
+    // Overlay state
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [connectingText, setConnectingText] = useState<string | null>(null);
+    const [overlaySnoozed, setOverlaySnoozed] = useState(false);
 
     const pollInterval = useRef<NodeJS.Timeout | null>(null);
     const pendingJoins = useRef<Set<number>>(new Set());
     const activeChannelId = useRef<number | null>(null);
+    const joinedUserId = useRef<number | null>(null);
+
     const currentUserId = user?.id ?? null;
 
     const clearPolling = useCallback(() => {
@@ -37,50 +70,62 @@ export const useWebSocket = ({
         }
     }, []);
 
-    // inside useWebSocket
-    const joinedUserId = useRef<number | null>(null);
-
     useEffect(() => {
         const sock = socketRef.current;
         if (!sock) return;
 
-        // if we have a user and a live socket, ensure we're in the right user room
         if (currentUserId != null && (sock.connected || isConnected)) {
             if (joinedUserId.current !== currentUserId) {
-                // leave previous user room if we switched accounts
                 if (
                     joinedUserId.current != null &&
                     joinedUserId.current !== currentUserId
                 ) {
                     sock.emit('leaveUser', { userID: joinedUserId.current });
                 }
-                console.log('[WS] joinUser', currentUserId);
                 sock.emit('joinUser', { userID: currentUserId });
                 joinedUserId.current = currentUserId;
             }
         }
-    }, [currentUserId, isConnected]); // run whenever auth resolves or socket reconnects
+    }, [currentUserId, isConnected]);
 
     useEffect(() => {
-        if (!token) return;
+        if (!token) {
+            setIsConnected(false);
+            setIsConnecting(false);
+            setConnectingText(null);
+            return;
+        }
+
+        setOverlaySnoozed(false);
+        setIsConnecting(true);
+        setConnectingText('Connecting to chat...');
 
         const sock = getSocket(token);
         socketRef.current = sock;
 
         const handleConnect = () => {
             setIsConnected(true);
+            setIsConnecting(false);
+            setConnectingText(null);
             clearPolling();
+
             if (currentUserId != null)
                 sock.emit('joinUser', { userID: currentUserId });
             if (activeChannelId.current != null)
                 sock.emit('joinChannel', {
                     channelID: activeChannelId.current
                 });
+
+            for (const ch of Array.from(pendingJoins.current)) {
+                sock.emit('joinChannel', { channelID: ch });
+            }
+            pendingJoins.current.clear();
         };
 
         const handleConnectError = (err: any) => {
             setIsConnected(false);
-            // surface what socket.io gives you
+            setIsConnecting(true);
+            setConnectingText('Connection failed. Retrying...');
             console.error(
                 '[WS] connect_error',
                 err?.message,
@@ -91,6 +136,9 @@ export const useWebSocket = ({
 
         const handleDisconnect = (reason: string) => {
             setIsConnected(false);
+            setIsConnecting(true);
+            setConnectingText('Reconnecting...');
+            setOverlaySnoozed(false);
             console.warn('[WS] Disconnected:', reason);
         };
 
@@ -100,7 +148,6 @@ export const useWebSocket = ({
             );
         };
 
-        // attach listeners ONCE
         if (!(sock as any).__listenersAttached) {
             sock.on('connect', handleConnect);
             sock.on('connect_error', handleConnectError);
@@ -109,19 +156,14 @@ export const useWebSocket = ({
             (sock as any).__listenersAttached = true;
         }
         else if (sock.connected) {
-            // if remounted during Strict Mode and already connected, run post-connect actions
             handleConnect();
         }
 
         return () => {
             clearPolling();
             pendingJoins.current.clear();
-            activeChannelId.current = null;
-
-            // DO NOT disconnect the singleton here
-            // Leave listeners attached; they’re idempotent due to the flag above
         };
-    }, [token, currentUserId, clearPolling, setMessages, onNotification]);
+    }, [token, currentUserId, clearPolling]);
 
     const actuallyJoin = useCallback(
         (channelID: number, sock: Socket, tokenNonNull: string) => {
@@ -138,7 +180,7 @@ export const useWebSocket = ({
             sock.once('joinedChannel', onJoined);
             sock.emit('joinChannel', { channelID });
         },
-        [setMessages]
+        []
     );
 
     const startPolling = useCallback(
@@ -154,7 +196,7 @@ export const useWebSocket = ({
                 }
             }, 1000);
         },
-        [clearPolling, setMessages]
+        [clearPolling]
     );
 
     const joinChannel = useCallback(
@@ -179,14 +221,7 @@ export const useWebSocket = ({
             clearPolling();
             actuallyJoin(channelID, sock, token);
         },
-        [
-            token,
-            isConnected,
-            setMessages,
-            clearPolling,
-            actuallyJoin,
-            startPolling
-        ]
+        [token, isConnected, clearPolling, actuallyJoin, startPolling]
     );
 
     const leaveChannel = useCallback(
@@ -230,15 +265,52 @@ export const useWebSocket = ({
                 console.error('[WebSocket] Failed to send message', err);
             }
         },
-        [token, setMessages]
+        [token]
     );
 
-    return {
-        socket: socketRef.current,
-        messages,
-        joinChannel,
-        leaveChannel,
-        send,
-        isConnected: socketRef.current?.connected ?? isConnected
-    };
-};
+    const snoozeConnectingOverlay = useCallback(() => {
+        setOverlaySnoozed(true);
+    }, []);
+
+    const connectingVisible = isConnecting && !overlaySnoozed;
+
+    const value = useMemo<Ctx>(
+        () => ({
+            socket: socketRef.current,
+            messages,
+            setMessages,
+            joinChannel,
+            leaveChannel,
+            send,
+            isConnected,
+            isConnecting: connectingVisible,
+            connectingText,
+            snoozeConnectingOverlay
+        }),
+        [
+            messages,
+            joinChannel,
+            leaveChannel,
+            send,
+            isConnected,
+            connectingVisible,
+            connectingText,
+            snoozeConnectingOverlay
+        ]
+    );
+
+    return (
+        <WebSocketContext.Provider value={value}>
+            {children}
+        </WebSocketContext.Provider>
+    );
+}
+
+export function useWebSocketContext(): Ctx {
+    const ctx = useContext(WebSocketContext);
+    if (!ctx)
+        throw new Error(
+            'useWebSocketContext must be used within WebSocketProvider'
+        );
+    return ctx;
+}

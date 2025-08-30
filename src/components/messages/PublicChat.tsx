@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { getMessages, getPublicChannels } from '@/shared/api/actions';
 import { useAuth } from '@/contexts/useAuth';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { ChannelDTO, MessageDTO } from '@/shared/api/types';
+import { useWebSocketContext } from '@/contexts/WebSocketContext';
+import { ChannelDTO } from '@/shared/api/types';
 import MessageGroup from './MessageGroup';
 import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
@@ -14,15 +14,12 @@ export default function PublicChat() {
         null
     );
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
-    const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [messageInput, setMessageInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const { joinChannel, leaveChannel, send } = useWebSocket({
-        messages,
-        setMessages
-    });
+    const { messages, setMessages, joinChannel, leaveChannel, send } =
+        useWebSocketContext();
 
     const groupedMessages = useMemo(
         () => groupMessagesByAuthor(messages),
@@ -38,7 +35,6 @@ export default function PublicChat() {
     useEffect(() => {
         const fetchChannels = async () => {
             if (!token) return;
-
             try {
                 const publicChannels = await getPublicChannels(token);
                 setChannels(publicChannels);
@@ -50,9 +46,8 @@ export default function PublicChat() {
                 console.error('Error fetching public channels:', error);
             }
         };
-
         fetchChannels();
-    }, []);
+    }, [token]);
 
     const selectChannel = async (channel: ChannelDTO) => {
         setSelectedChannel(channel);
@@ -61,7 +56,7 @@ export default function PublicChat() {
 
         try {
             const messagesData = await getMessages(channel.id, token);
-            setMessages(messagesData);
+            if (messagesData) setMessages(messagesData);
 
             if (selectedChannel && selectedChannel.id !== channel.id) {
                 leaveChannel(selectedChannel.id);
@@ -79,14 +74,12 @@ export default function PublicChat() {
 
     const sendMessage = async () => {
         if (!messageInput.trim() || !selectedChannel) return;
-
         await send({ channel: selectedChannel, content: messageInput });
         setMessageInput('');
     };
 
     return (
         <div className='flex h-full bg-white overflow-hidden'>
-            {/* Left: Channel List */}
             <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
                 {channels.map((channel) => (
                     <Button
@@ -103,16 +96,13 @@ export default function PublicChat() {
                 ))}
             </div>
 
-            {/* Right: Chat Window */}
             <div className='flex-1 flex flex-col'>
-                {/* Header */}
                 <div className='border-b p-4 text-center font-bold text-lg'>
                     {selectedChannel
                         ? selectedChannel.name
                         : 'Select a Chat Room'}
                 </div>
 
-                {/* Message List */}
                 <div
                     ref={scrollRef}
                     className='flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50'
@@ -139,7 +129,6 @@ export default function PublicChat() {
                     )}
                 </div>
 
-                {/* Message Input */}
                 {selectedChannel && (
                     <div className='border-t p-3 flex items-center'>
                         <input

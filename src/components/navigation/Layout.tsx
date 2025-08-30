@@ -137,9 +137,9 @@ const Layout: React.FC = () => {
                     user={user ?? undefined}
                     onLogout={handleLogout}
                     brand={
-                        <Link 
+                        <Link
                             to={routes.home}
-                            className='text-lg font-semibold text-gray-800 text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer'
+                            className='text-lg font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer'
                         >
                             Kudos League
                         </Link>

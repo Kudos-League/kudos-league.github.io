@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getUserDetails, getMessages } from '@/shared/api/actions';
 import { useAuth } from '@/contexts/useAuth';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { ChannelDTO, MessageDTO } from '@/shared/api/types';
+import { useWebSocketContext } from '@/contexts/WebSocketContext';
+import { ChannelDTO } from '@/shared/api/types';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -15,14 +15,11 @@ export default function DMChat() {
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         null
     );
-    const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const { state: notifState } = useNotifications();
 
-    const { joinChannel, leaveChannel, send } = useWebSocket({
-        messages,
-        setMessages
-    });
+    const { messages, setMessages, joinChannel, leaveChannel, send } =
+        useWebSocketContext();
 
     useEffect(() => {
         const n = notifState.items[0];
@@ -42,7 +39,7 @@ export default function DMChat() {
                 );
             }
         }
-    }, [notifState.items, selectedChannel?.id]);
+    }, [notifState.items, selectedChannel?.id, setMessages]);
 
     useEffect(() => {
         if (user && token) {
@@ -57,7 +54,6 @@ export default function DMChat() {
                         })
                         .filter(Boolean) as ChannelDTO[];
 
-                    // Fetch the last message for each channel
                     const channelsWithLastMessage = await Promise.all(
                         formatted.map(async (channel) => {
                             try {
@@ -72,18 +68,14 @@ export default function DMChat() {
                                             channelMessages.length - 1
                                         ]
                                         : null;
-
-                                return {
-                                    ...channel,
-                                    lastMessage
-                                };
+                                return { ...channel, lastMessage };
                             }
                             catch (error) {
                                 console.error(
                                     `Error fetching messages for channel ${channel.id}:`,
                                     error
                                 );
-                                return channel; // Return channel without lastMessage if fetch fails
+                                return channel;
                             }
                         })
                     );
@@ -106,9 +98,8 @@ export default function DMChat() {
                 }
             );
         }
-    }, [user, token, targetUserId]);
+    }, [user, token, targetUserId, joinChannel]);
 
-    // Update channel's lastMessage when new messages arrive
     useEffect(() => {
         if (messages.length > 0 && selectedChannel) {
             const lastMessage = messages[messages.length - 1];
@@ -129,7 +120,7 @@ export default function DMChat() {
     };
 
     const handleSend = async (content: string) => {
-        if (!selectedChannel) return;
+        if (!selectedChannel || !user) return;
         const receiver = selectedChannel.users.find((u) => u.id !== user.id);
         if (!receiver) return;
 
