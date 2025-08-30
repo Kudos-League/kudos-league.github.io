@@ -9,13 +9,25 @@ jest.mock(
         const React = require('react');
         return {
             BrowserRouter: ({ children }: any) =>
-                React.createElement('div', { 'data-testid': 'router' }, children),
+                React.createElement(
+                    'div',
+                    { 'data-testid': 'router' },
+                    children
+                ),
 
             MemoryRouter: ({ children }: any) =>
-                React.createElement('div', { 'data-testid': 'router' }, children),
+                React.createElement(
+                    'div',
+                    { 'data-testid': 'router' },
+                    children
+                ),
 
             Routes: ({ children }: any) =>
-                React.createElement('div', { 'data-testid': 'routes' }, children),
+                React.createElement(
+                    'div',
+                    { 'data-testid': 'routes' },
+                    children
+                ),
 
             Route: ({ element }: any) =>
                 React.createElement(React.Fragment, null, element),
@@ -30,7 +42,7 @@ jest.mock(
 
             useNavigate: () => () => {},
             useLocation: () => ({ pathname: '/' }),
-            useParams: () => ({}),
+            useParams: () => ({})
         };
     },
     { virtual: true }

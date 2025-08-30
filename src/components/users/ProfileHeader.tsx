@@ -33,26 +33,32 @@ const ProfileHeader: React.FC<Props> = ({
     };
 
     return (
-        <div className='text-center px-6 pt-6 pb-8 bg-white shadow rounded'>
+        <div className='text-center px-6 pt-6 pb-8'>
             <div className='flex justify-center mb-4'>
                 <div
                     style={{
-                        width: 80,
-                        height: 80,
+                        width: 96,
+                        height: 96,
                         borderRadius: '50%',
                         overflow: 'hidden'
                     }}
+                    className='ring-2 ring-white dark:ring-white/10'
                 >
                     <AvatarComponent
                         avatar={targetUser.avatar}
                         username={targetUser.username}
-                        size={80}
+                        size={96}
                     />
                 </div>
             </div>
-            <p className='text-gray-500 text-sm'>{getUserTitle()}</p>
-            <h1 className='text-2xl font-bold'>{targetUser.username}</h1>
-            <p className='text-gray-600 text-sm'>
+
+            <p className='text-gray-500 dark:text-gray-400 text-sm'>
+                {getUserTitle()}
+            </p>
+            <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+                {targetUser.username}
+            </h1>
+            <p className='text-gray-600 dark:text-gray-300 text-sm'>
                 {targetUser.kudos || 0} Kudos
             </p>
 
@@ -63,14 +69,14 @@ const ProfileHeader: React.FC<Props> = ({
                             <img
                                 src={getImagePath(badge.image)}
                                 alt={badge.name}
-                                className='w-10 h-10 rounded-full border'
+                                className='w-10 h-10 rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800'
                             />
                         </Tippy>
                     ))}
                 </div>
             ) : null}
 
-            <div className='flex justify-center gap-4 mt-6'>
+            <div className='flex justify-center gap-3 mt-6'>
                 {isLoggedIn && !isSelf && (
                     <Button onClick={onStartDM} variant='secondary'>
                         💬 Message
@@ -95,14 +101,15 @@ const ProfileHeader: React.FC<Props> = ({
                 </div>
             )}
 
-            <p className='mt-6 text-gray-700 text-sm italic'>
+            <p className='mt-6 text-gray-700 dark:text-gray-300 text-sm italic'>
                 {userSettings?.about || 'No bio available'}
             </p>
 
-            {/* Location Box */}
+            <hr className='mt-6 border-gray-200 dark:border-white/10' />
+
             <div className='mt-6'>
-                <div className='bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto'>
-                    <h3 className='text-sm font-semibold mb-3 text-gray-700 text-left'>
+                <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md mx-auto'>
+                    <h3 className='text-sm font-semibold mb-3 text-gray-700 dark:text-gray-200 text-left'>
                         Location
                     </h3>
                     {targetUser.location?.regionID ? (
@@ -116,7 +123,7 @@ const ProfileHeader: React.FC<Props> = ({
                             />
                         </div>
                     ) : (
-                        <p className='text-gray-500 text-sm text-left'>
+                        <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
                             Location: not submitted
                         </p>
                     )}

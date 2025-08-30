@@ -11,18 +11,22 @@ module.exports = {
             webpackConfig.optimization.minimize = true;
             webpackConfig.optimization.minimizer = [
                 new TerserPlugin({
-                    terserOptions: { compress: false, mangle: false, format: { beautify: true, comments: true } },
-                }),
+                    terserOptions: {
+                        compress: false,
+                        mangle: false,
+                        format: { beautify: true, comments: true }
+                    }
+                })
             ];
             webpackConfig.plugins.push(
                 new BundleAnalyzerPlugin({
                     analyzerMode: 'disabled',
                     generateStatsFile: true,
-                    statsFilename: 'stats.json',
+                    statsFilename: 'stats.json'
                 })
             );
             return webpackConfig;
-        },
+        }
     },
 
     jest: {
@@ -30,7 +34,9 @@ module.exports = {
             config.testEnvironment = 'jsdom';
 
             const allowList = '(axios|react-router|react-router-dom)';
-            config.transformIgnorePatterns = (config.transformIgnorePatterns || []).map((p) =>
+            config.transformIgnorePatterns = (
+                config.transformIgnorePatterns || []
+            ).map((p) =>
                 p.replace('node_modules', `node_modules/(?!${allowList}/)`)
             );
 
@@ -41,17 +47,17 @@ module.exports = {
             config.moduleNameMapper = {
                 ...(config.moduleNameMapper || {}),
                 '^@/(.*)$': '<rootDir>/src/$1',
-                '^(\\.{1,2}/.*)\\.js$': '$1',
+                '^(\\.{1,2}/.*)\\.js$': '$1'
             };
 
             config.setupFilesAfterEnv = [
                 ...(config.setupFilesAfterEnv || []),
-                '<rootDir>/src/setupTests.ts',
+                '<rootDir>/src/setupTests.ts'
             ];
 
             return config;
-        },
+        }
     },
 
-    babel: { plugins: [] },
+    babel: { plugins: [] }
 };
