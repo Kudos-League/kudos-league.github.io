@@ -4,7 +4,7 @@ import { AUTH_TOKEN_LIFETIME_MS } from '@/shared/constants';
 export type AuthState = {
     token: string | null;
     username: string | null;
-    tokenTimestamp: number | null; // In milliseconds since UTC Epoch, i.e. January 1, 1970, 00:00:00 GMT
+    tokenTimestamp: number | null;
 };
 
 export function isValidAuthState(authState: AuthState | null) {
