@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import useLocation from '@/hooks/useLocation';
-import { useAuth } from '@/contexts/useAuth';
 import { updateUser } from '@/shared/api/actions';
 
 import Input from '@/components/forms/Input';
@@ -21,6 +20,7 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
+import { useAuth } from '@/contexts/useAuth';
 
 interface Props {
     targetUser: UserDTO;
@@ -53,27 +53,45 @@ const EditProfile: React.FC<Props> = ({
     });
 
     const targetUserID = targetUser?.id;
+    
+    // Function to get initial form values from targetUser
+    const getInitialValues = (userData: UserDTO): ProfileFormValues => ({
+        email: userData.email || '',
+        avatar: [],
+        location: userData.location || undefined,
+        tags: userData.tags?.map((t) => t.name) || [],
+        about: userData.settings?.about || '',
+        avatarURL: ''
+    });
+
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
-        defaultValues: {
-            email: user.email,
-            avatar: [],
-            location: user.location || undefined,
-            tags: user.tags.map((t) => t.name) || [],
-            about: user.settings?.about || '',
-            avatarURL: ''
-        }
+        defaultValues: getInitialValues(targetUser)
     });
-    const { control, formState } = form;
+
+    const { control, formState, reset } = form;
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
     const locationValue = useWatch({ control, name: 'location' });
+
+    // Reset form when targetUser changes
+    useEffect(() => {
+        if (targetUser) {
+            const newValues = getInitialValues(targetUser);
+            reset(newValues, { 
+                keepDirty: false, 
+                keepTouched: false,
+                keepErrors: false 
+            });
+        }
+    }, [targetUser, reset]);
+
     const effectiveChanges = React.useMemo(() => {
         const values = form.getValues();
-        return computeChanged(values, formState.dirtyFields, user);
-    }, [user, formState.dirtyFields, avatar, avatarURL, tags, locationValue]);
+        return computeChanged(values, formState.dirtyFields, targetUser);
+    }, [targetUser, formState.dirtyFields, avatar, avatarURL, tags, locationValue]);
 
     const canSave =
         Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
@@ -160,7 +178,7 @@ const EditProfile: React.FC<Props> = ({
         const changed = computeChanged(
             values,
             form.formState.dirtyFields,
-            user
+            targetUser
         );
 
         if (Object.keys(changed).length === 0) {
@@ -194,26 +212,29 @@ const EditProfile: React.FC<Props> = ({
                 targetUserID.toString(),
                 token
             );
-            updateUserCache(updatedUser);
+
+            // Update the auth cache if editing current user
+            if (user?.id === targetUser.id) {
+                updateUserCache(updatedUser);
+            }
+            
             setTargetUser?.(updatedUser);
             setPreviewUrl(null);
 
-            form.reset(
-                {
-                    email: updatedUser.email,
-                    avatar: [],
-                    avatarURL: '',
-                    about: updatedUser.settings?.about || '',
-                    tags: (updatedUser.tags || []).map((t) => t.name),
-                    location: updatedUser.location || undefined
-                },
-                { keepDirty: false, keepTouched: false }
-            );
+            // Reset form with new values
+            const newValues = getInitialValues(updatedUser);
+            form.reset(newValues, { 
+                keepDirty: false, 
+                keepTouched: false 
+            });
 
             setToastType('success');
-            setToastMessage('Profile updated');
-            onClose();
-            window.location.reload();
+            setToastMessage('Profile updated successfully');
+            
+            // Close after a short delay to show success message
+            setTimeout(() => {
+                onClose();
+            }, 1500);
         }
         catch (err: any) {
             const str =
@@ -304,7 +325,7 @@ const EditProfile: React.FC<Props> = ({
                                 name='email'
                                 form={form}
                                 label=''
-                                placeholder={user.email}
+                                placeholder={targetUser.email || 'Enter email address'}
                             />
                         </FormField>
 
@@ -412,7 +433,7 @@ const EditProfile: React.FC<Props> = ({
                                             next: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10'
+                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
                                 />
                             </FormField>
                             <FormField label='Confirm password'>
@@ -425,7 +446,7 @@ const EditProfile: React.FC<Props> = ({
                                             confirm: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg白/5 dark:text-white dark:outline-white/10'
+                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
                                 />
                             </FormField>
                         </div>
@@ -478,7 +499,7 @@ const EditProfile: React.FC<Props> = ({
                     <Alert
                         type={toastType === 'success' ? 'success' : 'danger'}
                         title={
-                            toastType === 'success' ? 'Notification' : undefined
+                            toastType === 'success' ? 'Success' : 'Error'
                         }
                         message={toastMessage}
                         show={!!toastMessage}

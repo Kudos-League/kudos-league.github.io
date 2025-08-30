@@ -190,7 +190,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
-                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10'
+                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 cursor-pointer hover:ring-zinc-800/10 dark:hover:ring-white/20 transition-all duration-200 hover:shadow-xl cursor-pointer'
             >
                 <Avatar
                     avatar={getImagePath(user?.avatar)}

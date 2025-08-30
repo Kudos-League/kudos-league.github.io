@@ -71,7 +71,7 @@ export default function StripeWeb() {
 
     return (
         <FormProvider {...formMethods}>
-            <div className='flex flex-col items-center justify-center min-h-screen gap-6 px-4'>
+            <div className='flex flex-col items-center justify-center min-h-screen gap-6 px-4 pb-40'>
                 {error && <p className='text-red-500'>{error}</p>}
                 <h1 className='text-2xl font-semibold'>
                     Support Us with a Donation

@@ -5,11 +5,13 @@ export default function AvatarComponent({
     avatar,
     username,
     size = 48,
+    pointer = true,
     onClick
 }: {
     avatar: string | null | undefined;
     username: string | null;
     size?: number;
+    pointer?: boolean;
     onClick?: () => void;
 }) {
     const [imageError, setImageError] = useState(false);
@@ -20,7 +22,7 @@ export default function AvatarComponent({
 
         return (
             <div
-                className='rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-medium select-none'
+                className='rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-medium select-none cursor-pointer'
                 style={{
                     width: size,
                     height: size,
@@ -45,7 +47,7 @@ export default function AvatarComponent({
             style={{
                 width: size,
                 height: size,
-                cursor: onClick ? 'pointer' : 'default'
+                cursor: pointer ? 'pointer' : 'default'
             }}
             onClick={onClick}
             onError={() => setImageError(true)}
