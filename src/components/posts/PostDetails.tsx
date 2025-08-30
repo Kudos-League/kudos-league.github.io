@@ -12,7 +12,12 @@ import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
 import Alert from '@/components/common/Alert';
-import { useUpdatePost, useLikePost, useReportPost, useCreateHandshake } from '@/shared/api/mutations/posts';
+import {
+    useUpdatePost,
+    useLikePost,
+    useReportPost,
+    useCreateHandshake
+} from '@/shared/api/mutations/posts';
 
 import type {
     ChannelDTO,
@@ -122,7 +127,10 @@ export default function PostDetails(props: Props) {
     const updateStatus = async (newStatus: string) => {
         if (!postDetails) return;
         try {
-            const updated = await updatePostMut.mutateAsync({ id: postDetails.id, data: { status: newStatus } });
+            const updated = await updatePostMut.mutateAsync({
+                id: postDetails.id,
+                data: { status: newStatus }
+            });
             setPostDetails({ ...postDetails, status: updated.status });
         }
         catch (err) {
@@ -214,14 +222,17 @@ export default function PostDetails(props: Props) {
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } = await createHsMut.mutateAsync(handshakeData);
+            const { data: newHandshake } =
+                await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake],
+                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
             }));
 
-            alert('Handshake created successfully! You can now coordinate the details with the post owner.');
+            alert(
+                'Handshake created successfully! You can now coordinate the details with the post owner.'
+            );
             setIsChatOpen(false);
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
@@ -268,14 +279,17 @@ export default function PostDetails(props: Props) {
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } = await createHsMut.mutateAsync(handshakeData);
+            const { data: newHandshake } =
+                await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO) => ({
                 ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake],
+                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
             }));
 
-            alert('Handshake created successfully! You can now coordinate the details with the post owner.');
+            alert(
+                'Handshake created successfully! You can now coordinate the details with the post owner.'
+            );
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
         }
@@ -335,7 +349,10 @@ export default function PostDetails(props: Props) {
         }
 
         try {
-            await reportMut.mutateAsync({ id: postDetails.id, reason: reportReason.trim() });
+            await reportMut.mutateAsync({
+                id: postDetails.id,
+                reason: reportReason.trim()
+            });
             alert('Post reported successfully.');
             setReportModalVisible(false);
             setReportReason('');
@@ -379,14 +396,20 @@ export default function PostDetails(props: Props) {
             const updateData: Partial<UpdatePostDTO> = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags,
+                tags: editData.tags
             };
 
-            if (editData.location && editData.location !== postDetails.location) {
+            if (
+                editData.location &&
+                editData.location !== postDetails.location
+            ) {
                 updateData.location = editData.location;
             }
 
-            const updated = await updatePostMut.mutateAsync({ id: postDetails.id, data: updateData });
+            const updated = await updatePostMut.mutateAsync({
+                id: postDetails.id,
+                data: updateData
+            });
             setPostDetails({ ...postDetails, ...updated });
             setIsEditing(false);
         }
@@ -426,15 +449,13 @@ export default function PostDetails(props: Props) {
             <div className='mb-4'>
                 <div className='flex items-center gap-2'>
                     {postDetails.status === 'closed' && (
-                        <Pill tone='danger'>
-                            CLOSED
-                        </Pill>
+                        <Pill tone='danger'>CLOSED</Pill>
                     )}
                     <h1 className='text-2xl font-bold'>{postDetails.title}</h1>
 
-                    {user?.id === postDetails.sender?.id &&
+                    {user?.id === postDetails.sender?.id && (
                         <EditPostButton onClick={handleStartEdit} />
-                    }
+                    )}
 
                     {postDetails.status !== 'closed' &&
                         user?.id === postDetails.sender?.id && (
@@ -443,7 +464,7 @@ export default function PostDetails(props: Props) {
                             className='inline-flex items-center gap-1 text-sm font-semibold shadow'
                             variant='danger'
                         >
-                            Close Post
+                                Close Post
                         </Button>
                     )}
                 </div>

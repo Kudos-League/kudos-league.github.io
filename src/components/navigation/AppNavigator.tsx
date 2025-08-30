@@ -27,9 +27,9 @@ const PublicChat = lazy(() => import('@/components/messages/PublicChat'));
 
 function AppNavigator() {
     return (
-        <Suspense fallback={<Spinner text="Loading app..." />}>
+        <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
-                <Route path="" element={<Layout />}>
+                <Route path='' element={<Layout />}>
                     <Route path={routes.home} element={<Home />} />
                     <Route path={routes.success} element={<Success />} />
                     <Route path={routes.cancel} element={<Cancel />} />
@@ -44,7 +44,7 @@ function AppNavigator() {
                     />
 
                     <Route
-                        path="/post/:id"
+                        path='/post/:id'
                         element={
                             <RequireAuth>
                                 <Post />
@@ -61,7 +61,7 @@ function AppNavigator() {
                         }
                     />
                     <Route
-                        path="/user/:id"
+                        path='/user/:id'
                         element={
                             <RequireAuth>
                                 <Profile />
@@ -69,7 +69,7 @@ function AppNavigator() {
                         }
                     />
                     <Route
-                        path="/event/:id"
+                        path='/event/:id'
                         element={
                             <RequireAuth>
                                 <EventDetails />
@@ -109,7 +109,7 @@ function AppNavigator() {
                         }
                     />
                     <Route
-                        path="/dms/:id?"
+                        path='/dms/:id?'
                         element={
                             <RequireAuth>
                                 <DMChat />
@@ -128,7 +128,9 @@ function AppNavigator() {
                         path={routes.admin}
                         element={
                             <RequireAuth
-                                allow={({ isLoggedIn, isAdmin }) => isLoggedIn && isAdmin}
+                                allow={({ isLoggedIn, isAdmin }) =>
+                                    isLoggedIn && isAdmin
+                                }
                             >
                                 <AdminDashboard />
                             </RequireAuth>
@@ -152,7 +154,10 @@ function AppNavigator() {
                         }
                     />
 
-                    <Route path="*" element={<Navigate to={routes.home} replace />} />
+                    <Route
+                        path='*'
+                        element={<Navigate to={routes.home} replace />}
+                    />
                 </Route>
             </Routes>
         </Suspense>

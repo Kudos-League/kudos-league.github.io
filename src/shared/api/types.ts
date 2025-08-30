@@ -13,7 +13,7 @@ export type CreatePostDTO = {
 };
 
 export type UpdatePostDTO = Omit<Partial<PostDTO>, 'tags'> & {
-    tags: string[]
+    tags: string[];
 };
 
 export type LocationDTO = {

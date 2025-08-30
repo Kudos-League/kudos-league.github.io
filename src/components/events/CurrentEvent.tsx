@@ -220,7 +220,7 @@ export default function CurrentEvent() {
                         value={timeFilter}
                         onChange={setTimeFilter}
                         options={TIME_FILTERS}
-                        label="Time"
+                        label='Time'
                     />
                 </div>
             </div>
