@@ -26,9 +26,16 @@ export function getWSSURL(): string {
 export function getImagePath(avatarPath?: string | null): string | null {
     if (!avatarPath) return null;
 
+    if (avatarPath.startsWith('blob:') || avatarPath.startsWith('data:')) {
+        return avatarPath;
+    }
+
     if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
         return avatarPath;
     }
 
-    return `${getEndpointUrl()}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+    const base = getEndpointUrl();
+    const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+
+    return `${base}${path}`;
 }

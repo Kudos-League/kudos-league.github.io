@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import useLocation from '@/hooks/useLocation';
-import { updateUser } from '@/shared/api/actions';
+
+import { useUpdateUser } from '@/shared/api/mutations/users';
 
 import Input from '@/components/forms/Input';
 import MapDisplay from '@/components/Map';
@@ -22,6 +23,8 @@ import ErrorList from './ErrorList';
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 
+const bustCache = (u: string) => `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
 interface Props {
     targetUser: UserDTO;
     setTargetUser?: (user: UserDTO) => void;
@@ -34,17 +37,17 @@ const EditProfile: React.FC<Props> = ({
     onClose,
     setTargetUser
 }) => {
-    const { user, token, updateUser: updateUserCache } = useAuth();
+    const { user, updateUser: updateUserCache } = useAuth();
 
-    const [loading, setLoading] = useState(false);
     const { setLocation } = useLocation();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showImageOptions, setShowImageOptions] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const urlInputRef = useRef<HTMLInputElement>(null);
+    const objectUrlRef = useRef<string | null>(null);
+    const currentFileRef = useRef<File | null>(null);
     const [logoutPassword, setLogoutPassword] = useState('');
     const [pwForm, setPwForm] = useState({
         current: '',
@@ -53,6 +56,8 @@ const EditProfile: React.FC<Props> = ({
     });
 
     const targetUserID = targetUser?.id;
+
+    const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
     const defaults = React.useMemo(() => ({
         email: user.email,
         username: user.username,
@@ -74,13 +79,28 @@ const EditProfile: React.FC<Props> = ({
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
 
+    const resetFromUser = (u: UserDTO) => {
+        form.reset(
+            {
+                ...defaults,
+                email: u.email,
+                displayName: u.displayName || '',
+                username: u.username || '',
+                about: u.settings?.about || '',
+                tags: (u.tags || []).map((t: any) => t.name),
+                location: u.location || undefined
+            },
+            { keepDirty: false, keepTouched: false }
+        );
+    };
+
     const baselineRef = React.useRef(defaults);
 
     const effectiveChanges = React.useMemo(() => {
         return computeChanged(form.getValues(), baselineRef.current);
     }, [allValues]);
 
-    const canSave =  Object.keys(effectiveChanges).length > 0 && !loading && !isSubmitting;
+    const canSave = Object.keys(effectiveChanges).length > 0 && !updateUserMutation.isPending;
 
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
@@ -93,26 +113,42 @@ const EditProfile: React.FC<Props> = ({
     }, [toastMessage]);
 
     useEffect(() => {
-        let objectUrl: string | undefined;
+        const file =
+            Array.isArray(avatar) && avatar.length > 0 && avatar[0] instanceof File
+                ? (avatar[0] as File)
+                : null;
+        const url = typeof avatarURL === 'string' ? avatarURL.trim() : '';
 
-        if (avatar && (avatar as File[]).length > 0) {
-            const file = (avatar as File[])[0];
-            if (file instanceof File) {
-                objectUrl = URL.createObjectURL(file);
-                setPreviewUrl(objectUrl);
+        if (file) {
+            if (currentFileRef.current !== file) {
+                if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+                objectUrlRef.current = URL.createObjectURL(file);
+                currentFileRef.current = file;
+                setPreviewUrl(objectUrlRef.current);
             }
-        }
-        else if (typeof avatarURL === 'string' && avatarURL.trim()) {
-            setPreviewUrl(avatarURL.trim());
-        }
-        else {
-            setPreviewUrl(null);
+            return;
         }
 
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+            currentFileRef.current = null;
+        }
+
+        if (url) {
+            setPreviewUrl(prev => (prev === url ? prev : url));
+            return;
+        }
+
+        const fallback = targetUser?.avatar ?? null;
+        setPreviewUrl(prev => (prev === fallback ? prev : fallback));
+    }, [avatar, avatarURL, targetUser?.avatar]);
+
+    useEffect(() => {
         return () => {
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
         };
-    }, [avatar, avatarURL]);
+    }, []);
 
     const handleFileSelect = React.useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,68 +200,58 @@ const EditProfile: React.FC<Props> = ({
     }, [form]);
 
     const handleFormSubmit = async () => {
-        const changed = effectiveChanges;
-
-        if (Object.keys(changed).length === 0) {
+        if (Object.keys(effectiveChanges).length === 0) {
             setToastType('error');
             setToastMessage('No changes to save.');
             return;
         }
 
-        setLoading(true);
-        setIsSubmitting(true);
         setToastMessage(null);
 
         try {
-            const hasFile = changed.avatar instanceof File;
-            let payload: any = changed;
+            const payload: any = { ...effectiveChanges };
 
-            if (hasFile) {
-                const fd = new FormData();
-                if (changed.email) fd.append('email', changed.email);
-                if (changed.username) fd.append('username', changed.username);
-                if (changed.displayName) fd.append('displayName', changed.displayName);
-                if (changed.about) fd.append('about', changed.about);
-                if (changed.avatar) fd.append('avatar', changed.avatar as File);
-                if (changed.tags)
-                    fd.append('tags', JSON.stringify(changed.tags));
-                if (changed.location)
-                    fd.append('location', JSON.stringify(changed.location));
-                payload = fd;
+            if ('avatar' in payload) {
+                const a: any = (payload as any).avatar;
+
+                if (a instanceof File) {
+                    (payload as any).avatar = a;
+                }
+                else if (Array.isArray(a) && a.length > 0 && a[0] instanceof File) {
+                    (payload as any).avatar = a[0];
+                }
+                else if (typeof a === 'string' && a.trim()) {
+                    (payload as any).avatarURL = a.trim();
+                    delete (payload as any).avatar;
+                }
+                else {
+                    delete (payload as any).avatar;
+                }
             }
 
-            const updatedUser = await updateUser(
-                payload,
-                targetUserID.toString(),
-                token
-            );
+            const updatedUser = await updateUserMutation.mutateAsync(payload);
 
-            // Update the auth cache if editing current user
             if (user?.id === targetUser.id) {
-                updateUserCache(updatedUser);
+                updateUserCache({ ...user, ...updatedUser, avatar: updatedUser.avatar ?? user.avatar });
             }
-            
-            setTargetUser?.(updatedUser);
-            setPreviewUrl(null);
 
-            form.reset(
-                {
-                    email: updatedUser.email,
-                    displayName: updatedUser.displayName || '',
-                    username: updatedUser.username || '',
-                    avatar: [],
-                    avatarURL: '',
-                    about: updatedUser.settings?.about || '',
-                    tags: (updatedUser.tags || []).map((t) => t.name),
-                    location: updatedUser.location || undefined
-                },
-                { keepDirty: false, keepTouched: false }
-            );
+            if (setTargetUser) {
+                setTargetUser({
+                    ...targetUser,
+                    ...updatedUser,
+                    avatar: updatedUser.avatar ?? targetUser.avatar,
+                });
+            }
+
+            if ('avatar' in effectiveChanges || 'avatarURL' in effectiveChanges) {
+                setPreviewUrl(updatedUser.avatar ? bustCache(updatedUser.avatar) : null);
+            }
+
+            resetFromUser(updatedUser);
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
             
-            // Close after a short delay to show success message
             setTimeout(() => {
                 onClose();
             }, 1500);
@@ -238,10 +264,6 @@ const EditProfile: React.FC<Props> = ({
                 'Update failed';
             setToastType('error');
             setToastMessage(str);
-        }
-        finally {
-            setLoading(false);
-            setIsSubmitting(false);
         }
     };
 
@@ -407,7 +429,7 @@ const EditProfile: React.FC<Props> = ({
 
                         <ActionsBar
                             canSave={canSave}
-                            isSubmitting={isSubmitting}
+                            isSubmitting={updateUserMutation.isPending}
                             onCancel={onClose}
                         />
 

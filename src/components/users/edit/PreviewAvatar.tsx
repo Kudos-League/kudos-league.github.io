@@ -1,6 +1,7 @@
 import React from 'react';
 import AvatarComponent from '../Avatar';
 import type { UserDTO } from '@/shared/api/types';
+import { getImagePath } from '@/shared/api/config';
 
 function PreviewAvatar({
     previewUrl,
@@ -9,10 +10,11 @@ function PreviewAvatar({
     previewUrl: string | null;
     targetUser: UserDTO;
 }) {
+    const avatar = previewUrl ? getImagePath(previewUrl) : getImagePath(targetUser.avatar);
     if (previewUrl) {
         return (
             <img
-                src={previewUrl}
+                src={avatar}
                 alt={targetUser.username || 'User'}
                 className='rounded-full object-cover'
                 style={{ width: 100, height: 100 }}
@@ -21,7 +23,7 @@ function PreviewAvatar({
     }
     return (
         <AvatarComponent
-            avatar={targetUser.avatar}
+            avatar={avatar}
             username={targetUser.username}
             size={100}
         />
