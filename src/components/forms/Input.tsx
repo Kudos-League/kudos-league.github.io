@@ -13,6 +13,7 @@ import DropdownPicker from './DropdownPicker';
 type Props<T extends FieldValues> = {
     name: Path<T>;
     label: string;
+    disabled?: boolean;
     form: UseFormReturn<T>;
     type?: 'text' | 'password' | 'file' | 'dropdown' | 'file-image';
     options?: { label: string; value: string }[];
@@ -27,6 +28,7 @@ type Props<T extends FieldValues> = {
 export default function Input<T extends FieldValues>({
     name,
     label,
+    disabled = false,
     form,
     type = 'text',
     options = [],
@@ -48,12 +50,13 @@ export default function Input<T extends FieldValues>({
         control: form.control,
         name,
         defaultValue,
-        rules: registerOptions // ✅ RHF validation rules
+        rules: registerOptions
     });
 
     if (type === 'file' || type === 'file-image') {
         return (
             <FilePicker
+            
                 placeholder={placeholder || 'Choose Files'}
                 multiple={multipleFiles}
                 selectedFiles={field.value as File[]}
@@ -98,6 +101,7 @@ export default function Input<T extends FieldValues>({
             {multiline ? (
                 <textarea
                     {...props}
+                    disabled={disabled}
                     id={name}
                     value={field.value}
                     onChange={(e) => {
@@ -111,6 +115,7 @@ export default function Input<T extends FieldValues>({
             ) : (
                 <input
                     {...props}
+                    disabled={disabled}
                     id={name}
                     type={type === 'password' ? 'password' : 'text'}
                     value={value ?? field.value}

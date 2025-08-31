@@ -375,6 +375,7 @@ const EditProfile: React.FC<Props> = ({
                     >
                         <FormField label='Email'>
                             <Input
+                                disabled
                                 name='email'
                                 form={form}
                                 label=''
