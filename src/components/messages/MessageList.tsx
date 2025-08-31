@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
+import TextWithLinks from '../common/TextWithLinks';
 
 interface Props {
     messages: MessageDTO[];
@@ -235,9 +236,9 @@ const MessageList: React.FC<Props> = ({
                         </p>
                     </div>
                 ) : (
-                    <div className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                    <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
                         {msg.content}
-                    </div>
+                    </TextWithLinks>
                 )}
             </div>
         );

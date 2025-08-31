@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageDTO } from '@/shared/api/types';
+import TextWithLinks from '../common/TextWithLinks';
 
 interface Props {
     message: MessageDTO;
@@ -18,7 +19,7 @@ const MessageBubble: React.FC<Props> = ({ message, isOwn = false }) => {
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-300 dark:border-zinc-600'
                     }`}
                 >
-                    <p>{message.content}</p>
+                    <TextWithLinks>{message.content}</TextWithLinks>
                 </div>
             </div>
         </div>

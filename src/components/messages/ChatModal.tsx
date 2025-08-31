@@ -15,6 +15,7 @@ import {
 } from '@/shared/api/types';
 import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
+import TextWithLinks from '../common/TextWithLinks';
 
 interface ChatModalProps {
     isChatOpen: boolean;
@@ -462,7 +463,7 @@ export default function ChatModal({
                                                 : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                         }`}
                                     >
-                                        <p>{safeMsg.content}</p>
+                                        <TextWithLinks>{safeMsg.content}</TextWithLinks>
                                         <div
                                             className={`text-xs text-right mt-2 ${
                                                 isOwn

@@ -28,6 +28,7 @@ import type {
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
+import TextWithLinks from '../common/TextWithLinks';
 
 interface Props {
     id?: string;
@@ -606,7 +607,7 @@ export default function PostDetails(props: Props) {
                 </div>
             ) : (
                 <div className='bg-gray-100 rounded p-4 mb-6 break-all'>
-                    <p>{postDetails.body}</p>
+                    <TextWithLinks>{postDetails.body}</TextWithLinks>
                     {postDetails.rewardOffers?.[0]?.kudosFinal && (
                         <p className='mt-2 font-semibold text-blue-600'>
                             Final Kudos:{' '}

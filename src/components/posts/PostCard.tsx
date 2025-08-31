@@ -6,6 +6,7 @@ import { PostDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import Pill from '@/components/common/Pill';
+import TextWithLinks from '../common/TextWithLinks';
 
 function truncateBody(body: string, max = 100) {
     return body.length <= max ? body : body.slice(0, max) + '…';
@@ -78,9 +79,11 @@ export default function PostCard(props: Props) {
                             <Pill key={i} name={tag.name} />
                         ))}
                     </div>
-                    <p className='text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words'>
+                    <TextWithLinks 
+                        className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words"
+                    >
                         {body}
-                    </p>
+                    </TextWithLinks>
                 </div>
                 <div className='w-20 h-20 flex items-center justify-center mt-2'>
                     {showBodyInImageBox ? (
