@@ -100,7 +100,18 @@ const EditProfile: React.FC<Props> = ({
         return computeChanged(form.getValues(), baselineRef.current);
     }, [allValues]);
 
-    const canSave = Object.keys(effectiveChanges).length > 0 && !updateUserMutation.isPending;
+    const locationDirty = React.useMemo(() => {
+        try {
+            const current = form.getValues('location') ?? null;
+            const base = (baselineRef.current as any)?.location ?? null;
+            return !deepEqual(current, base);
+        }
+        catch {
+            return false;
+        }
+    }, [allValues]);
+
+    const canSave = (Object.keys(effectiveChanges).length > 0 || locationDirty) && !updateUserMutation.isPending;
 
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
@@ -200,7 +211,7 @@ const EditProfile: React.FC<Props> = ({
     }, [form]);
 
     const handleFormSubmit = async () => {
-        if (Object.keys(effectiveChanges).length === 0) {
+        if (!(Object.keys(effectiveChanges).length > 0 || locationDirty)) {
             setToastType('error');
             setToastMessage('No changes to save.');
             return;
@@ -220,6 +231,11 @@ const EditProfile: React.FC<Props> = ({
             }
             catch {
                 // noop
+            }
+
+            if (locationDirty && !('location' in payload)) {
+                const currentLoc2 = form.getValues('location') ?? null;
+                (payload as any).location = currentLoc2 === null ? null : currentLoc2;
             }
 
             if ('avatar' in payload) {
@@ -259,6 +275,16 @@ const EditProfile: React.FC<Props> = ({
             }
 
             resetFromUser(updatedUser);
+            baselineRef.current = {
+                email: updatedUser.email,
+                username: updatedUser.username,
+                displayName: updatedUser.displayName ?? '',
+                avatar: [],
+                location: updatedUser.location || undefined,
+                tags: (updatedUser.tags || []).map((t: any) => t.name),
+                about: updatedUser.settings?.about || '',
+                avatarURL: ''
+            } as any;
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
@@ -421,6 +447,13 @@ const EditProfile: React.FC<Props> = ({
                                         form.setValue('location', null as any, {
                                             shouldDirty: true,
                                             shouldValidate: true
+                                        });
+                                        setTargetUser({
+                                            ...targetUser,
+                                            location: {
+                                                ...targetUser.location,
+                                                regionID: null
+                                            }
                                         });
                                         return;
                                     }
