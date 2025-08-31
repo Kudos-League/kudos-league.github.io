@@ -36,26 +36,20 @@ export function useUpdatePost() {
             ),
         onSuccess: (updated) => {
             qc.setQueryData<PostDTO[]>(['posts'], (prev) =>
-                prev
-                    ? prev.map((p) =>
-                        p.id === updated.id ? { ...p, ...updated } : p
-                    )
-                    : prev
+                prev ? prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)) : prev
             );
-            qc.setQueriesData<{
-                data: PostDTO[];
-                nextCursor?: number;
-                limit: number;
-            }>({ queryKey: ['posts', 'infinite'] }, (prev) =>
-                !prev
-                    ? prev
-                    : {
+
+            qc.setQueriesData<{ data?: PostDTO[]; nextCursor?: number; limit?: number }>(
+                { queryKey: ['posts', 'infinite'] },
+                (prev) => {
+                    if (!prev || !Array.isArray(prev.data)) return prev;
+                    return {
                         ...prev,
-                        data: prev.data.map((p) =>
-                            p.id === updated.id ? { ...p, ...updated } : p
-                        )
-                    }
+                        data: prev.data.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+                    };
+                }
             );
+
             pushAlert({ type: 'success', message: 'Post updated.' });
         },
         onError: (err) => {
@@ -66,7 +60,7 @@ export function useUpdatePost() {
 
 type LikeCtx = {
     prevList: PostDTO[] | undefined;
-    prevInfinite: Array<[QueryKey, { data: PostDTO[] } | undefined]>;
+    prevInfinite: Array<[QueryKey, { data?: PostDTO[] } | undefined]>;
 };
 
 export function useLikePost() {
@@ -81,36 +75,26 @@ export function useLikePost() {
             const infiniteFilter = { queryKey: ['posts', 'infinite'] as const };
 
             const prevList = qc.getQueryData<PostDTO[]>(listKey);
-            const prevInfinite = qc.getQueriesData<{ data: PostDTO[] }>(
-                infiniteFilter
-            );
+            const prevInfinite = qc.getQueriesData<{ data?: PostDTO[] }>(infiniteFilter);
 
             qc.setQueryData<PostDTO[]>(listKey, (prev) =>
-                prev
-                    ? prev.map((p) =>
-                        p.id === id ? ({ ...p, liked: like } as any) : p
-                    )
-                    : prev
+                prev ? prev.map((p) => (p.id === id ? ({ ...p, liked: like } as any) : p)) : prev
             );
-            qc.setQueriesData<{ data: PostDTO[] }>(infiniteFilter, (prev) =>
-                !prev
-                    ? prev
-                    : {
-                        ...prev,
-                        data: prev.data.map((p) =>
-                            p.id === id ? ({ ...p, liked: like } as any) : p
-                        )
-                    }
-            );
+
+            qc.setQueriesData<{ data?: PostDTO[] }>(infiniteFilter, (prev) => {
+                if (!prev || !Array.isArray(prev.data)) return prev;
+                return {
+                    ...prev,
+                    data: prev.data.map((p) => (p.id === id ? ({ ...p, liked: like } as any) : p))
+                };
+            });
 
             return { prevList, prevInfinite };
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prevList) qc.setQueryData(['posts'], ctx.prevList);
             if (ctx?.prevInfinite) {
-                ctx.prevInfinite.forEach(([key, data]) =>
-                    qc.setQueryData(key, data)
-                );
+                ctx.prevInfinite.forEach(([key, data]) => qc.setQueryData(key, data));
             }
             pushAlert({ type: 'danger', message: extractErrMessage(err) });
         },
