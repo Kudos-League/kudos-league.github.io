@@ -197,28 +197,62 @@ export default function CreateEvent() {
         return 'border-gray-300 bg-white';
     };
 
+    const getInputClasses = (isRequired: boolean, hasError = false) => {
+        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
+        
+        if (hasError) {
+            return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500`;
+        }
+        else if (isRequired) {
+            return `${baseClasses} border-blue-300 focus:ring-blue-500`;
+        }
+        else {
+            return `${baseClasses} border-gray-300 focus:ring-blue-500`;
+        }
+    };
+
     return (
         <div className='max-w-xl mx-auto p-6 space-y-6'>
             <h1 className='text-2xl font-bold text-center'>Create Event</h1>
 
-            <div>
-                <label className='block font-semibold mb-1'>Title</label>
-                <input
-                    className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder='Enter event title'
-                />
+            {/* Required fields notice */}
+            <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
+                <p className='text-sm text-blue-800'>
+                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold'>*</span> <span className='font-medium'>are required</span>
+                </p>
             </div>
 
             <div>
-                <label className='block font-semibold mb-1'>Description</label>
+                <label className='block font-semibold mb-1'>
+                    Title <span className='text-red-500'>*</span>
+                </label>
+                <input
+                    className={getInputClasses(true, !title.trim() && errorMessages.length > 0)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder='Enter event title'
+                    required
+                />
+                {!title.trim() && errorMessages.length > 0 && (
+                    <p className='text-red-600 text-sm mt-1'>Title is required</p>
+                )}
+            </div>
+
+            <div>
+                <label className='block font-semibold mb-1'>
+                    Description <span className='text-red-500'>*</span>
+                </label>
                 <textarea
-                    className='w-full border rounded px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0)}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Enter event description'
+                    rows={3}
+                    required
                 />
+                {!description.trim() && errorMessages.length > 0 && (
+                    <p className='text-red-600 text-sm mt-1'>Description is required</p>
+                )}
             </div>
 
             <div className='flex items-center gap-3'>
@@ -227,30 +261,39 @@ export default function CreateEvent() {
                     type='checkbox'
                     checked={global}
                     onChange={() => setGlobal((prev) => !prev)}
+                    className='w-4 h-4'
                 />
+                <span className='text-sm text-gray-600'>
+                    (Global events are visible to everyone)
+                </span>
             </div>
 
             {!global && (
                 <div className='space-y-2'>
                     <label className='block font-semibold'>
-                        Pick a Location
+                        Pick a Location <span className='text-red-500'>*</span>
                     </label>
                     <p className='text-yellow-700 text-sm font-medium flex items-center'>
                         <span className='mr-2'>⚠️</span>
                         The &nbsp;<u>EXACT</u>&nbsp; event location will be
                         visible to all participants.
                     </p>
-                    <MapDisplay
-                        edit
-                        onLocationChange={(data) =>
-                            setLocation({
-                                regionID: data.placeID,
-                                name: data.name
-                            })
-                        }
-                        width='100%'
-                        height={300}
-                    />
+                    <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
+                        <MapDisplay
+                            edit={true}
+                            onLocationChange={(data) =>
+                                setLocation({
+                                    regionID: data.placeID,
+                                    name: data.name
+                                })
+                            }
+                            width='100%'
+                            height={300}
+                        />
+                    </div>
+                    {!global && !location?.regionID && errorMessages.length > 0 && (
+                        <p className='text-red-600 text-sm'>Location is required when Global is off</p>
+                    )}
                 </div>
             )}
 
@@ -260,8 +303,11 @@ export default function CreateEvent() {
                     dateValidation.warnings.some((w) => w.includes('past'))
                 )}`}
             >
+                <label className='block font-semibold mb-2'>
+                    Start Time <span className='text-red-500'>*</span>
+                </label>
                 <UniversalDatePicker
-                    label='Start Time'
+                    label=''
                     date={startDate}
                     onChange={handleStartDateChange}
                 />
@@ -286,16 +332,19 @@ export default function CreateEvent() {
                     dateValidation.warnings.some((w) => w.includes('duration'))
                 )}`}
             >
+                <label className='block font-semibold mb-2'>
+                    End Time <span className='text-gray-500 text-sm font-normal'>(Optional)</span>
+                </label>
                 {endDate !== null ? (
                     <>
                         <UniversalDatePicker
-                            label='End Time'
+                            label=''
                             date={endDate}
                             onChange={handleEndDateChange}
                         />
 
                         <Button
-                            className='text-sm text-blue-600'
+                            className='text-sm text-blue-600 mt-2'
                             onClick={() => setEndDate(null)}
                         >
                             Remove End Time (Make Ongoing)
@@ -369,7 +418,7 @@ export default function CreateEvent() {
 
                 {!dateValidation.canSubmit && (
                     <p className='text-sm text-gray-600 text-center'>
-                        Please fix the issues above to create your event
+                        Please complete all required fields to create your event
                     </p>
                 )}
             </div>
