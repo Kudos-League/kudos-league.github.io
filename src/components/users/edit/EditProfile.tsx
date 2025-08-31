@@ -58,19 +58,16 @@ const EditProfile: React.FC<Props> = ({
     const targetUserID = targetUser?.id;
 
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
-    
-    // FIX: Use targetUser data instead of user data for defaults
     const defaults = React.useMemo(() => ({
-        email: targetUser.email,
-        username: targetUser.username,
-        displayName: targetUser.displayName,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
         avatar: [],
-        location: targetUser.location || undefined,
-        tags: targetUser.tags?.map(t => t.name) || [],
-        about: targetUser.settings?.about || '',
+        location: user.location || undefined,
+        tags: user.tags.map(t => t.name) || [],
+        about: user.settings?.about || '',
         avatarURL: ''
-    }), [targetUser.id, targetUser.email, targetUser.username, targetUser.displayName, targetUser.location, targetUser.tags, targetUser.settings?.about]);
-    
+    }), [user.id]);
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
@@ -83,18 +80,18 @@ const EditProfile: React.FC<Props> = ({
     const tags = useWatch({ control, name: 'tags' });
 
     const resetFromUser = (u: UserDTO) => {
-        const newDefaults = {
-            email: u.email,
-            displayName: u.displayName || '',
-            username: u.username || '',
-            about: u.settings?.about || '',
-            tags: (u.tags || []).map((t: any) => t.name),
-            location: u.location || undefined,
-            avatar: [],
-            avatarURL: ''
-        };
-        
-        form.reset(newDefaults, { keepDirty: false, keepTouched: false });
+        form.reset(
+            {
+                ...defaults,
+                email: u.email,
+                displayName: u.displayName || '',
+                username: u.username || '',
+                about: u.settings?.about || '',
+                tags: (u.tags || []).map((t: any) => t.name),
+                location: u.location || undefined
+            },
+            { keepDirty: false, keepTouched: false }
+        );
     };
 
     const baselineRef = React.useRef(defaults);
@@ -103,13 +100,22 @@ const EditProfile: React.FC<Props> = ({
         return computeChanged(form.getValues(), baselineRef.current);
     }, [allValues]);
 
-    const canSave = Object.keys(effectiveChanges).length > 0 && !updateUserMutation.isPending;
+    const locationDirty = React.useMemo(() => {
+        try {
+            const current = form.getValues('location') ?? null;
+            const base = (baselineRef.current as any)?.location ?? null;
+            return !deepEqual(current, base);
+        }
+        catch {
+            return false;
+        }
+    }, [allValues]);
 
-    // FIX: Reset form when targetUser changes, not when logged-in user changes
+    const canSave = (Object.keys(effectiveChanges).length > 0 || locationDirty) && !updateUserMutation.isPending;
+
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
-        baselineRef.current = defaults;
-    }, [targetUser.id]);
+    }, [user?.id]);
     
     useEffect(() => {
         if (!toastMessage) return;
@@ -205,7 +211,7 @@ const EditProfile: React.FC<Props> = ({
     }, [form]);
 
     const handleFormSubmit = async () => {
-        if (Object.keys(effectiveChanges).length === 0) {
+        if (!(Object.keys(effectiveChanges).length > 0 || locationDirty)) {
             setToastType('error');
             setToastMessage('No changes to save.');
             return;
@@ -215,6 +221,22 @@ const EditProfile: React.FC<Props> = ({
 
         try {
             const payload: any = { ...effectiveChanges };
+
+            try {
+                const currentLoc = form.getValues('location') ?? null;
+                const baselineLoc = (baselineRef.current as any)?.location ?? null;
+                if (currentLoc === null && baselineLoc != null) {
+                    payload.location = null;
+                }
+            }
+            catch {
+                // noop
+            }
+
+            if (locationDirty && !('location' in payload)) {
+                const currentLoc2 = form.getValues('location') ?? null;
+                (payload as any).location = currentLoc2 === null ? null : currentLoc2;
+            }
 
             if ('avatar' in payload) {
                 const a: any = (payload as any).avatar;
@@ -253,6 +275,16 @@ const EditProfile: React.FC<Props> = ({
             }
 
             resetFromUser(updatedUser);
+            baselineRef.current = {
+                email: updatedUser.email,
+                username: updatedUser.username,
+                displayName: updatedUser.displayName ?? '',
+                avatar: [],
+                location: updatedUser.location || undefined,
+                tags: (updatedUser.tags || []).map((t: any) => t.name),
+                about: updatedUser.settings?.about || '',
+                avatarURL: ''
+            } as any;
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
@@ -341,32 +373,32 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={form.handleSubmit(handleFormSubmit)}
                         className='space-y-6'
                     >
-                        {/* <FormField label='Email'>
+                        <FormField label='Email'>
                             <Input
                                 name='email'
                                 form={form}
                                 label=''
                                 placeholder={targetUser.email || 'Enter email address'}
                             />
-                        </FormField> */}
+                        </FormField>
 
                         <FormField label='Username'>
                             <Input
                                 name='username'
                                 form={form}
                                 label=''
-                                placeholder={targetUser.username || 'Enter username'}
+                                placeholder={user.username}
                             />
                         </FormField>
 
-                        {/* <FormField label='Display Name'>
+                        <FormField label='Display Name'>
                             <Input
                                 name='displayName'
                                 form={form}
                                 label=''
-                                placeholder={targetUser.displayName || 'Enter display name'}
+                                placeholder={user.displayName}
                             />
-                        </FormField> */}
+                        </FormField>
 
                         <FormField
                             label='Description'
@@ -403,14 +435,28 @@ const EditProfile: React.FC<Props> = ({
 
                         <FormField label='Location'>
                             <MapDisplay
-                                edit={true}
                                 regionID={targetUser.location?.regionID}
                                 width={400}
                                 height={300}
-                                
+                                edit
                                 exactLocation
                                 shouldGetYourLocation
                                 onLocationChange={(data) => {
+                                    if (!data) {
+                                        setLocation(null);
+                                        form.setValue('location', null as any, {
+                                            shouldDirty: true,
+                                            shouldValidate: true
+                                        });
+                                        setTargetUser({
+                                            ...targetUser,
+                                            location: {
+                                                ...targetUser.location,
+                                                regionID: null
+                                            }
+                                        });
+                                        return;
+                                    }
                                     if (!data.changed) return;
                                     if (data.coordinates) {
                                         setLocation(data.coordinates);
