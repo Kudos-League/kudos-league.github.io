@@ -74,7 +74,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <MapDisplay
                         regionID={event.location.regionID}
                         height={200}
-                        showAddressBar={false}
+                        edit={false}
                     />
                 </div>
             )}

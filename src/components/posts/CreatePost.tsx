@@ -246,7 +246,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 Location
             </label>
             <MapDisplay
-                showAddressBar
+                edit
                 height={300}
                 shouldGetYourLocation
                 onLocationChange={(data) => {

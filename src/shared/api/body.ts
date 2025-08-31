@@ -21,14 +21,17 @@ export function toFormData(obj: Record<string, any>): FormData {
     const fd = new FormData();
 
     const append = (key: string, val: any) => {
-        if (val === undefined || val === null) return;
+        if (val === undefined) return;
+        if (val === null) {
+            fd.append(key, 'null');
+            return;
+        }
         if (isFileish(val)) {
             fd.append(key, val as any);
         }
         else if (Array.isArray(val)) {
-            // append arrays with bracket syntax; for primitives we serialize JSON to keep BE happy
             const containsObjects = val.some(
-                (v) => isPlainObject(v) || Array.isArray(v) || isFileish(v)
+                (v) => isPlainObject(v) || Array.isArray(v) || isFileish(v) || v === null
             );
             if (containsObjects) {
                 val.forEach((v, i) => append(`${key}[${i}]`, v));
@@ -38,7 +41,6 @@ export function toFormData(obj: Record<string, any>): FormData {
             }
         }
         else if (isPlainObject(val)) {
-            // serialize nested objects as JSON to avoid losing structure
             fd.append(key, JSON.stringify(val));
         }
         else {

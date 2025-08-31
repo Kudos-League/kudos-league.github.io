@@ -582,7 +582,7 @@ export default function PostDetails(props: Props) {
                             Location
                         </label>
                         <MapDisplay
-                            showAddressBar
+                            edit
                             regionID={editData.location?.regionID}
                             coordinates={null}
                             height={300}
@@ -623,7 +623,7 @@ export default function PostDetails(props: Props) {
             {postDetails.location?.regionID && (
                 <div className='mb-6 flex justify-center'>
                     <MapDisplay
-                        showAddressBar={false}
+                        edit={false}
                         regionID={postDetails.location.regionID}
                         exactLocation={true}
                         width={500}

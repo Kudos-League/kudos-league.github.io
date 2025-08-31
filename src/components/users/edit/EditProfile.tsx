@@ -211,6 +211,17 @@ const EditProfile: React.FC<Props> = ({
         try {
             const payload: any = { ...effectiveChanges };
 
+            try {
+                const currentLoc = form.getValues('location') ?? null;
+                const baselineLoc = (baselineRef.current as any)?.location ?? null;
+                if (currentLoc === null && baselineLoc != null) {
+                    payload.location = null;
+                }
+            }
+            catch {
+                // noop
+            }
+
             if ('avatar' in payload) {
                 const a: any = (payload as any).avatar;
 
@@ -401,10 +412,18 @@ const EditProfile: React.FC<Props> = ({
                                 regionID={targetUser.location?.regionID}
                                 width={400}
                                 height={300}
-                                showAddressBar
+                                edit
                                 exactLocation
                                 shouldGetYourLocation
                                 onLocationChange={(data) => {
+                                    if (!data) {
+                                        setLocation(null);
+                                        form.setValue('location', null as any, {
+                                            shouldDirty: true,
+                                            shouldValidate: true
+                                        });
+                                        return;
+                                    }
                                     if (!data.changed) return;
                                     if (data.coordinates) {
                                         setLocation(data.coordinates);

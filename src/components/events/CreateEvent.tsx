@@ -241,7 +241,7 @@ export default function CreateEvent() {
                         visible to all participants.
                     </p>
                     <MapDisplay
-                        showAddressBar
+                        edit
                         onLocationChange={(data) =>
                             setLocation({
                                 regionID: data.placeID,

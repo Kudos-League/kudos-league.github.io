@@ -116,7 +116,7 @@ const ProfileHeader: React.FC<Props> = ({
                         <div className='flex justify-center'>
                             <MapDisplay
                                 regionID={targetUser.location.regionID}
-                                showAddressBar={false}
+                                edit={false}
                                 exactLocation={isSelf}
                                 width='100%'
                                 height={200}
