@@ -18,19 +18,26 @@ const SearchInput: React.FC<{
     placeholder?: string;
     showLeftIcon?: boolean;
     label?: string;
-}> = ({ value, onChange, onClear, placeholder = 'Search address', showLeftIcon = true, label = 'Location' }) => {
+}> = ({
+    value,
+    onChange,
+    onClear,
+    placeholder = 'Search address',
+    showLeftIcon = true,
+    label = 'Location'
+}) => {
     return (
-        <div className="relative">
+        <div className='relative'>
             <label
-                htmlFor="map-search"
-                className="absolute -top-2 left-2 inline-block rounded-lg bg-white px-1 text-xs font-medium text-gray-900 dark:bg-gray-900 dark:text-white"
+                htmlFor='map-search'
+                className='absolute -top-2 left-2 inline-block rounded-lg bg-white px-1 text-xs font-medium text-gray-900 dark:bg-gray-900 dark:text-white'
             >
                 {label}
             </label>
             <input
-                id="map-search"
-                name="map-search"
-                type="text"
+                id='map-search'
+                name='map-search'
+                type='text'
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -43,19 +50,19 @@ const SearchInput: React.FC<{
             />
             {showLeftIcon && (
                 <GlobeAmericasIcon
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400 sm:size-4 dark:text-gray-500"
+                    aria-hidden='true'
+                    className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400 sm:size-4 dark:text-gray-500'
                 />
             )}
             {value && (
                 <button
-                    type="button"
-                    aria-label="Clear search"
+                    type='button'
+                    aria-label='Clear search'
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={onClear}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center rounded p-1 text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-indigo-600"
+                    className='absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center rounded p-1 text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-indigo-600'
                 >
-                    <XMarkIcon className="size-4" aria-hidden="true" />
+                    <XMarkIcon className='size-4' aria-hidden='true' />
                 </button>
             )}
         </div>
@@ -150,7 +157,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [isCleared, setIsCleared] = useState(false);
 
-    const [selectedSuggestionId, setSelectedSuggestionId] = useState<string>('');
+    const [selectedSuggestionId, setSelectedSuggestionId] =
+        useState<string>('');
 
     const selectPlaceById = (placeId: string, fallbackDescription?: string) => {
         if (!placesRef.current) return;
@@ -177,7 +185,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 };
 
                 const business = det.name ?? '';
-                const formatted = det.formatted_address ?? fallbackDescription ?? '';
+                const formatted =
+                    det.formatted_address ?? fallbackDescription ?? '';
                 const label =
                     business && !formatted.startsWith(business)
                         ? `${business}, ${formatted}`
@@ -397,7 +406,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         placeholder='Search address'
                     />
                     {suggestions.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 z-[1000]">
+                        <div className='absolute top-full left-0 right-0 z-[1000]'>
                             <Dropdown
                                 value={selectedSuggestionId as any}
                                 onChange={(val: string) => {
@@ -405,7 +414,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     selectPlaceById(val);
                                 }}
                                 options={suggestionOptions as any}
-                                className="w-full"
+                                className='w-full'
                                 fullWidth
                                 hideButton
                                 label={undefined}
@@ -447,8 +456,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     */
                 }}
             >
-                {!isCleared && (
-                    exactLocation ? (
+                {!isCleared &&
+                    (exactLocation ? (
                         <Marker
                             position={center}
                             draggable={edit}
@@ -465,7 +474,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     const result = data.results?.[0];
                                     const placeID = result?.place_id ?? '';
 
-                                    let formatted = result?.formatted_address ?? '';
+                                    let formatted =
+                                        result?.formatted_address ?? '';
                                     let business = '';
 
                                     if (placeID && placesRef.current) {
@@ -486,7 +496,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                                                 .OK &&
                                                         det
                                                     ) {
-                                                        business = det.name ?? '';
+                                                        business =
+                                                            det.name ?? '';
                                                         formatted =
                                                             det.formatted_address ??
                                                             formatted;
@@ -498,7 +509,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     }
 
                                     const label =
-                                        business && !formatted.startsWith(business)
+                                        business &&
+                                        !formatted.startsWith(business)
                                             ? `${business}, ${formatted}`
                                             : formatted || business;
 
@@ -527,7 +539,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     }, 500);
                                 }
                                 catch (err) {
-                                    console.error('Reverse geocoding failed', err);
+                                    console.error(
+                                        'Reverse geocoding failed',
+                                        err
+                                    );
                                 }
                             }}
                         />
@@ -537,8 +552,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             radius={approximateRadiusMeters}
                             options={circleOptions}
                         />
-                    )
-                )}
+                    ))}
             </GoogleMap>
         </div>
     );

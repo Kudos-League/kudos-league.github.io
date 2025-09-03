@@ -31,7 +31,11 @@ export function toFormData(obj: Record<string, any>): FormData {
         }
         else if (Array.isArray(val)) {
             const containsObjects = val.some(
-                (v) => isPlainObject(v) || Array.isArray(v) || isFileish(v) || v === null
+                (v) =>
+                    isPlainObject(v) ||
+                    Array.isArray(v) ||
+                    isFileish(v) ||
+                    v === null
             );
             if (containsObjects) {
                 val.forEach((v, i) => append(`${key}[${i}]`, v));

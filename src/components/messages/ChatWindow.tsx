@@ -56,7 +56,9 @@ const ChatWindow: React.FC<Props> = ({
                 >
                     ← Back
                 </Button>
-                <h2 className='text-lg font-bold'><UserCard user={otherUser} /></h2>
+                <h2 className='text-lg font-bold'>
+                    <UserCard user={otherUser} />
+                </h2>
                 <div className='w-16' /> {/* spacer */}
             </div>
 

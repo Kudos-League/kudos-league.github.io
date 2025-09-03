@@ -198,8 +198,9 @@ export default function CreateEvent() {
     };
 
     const getInputClasses = (isRequired: boolean, hasError = false) => {
-        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
-        
+        const baseClasses =
+            'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
+
         if (hasError) {
             return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500`;
         }
@@ -218,7 +219,9 @@ export default function CreateEvent() {
             {/* Required fields notice */}
             <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
                 <p className='text-sm text-blue-800'>
-                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold'>*</span> <span className='font-medium'>are required</span>
+                    <span className='font-medium'>Fields marked with</span>{' '}
+                    <span className='text-red-500 font-bold'>*</span>{' '}
+                    <span className='font-medium'>are required</span>
                 </p>
             </div>
 
@@ -227,14 +230,19 @@ export default function CreateEvent() {
                     Title <span className='text-red-500'>*</span>
                 </label>
                 <input
-                    className={getInputClasses(true, !title.trim() && errorMessages.length > 0)}
+                    className={getInputClasses(
+                        true,
+                        !title.trim() && errorMessages.length > 0
+                    )}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder='Enter event title'
                     required
                 />
                 {!title.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>Title is required</p>
+                    <p className='text-red-600 text-sm mt-1'>
+                        Title is required
+                    </p>
                 )}
             </div>
 
@@ -243,7 +251,10 @@ export default function CreateEvent() {
                     Description <span className='text-red-500'>*</span>
                 </label>
                 <textarea
-                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0)}
+                    className={getInputClasses(
+                        true,
+                        !description.trim() && errorMessages.length > 0
+                    )}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Enter event description'
@@ -251,7 +262,9 @@ export default function CreateEvent() {
                     required
                 />
                 {!description.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>Description is required</p>
+                    <p className='text-red-600 text-sm mt-1'>
+                        Description is required
+                    </p>
                 )}
             </div>
 
@@ -278,7 +291,9 @@ export default function CreateEvent() {
                         The &nbsp;<u>EXACT</u>&nbsp; event location will be
                         visible to all participants.
                     </p>
-                    <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
+                    <div
+                        className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}
+                    >
                         <MapDisplay
                             edit={true}
                             onLocationChange={(data) =>
@@ -291,8 +306,12 @@ export default function CreateEvent() {
                             height={300}
                         />
                     </div>
-                    {!global && !location?.regionID && errorMessages.length > 0 && (
-                        <p className='text-red-600 text-sm'>Location is required when Global is off</p>
+                    {!global &&
+                        !location?.regionID &&
+                        errorMessages.length > 0 && (
+                        <p className='text-red-600 text-sm'>
+                                Location is required when Global is off
+                        </p>
                     )}
                 </div>
             )}
@@ -333,7 +352,10 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    End Time <span className='text-gray-500 text-sm font-normal'>(Optional)</span>
+                    End Time{' '}
+                    <span className='text-gray-500 text-sm font-normal'>
+                        (Optional)
+                    </span>
                 </label>
                 {endDate !== null ? (
                     <>

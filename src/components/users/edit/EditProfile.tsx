@@ -23,7 +23,8 @@ import ErrorList from './ErrorList';
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 
-const bustCache = (u: string) => `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
+const bustCache = (u: string) =>
+    `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
 interface Props {
     targetUser: UserDTO;
@@ -58,23 +59,26 @@ const EditProfile: React.FC<Props> = ({
     const targetUserID = targetUser?.id;
 
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
-    const defaults = React.useMemo(() => ({
-        email: user.email,
-        username: user.username,
-        displayName: user.displayName,
-        avatar: [],
-        location: user.location || undefined,
-        tags: user.tags.map(t => t.name) || [],
-        about: user.settings?.about || '',
-        avatarURL: ''
-    }), [user.id]);
+    const defaults = React.useMemo(
+        () => ({
+            email: user.email,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: [],
+            location: user.location || undefined,
+            tags: user.tags.map((t) => t.name) || [],
+            about: user.settings?.about || '',
+            avatarURL: ''
+        }),
+        [user.id]
+    );
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
         defaultValues: defaults
     });
     const { control } = form;
-    const allValues = useWatch({ control }); 
+    const allValues = useWatch({ control });
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
@@ -111,12 +115,14 @@ const EditProfile: React.FC<Props> = ({
         }
     }, [allValues]);
 
-    const canSave = (Object.keys(effectiveChanges).length > 0 || locationDirty) && !updateUserMutation.isPending;
+    const canSave =
+        (Object.keys(effectiveChanges).length > 0 || locationDirty) &&
+        !updateUserMutation.isPending;
 
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
     }, [user?.id]);
-    
+
     useEffect(() => {
         if (!toastMessage) return;
         const t = setTimeout(() => setToastMessage(null), 3000);
@@ -125,14 +131,17 @@ const EditProfile: React.FC<Props> = ({
 
     useEffect(() => {
         const file =
-            Array.isArray(avatar) && avatar.length > 0 && avatar[0] instanceof File
+            Array.isArray(avatar) &&
+            avatar.length > 0 &&
+            avatar[0] instanceof File
                 ? (avatar[0] as File)
                 : null;
         const url = typeof avatarURL === 'string' ? avatarURL.trim() : '';
 
         if (file) {
             if (currentFileRef.current !== file) {
-                if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+                if (objectUrlRef.current)
+                    URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = URL.createObjectURL(file);
                 currentFileRef.current = file;
                 setPreviewUrl(objectUrlRef.current);
@@ -147,12 +156,12 @@ const EditProfile: React.FC<Props> = ({
         }
 
         if (url) {
-            setPreviewUrl(prev => (prev === url ? prev : url));
+            setPreviewUrl((prev) => (prev === url ? prev : url));
             return;
         }
 
         const fallback = targetUser?.avatar ?? null;
-        setPreviewUrl(prev => (prev === fallback ? prev : fallback));
+        setPreviewUrl((prev) => (prev === fallback ? prev : fallback));
     }, [avatar, avatarURL, targetUser?.avatar]);
 
     useEffect(() => {
@@ -224,7 +233,8 @@ const EditProfile: React.FC<Props> = ({
 
             try {
                 const currentLoc = form.getValues('location') ?? null;
-                const baselineLoc = (baselineRef.current as any)?.location ?? null;
+                const baselineLoc =
+                    (baselineRef.current as any)?.location ?? null;
                 if (currentLoc === null && baselineLoc != null) {
                     payload.location = null;
                 }
@@ -235,7 +245,8 @@ const EditProfile: React.FC<Props> = ({
 
             if (locationDirty && !('location' in payload)) {
                 const currentLoc2 = form.getValues('location') ?? null;
-                (payload as any).location = currentLoc2 === null ? null : currentLoc2;
+                (payload as any).location =
+                    currentLoc2 === null ? null : currentLoc2;
             }
 
             if ('avatar' in payload) {
@@ -244,7 +255,11 @@ const EditProfile: React.FC<Props> = ({
                 if (a instanceof File) {
                     (payload as any).avatar = a;
                 }
-                else if (Array.isArray(a) && a.length > 0 && a[0] instanceof File) {
+                else if (
+                    Array.isArray(a) &&
+                    a.length > 0 &&
+                    a[0] instanceof File
+                ) {
                     (payload as any).avatar = a[0];
                 }
                 else if (typeof a === 'string' && a.trim()) {
@@ -259,19 +274,28 @@ const EditProfile: React.FC<Props> = ({
             const updatedUser = await updateUserMutation.mutateAsync(payload);
 
             if (user?.id === targetUser.id) {
-                updateUserCache({ ...user, ...updatedUser, avatar: updatedUser.avatar ?? user.avatar });
+                updateUserCache({
+                    ...user,
+                    ...updatedUser,
+                    avatar: updatedUser.avatar ?? user.avatar
+                });
             }
 
             if (setTargetUser) {
                 setTargetUser({
                     ...targetUser,
                     ...updatedUser,
-                    avatar: updatedUser.avatar ?? targetUser.avatar,
+                    avatar: updatedUser.avatar ?? targetUser.avatar
                 });
             }
 
-            if ('avatar' in effectiveChanges || 'avatarURL' in effectiveChanges) {
-                setPreviewUrl(updatedUser.avatar ? bustCache(updatedUser.avatar) : null);
+            if (
+                'avatar' in effectiveChanges ||
+                'avatarURL' in effectiveChanges
+            ) {
+                setPreviewUrl(
+                    updatedUser.avatar ? bustCache(updatedUser.avatar) : null
+                );
             }
 
             resetFromUser(updatedUser);
@@ -288,7 +312,7 @@ const EditProfile: React.FC<Props> = ({
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
-            
+
             setTimeout(() => {
                 onClose();
             }, 1500);
@@ -379,7 +403,9 @@ const EditProfile: React.FC<Props> = ({
                                 name='email'
                                 form={form}
                                 label=''
-                                placeholder={targetUser.email || 'Enter email address'}
+                                placeholder={
+                                    targetUser.email || 'Enter email address'
+                                }
                             />
                         </FormField>
 
@@ -585,9 +611,7 @@ const EditProfile: React.FC<Props> = ({
                 <div className='fixed bottom-4 left-1/2 -translate-x-1/2 z-50'>
                     <Alert
                         type={toastType === 'success' ? 'success' : 'danger'}
-                        title={
-                            toastType === 'success' ? 'Success' : 'Error'
-                        }
+                        title={toastType === 'success' ? 'Success' : 'Error'}
                         message={toastMessage}
                         show={!!toastMessage}
                         onClose={() => setToastMessage(null)}

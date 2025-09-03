@@ -463,7 +463,9 @@ export default function ChatModal({
                                                 : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                         }`}
                                     >
-                                        <TextWithLinks>{safeMsg.content}</TextWithLinks>
+                                        <TextWithLinks>
+                                            {safeMsg.content}
+                                        </TextWithLinks>
                                         <div
                                             className={`text-xs text-right mt-2 ${
                                                 isOwn

@@ -79,9 +79,7 @@ export default function PostCard(props: Props) {
                             <Pill key={i} name={tag.name} />
                         ))}
                     </div>
-                    <TextWithLinks 
-                        className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words"
-                    >
+                    <TextWithLinks className='text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words'>
                         {body}
                     </TextWithLinks>
                 </div>

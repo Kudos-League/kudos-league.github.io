@@ -5,12 +5,12 @@ import { useAuth } from '@/contexts/useAuth';
 
 export const qkUsers = {
     me: ['user', 'me'] as const,
-    user: (id: number | string) => ['user', id] as const,
+    user: (id: number | string) => ['user', id] as const
 };
 
 type UpdateInput = Partial<UserDTO> & {
-  avatar?: File;
-  avatarURL?: string;
+    avatar?: File;
+    avatarURL?: string;
 };
 
 export function useUpdateUser(userId?: number | string) {
@@ -31,6 +31,6 @@ export function useUpdateUser(userId?: number | string) {
         onSuccess: (updated) => {
             qc.invalidateQueries({ queryKey: qkUsers.me });
             qc.setQueryData(qkUsers.user(updated.id ?? 'me'), updated);
-        },
+        }
     });
 }

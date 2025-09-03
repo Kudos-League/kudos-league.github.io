@@ -56,7 +56,6 @@ export default function Input<T extends FieldValues>({
     if (type === 'file' || type === 'file-image') {
         return (
             <FilePicker
-            
                 placeholder={placeholder || 'Choose Files'}
                 multiple={multipleFiles}
                 selectedFiles={field.value as File[]}

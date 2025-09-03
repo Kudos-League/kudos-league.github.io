@@ -25,7 +25,11 @@ function ErrorFallback({ error }: { error: string[] }) {
             className='w-full'
             type='danger'
             title='Error loading page'
-            message={Array.isArray(error) ? error.join('\n') : (error as any).toString()}
+            message={
+                Array.isArray(error)
+                    ? error.join('\n')
+                    : (error as any).toString()
+            }
         />
     );
 }
