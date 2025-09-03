@@ -273,19 +273,32 @@ const EditProfile: React.FC<Props> = ({
 
             const updatedUser = await updateUserMutation.mutateAsync(payload);
 
+            const submittedTags: string[] = form.getValues('tags') ?? [];
+
+            const normalizedUpdatedUser = {
+                ...updatedUser,
+                tags: (updatedUser.tags && updatedUser.tags.length > 0)
+                    ? updatedUser.tags
+                    : submittedTags.map((name, idx) => ({
+                        id: idx,
+                        name
+                    }))
+            };
+
+
             if (user?.id === targetUser.id) {
                 updateUserCache({
                     ...user,
-                    ...updatedUser,
-                    avatar: updatedUser.avatar ?? user.avatar
+                    ...normalizedUpdatedUser,
+                    avatar: normalizedUpdatedUser.avatar ?? user.avatar
                 });
             }
 
             if (setTargetUser) {
-                setTargetUser({
+                setTargetUser?.({
                     ...targetUser,
-                    ...updatedUser,
-                    avatar: updatedUser.avatar ?? targetUser.avatar
+                    ...normalizedUpdatedUser,
+                    avatar: normalizedUpdatedUser.avatar ?? targetUser.avatar
                 });
             }
 
