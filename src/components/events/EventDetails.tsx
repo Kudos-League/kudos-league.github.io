@@ -8,6 +8,7 @@ import { joinEvent, leaveEvent } from '@/shared/api/actions';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
+import UserCard from '../users/UserCard';
 
 type Props = {
     event: EventDTO;
@@ -87,12 +88,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                             key={p.id}
                             className='flex items-center gap-3 border p-2 rounded'
                         >
-                            <img
-                                src={getImagePath(p.avatar)}
-                                alt={p.username}
-                                className='w-10 h-10 rounded-full'
-                            />
-                            <span className='font-medium'>{p.username}</span>
+                            <UserCard user={p} />
                             {p.id === user?.id && (
                                 <Button
                                     variant='danger'

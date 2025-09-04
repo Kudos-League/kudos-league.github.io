@@ -29,6 +29,7 @@ interface Props {
     centered?: boolean;
     nameClassName?: string;
     subtitleClassName?: string;
+    disableTooltip?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -56,10 +57,13 @@ const UserCard: React.FC<Props> = ({
     subtitle,
     centered = false,
     nameClassName = '',
-    subtitleClassName = ''
+    subtitleClassName = '',
+    disableTooltip = false
 }) => {
     const navigate = useNavigate();
-    const username = user?.displayName || user?.username || 'Anonymous';
+
+    const username = user?.username;
+    const displayName = user?.displayName || username || 'Anonymous';
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
@@ -75,32 +79,41 @@ const UserCard: React.FC<Props> = ({
             <span
                 className={baseNameClasses}
                 onClick={() => user?.id && navigate(`/user/${user.id}`)}
+                title={username ? displayName : undefined}
             >
-                {username}
+                {username ? (
+                    <>
+                        <span className="block group-hover:hidden" aria-hidden={true}>
+                            {displayName}
+                        </span>
+                        <span className="hidden group-hover:block truncate" aria-label={username}>
+                            {username}
+                        </span>
+                    </>
+                ) : (
+                    <span className="block">{displayName}</span>
+                )}
             </span>
         );
 
-        // When centered + subtitle, stack vertically
         const wrapperClasses =
-            centered && subtitle
-                ? 'flex flex-col items-center text-center gap-1'
-                : 'flex items-center gap-2';
+            (centered && subtitle)
+                ? 'group inline-flex flex-col items-center text-center gap-1'
+                : 'group inline-flex items-center gap-2';
 
-        // Avatar
         const avatar = (
             <div
                 onClick={() => user?.id && navigate(`/user/${user.id}`)}
                 className='cursor-pointer'
             >
                 <AvatarComponent
-                    username={username}
+                    username={displayName}
                     avatar={user?.avatar ? getImagePath(user.avatar) : null}
                     size={large ? 48 : 28}
                 />
             </div>
         );
 
-        // Content block: name + optional subtitle
         const content = (
             <div
                 className={
@@ -138,7 +151,8 @@ const UserCard: React.FC<Props> = ({
         large,
         user?.id,
         user?.avatar,
-        username,
+        displayName,
+        user?.username,
         navigate,
         subtitle,
         centered,
@@ -154,6 +168,22 @@ const UserCard: React.FC<Props> = ({
                 : triggerMode === 'focus'
                     ? 'focus'
                     : 'mouseenter focus';
+
+    if (disableTooltip) {
+        return (
+            <div
+                className={[
+                    centered && subtitle
+                        ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                        : 'inline-flex items-center gap-2',
+                    'text-neutral-900 dark:text-neutral-100',
+                    className
+                ].join(' ')}
+            >
+                {trigger}
+            </div>
+        );
+    }
 
     return (
         <Tippy
@@ -207,7 +237,7 @@ const UserCard: React.FC<Props> = ({
                     {user ? (
                         <div className='flex items-start gap-3'>
                             <AvatarComponent
-                                username={username}
+                                username={displayName}
                                 avatar={
                                     user.avatar
                                         ? getImagePath(user.avatar)
@@ -223,9 +253,9 @@ const UserCard: React.FC<Props> = ({
                                             navigate(`/user/${user.id}`)
                                         }
                                         className='text-sm font-bold hover:underline truncate'
-                                        title='View profile'
+                                        title={username ?? 'View profile'}
                                     >
-                                        {username}
+                                        {displayName}
                                     </button>
 
                                     {user.admin ? (

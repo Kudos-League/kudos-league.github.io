@@ -8,6 +8,7 @@ import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
+import UserCard from './UserCard';
 
 interface Props {
     user: UserDTO;
@@ -56,7 +57,7 @@ const ProfileHeader: React.FC<Props> = ({
                 {getUserTitle()}
             </p>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-                {targetUser.username}
+                <UserCard user={targetUser} triggerVariant='name' disableTooltip />
             </h1>
             <p className='text-gray-600 dark:text-gray-300 text-sm'>
                 {targetUser.kudos || 0} Kudos
