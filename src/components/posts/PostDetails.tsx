@@ -11,7 +11,7 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
-import Alert from '@/components/common/Alert';
+// import Alert from '@/components/common/Alert';
 import {
     useUpdatePost,
     useLikePost,
@@ -419,6 +419,23 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const canSeeExactLocation = (() => {
+        if (!postDetails || !user?.id) return false;
+        const isPostOwner = user.id === postDetails.sender?.id;
+        if (isPostOwner) return true;
+
+        const handshakes = postDetails.handshakes || [];
+        return handshakes.some((h: any) => {
+            const status = h?.status;
+            if (status !== 'accepted' && status !== 'completed') return false;
+            const senderID =
+                typeof h?.senderID === 'number'
+                    ? h.senderID
+                    : Number(h?.senderID);
+            return senderID === user.id;
+        });
+    })();
+
     if (loading) {
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
     }
@@ -585,9 +602,8 @@ export default function PostDetails(props: Props) {
                         <MapDisplay
                             edit
                             regionID={editData.location?.regionID}
-                            coordinates={null}
                             height={300}
-                            shouldGetYourLocation={false}
+                            exactLocation={user?.id === postDetails.sender?.id}
                             onLocationChange={handleLocationChange}
                         />
                     </div>
@@ -626,7 +642,8 @@ export default function PostDetails(props: Props) {
                     <MapDisplay
                         edit={false}
                         regionID={postDetails.location.regionID}
-                        exactLocation={true}
+                        exactLocation={canSeeExactLocation}
+                        onLocationChange={handleLocationChange}
                         width={500}
                         height={300}
                     />

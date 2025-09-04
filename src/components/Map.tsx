@@ -135,7 +135,7 @@ async function fetchCoordinatesFromRegionID(
 
 const MapDisplay: React.FC<MapComponentProps> = ({
     edit,
-    coordinates,
+    coordinates = null,
     width = '100%',
     height = 400,
     exactLocation = true,
@@ -155,7 +155,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [isSearching, setIsSearching] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [isCleared, setIsCleared] = useState(false);
+    // Hide marker on initial load unless a location is explicitly provided
+    const hasInitialExplicitLocation = !!coordinates || !!regionID;
+    const [isCleared, setIsCleared] = useState(!hasInitialExplicitLocation);
 
     const [selectedSuggestionId, setSelectedSuggestionId] =
         useState<string>('');
@@ -318,8 +320,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
 
     useEffect(() => {
         if (shouldGetYourLocation && !coordinates && userLocation) {
+            // Center map to user's location but do not show a marker until a location is explicitly set by the user.
             setMapCoordinates(userLocation);
-            setIsCleared(false);
         }
     }, [userLocation]);
 
