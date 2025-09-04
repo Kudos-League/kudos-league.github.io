@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import Spinner from '@/components/common/Spinner';
@@ -7,7 +7,23 @@ export default function ConnectingOverlay() {
     const { isConnecting, connectingText, snoozeConnectingOverlay } =
         useWebSocketContext();
 
-    if (!isConnecting) return null;
+
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout | null = null;
+        if (isConnecting) {
+            timer = setTimeout(() => setShow(true), 3000);
+        }
+        else {
+            setShow(false);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [isConnecting]);
+
+    if (!isConnecting || !show) return null;
 
     const toast = (
         <div className='fixed inset-0 z-[1000] pointer-events-none'>
