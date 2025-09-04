@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X, MapPin, User, Edit3 } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/contexts/useAuth';
 import dayjs from 'dayjs';
 import EventCard from './EventCard';
@@ -13,15 +14,16 @@ interface LocationSetupModalProps {
     onClose: () => void;
 }
 
+
 const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
     isOpen,
     onClose
 }) => {
     if (!isOpen) return null;
     return (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-            <div className='bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all'>
-                <div className='flex items-center justify-between p-6 border-b border-gray-100'>
+        <div className='fixed inset-0 flex items-center justify-center z-50 p-4'>
+            <div className='rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all'>
+                <div className='flex items-center justify-between p-6'>
                     <div className='flex items-center gap-3'>
                         <div className='bg-blue-100 p-2 rounded-lg'>
                             <MapPin className='w-5 h-5 text-blue-600' />
@@ -32,7 +34,7 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
                     </div>
                     <Button
                         onClick={onClose}
-                        className='text-gray-400 hover:text-gray-600 transition-colors'
+                        className='transition-colors'
                     >
                         <X className='w-5 h-5' />
                     </Button>
@@ -99,7 +101,7 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
                 <div className='flex gap-3 p-6 bg-gray-50 rounded-b-xl'>
                     <Button
                         onClick={onClose}
-                        className='flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium'
+                        className='flex-1 px-4 py-2 rounded-lg transition-colors font-medium'
                     >
                         Got it
                     </Button>
@@ -109,7 +111,7 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
     );
 };
 
-export default function CurrentEvent() {
+export default function EventsCarousel() {
     const { user } = useAuth();
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -243,7 +245,7 @@ export default function CurrentEvent() {
                         shape='circle'
                         className='w-8 h-8'
                     >
-                        ◀
+                        <ChevronLeftIcon className='w-5 h-5' />
                     </Button>
 
                     <EventCard event={events[currentIndex]} />
@@ -256,7 +258,7 @@ export default function CurrentEvent() {
                         shape='circle'
                         className='w-8 h-8'
                     >
-                        ◀
+                        <ChevronRightIcon className='w-5 h-5' />
                     </Button>
                 </div>
             ) : (
