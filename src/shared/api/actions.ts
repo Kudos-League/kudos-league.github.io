@@ -752,6 +752,93 @@ export async function updateReportStatus(
 }
 
 /** @throws {AxiosError} */
+export async function updateReport(
+    reportID: number,
+    payload: Partial<{
+        status: 'ignored' | 'resolved' | 'new';
+        rewardKudos: number;
+        notes: string;
+    }>,
+    token: string
+) {
+    const res = await instance.put(`/admin/reports/${reportID}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function getFeedbacks(token: string) {
+    const res = await instance.get('/feedback', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function updateFeedback(
+    id: number,
+    payload: Partial<{
+        status: 'new' | 'ignored' | 'resolved';
+        rewardKudos: number;
+        content: string;
+    }>,
+    token: string
+) {
+    const res = await instance.put(`/feedback/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function createFeedback(
+    payload: { userID: number; content: string },
+    token?: string
+) {
+    const res = await instance.post('/feedback', payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    });
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function deleteFeedback(id: number, token: string) {
+    const res = await instance.delete(`/feedback/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function resolveReport(
+    reportID: number,
+    rewardKudos: number,
+    token: string
+) {
+    const res = await instance.put(
+        `/admin/reports/${reportID}/resolve`,
+        { rewardKudos },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data;
+}
+
+/** @throws {AxiosError} */
+export async function resolveFeedback(
+    feedbackID: number,
+    rewardKudos: number,
+    token: string
+) {
+    const res = await instance.put(
+        `/feedback/${feedbackID}/resolve`,
+        { rewardKudos },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data;
+}
+
+/** @throws {AxiosError} */
 export async function getGeocodedLocation(query: string, token: string) {
     const response = await instance.get('/maps/proxy/geocode/json', {
         params: { address: query },

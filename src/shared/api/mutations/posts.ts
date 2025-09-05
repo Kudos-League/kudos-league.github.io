@@ -125,7 +125,7 @@ export function useLikePost() {
 export function useReportPost() {
     return useMutation<void, Error, ReportPayload>({
         mutationFn: ({ id, reason }) =>
-            apiMutate<void, { reason: string }>(`/posts/${id}/report`, 'post', {
+            apiMutate<void, { reason: string }>(`/posts/${id}/report`, 'put', {
                 reason
             }),
         onSuccess: () => {

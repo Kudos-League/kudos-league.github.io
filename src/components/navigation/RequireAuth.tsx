@@ -16,7 +16,7 @@ export default function RequireAuth({ children, allow }: RequireAuthProps) {
     if (loading) return <Spinner text='Checking your authorization...' />;
 
     const permitted = allow
-        ? allow({ isLoggedIn, isAdmin: user.admin })
+        ? allow({ isLoggedIn, isAdmin: user?.admin })
         : isLoggedIn;
 
     if (!permitted) {
