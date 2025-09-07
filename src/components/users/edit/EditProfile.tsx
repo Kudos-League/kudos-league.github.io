@@ -21,6 +21,7 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
+import { deleteAccount as deleteAccountAPI } from '@/shared/api/actions';
 import { useAuth } from '@/contexts/useAuth';
 
 const bustCache = (u: string) =>
@@ -38,7 +39,8 @@ const EditProfile: React.FC<Props> = ({
     onClose,
     setTargetUser
 }) => {
-    const { user, updateUser: updateUserCache } = useAuth();
+    const auth = useAuth();
+    const { user, updateUser: updateUserCache, token } = auth;
 
     const { setLocation } = useLocation();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -362,11 +364,29 @@ const EditProfile: React.FC<Props> = ({
         setLogoutPassword('');
     };
 
-    const handleDeleteAccount = (e: React.FormEvent) => {
+    const handleDeleteAccount = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: integrate real API
-        setToastType('error');
-        setToastMessage('Account deletion is not implemented yet.');
+        const confirmed = window.confirm(
+            'Are you sure you want to deactivate your account? You can contact support to reactivate later.'
+        );
+        if (!confirmed) return;
+
+        try {
+            await deleteAccountAPI('me', token as any);
+        }
+        catch (err) {
+            console.error('Failed to deactivate account:', err);
+            setToastType('error');
+            setToastMessage('Failed to deactivate account. Please try again.');
+            return;
+        }
+
+        try {
+            await auth.logout();
+        }
+        finally {
+            window.location.assign('/');
+        }
     };
 
     return (
@@ -604,8 +624,8 @@ const EditProfile: React.FC<Props> = ({
                 </SettingsSection>
 
                 <SettingsSection
-                    title='Delete account'
-                    description='This cannot be undone. All information will be permanently removed.'
+                    title='Deactivate account'
+                    description='This deactivates your account. You may request reactivation later.'
                     noBorder
                 >
                     <form
@@ -613,7 +633,7 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={handleDeleteAccount}
                     >
                         <Button type='submit' variant='danger'>
-                            Yes, delete my account
+                            Deactivate my account
                         </Button>
                     </form>
                 </SettingsSection>

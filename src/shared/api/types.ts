@@ -298,6 +298,7 @@ export interface UserDTO {
     settings?: UserSettingsDTO | null;
     createdAt: Date;
     updatedAt: Date;
+    deactivatedAt?: Date | null;
 }
 
 export const NotificationType = {

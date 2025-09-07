@@ -280,6 +280,28 @@ export async function updateUser(
     return response.data;
 }
 
+/** @throws {AxiosError} */
+export async function deleteAccount(id: string | number = 'me', token: string) {
+    if (!token) throw Error('Invalid token');
+    const response = await instance.delete(`/users/${id}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data as UserDTO;
+}
+
+/** @throws {AxiosError} */
+export async function reactivateUser(id: number, token: string) {
+    if (!token) throw Error('Invalid token');
+    const response = await instance.patch(`/users/${id}/reactivate`, undefined, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data as UserDTO;
+}
+
 /**
  * Adds a tag to a user
  * @param userId The ID of the user (defaults to "me" for the current user)
