@@ -440,7 +440,7 @@ export default function ChatModal({
                                     } as UserDTO)
                             };
 
-                            const isOwn = safeMsg.author?.id === user?.id;
+                            const isOwn = (safeMsg.author?.id ?? safeMsg.authorID) === user?.id;
                             const previousMsg = i > 0 ? messages[i - 1] : null;
                             const showDateSeparator = shouldShowDateSeparator(
                                 safeMsg,

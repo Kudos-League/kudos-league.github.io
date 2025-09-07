@@ -8,7 +8,10 @@ export const groupMessagesByAuthor = (messages: MessageDTO[]) => {
         const current = messages[i];
         const prev = messages[i - 1];
 
-        if (!prev || current.author?.id !== prev.author?.id) {
+        const currentAuthorId = current?.author?.id ?? current?.authorID;
+        const prevAuthorId = prev?.author?.id ?? prev?.authorID;
+
+        if (!prev || currentAuthorId !== prevAuthorId) {
             if (currentGroup.length > 0) {
                 groups.push(currentGroup);
             }

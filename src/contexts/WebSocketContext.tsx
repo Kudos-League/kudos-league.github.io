@@ -270,10 +270,15 @@ export function WebSocketProvider({
                     );
 
                 if (!newMsg || (newMsg as any).id == null) return;
+                const withAuthor: MessageDTO = {
+                    ...(newMsg as any),
+                    author: (newMsg as any).author || user || undefined,
+                    authorID: (newMsg as any).authorID ?? user?.id ?? (newMsg as any).author?.id
+                } as MessageDTO;
                 setMessages((prev) =>
-                    prev.some((m) => m?.id === newMsg.id)
+                    prev.some((m) => m?.id === withAuthor.id)
                         ? prev
-                        : [...prev, newMsg]
+                        : [...prev, withAuthor]
                 );
             }
             catch (err) {

@@ -94,7 +94,9 @@ const ChatWindow: React.FC<Props> = ({
                         <MessageGroup
                             messages={group}
                             isOwn={
-                                !!user?.id && group[0].author?.id === user.id
+                                !!user?.id &&
+                                (group[0].author?.id ?? group[0].authorID) ===
+                                    user.id
                             }
                             onReply={(m) => setReplyTo(m)}
                             onDelete={async (m) => {
