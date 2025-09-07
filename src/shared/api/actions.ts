@@ -106,6 +106,16 @@ export async function login(
 }
 
 /** @throws {AxiosError} */
+export async function requestPasswordReset(email: string) {
+    return instance.post(`/users/forgot-password`, { email });
+}
+
+/** @throws {AxiosError} */
+export async function completePasswordReset(token: string, password: string) {
+    return instance.post(`/users/reset-password`, { token, password });
+}
+
+/** @throws {AxiosError} */
 export async function getPosts({
     includeTags = false,
     includeSender = false

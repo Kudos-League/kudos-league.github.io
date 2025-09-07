@@ -128,9 +128,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             try {
                 const url = new URL(window.location.href);
                 const tok = url.searchParams.get('token');
+                const path = url.pathname;
 
-                if (tok) {
-                    window.history.replaceState({}, '', url.pathname);
+                const isPasswordFlow = path === '/reset-password' || path === '/forgot-password';
+
+                if (tok && !isPasswordFlow) {
+                    window.history.replaceState({}, '', path);
                     await loginHandler({ token: tok });
                 }
 

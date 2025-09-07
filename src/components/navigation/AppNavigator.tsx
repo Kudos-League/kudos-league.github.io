@@ -16,6 +16,8 @@ const Profile = lazy(() => import('@/pages/user'));
 const EventDetails = lazy(() => import('@/pages/event'));
 const SignIn = lazy(() => import('@/pages/login'));
 const SignUp = lazy(() => import('@/pages/signup'));
+const ForgotPassword = lazy(() => import('@/pages/forgot-password'));
+const ResetPassword = lazy(() => import('@/pages/reset-password'));
 const EventsPage = lazy(() => import('@/pages/events'));
 const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
@@ -150,6 +152,22 @@ function AppNavigator() {
                         element={
                             <PublicOnly>
                                 <SignUp />
+                            </PublicOnly>
+                        }
+                    />
+                    <Route
+                        path={routes.forgotPassword}
+                        element={
+                            <PublicOnly>
+                                <ForgotPassword />
+                            </PublicOnly>
+                        }
+                    />
+                    <Route
+                        path={routes.resetPassword}
+                        element={
+                            <PublicOnly>
+                                <ResetPassword />
                             </PublicOnly>
                         }
                     />
