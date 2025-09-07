@@ -7,7 +7,6 @@ export default function ConnectingOverlay() {
     const { isConnecting, connectingText, snoozeConnectingOverlay } =
         useWebSocketContext();
 
-
     const [show, setShow] = useState(false);
 
     useEffect(() => {

@@ -419,8 +419,12 @@ export default function ChatModal({
                     {messages
                         .filter((msg) => {
                             if (!msg || typeof msg !== 'object') return false;
-                            const isOwn = !!user && (msg.authorID === user.id || msg.author?.id === user.id);
-                            const canSeeDeleted = !!user && (user.admin || isOwn);
+                            const isOwn =
+                                !!user &&
+                                (msg.authorID === user.id ||
+                                    msg.author?.id === user.id);
+                            const canSeeDeleted =
+                                !!user && (user.admin || isOwn);
                             return !msg.deletedAt || canSeeDeleted;
                         })
                         .map((msg, i) => {
@@ -440,7 +444,9 @@ export default function ChatModal({
                                     } as UserDTO)
                             };
 
-                            const isOwn = (safeMsg.author?.id ?? safeMsg.authorID) === user?.id;
+                            const isOwn =
+                                (safeMsg.author?.id ?? safeMsg.authorID) ===
+                                user?.id;
                             const previousMsg = i > 0 ? messages[i - 1] : null;
                             const showDateSeparator = shouldShowDateSeparator(
                                 safeMsg,
@@ -475,16 +481,30 @@ export default function ChatModal({
                                     )}
 
                                     {repliedTo && (
-                                        <div className={`max-w-xs ${isOwn ? 'ml-auto' : ''} mb-1`}>
+                                        <div
+                                            className={`max-w-xs ${isOwn ? 'ml-auto' : ''} mb-1`}
+                                        >
                                             <button
                                                 type='button'
                                                 onClick={() => {
-                                                    const el = document.getElementById(`msg-${repliedTo.id}`);
+                                                    const el =
+                                                        document.getElementById(
+                                                            `msg-${repliedTo.id}`
+                                                        );
                                                     if (el) {
-                                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                        el.classList.add('ring-2', 'ring-teal-400');
+                                                        el.scrollIntoView({
+                                                            behavior: 'smooth',
+                                                            block: 'center'
+                                                        });
+                                                        el.classList.add(
+                                                            'ring-2',
+                                                            'ring-teal-400'
+                                                        );
                                                         setTimeout(() => {
-                                                            el.classList.remove('ring-2', 'ring-teal-400');
+                                                            el.classList.remove(
+                                                                'ring-2',
+                                                                'ring-teal-400'
+                                                            );
                                                         }, 1200);
                                                     }
                                                 }}
@@ -498,8 +518,8 @@ export default function ChatModal({
                                                         : 'border-zinc-400/60'
                                                 } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
                                                 title={`${
-                                                    repliedTo.author?.username ??
-                                                    'Unknown'
+                                                    repliedTo.author
+                                                        ?.username ?? 'Unknown'
                                                 }: ${repliedTo.content}`}
                                             >
                                                 <span className='font-semibold inline-flex items-center gap-1 shrink-0'>
@@ -536,7 +556,9 @@ export default function ChatModal({
                                             <button
                                                 type='button'
                                                 title='Reply'
-                                                onClick={() => setReplyTo(safeMsg)}
+                                                onClick={() =>
+                                                    setReplyTo(safeMsg)
+                                                }
                                                 className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                             >
                                                 <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
@@ -548,27 +570,57 @@ export default function ChatModal({
                                                     onClick={async () => {
                                                         if (!token) return;
                                                         try {
-                                                            await deleteMessageApi(safeMsg.id, token);
+                                                            await deleteMessageApi(
+                                                                safeMsg.id,
+                                                                token
+                                                            );
                                                         }
                                                         catch (e) {
-                                                            console.error('Failed to delete message', e);
+                                                            console.error(
+                                                                'Failed to delete message',
+                                                                e
+                                                            );
                                                             return;
                                                         }
                                                         setMessages((prev) => {
-                                                            const idx = prev.findIndex((x) => x.id === safeMsg.id);
-                                                            if (idx === -1) return prev;
-                                                            const original = prev[idx];
-                                                            if (user && (user.admin || original.authorID === user.id || original.author?.id === user.id)) {
-                                                                const updated = {
-                                                                    ...original,
-                                                                    content: `[deleted]: ${original.content}`
-                                                                } as MessageDTO;
-                                                                const copy = [...prev];
-                                                                copy[idx] = updated;
+                                                            const idx =
+                                                                prev.findIndex(
+                                                                    (x) =>
+                                                                        x.id ===
+                                                                        safeMsg.id
+                                                                );
+                                                            if (idx === -1)
+                                                                return prev;
+                                                            const original =
+                                                                prev[idx];
+                                                            if (
+                                                                user &&
+                                                                (user.admin ||
+                                                                    original.authorID ===
+                                                                        user.id ||
+                                                                    original
+                                                                        .author
+                                                                        ?.id ===
+                                                                        user.id)
+                                                            ) {
+                                                                const updated =
+                                                                    {
+                                                                        ...original,
+                                                                        content: `[deleted]: ${original.content}`
+                                                                    } as MessageDTO;
+                                                                const copy = [
+                                                                    ...prev
+                                                                ];
+                                                                copy[idx] =
+                                                                    updated;
                                                                 return copy;
                                                             }
                                                             else {
-                                                                return prev.filter((x) => x.id !== safeMsg.id);
+                                                                return prev.filter(
+                                                                    (x) =>
+                                                                        x.id !==
+                                                                        safeMsg.id
+                                                                );
                                                             }
                                                         });
                                                     }}
@@ -606,7 +658,9 @@ export default function ChatModal({
                 <div className='flex flex-col gap-2'>
                     {replyTo && (
                         <div className='flex items-center justify-between text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded'>
-                            <span>Replying to: {replyTo.content.slice(0, 80)}</span>
+                            <span>
+                                Replying to: {replyTo.content.slice(0, 80)}
+                            </span>
                             <button
                                 className='text-blue-600 hover:underline'
                                 onClick={() => setReplyTo(null)}
@@ -632,7 +686,7 @@ export default function ChatModal({
                                     : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
                             }`}
                         >
-                        Send
+                            Send
                         </Button>
                     </div>
                 </div>

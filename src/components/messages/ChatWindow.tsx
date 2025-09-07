@@ -33,11 +33,16 @@ const ChatWindow: React.FC<Props> = ({
     const visibleMessages = useMemo(() => {
         return messages
             .map((m) => {
-                const isOwn = !!user && (m.authorID === user.id || m.author?.id === user.id);
+                const isOwn =
+                    !!user &&
+                    (m.authorID === user.id || m.author?.id === user.id);
                 const canSeeDeleted = !!user && (user.admin || isOwn);
                 if (m.deletedAt && !canSeeDeleted) return null;
                 if (m.deletedAt && canSeeDeleted) {
-                    return { ...m, content: `[deleted]: ${m.content}` } as MessageDTO;
+                    return {
+                        ...m,
+                        content: `[deleted]: ${m.content}`
+                    } as MessageDTO;
                 }
                 return m;
             })
@@ -102,21 +107,32 @@ const ChatWindow: React.FC<Props> = ({
                             onDelete={async (m) => {
                                 if (!token) return;
                                 const canDelete =
-                                    !!user && (m.authorID === user.id || m.author?.id === user.id);
+                                    !!user &&
+                                    (m.authorID === user.id ||
+                                        m.author?.id === user.id);
                                 if (!canDelete) return;
                                 try {
                                     await deleteMessageApi(m.id, token);
                                 }
                                 catch (e) {
-                                    console.error('Failed to delete message', e);
+                                    console.error(
+                                        'Failed to delete message',
+                                        e
+                                    );
                                     return;
                                 }
 
                                 setMessages((prev) => {
-                                    const idx = prev.findIndex((x) => x.id === m.id);
+                                    const idx = prev.findIndex(
+                                        (x) => x.id === m.id
+                                    );
                                     if (idx === -1) return prev;
                                     const original = prev[idx];
-                                    if (user && (original.authorID === user.id || original.author?.id === user.id)) {
+                                    if (
+                                        user &&
+                                        (original.authorID === user.id ||
+                                            original.author?.id === user.id)
+                                    ) {
                                         const updated = {
                                             ...original,
                                             content: `[deleted]: ${original.content}`
@@ -126,11 +142,17 @@ const ChatWindow: React.FC<Props> = ({
                                         return copy;
                                     }
                                     else {
-                                        return prev.filter((x) => x.id !== m.id);
+                                        return prev.filter(
+                                            (x) => x.id !== m.id
+                                        );
                                     }
                                 });
                             }}
-                            canDelete={(m) => !!user && (m.authorID === user.id || m.author?.id === user.id)}
+                            canDelete={(m) =>
+                                !!user &&
+                                (m.authorID === user.id ||
+                                    m.author?.id === user.id)
+                            }
                             findMessageById={(id) => byId.get(id)}
                         />
                     </SlideInOnScroll>
@@ -163,9 +185,15 @@ const ChatWindow: React.FC<Props> = ({
                                 e.preventDefault();
                                 if (messageInput) {
                                     if (channel && user) {
-                                        const other = channel.users.find((u) => u.id !== user.id);
+                                        const other = channel.users.find(
+                                            (u) => u.id !== user.id
+                                        );
                                         if (other) {
-                                            send({ receiverID: other.id, content: messageInput.trim(), replyToMessageID: replyTo?.id });
+                                            send({
+                                                receiverID: other.id,
+                                                content: messageInput.trim(),
+                                                replyToMessageID: replyTo?.id
+                                            });
                                         }
                                     }
                                     else {
@@ -181,9 +209,15 @@ const ChatWindow: React.FC<Props> = ({
                         onClick={() => {
                             if (!messageInput.trim()) return;
                             if (channel && user) {
-                                const other = channel.users.find((u) => u.id !== user.id);
+                                const other = channel.users.find(
+                                    (u) => u.id !== user.id
+                                );
                                 if (other) {
-                                    send({ receiverID: other.id, content: messageInput.trim(), replyToMessageID: replyTo?.id });
+                                    send({
+                                        receiverID: other.id,
+                                        content: messageInput.trim(),
+                                        replyToMessageID: replyTo?.id
+                                    });
                                 }
                             }
                             else {
@@ -194,7 +228,7 @@ const ChatWindow: React.FC<Props> = ({
                         }}
                         className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
                     >
-                    Send
+                        Send
                     </Button>
                 </div>
             </div>

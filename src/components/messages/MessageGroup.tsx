@@ -72,7 +72,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     canDelete={canDelete ? canDelete(msg) : false}
                     replyTo={
                         msg.replyToMessageID && findMessageById
-                            ? findMessageById(msg.replyToMessageID) ?? null
+                            ? (findMessageById(msg.replyToMessageID) ?? null)
                             : null
                     }
                 />

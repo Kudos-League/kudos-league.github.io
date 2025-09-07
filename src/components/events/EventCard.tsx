@@ -20,7 +20,9 @@ export default function EventCard({ event }: Props) {
             onClick={() => navigate(`/event/${event.id}`)}
             className='p-3 rounded shadow hover:shadow-md cursor-pointer text-center border border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors'
         >
-            <p className='font-bold text-lg text-gray-900 dark:text-gray-100'>{event.title}</p>
+            <p className='font-bold text-lg text-gray-900 dark:text-gray-100'>
+                {event.title}
+            </p>
 
             {event.description && (
                 <p className='text-gray-600 text-sm mb-1'>

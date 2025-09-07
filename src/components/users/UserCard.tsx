@@ -83,21 +83,27 @@ const UserCard: React.FC<Props> = ({
             >
                 {username ? (
                     <>
-                        <span className="block group-hover:hidden" aria-hidden={true}>
+                        <span
+                            className='block group-hover:hidden'
+                            aria-hidden={true}
+                        >
                             {displayName}
                         </span>
-                        <span className="hidden group-hover:block truncate" aria-label={username}>
+                        <span
+                            className='hidden group-hover:block truncate'
+                            aria-label={username}
+                        >
                             {username}
                         </span>
                     </>
                 ) : (
-                    <span className="block">{displayName}</span>
+                    <span className='block'>{displayName}</span>
                 )}
             </span>
         );
 
         const wrapperClasses =
-            (centered && subtitle)
+            centered && subtitle
                 ? 'group inline-flex flex-col items-center text-center gap-1'
                 : 'group inline-flex items-center gap-2';
 

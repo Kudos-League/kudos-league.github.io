@@ -277,14 +277,14 @@ const EditProfile: React.FC<Props> = ({
 
             const normalizedUpdatedUser = {
                 ...updatedUser,
-                tags: (updatedUser.tags && updatedUser.tags.length > 0)
-                    ? updatedUser.tags
-                    : submittedTags.map((name, idx) => ({
-                        id: idx,
-                        name
-                    }))
+                tags:
+                    updatedUser.tags && updatedUser.tags.length > 0
+                        ? updatedUser.tags
+                        : submittedTags.map((name, idx) => ({
+                            id: idx,
+                            name
+                        }))
             };
-
 
             if (user?.id === targetUser.id) {
                 updateUserCache({

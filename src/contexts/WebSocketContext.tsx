@@ -52,7 +52,6 @@ export function WebSocketProvider({
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [isConnected, setIsConnected] = useState(false);
 
-
     // Overlay state
     const [isConnecting, setIsConnecting] = useState(false);
     const [connectingText, setConnectingText] = useState<string | null>(null);
@@ -261,11 +260,18 @@ export function WebSocketProvider({
                 const newMsg = receiverID
                     ? await sendDirectMessage(
                         receiverID,
-                        { content, ...(replyToMessageID ? { replyToMessageID } : {}) },
+                        {
+                            content,
+                            ...(replyToMessageID ? { replyToMessageID } : {})
+                        },
                         token
                     )
                     : await sendMessage(
-                        { channelID: channel!.id, content, ...(replyToMessageID ? { replyToMessageID } : {}) },
+                        {
+                            channelID: channel!.id,
+                            content,
+                            ...(replyToMessageID ? { replyToMessageID } : {})
+                        },
                         token
                     );
 
@@ -273,7 +279,10 @@ export function WebSocketProvider({
                 const withAuthor: MessageDTO = {
                     ...(newMsg as any),
                     author: (newMsg as any).author || user || undefined,
-                    authorID: (newMsg as any).authorID ?? user?.id ?? (newMsg as any).author?.id
+                    authorID:
+                        (newMsg as any).authorID ??
+                        user?.id ??
+                        (newMsg as any).author?.id
                 } as MessageDTO;
                 setMessages((prev) =>
                     prev.some((m) => m?.id === withAuthor.id)
@@ -294,8 +303,8 @@ export function WebSocketProvider({
 
     const connectingVisible = isConnecting && !overlaySnoozed;
 
-    const safeSetMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>> = useCallback(
-        (updater: React.SetStateAction<MessageDTO[]>) => {
+    const safeSetMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>> =
+        useCallback((updater: React.SetStateAction<MessageDTO[]>) => {
             setMessages((prev) => {
                 const next =
                     typeof updater === 'function'
@@ -303,9 +312,7 @@ export function WebSocketProvider({
                         : updater;
                 return Array.isArray(next) ? next.filter(Boolean) : [];
             });
-        },
-        []
-    );
+        }, []);
 
     const value = useMemo<Ctx>(
         () => ({

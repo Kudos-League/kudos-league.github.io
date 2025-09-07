@@ -26,33 +26,41 @@ export default function ForgotPasswordPage() {
 
     if (submitted) {
         return (
-            <Auth title="Check your email">
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-            If an account exists for {email}, you’ll receive an email with a link to reset your password.
+            <Auth title='Check your email'>
+                <div className='space-y-4'>
+                    <p className='text-sm text-gray-600 dark:text-gray-300'>
+                        If an account exists for {email}, you’ll receive an
+                        email with a link to reset your password.
                     </p>
-                    <Button onClick={() => navigate(routes.login)} className="w-full">Back to Login</Button>
+                    <Button
+                        onClick={() => navigate(routes.login)}
+                        className='w-full'
+                    >
+                        Back to Login
+                    </Button>
                 </div>
             </Auth>
         );
     }
 
     return (
-        <Auth title="Forgot your password?">
-            <form onSubmit={onSubmit} className="space-y-6">
+        <Auth title='Forgot your password?'>
+            <form onSubmit={onSubmit} className='space-y-6'>
                 <div>
                     <TextInput
-                        placeholder="Email address"
-                        aria-label="Email address"
+                        placeholder='Email address'
+                        aria-label='Email address'
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
                 <div>
-                    <Button type="submit" className="w-full">Send reset link</Button>
+                    <Button type='submit' className='w-full'>
+                        Send reset link
+                    </Button>
                 </div>
                 {error && (
-                    <Alert tone="error" title="Error">
+                    <Alert tone='error' title='Error'>
                         <p>{error}</p>
                     </Alert>
                 )}
@@ -60,4 +68,3 @@ export default function ForgotPasswordPage() {
         </Auth>
     );
 }
-

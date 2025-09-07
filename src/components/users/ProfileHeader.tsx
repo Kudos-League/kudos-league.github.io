@@ -57,7 +57,11 @@ const ProfileHeader: React.FC<Props> = ({
                 {getUserTitle()}
             </p>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-                <UserCard user={targetUser} triggerVariant='name' disableTooltip />
+                <UserCard
+                    user={targetUser}
+                    triggerVariant='name'
+                    disableTooltip
+                />
             </h1>
             <p className='text-gray-600 dark:text-gray-300 text-sm'>
                 {targetUser.kudos || 0} Kudos

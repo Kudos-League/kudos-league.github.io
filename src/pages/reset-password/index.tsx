@@ -37,38 +37,46 @@ export default function ResetPasswordPage() {
             setDone(true);
         }
         catch (err: any) {
-            setError(err?.response?.data?.message || 'Unable to reset password.');
+            setError(
+                err?.response?.data?.message || 'Unable to reset password.'
+            );
         }
     };
 
     if (done) {
         return (
-            <Auth title="Password updated">
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-            Your password has been reset. You can now log in with your new password.
+            <Auth title='Password updated'>
+                <div className='space-y-4'>
+                    <p className='text-sm text-gray-600 dark:text-gray-300'>
+                        Your password has been reset. You can now log in with
+                        your new password.
                     </p>
-                    <Button onClick={() => navigate(routes.login)} className="w-full">Go to Login</Button>
+                    <Button
+                        onClick={() => navigate(routes.login)}
+                        className='w-full'
+                    >
+                        Go to Login
+                    </Button>
                 </div>
             </Auth>
         );
     }
 
     return (
-        <Auth title="Set a new password">
-            <form onSubmit={onSubmit} className="space-y-6">
+        <Auth title='Set a new password'>
+            <form onSubmit={onSubmit} className='space-y-6'>
                 <div>
                     <PasswordInput
-                        placeholder="New password"
-                        aria-label="New password"
+                        placeholder='New password'
+                        aria-label='New password'
                         visible={visible1}
                         setVisible={setVisible1}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
                     <PasswordInput
-                        placeholder="Confirm password"
-                        aria-label="Confirm password"
+                        placeholder='Confirm password'
+                        aria-label='Confirm password'
                         visible={visible2}
                         setVisible={setVisible2}
                         value={confirm}
@@ -76,10 +84,12 @@ export default function ResetPasswordPage() {
                     />
                 </div>
                 <div>
-                    <Button type="submit" className="w-full">Reset password</Button>
+                    <Button type='submit' className='w-full'>
+                        Reset password
+                    </Button>
                 </div>
                 {error && (
-                    <Alert tone="error" title="Error">
+                    <Alert tone='error' title='Error'>
                         <p>{error}</p>
                     </Alert>
                 )}
@@ -87,4 +97,3 @@ export default function ResetPasswordPage() {
         </Auth>
     );
 }
-

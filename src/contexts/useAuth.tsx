@@ -130,7 +130,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const tok = url.searchParams.get('token');
                 const path = url.pathname;
 
-                const isPasswordFlow = path === '/reset-password' || path === '/forgot-password';
+                const isPasswordFlow =
+                    path === '/reset-password' || path === '/forgot-password';
 
                 if (tok && !isPasswordFlow) {
                     window.history.replaceState({}, '', path);

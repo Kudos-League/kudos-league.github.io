@@ -14,7 +14,6 @@ interface LocationSetupModalProps {
     onClose: () => void;
 }
 
-
 const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
     isOpen,
     onClose
@@ -32,10 +31,7 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
                             Location Required
                         </h3>
                     </div>
-                    <Button
-                        onClick={onClose}
-                        className='transition-colors'
-                    >
+                    <Button onClick={onClose} className='transition-colors'>
                         <X className='w-5 h-5' />
                     </Button>
                 </div>

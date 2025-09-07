@@ -29,16 +29,26 @@ const MessageBubble: React.FC<Props> = ({
         >
             <div className={`max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
                 {replyTo && (
-                    <div className={`${isOwn ? 'text-right' : 'text-left'} mb-1`}>
+                    <div
+                        className={`${isOwn ? 'text-right' : 'text-left'} mb-1`}
+                    >
                         <button
                             type='button'
                             onClick={() => {
-                                const el = document.getElementById(`msg-${replyTo.id}`);
+                                const el = document.getElementById(
+                                    `msg-${replyTo.id}`
+                                );
                                 if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    el.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                    });
                                     el.classList.add('ring-2', 'ring-teal-400');
                                     setTimeout(() => {
-                                        el.classList.remove('ring-2', 'ring-teal-400');
+                                        el.classList.remove(
+                                            'ring-2',
+                                            'ring-teal-400'
+                                        );
                                     }, 1200);
                                 }
                             }}
@@ -47,12 +57,17 @@ const MessageBubble: React.FC<Props> = ({
                                     ? 'text-zinc-600 dark:text-zinc-300'
                                     : 'text-zinc-700 dark:text-zinc-200'
                             } text-xs pl-2 pr-2 py-1 border-l-2 ${
-                                isOwn ? 'border-teal-300/70' : 'border-zinc-400/60'
+                                isOwn
+                                    ? 'border-teal-300/70'
+                                    : 'border-zinc-400/60'
                             } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
                             title={`${replyTo.author?.username ?? 'Unknown'}: ${replyTo.content}`}
                         >
                             <span className='font-semibold inline-flex items-center gap-1 shrink-0'>
-                                <UserCard triggerVariant='name' user={replyTo.author} />
+                                <UserCard
+                                    triggerVariant='name'
+                                    user={replyTo.author}
+                                />
                             </span>
                             <span className='opacity-90 truncate'>
                                 {replyTo.content}
