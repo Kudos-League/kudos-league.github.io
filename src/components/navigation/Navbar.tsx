@@ -282,18 +282,17 @@ export default function Navbar({
                 <div className='flex items-center gap-2'>
                     <ThemeToggleButton />
 
-                    <button
-                        type='button'
-                        aria-label='Feedback'
-                        onClick={() => setFeedbackOpen(true)}
-                        className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
-                    >
-                        <FlagIcon className='h-5 w-5' />
-                    </button>
-
                     {isLoggedIn ? (
                         <>
                             <NotificationsIcon />
+                            <button
+                                type='button'
+                                aria-label='Feedback'
+                                onClick={() => setFeedbackOpen(true)}
+                                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                            >
+                                <FlagIcon className='h-5 w-5' />
+                            </button>
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (
