@@ -70,6 +70,7 @@ const EditProfile: React.FC<Props> = ({
             location: user.location || undefined,
             tags: user.tags.map((t) => t.name) || [],
             about: user.settings?.about || '',
+            profession: user.settings?.profession || '',
             avatarURL: ''
         }),
         [user.id]
@@ -93,6 +94,7 @@ const EditProfile: React.FC<Props> = ({
                 displayName: u.displayName || '',
                 username: u.username || '',
                 about: u.settings?.about || '',
+                profession: u.settings?.profession || '',
                 tags: (u.tags || []).map((t: any) => t.name),
                 location: u.location || undefined
             },
@@ -322,6 +324,7 @@ const EditProfile: React.FC<Props> = ({
                 location: updatedUser.location || undefined,
                 tags: (updatedUser.tags || []).map((t: any) => t.name),
                 about: updatedUser.settings?.about || '',
+                profession: updatedUser.settings?.profession || '',
                 avatarURL: ''
             } as any;
 
@@ -457,6 +460,16 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.displayName}
+                            />
+                        </FormField>
+
+                        <FormField label='Profession' help='Share your current profession or role.'>
+                            <Input
+                                data-testid='profession'
+                                name='profession'
+                                form={form}
+                                label=''
+                                placeholder='e.g., Software Engineer'
                             />
                         </FormField>
 

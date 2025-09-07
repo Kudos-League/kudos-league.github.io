@@ -7,6 +7,7 @@ type Baseline = Pick<
     | 'username'
     | 'displayName'
     | 'about'
+    | 'profession'
     | 'tags'
     | 'location'
     | 'avatar'
@@ -35,6 +36,8 @@ export default function computeChanged(
         changed.displayName = values.displayName?.trim();
     if (norm(values.about) !== norm(baseline.about))
         changed.about = (values.about || '').trim();
+    if (norm(values.profession) !== norm(baseline.profession))
+        changed.profession = (values.profession || '').trim();
 
     // tags (compare as string[], emit string[])
     const nextTags = Array.isArray(values.tags) ? values.tags.map(String) : [];

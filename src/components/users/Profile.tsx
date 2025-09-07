@@ -102,6 +102,20 @@ const Profile: React.FC<Props> = ({
                 {/* Divider under header */}
                 <div className='border-t border-gray-200 dark:border-white/10' />
 
+                {/* Profession */}
+                {user.settings?.profession && (
+                    <div className='flex justify-center'>
+                        <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
+                            <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
+                                Profession
+                            </span>
+                            <p className='mt-1 text-gray-700 dark:text-gray-300 text-sm'>
+                                {user.settings.profession}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Filter Buttons */}
                 <div className='flex flex-wrap gap-3 justify-center'>
                     {Filters.map((type) => {
