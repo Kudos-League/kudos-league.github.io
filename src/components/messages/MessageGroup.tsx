@@ -8,13 +8,21 @@ interface MessageGroupProps {
     isOwn?: boolean;
     compact?: boolean;
     isPublic?: boolean;
+    onReply?: (m: MessageDTO) => void;
+    onDelete?: (m: MessageDTO) => void;
+    canDelete?: (m: MessageDTO) => boolean;
+    findMessageById?: (id: number) => MessageDTO | undefined;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
     messages,
     isOwn = false,
     compact = false,
-    isPublic = false
+    isPublic = false,
+    onReply,
+    onDelete,
+    canDelete,
+    findMessageById
 }) => {
     if (messages.length === 0) return null;
 
@@ -59,6 +67,14 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     message={msg}
                     isOwn={isOwn}
                     compact={compact}
+                    onReply={onReply}
+                    onDelete={onDelete}
+                    canDelete={canDelete ? canDelete(msg) : false}
+                    replyTo={
+                        msg.replyToMessageID && findMessageById
+                            ? findMessageById(msg.replyToMessageID) ?? null
+                            : null
+                    }
                 />
             ))}
 

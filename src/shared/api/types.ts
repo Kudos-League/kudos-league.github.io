@@ -101,6 +101,7 @@ export interface MessageDTO {
     createdAt: Date;
     updatedAt: Date;
     readAt?: Date;
+    deletedAt?: Date | string | null;
     //TODO: Stuff is missing
     author?: UserDTO;
 }

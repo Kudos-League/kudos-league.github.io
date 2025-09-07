@@ -29,6 +29,7 @@ type Ctx = {
         channel?: { id: number };
         receiverID?: number;
         content: string;
+        replyToMessageID?: number;
     }) => Promise<void>;
     isConnected: boolean;
     isConnecting: boolean;
@@ -50,6 +51,7 @@ export function WebSocketProvider({
 
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+
 
     // Overlay state
     const [isConnecting, setIsConnecting] = useState(false);
@@ -142,9 +144,10 @@ export function WebSocketProvider({
             console.warn('[WS] Disconnected:', reason);
         };
 
-        const handleNewMessage = (m: MessageDTO) => {
+        const handleNewMessage = (m: MessageDTO | undefined | null) => {
+            if (!m || typeof (m as any) !== 'object' || m.id == null) return;
             setMessages((prev) =>
-                prev.some((x) => x.id === m.id) ? prev : [...prev, m]
+                prev.some((x) => x?.id === m.id) ? prev : [...prev, m]
             );
         };
 
@@ -172,9 +175,12 @@ export function WebSocketProvider({
                 success: boolean;
             }) => {
                 if (data.channelID === channelID && data.success) {
-                    getMessages(channelID, tokenNonNull).then(
-                        (list) => list?.length && setMessages(list)
-                    );
+                    getMessages(channelID, tokenNonNull).then((list) => {
+                        if (Array.isArray(list)) {
+                            const cleaned = list.filter(Boolean);
+                            setMessages(cleaned);
+                        }
+                    });
                 }
             };
             sock.once('joinedChannel', onJoined);
@@ -189,7 +195,9 @@ export function WebSocketProvider({
             pollInterval.current = setInterval(async () => {
                 try {
                     const fresh = await getMessages(channelID, tokenNonNull);
-                    if (fresh?.length) setMessages(fresh);
+                    if (Array.isArray(fresh)) {
+                        setMessages(fresh.filter(Boolean));
+                    }
                 }
                 catch (err) {
                     console.error('[Polling] Failed to fetch messages:', err);
@@ -240,23 +248,30 @@ export function WebSocketProvider({
         async ({
             channel,
             receiverID,
-            content
+            content,
+            replyToMessageID
         }: {
             channel?: { id: number };
             receiverID?: number;
             content: string;
+            replyToMessageID?: number;
         }) => {
             if (!token) return;
             try {
                 const newMsg = receiverID
-                    ? await sendDirectMessage(receiverID, { content }, token)
+                    ? await sendDirectMessage(
+                        receiverID,
+                        { content, ...(replyToMessageID ? { replyToMessageID } : {}) },
+                        token
+                    )
                     : await sendMessage(
-                        { channelID: channel!.id, content },
+                        { channelID: channel!.id, content, ...(replyToMessageID ? { replyToMessageID } : {}) },
                         token
                     );
 
+                if (!newMsg || (newMsg as any).id == null) return;
                 setMessages((prev) =>
-                    prev.some((m) => m.id === newMsg.id)
+                    prev.some((m) => m?.id === newMsg.id)
                         ? prev
                         : [...prev, newMsg]
                 );
@@ -274,11 +289,24 @@ export function WebSocketProvider({
 
     const connectingVisible = isConnecting && !overlaySnoozed;
 
+    const safeSetMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>> = useCallback(
+        (updater: React.SetStateAction<MessageDTO[]>) => {
+            setMessages((prev) => {
+                const next =
+                    typeof updater === 'function'
+                        ? (updater as (p: MessageDTO[]) => MessageDTO[])(prev)
+                        : updater;
+                return Array.isArray(next) ? next.filter(Boolean) : [];
+            });
+        },
+        []
+    );
+
     const value = useMemo<Ctx>(
         () => ({
             socket: socketRef.current,
             messages,
-            setMessages,
+            setMessages: safeSetMessages,
             joinChannel,
             leaveChannel,
             send,
@@ -295,7 +323,8 @@ export function WebSocketProvider({
             isConnected,
             connectingVisible,
             connectingText,
-            snoozeConnectingOverlay
+            snoozeConnectingOverlay,
+            safeSetMessages
         ]
     );
 
