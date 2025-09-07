@@ -304,6 +304,7 @@ export default function CreateEvent() {
                             }
                             width='100%'
                             height={300}
+                            shouldGetYourLocation
                         />
                     </div>
                     {!global &&
