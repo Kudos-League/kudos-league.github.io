@@ -451,7 +451,7 @@ export default function ChatModal({
                             const messageTimestamp =
                                 getMessageTimestamp(safeMsg);
 
-                            const canDelete = !!user && (user.admin || safeMsg.authorID === user.id || safeMsg.author?.id === user.id);
+                            const canDelete = !!user && isOwn;
                             const repliedTo = safeMsg.replyToMessageID
                                 ? messages.find(
                                     (mm) => mm.id === safeMsg.replyToMessageID

@@ -52,7 +52,7 @@ const ChatWindow: React.FC<Props> = ({
         const map = new Map<number, MessageDTO>();
         for (const m of messages) map.set(m.id, m);
         return map;
-    }, [visibleMessages]);
+    }, [messages]);
     // Always scroll to bottom when messages change
 
     useEffect(() => {
@@ -102,7 +102,7 @@ const ChatWindow: React.FC<Props> = ({
                             onDelete={async (m) => {
                                 if (!token) return;
                                 const canDelete =
-                                    !!user && (user.admin || m.authorID === user.id || m.author?.id === user.id);
+                                    !!user && (m.authorID === user.id || m.author?.id === user.id);
                                 if (!canDelete) return;
                                 try {
                                     await deleteMessageApi(m.id, token);
@@ -116,7 +116,7 @@ const ChatWindow: React.FC<Props> = ({
                                     const idx = prev.findIndex((x) => x.id === m.id);
                                     if (idx === -1) return prev;
                                     const original = prev[idx];
-                                    if (user && (user.admin || original.authorID === user.id || original.author?.id === user.id)) {
+                                    if (user && (original.authorID === user.id || original.author?.id === user.id)) {
                                         const updated = {
                                             ...original,
                                             content: `[deleted]: ${original.content}`
@@ -130,7 +130,7 @@ const ChatWindow: React.FC<Props> = ({
                                     }
                                 });
                             }}
-                            canDelete={(m) => !!user && (user.admin || m.authorID === user.id || m.author?.id === user.id)}
+                            canDelete={(m) => !!user && (m.authorID === user.id || m.author?.id === user.id)}
                             findMessageById={(id) => byId.get(id)}
                         />
                     </SlideInOnScroll>
