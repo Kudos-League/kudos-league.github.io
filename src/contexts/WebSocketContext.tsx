@@ -17,6 +17,7 @@ import {
 } from 'shared/api/actions';
 import type { MessageDTO, NotificationPayload } from 'shared/api/types';
 import { useAuth } from './useAuth';
+import { pushAlert } from '@/components/common/alertBus';
 import { getSocket } from '@/hooks/useWebsocketClient';
 
 type Ctx = {
@@ -150,11 +151,18 @@ export function WebSocketProvider({
             );
         };
 
+        const handleKudosUpdate = (p: { delta: number; total: number } | null | undefined) => {
+            if (!p || typeof p.delta !== 'number' || typeof p.total !== 'number') return;
+            const sign = p.delta >= 0 ? '+' : '';
+            pushAlert({ type: 'success', message: `You ${p.delta >= 0 ? 'gained' : 'lost'} ${sign}${p.delta} kudos. Total: ${p.total}` });
+        };
+
         if (!(sock as any).__listenersAttached) {
             sock.on('connect', handleConnect);
             sock.on('connect_error', handleConnectError);
             sock.on('disconnect', handleDisconnect);
             sock.on(Events.MESSAGE_CREATE, handleNewMessage);
+            sock.on(Events.KUDOS_UPDATE, handleKudosUpdate);
             (sock as any).__listenersAttached = true;
         }
         else if (sock.connected) {
