@@ -99,7 +99,6 @@ export default function NotificationsBell() {
                     </div>
                 )}
             </div>
-            {/* Toasts are now unified via alertBus; no extra component here */}
         </>
     );
 }
