@@ -1,5 +1,4 @@
 import React from 'react';
-import AvatarComponent from '../users/Avatar';
 import { ChannelDTO } from '@/shared/api/types';
 import UserCard from '../users/UserCard';
 
