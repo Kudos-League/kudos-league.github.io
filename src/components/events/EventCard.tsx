@@ -35,11 +35,27 @@ export default function EventCard({ event }: Props) {
                 {end ? format(end, 'MMM d, yyyy h:mm a') : 'Ongoing'}
             </p>
 
-            {event.location?.name && (
+            {event.location?.global ? (
+                event.link ? (
+                    <div className='mt-1'>
+                        <a
+                            href={event.link}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            onClick={(e) => e.stopPropagation()}
+                            className='inline-block text-sm text-blue-600 underline'
+                        >
+                            🔗 Join Link
+                        </a>
+                    </div>
+                ) : (
+                    <p className='text-sm text-gray-400 mt-1'>🌐 Online</p>
+                )
+            ) : event.location?.name ? (
                 <p className='text-sm text-gray-400'>
                     📍 {event.location.name}
                 </p>
-            )}
+            ) : null}
 
             {typeof event.participantCount === 'number' && (
                 <p className='text-sm text-blue-600 dark:text-blue-400'>

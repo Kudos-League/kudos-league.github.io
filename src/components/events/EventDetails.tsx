@@ -70,7 +70,24 @@ export default function EventDetails({ event, setEvent }: Props) {
                     : 'Ongoing'}
             </p>
 
-            {event.location?.regionID && (
+            {event.location?.global ? (
+                <div className='my-4'>
+                    {event.link ? (
+                        <a
+                            href={event.link}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='block w-full p-4 text-center rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        >
+                            🔗 Join Event: {event.link}
+                        </a>
+                    ) : (
+                        <div className='w-full p-4 text-center rounded border border-gray-300 bg-gray-50 text-gray-700'>
+                            🌐 Online event
+                        </div>
+                    )}
+                </div>
+            ) : event.location?.regionID ? (
                 <div className='my-4'>
                     <MapDisplay
                         regionID={event.location.regionID}
@@ -78,7 +95,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                         edit={false}
                     />
                 </div>
-            )}
+            ) : null}
 
             <h2 className='text-lg font-semibold'>Participants</h2>
             <div className='space-y-3'>

@@ -172,6 +172,7 @@ export type EventDTO = {
     title: string;
     description: string;
     isGlobal: boolean;
+    link?: string | null;
     locationID: number | null;
     startTime: string;
     endTime: string;
@@ -187,6 +188,7 @@ export type EventDTO = {
 export type CreateEventDTO = {
     title: string;
     description: string;
+    link?: string | null;
     locationID?: string | null;
     startTime: Date;
     endTime?: Date | null;

@@ -15,6 +15,7 @@ export default function CreateEvent() {
     const [description, setDescription] = useState('');
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
+    const [link, setLink] = useState<string>('');
 
     const now = new Date();
     const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -173,6 +174,7 @@ export default function CreateEvent() {
         const payload: CreateEventDTO = {
             title: title.trim(),
             description: description.trim(),
+            link: global && link.trim() ? link.trim() : null,
             location: {
                 ...location,
                 regionID: location?.regionID ?? null,
@@ -314,6 +316,26 @@ export default function CreateEvent() {
                                 Location is required when Global is off
                         </p>
                     )}
+                </div>
+            )}
+
+            {global && (
+                <div className='space-y-2'>
+                    <label className='block font-semibold'>
+                        Event Link
+                        <span className='text-gray-500 text-sm font-normal'> (Optional)</span>
+                    </label>
+                    <input
+                        className={getInputClasses(false)}
+                        value={link}
+                        onChange={(e) => setLink(e.target.value)}
+                        placeholder='https://example.com/meeting-or-stream'
+                        inputMode='url'
+                        pattern='https?://.*'
+                    />
+                    <p className='text-xs text-gray-500'>
+                        Add a public or invite link if this is an online/global event.
+                    </p>
                 </div>
             )}
 
