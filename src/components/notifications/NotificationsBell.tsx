@@ -2,7 +2,6 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { NotificationPayload } from '@/shared/api/types';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NotificationsToast from './NotificationsToast';
 
 export default function NotificationsBell() {
     const { state, markAllRead } = useNotifications();
@@ -14,6 +13,9 @@ export default function NotificationsBell() {
             navigate(`/dm/${n.message?.author?.id ?? ''}`);
         }
         else if (n.type === 'post-reply') {
+            navigate(`/posts/${n.postID}`);
+        }
+        else if (n.type === 'post-auto-close') {
             navigate(`/posts/${n.postID}`);
         }
         setOpen(false);
@@ -71,13 +73,22 @@ export default function NotificationsBell() {
                                                     {n.message?.content}
                                                 </div>
                                             </div>
-                                        ) : (
+                                        ) : n.type === 'post-reply' ? (
                                             <div>
                                                 <div className='font-medium'>
                                                     Reply to your post
                                                 </div>
                                                 <div className='text-sm text-gray-600 truncate'>
                                                     {n.message?.content}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div className='font-medium'>Post auto-close</div>
+                                                <div className='text-sm text-gray-600 truncate'>
+                                                    {('closeAt' in n && n.closeAt
+                                                        ? new Date(n.closeAt).toLocaleString()
+                                                        : 'Due to inactivity') as any}
                                                 </div>
                                             </div>
                                         )}
@@ -88,7 +99,7 @@ export default function NotificationsBell() {
                     </div>
                 )}
             </div>
-            <NotificationsToast />
+            {/* Toasts are now unified via alertBus; no extra component here */}
         </>
     );
 }
