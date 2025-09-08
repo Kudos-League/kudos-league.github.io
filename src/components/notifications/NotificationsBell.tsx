@@ -1,12 +1,30 @@
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { NotificationPayload } from '@/shared/api/types';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function NotificationsBell() {
     const { state, markAllRead } = useNotifications();
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
+    const dropdownRef = useRef<HTMLDivElement>(null); // Add ref
+
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [open]);
 
     const go = (n: NotificationPayload) => {
         if (n.type === 'direct-message') {
@@ -23,7 +41,7 @@ export default function NotificationsBell() {
 
     return (
         <>
-            <div className='relative'>
+            <div className='relative' ref={dropdownRef}>
                 <button
                     className='relative'
                     onClick={() => setOpen((v) => !v)}
