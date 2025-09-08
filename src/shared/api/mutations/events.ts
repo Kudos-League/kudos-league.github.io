@@ -4,7 +4,7 @@ import type { EventDTO, CreateEventDTO } from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
 
-export function useCreateEvent() {
+export function useCreateEvent(p0: { onSuccess: () => void; }) {
     const { token } = useAuth();
     const qc = useQueryClient();
 

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
@@ -8,14 +9,26 @@ import { useCreateEvent } from '@/shared/api/mutations/events';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
-    const createEvent = useCreateEvent();
+    // Create event mutation with onSuccess callback to invalidate cache
+    const createEvent = useCreateEvent({
+        onSuccess: () => {
+            // Invalidate and refetch events queries
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+            
+            // Optional: Also invalidate any related queries
+            queryClient.invalidateQueries({ queryKey: ['user-events'] });
+            
+            // Navigate after cache invalidation
+            navigate('/events');
+        }
+    });
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
-    const [link, setLink] = useState<string>('');
 
     const now = new Date();
     const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -174,7 +187,6 @@ export default function CreateEvent() {
         const payload: CreateEventDTO = {
             title: title.trim(),
             description: description.trim(),
-            link: global && link.trim() ? link.trim() : null,
             location: {
                 ...location,
                 regionID: location?.regionID ?? null,
@@ -185,8 +197,8 @@ export default function CreateEvent() {
         };
 
         try {
+            // The mutation will handle cache invalidation and navigation in onSuccess
             await createEvent.mutateAsync(payload);
-            navigate('/events');
         }
         catch (msgs: any) {
             setErrorMessages((msgs as string[]) ?? ['Failed to create event']);
@@ -200,9 +212,8 @@ export default function CreateEvent() {
     };
 
     const getInputClasses = (isRequired: boolean, hasError = false) => {
-        const baseClasses =
-            'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
-
+        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
+        
         if (hasError) {
             return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500`;
         }
@@ -221,9 +232,7 @@ export default function CreateEvent() {
             {/* Required fields notice */}
             <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
                 <p className='text-sm text-blue-800'>
-                    <span className='font-medium'>Fields marked with</span>{' '}
-                    <span className='text-red-500 font-bold'>*</span>{' '}
-                    <span className='font-medium'>are required</span>
+                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold'>*</span> <span className='font-medium'>are required</span>
                 </p>
             </div>
 
@@ -232,19 +241,14 @@ export default function CreateEvent() {
                     Title <span className='text-red-500'>*</span>
                 </label>
                 <input
-                    className={getInputClasses(
-                        true,
-                        !title.trim() && errorMessages.length > 0
-                    )}
+                    className={getInputClasses(true, !title.trim() && errorMessages.length > 0)}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder='Enter event title'
                     required
                 />
                 {!title.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>
-                        Title is required
-                    </p>
+                    <p className='text-red-600 text-sm mt-1'>Title is required</p>
                 )}
             </div>
 
@@ -253,10 +257,7 @@ export default function CreateEvent() {
                     Description <span className='text-red-500'>*</span>
                 </label>
                 <textarea
-                    className={getInputClasses(
-                        true,
-                        !description.trim() && errorMessages.length > 0
-                    )}
+                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0)}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Enter event description'
@@ -264,9 +265,7 @@ export default function CreateEvent() {
                     required
                 />
                 {!description.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>
-                        Description is required
-                    </p>
+                    <p className='text-red-600 text-sm mt-1'>Description is required</p>
                 )}
             </div>
 
@@ -293,9 +292,7 @@ export default function CreateEvent() {
                         The &nbsp;<u>EXACT</u>&nbsp; event location will be
                         visible to all participants.
                     </p>
-                    <div
-                        className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}
-                    >
+                    <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
                         <MapDisplay
                             edit={true}
                             onLocationChange={(data) =>
@@ -306,36 +303,11 @@ export default function CreateEvent() {
                             }
                             width='100%'
                             height={300}
-                            shouldGetYourLocation
                         />
                     </div>
-                    {!global &&
-                        !location?.regionID &&
-                        errorMessages.length > 0 && (
-                        <p className='text-red-600 text-sm'>
-                                Location is required when Global is off
-                        </p>
+                    {!global && !location?.regionID && errorMessages.length > 0 && (
+                        <p className='text-red-600 text-sm'>Location is required when Global is off</p>
                     )}
-                </div>
-            )}
-
-            {global && (
-                <div className='space-y-2'>
-                    <label className='block font-semibold'>
-                        Event Link
-                        <span className='text-gray-500 text-sm font-normal'> (Optional)</span>
-                    </label>
-                    <input
-                        className={getInputClasses(false)}
-                        value={link}
-                        onChange={(e) => setLink(e.target.value)}
-                        placeholder='https://example.com/meeting-or-stream'
-                        inputMode='url'
-                        pattern='https?://.*'
-                    />
-                    <p className='text-xs text-gray-500'>
-                        Add a public or invite link if this is an online/global event.
-                    </p>
                 </div>
             )}
 
@@ -375,10 +347,7 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    End Time{' '}
-                    <span className='text-gray-500 text-sm font-normal'>
-                        (Optional)
-                    </span>
+                    End Time <span className='text-gray-500 text-sm font-normal'>(Optional)</span>
                 </label>
                 {endDate !== null ? (
                     <>
