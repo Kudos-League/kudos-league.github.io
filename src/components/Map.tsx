@@ -92,7 +92,9 @@ interface MapComponentPropsBase {
     regionID?: string;
     shouldGetYourLocation?: boolean;
     onLocationChange?: (data: LocationData | null) => void;
+    onLabelChange?: (label: string) => void;
     approximateRadiusMeters?: number;
+    inlineBanner?: boolean;
 }
 
 type MapComponentProps =
@@ -141,8 +143,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     exactLocation = true,
     regionID,
     onLocationChange,
+    onLabelChange,
     shouldGetYourLocation = false,
-    approximateRadiusMeters = 3200
+    approximateRadiusMeters = 3200,
+    inlineBanner = true
 }) => {
     const { location: userLocation, errorMsg } = useUserLocation();
     const fallback =
@@ -201,6 +205,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 setSearchInput(label);
                 setDisplayLabel(label);
                 setIsSearching(false);
+                onLabelChange?.(label);
 
                 onLocationChange?.({
                     coordinates: coords,
@@ -312,6 +317,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         changed: false
                     });
                     setDisplayLabel(label || '');
+                    onLabelChange?.(label || '');
                 })
                 .catch(() => setMapCoordinates(fallback))
                 .finally(() => setLoading(false));
@@ -355,7 +361,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const effectiveError = regionID ? null : errorMsg;
 
     // banner only when the address bar is visible AND there’s something to show, and not cleared
-    const showBanner = edit && !isCleared && (hasLabel || !!effectiveError);
+    const showBanner =
+        edit && inlineBanner && !isCleared && (hasLabel || !!effectiveError);
 
     // pick the text in priority order
     const bannerText = effectiveError || displayLabel || '';
@@ -403,6 +410,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             setIsCleared(true);
                             setMapCoordinates(DEFAULT_CENTER);
                             onLocationChange?.(null);
+                            onLabelChange?.('');
                         }}
                         showLeftIcon={true}
                         placeholder='Search address'
@@ -527,6 +535,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     setMapCoordinates(coords);
                                     setIsCleared(false);
                                     setSearchInput(label);
+                                    onLabelChange?.(label);
 
                                     onLocationChange?.({
                                         coordinates: coords,

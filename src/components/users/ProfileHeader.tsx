@@ -118,15 +118,22 @@ const ProfileHeader: React.FC<Props> = ({
                         Location
                     </h3>
                     {targetUser.location?.regionID ? (
-                        <div className='flex justify-center'>
-                            <MapDisplay
-                                regionID={targetUser.location.regionID}
-                                edit={false}
-                                exactLocation={isSelf}
-                                width='100%'
-                                height={200}
-                            />
-                        </div>
+                        <>
+                            <div className='flex justify-center'>
+                                <MapDisplay
+                                    regionID={targetUser.location.regionID}
+                                    edit={false}
+                                    exactLocation={isSelf}
+                                    width='100%'
+                                    height={200}
+                                />
+                            </div>
+                            {isSelf && targetUser.location?.name && (
+                                <p className='mt-2 text-gray-600 dark:text-gray-300 text-sm text-center'>
+                                    {targetUser.location.name}
+                                </p>
+                            )}
+                        </>
                     ) : (
                         <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
                             Location: not submitted

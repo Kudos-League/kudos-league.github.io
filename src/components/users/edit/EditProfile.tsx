@@ -57,6 +57,9 @@ const EditProfile: React.FC<Props> = ({
         next: '',
         confirm: ''
     });
+    const [locationLabel, setLocationLabel] = useState<string>(
+        targetUser?.location?.name || ''
+    );
 
     const targetUserID = targetUser?.id;
 
@@ -506,7 +509,15 @@ const EditProfile: React.FC<Props> = ({
                             />
                         </FormField>
 
-                        <FormField label='Location'>
+                        <FormField
+                            label='Location'
+                            help='Only you can see your exact address or place name. Others see an approximate area.'
+                        >
+                            {locationLabel && (
+                                <div className='mb-2 text-sm text-gray-700 dark:text-gray-300'>
+                                    {locationLabel}
+                                </div>
+                            )}
                             <MapDisplay
                                 regionID={targetUser.location?.regionID}
                                 width={400}
@@ -514,6 +525,8 @@ const EditProfile: React.FC<Props> = ({
                                 edit
                                 exactLocation
                                 shouldGetYourLocation
+                                inlineBanner={false}
+                                onLabelChange={(label) => setLocationLabel(label)}
                                 onLocationChange={(data) => {
                                     if (!data) {
                                         setLocation(null);
