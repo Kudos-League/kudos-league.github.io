@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { getMessages, getPublicChannels } from '@/shared/api/actions';
 import { useAuth } from '@/contexts/useAuth';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
-import { ChannelDTO } from '@/shared/api/types';
+import { ChannelDTO, MessageDTO } from '@/shared/api/types';
 import MessageGroup from './MessageGroup';
 import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
@@ -16,6 +16,7 @@ export default function PublicChat() {
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
     const [messageInput, setMessageInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const { messages, setMessages, joinChannel, leaveChannel, send } =
@@ -74,21 +75,26 @@ export default function PublicChat() {
 
     const sendMessage = async () => {
         if (!messageInput.trim() || !selectedChannel) return;
-        await send({ channel: selectedChannel, content: messageInput });
+        await send({
+            channel: selectedChannel,
+            content: messageInput,
+            replyToMessageID: replyTo?.id
+        });
         setMessageInput('');
+        setReplyTo(null);
     };
 
     return (
-        <div className='flex h-full bg-white overflow-hidden'>
-            <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
+        <div className='flex h-full bg-white dark:bg-zinc-900 overflow-hidden'>
+            <div className='w-48 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-zinc-100 dark:bg-zinc-800 p-3'>
                 {channels.map((channel) => (
                     <Button
                         key={channel.id}
                         onClick={() => selectChannel(channel)}
                         className={`block w-full text-left px-3 py-2 mb-1 rounded ${
                             selectedChannel?.id === channel.id
-                                ? 'bg-blue-100 font-semibold text-blue-800'
-                                : 'hover:bg-gray-200'
+                                ? 'bg-blue-100 font-semibold text-blue-800 dark:text-blue-100'
+                                : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100'
                         }`}
                     >
                         {channel.name}
@@ -97,7 +103,7 @@ export default function PublicChat() {
             </div>
 
             <div className='flex-1 flex flex-col'>
-                <div className='border-b p-4 text-center font-bold text-lg'>
+                <div className='border-b border-zinc-200 dark:border-zinc-800 p-4 text-center font-bold text-lg text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-900'>
                     {selectedChannel
                         ? selectedChannel.name
                         : 'Select a Chat Room'}
@@ -105,14 +111,14 @@ export default function PublicChat() {
 
                 <div
                     ref={scrollRef}
-                    className='flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50'
+                    className='flex-1 overflow-y-auto p-4 space-y-2 bg-zinc-50 dark:bg-zinc-900'
                 >
                     {loading ? (
-                        <div className='text-center text-gray-500 mt-4'>
+                        <div className='text-center text-zinc-500 mt-4'>
                             Loading...
                         </div>
                     ) : messages.length === 0 ? (
-                        <p className='text-center text-gray-400 italic'>
+                        <p className='text-center text-zinc-400 italic'>
                             No messages in this channel.
                         </p>
                     ) : (
@@ -123,6 +129,10 @@ export default function PublicChat() {
                                     isOwn={group[0].author?.id === user?.id}
                                     compact
                                     isPublic
+                                    onReply={(m) => setReplyTo(m)}
+                                    findMessageById={(id) =>
+                                        messages.find((mm) => mm.id === id)
+                                    }
                                 />
                             </SlideInOnScroll>
                         ))
@@ -130,23 +140,39 @@ export default function PublicChat() {
                 </div>
 
                 {selectedChannel && (
-                    <div className='border-t p-3 flex items-center'>
-                        <input
-                            type='text'
-                            value={messageInput}
-                            onChange={(e) => setMessageInput(e.target.value)}
-                            placeholder='Type a message...'
-                            className='flex-1 border rounded px-3 py-2'
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') sendMessage();
-                            }}
-                        />
-                        <Button
-                            onClick={sendMessage}
-                            className='ml-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
-                        >
-                            Send
-                        </Button>
+                    <div className='border-t border-zinc-200 dark:border-zinc-800 p-3 flex flex-col gap-2 bg-white dark:bg-zinc-900'>
+                        {replyTo && (
+                            <div className='flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded'>
+                                <span className='truncate'>
+                                    Replying to: {replyTo.content.slice(0, 80)}
+                                </span>
+                                <button
+                                    className='text-blue-600 dark:text-blue-400 hover:underline ml-2 shrink-0'
+                                    onClick={() => setReplyTo(null)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
+                        <div className='flex items-center'>
+                            <input
+                                type='text'
+                                value={messageInput}
+                                onChange={(e) => setMessageInput(e.target.value)}
+                                placeholder='Type a message...'
+                                className='flex-1 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded px-3 py-2'
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') sendMessage();
+                                    if (e.key === 'Escape') setReplyTo(null);
+                                }}
+                            />
+                            <Button
+                                onClick={sendMessage}
+                                className='ml-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'
+                            >
+                                Send
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -146,9 +146,42 @@ export function WebSocketProvider({
 
         const handleNewMessage = (m: MessageDTO | undefined | null) => {
             if (!m || typeof (m as any) !== 'object' || m.id == null) return;
-            setMessages((prev) =>
-                prev.some((x) => x?.id === m.id) ? prev : [...prev, m]
-            );
+            setMessages((prev) => {
+                const idx = prev.findIndex((x) => x?.id === m.id);
+                const enriched: MessageDTO = {
+                    ...(m as any),
+                    author:
+                        (m as any).author ||
+                        ((currentUserId != null &&
+                            ((m as any).authorID === currentUserId ||
+                                (m as any).author?.id === currentUserId))
+                            ? (user as any)
+                            : undefined),
+                    authorID:
+                        (m as any).authorID ??
+                        (m as any).author?.id ??
+                        (currentUserId != null &&
+                        ((m as any).author?.id === currentUserId ||
+                            (m as any).authorID === currentUserId)
+                            ? currentUserId
+                            : undefined)
+                } as MessageDTO;
+
+                if (idx === -1) {
+                    return [...prev, enriched];
+                }
+
+                const existing = prev[idx];
+                const merged: MessageDTO = {
+                    ...existing,
+                    ...enriched,
+                    author: existing.author || enriched.author,
+                    authorID: existing.authorID ?? enriched.authorID
+                } as MessageDTO;
+                const copy = [...prev];
+                copy[idx] = merged;
+                return copy;
+            });
         };
 
         const handleKudosUpdate = (p: { delta: number; total: number } | null | undefined) => {
