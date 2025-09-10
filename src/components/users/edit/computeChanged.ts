@@ -12,6 +12,7 @@ type Baseline = Pick<
     | 'location'
     | 'avatar'
     | 'avatarURL'
+    | 'admin'
 >;
 
 const norm = (v: unknown) => (typeof v === 'string' ? v.trim() : v);
@@ -38,6 +39,10 @@ export default function computeChanged(
         changed.about = (values.about || '').trim();
     if (norm(values.profession) !== norm(baseline.profession))
         changed.profession = (values.profession || '').trim();
+
+    if (typeof values.admin !== 'undefined' && values.admin !== baseline.admin) {
+        changed.admin = !!values.admin;
+    }
 
     // tags (compare as string[], emit string[])
     const nextTags = Array.isArray(values.tags) ? values.tags.map(String) : [];

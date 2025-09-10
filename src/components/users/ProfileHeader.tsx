@@ -25,7 +25,7 @@ const ProfileHeader: React.FC<Props> = ({
     onStartDM,
     isSelf
 }) => {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, user: currentUser } = useAuth();
 
     const getUserTitle = () => {
         if (targetUser.kudos > 10000) return 'Questing Knight';
@@ -87,7 +87,7 @@ const ProfileHeader: React.FC<Props> = ({
                         💬 Message
                     </Button>
                 )}
-                {isSelf && (
+                {(isSelf || currentUser?.admin) && (
                     <Button
                         data-testid='edit-profile'
                         onClick={onEditProfile}

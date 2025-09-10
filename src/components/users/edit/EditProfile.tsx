@@ -43,6 +43,7 @@ const EditProfile: React.FC<Props> = ({
 }) => {
     const auth = useAuth();
     const { user, updateUser: updateUserCache, token } = auth;
+    const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
 
     const { setLocation } = useLocation();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -76,9 +77,10 @@ const EditProfile: React.FC<Props> = ({
             tags: user.tags.map((t) => t.name) || [],
             about: user.settings?.about || '',
             profession: user.settings?.profession || '',
-            avatarURL: ''
+            avatarURL: '',
+            admin: targetUser?.admin ?? false
         }),
-        [user.id]
+        [user.id, targetUser?.id, targetUser?.admin]
     );
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
@@ -101,7 +103,8 @@ const EditProfile: React.FC<Props> = ({
                 about: u.settings?.about || '',
                 profession: u.settings?.profession || '',
                 tags: (u.tags || []).map((t: any) => t.name),
-                location: u.location || undefined
+                location: u.location || undefined,
+                admin: u.admin ?? false
             },
             { keepDirty: false, keepTouched: false }
         );
@@ -330,7 +333,8 @@ const EditProfile: React.FC<Props> = ({
                 tags: (updatedUser.tags || []).map((t: any) => t.name),
                 about: updatedUser.settings?.about || '',
                 profession: updatedUser.settings?.profession || '',
-                avatarURL: ''
+                avatarURL: '',
+                admin: updatedUser.admin ?? false
             } as any;
 
             setToastType('success');
@@ -412,25 +416,27 @@ const EditProfile: React.FC<Props> = ({
                             previewUrl={previewUrl}
                             targetUser={targetUser}
                         />
-                        <div className='relative'>
-                            <Button
-                                variant='secondary'
-                                onClick={() => setShowImageOptions((v) => !v)}
-                            >
-                                Change avatar
-                            </Button>
-                            <AvatarMenu
-                                open={showImageOptions}
-                                fileInputRef={fileInputRef}
-                                urlInputRef={urlInputRef}
-                                watchedAvatar={avatar as any}
-                                watchedAvatarURL={avatarURL as any}
-                                onFileChange={handleFileSelect}
-                                onURLSubmit={handleURLSubmit}
-                                onClear={clearImage}
-                                onClose={() => setShowImageOptions(false)}
-                            />
-                        </div>
+                        {!isAdminEditingOther && (
+                            <div className='relative'>
+                                <Button
+                                    variant='secondary'
+                                    onClick={() => setShowImageOptions((v) => !v)}
+                                >
+                                    Change avatar
+                                </Button>
+                                <AvatarMenu
+                                    open={showImageOptions}
+                                    fileInputRef={fileInputRef}
+                                    urlInputRef={urlInputRef}
+                                    watchedAvatar={avatar as any}
+                                    watchedAvatarURL={avatarURL as any}
+                                    onFileChange={handleFileSelect}
+                                    onURLSubmit={handleURLSubmit}
+                                    onClear={clearImage}
+                                    onClose={() => setShowImageOptions(false)}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Main form */}
@@ -438,6 +444,24 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={form.handleSubmit(handleFormSubmit)}
                         className='space-y-6'
                     >
+                        {auth.user?.admin && (
+                            <FormField label='Admin'>
+                                <label className='inline-flex items-center gap-2'>
+                                    <input
+                                        type='checkbox'
+                                        checked={!!form.watch('admin')}
+                                        onChange={(e) =>
+                                            form.setValue('admin', e.target.checked, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            })
+                                        }
+                                    />
+                                    <span className='text-sm text-gray-700 dark:text-gray-200'>Grant this user admin access</span>
+                                </label>
+                            </FormField>
+                        )}
+
                         <FormField label='Email'>
                             <Input
                                 disabled
@@ -456,6 +480,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.username}
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
@@ -465,6 +490,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.displayName}
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
@@ -475,6 +501,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder='e.g., Software Engineer'
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
@@ -489,83 +516,88 @@ const EditProfile: React.FC<Props> = ({
                                 label=''
                                 placeholder='Write a short bio...'
                                 multiline
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
-                        <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
-                            <TagInput
-                                initialTags={tags}
-                                onTagsChange={(nextTags) => {
-                                    const next = nextTags.map((t) => t.name);
-                                    const prev = form.getValues('tags') || [];
-                                    if (
-                                        JSON.stringify(next) !==
-                                        JSON.stringify(prev)
-                                    ) {
-                                        form.setValue('tags', next, {
-                                            shouldDirty: true,
-                                            shouldValidate: true
-                                        });
-                                    }
-                                }}
-                            />
-                        </FormField>
-
-                        <FormField
-                            label='Location'
-                            help='Only you can see your exact address or place name. Others see an approximate area.'
-                        >
-                            {locationLabel && (
-                                <div className='mb-2 text-sm text-gray-700 dark:text-gray-300'>
-                                    {locationLabel}
-                                </div>
-                            )}
-                            <MapDisplay
-                                regionID={targetUser.location?.regionID}
-                                width={400}
-                                height={300}
-                                edit
-                                exactLocation
-                                shouldGetYourLocation
-                                inlineBanner={false}
-                                onLabelChange={(label) => setLocationLabel(label)}
-                                onLocationChange={(data) => {
-                                    if (!data) {
-                                        setLocation(null);
-                                        form.setValue('location', null as any, {
-                                            shouldDirty: true,
-                                            shouldValidate: true
-                                        });
-                                        setTargetUser({
-                                            ...targetUser,
-                                            location: {
-                                                ...targetUser.location,
-                                                regionID: null
-                                            }
-                                        });
-                                        return;
-                                    }
-                                    if (!data.changed) return;
-                                    if (data.coordinates) {
-                                        setLocation(data.coordinates);
-                                        const next = {
-                                            ...data.coordinates,
-                                            name: data.name,
-                                            regionID: data.placeID
-                                        };
-                                        const prev =
-                                            form.getValues('location') || null;
-                                        const changed = !deepEqual(next, prev);
-                                        if (changed) {
-                                            form.setValue('location', next, {
+                        {!isAdminEditingOther && (
+                            <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
+                                <TagInput
+                                    initialTags={tags}
+                                    onTagsChange={(nextTags) => {
+                                        const next = nextTags.map((t) => t.name);
+                                        const prev = form.getValues('tags') || [];
+                                        if (
+                                            JSON.stringify(next) !==
+                                            JSON.stringify(prev)
+                                        ) {
+                                            form.setValue('tags', next, {
                                                 shouldDirty: true,
                                                 shouldValidate: true
                                             });
                                         }
-                                    }
-                                }}
-                            />
-                        </FormField>
+                                    }}
+                                />
+                            </FormField>
+                        )}
+
+                        {!isAdminEditingOther && (
+                            <FormField
+                                label='Location'
+                                help='Only you can see your exact address or place name. Others see an approximate area.'
+                            >
+                                {locationLabel && (
+                                    <div className='mb-2 text-sm text-gray-700 dark:text-gray-300'>
+                                        {locationLabel}
+                                    </div>
+                                )}
+                                <MapDisplay
+                                    regionID={targetUser.location?.regionID}
+                                    width={400}
+                                    height={300}
+                                    edit
+                                    exactLocation
+                                    shouldGetYourLocation
+                                    inlineBanner={false}
+                                    onLabelChange={(label) => setLocationLabel(label)}
+                                    onLocationChange={(data) => {
+                                        if (!data) {
+                                            setLocation(null);
+                                            form.setValue('location', null as any, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            });
+                                            setTargetUser({
+                                                ...targetUser,
+                                                location: {
+                                                    ...targetUser.location,
+                                                    regionID: null
+                                                }
+                                            });
+                                            return;
+                                        }
+                                        if (!data.changed) return;
+                                        if (data.coordinates) {
+                                            setLocation(data.coordinates);
+                                            const next = {
+                                                ...data.coordinates,
+                                                name: data.name,
+                                                regionID: data.placeID
+                                            };
+                                            const prev =
+                                            form.getValues('location') || null;
+                                            const changed = !deepEqual(next, prev);
+                                            if (changed) {
+                                                form.setValue('location', next, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                            }
+                                        }
+                                    }}
+                                />
+                            </FormField>
+                        )}
 
                         <ActionsBar
                             canSave={canSave}
@@ -577,66 +609,68 @@ const EditProfile: React.FC<Props> = ({
                     </form>
                 </SettingsSection>
 
-                <SettingsSection
-                    title='Connected accounts'
-                    description='Link or unlink your social accounts.'
-                >
-                    <div className='space-y-4'>
-                        <div className='flex items-center justify-between'>
-                            <div>
-                                <div className='font-medium'>Discord</div>
-                                <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                    {user.discordID ? 'Connected' : 'Not connected'}
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Connected accounts'
+                        description='Link or unlink your social accounts.'
+                    >
+                        <div className='space-y-4'>
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <div className='font-medium'>Discord</div>
+                                    <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                        {user.discordID ? 'Connected' : 'Not connected'}
+                                    </div>
                                 </div>
-                            </div>
-                            {user.discordID ? (
-                                <OAuthDisconnectButton
-                                    provider='discord'
-                                    onSuccess={() => {
-                                        updateUserCache({ discordID: undefined as any });
-                                        setToastType('success');
-                                        setToastMessage('Discord disconnected');
-                                    }}
-                                    onError={(m) => {
-                                        setToastType('error');
-                                        setToastMessage(m);
-                                    }}
-                                />
-                            ) : (
-                                <OAuthConnectButton provider='discord'>
+                                {user.discordID ? (
+                                    <OAuthDisconnectButton
+                                        provider='discord'
+                                        onSuccess={() => {
+                                            updateUserCache({ discordID: undefined as any });
+                                            setToastType('success');
+                                            setToastMessage('Discord disconnected');
+                                        }}
+                                        onError={(m) => {
+                                            setToastType('error');
+                                            setToastMessage(m);
+                                        }}
+                                    />
+                                ) : (
+                                    <OAuthConnectButton provider='discord'>
                                     Connect
-                                </OAuthConnectButton>
-                            )}
-                        </div>
+                                    </OAuthConnectButton>
+                                )}
+                            </div>
 
-                        <div className='flex items-center justify-between'>
-                            <div>
-                                <div className='font-medium'>Google</div>
-                                <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                    {user.googleID ? 'Connected' : 'Not connected'}
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <div className='font-medium'>Google</div>
+                                    <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                        {user.googleID ? 'Connected' : 'Not connected'}
+                                    </div>
                                 </div>
-                            </div>
-                            {user.googleID ? (
-                                <OAuthDisconnectButton
-                                    provider='google'
-                                    onSuccess={() => {
-                                        updateUserCache({ googleID: undefined as any });
-                                        setToastType('success');
-                                        setToastMessage('Google disconnected');
-                                    }}
-                                    onError={(m) => {
-                                        setToastType('error');
-                                        setToastMessage(m);
-                                    }}
-                                />
-                            ) : (
-                                <OAuthConnectButton provider='google'>
+                                {user.googleID ? (
+                                    <OAuthDisconnectButton
+                                        provider='google'
+                                        onSuccess={() => {
+                                            updateUserCache({ googleID: undefined as any });
+                                            setToastType('success');
+                                            setToastMessage('Google disconnected');
+                                        }}
+                                        onError={(m) => {
+                                            setToastType('error');
+                                            setToastMessage(m);
+                                        }}
+                                    />
+                                ) : (
+                                    <OAuthConnectButton provider='google'>
                                     Connect
-                                </OAuthConnectButton>
-                            )}
+                                    </OAuthConnectButton>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </SettingsSection>
+                    </SettingsSection>
+                )}
 
                 <SettingsSection
                     title='Change password'
@@ -690,42 +724,46 @@ const EditProfile: React.FC<Props> = ({
                     </form>
                 </SettingsSection>
 
-                <SettingsSection
-                    title='Log out other sessions'
-                    description='Enter your password to log out from other devices.'
-                >
-                    <form
-                        className='space-y-6'
-                        onSubmit={handleLogoutOtherSessions}
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Log out other sessions'
+                        description='Enter your password to log out from other devices.'
                     >
-                        <FormField label='Your password'>
-                            <input
-                                type='password'
-                                value={logoutPassword}
-                                onChange={(e) =>
-                                    setLogoutPassword(e.target.value)
-                                }
-                                className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
-                            />
-                        </FormField>
-                        <Button type='submit'>Log out other sessions</Button>
-                    </form>
-                </SettingsSection>
+                        <form
+                            className='space-y-6'
+                            onSubmit={handleLogoutOtherSessions}
+                        >
+                            <FormField label='Your password'>
+                                <input
+                                    type='password'
+                                    value={logoutPassword}
+                                    onChange={(e) =>
+                                        setLogoutPassword(e.target.value)
+                                    }
+                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                />
+                            </FormField>
+                            <Button type='submit'>Log out other sessions</Button>
+                        </form>
+                    </SettingsSection>
+                )}
 
-                <SettingsSection
-                    title='Deactivate account'
-                    description='This deactivates your account. You may request reactivation later.'
-                    noBorder
-                >
-                    <form
-                        className='flex items-start'
-                        onSubmit={handleDeleteAccount}
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Deactivate account'
+                        description='This deactivates your account. You may request reactivation later.'
+                        noBorder
                     >
-                        <Button type='submit' variant='danger'>
+                        <form
+                            className='flex items-start'
+                            onSubmit={handleDeleteAccount}
+                        >
+                            <Button type='submit' variant='danger'>
                             Deactivate my account
-                        </Button>
-                    </form>
-                </SettingsSection>
+                            </Button>
+                        </form>
+                    </SettingsSection>
+                )}
             </div>
 
             {/* Global toast */}

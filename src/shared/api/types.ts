@@ -60,6 +60,7 @@ export type ProfileFormValues = {
     avatarURL?: string;
     location: MapCoordinates;
     tags?: string[];
+    admin?: boolean;
     mapCoordinates?: {
         latitude: number;
         longitude: number;
