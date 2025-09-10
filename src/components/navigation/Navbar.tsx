@@ -6,12 +6,7 @@ import {
     PopoverBackdrop,
     PopoverPanel
 } from '@headlessui/react';
-import {
-    BellIcon,
-    ChevronDownIcon,
-    XMarkIcon,
-    FlagIcon
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon, XMarkIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import clsx from 'clsx';
@@ -20,6 +15,7 @@ import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
 import FeedbackModal from '@/components/common/FeedbackModal';
 import { createFeedback } from '@/shared/api/actions';
+import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 type NavItem = {
     name: string;
@@ -228,17 +224,6 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-function NotificationsIcon() {
-    return (
-        <button
-            type='button'
-            className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 dark:hover:ring-white/20'
-        >
-            <BellIcon className='h-5 w-5' />
-        </button>
-    );
-}
-
 export type NavbarProps = {
     isLoggedIn: boolean;
     user?: { id: number; admin?: boolean };
@@ -284,7 +269,7 @@ export default function Navbar({
 
                     {isLoggedIn ? (
                         <>
-                            <NotificationsIcon />
+                            <NotificationsBell />
                             <button
                                 type='button'
                                 aria-label='Feedback'

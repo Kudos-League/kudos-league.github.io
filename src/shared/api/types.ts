@@ -309,7 +309,8 @@ export interface UserDTO {
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
     POST_REPLY: 'post-reply',
-    POST_AUTO_CLOSE: 'post-auto-close'
+    POST_AUTO_CLOSE: 'post-auto-close',
+    PAST_GIFT: 'past-gift'
 } as const;
 
 export type NotificationTypeKeys =
@@ -330,4 +331,5 @@ export type PostReplyNotification = {
 export type NotificationPayload =
     | DirectMessageNotification
     | PostReplyNotification
-    | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string };
+    | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
+    | { type: typeof NotificationType.PAST_GIFT; postID: number };

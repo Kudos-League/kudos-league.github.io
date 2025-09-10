@@ -71,6 +71,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     const text = n.message?.content || '';
                     pushAlert({ type: 'info', message: `New reply on your post: ${text}` });
                 }
+                else if (n.type === 'past-gift') {
+                    pushAlert({ type: 'info', message: `Past gift logged on your profile.` });
+                }
                 else if (n.type === 'post-auto-close') {
                     const when = (n as any).closedAt || (n as any).closeAt;
                     const msg = when
