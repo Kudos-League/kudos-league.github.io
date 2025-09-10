@@ -302,6 +302,17 @@ export async function reactivateUser(id: number, token: string) {
     return response.data as UserDTO;
 }
 
+/** @throws {AxiosError} */
+export async function disconnectProvider(provider: 'discord' | 'google', token: string) {
+    if (!token) throw Error('Invalid token');
+    const response = await instance.delete(`/users/connections/${provider}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data as UserDTO;
+}
+
 /**
  * Adds a tag to a user
  * @param userId The ID of the user (defaults to "me" for the current user)

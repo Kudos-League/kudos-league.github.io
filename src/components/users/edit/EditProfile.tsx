@@ -22,6 +22,8 @@ import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import { deleteAccount as deleteAccountAPI } from '@/shared/api/actions';
+import OAuthConnectButton from '@/components/login/OAuthConnectButton';
+import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
 
 const bustCache = (u: string) =>
@@ -573,6 +575,67 @@ const EditProfile: React.FC<Props> = ({
 
                         <ErrorList errors={form.formState.errors as any} />
                     </form>
+                </SettingsSection>
+
+                <SettingsSection
+                    title='Connected accounts'
+                    description='Link or unlink your social accounts.'
+                >
+                    <div className='space-y-4'>
+                        <div className='flex items-center justify-between'>
+                            <div>
+                                <div className='font-medium'>Discord</div>
+                                <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                    {user.discordID ? 'Connected' : 'Not connected'}
+                                </div>
+                            </div>
+                            {user.discordID ? (
+                                <OAuthDisconnectButton
+                                    provider='discord'
+                                    onSuccess={() => {
+                                        updateUserCache({ discordID: undefined as any });
+                                        setToastType('success');
+                                        setToastMessage('Discord disconnected');
+                                    }}
+                                    onError={(m) => {
+                                        setToastType('error');
+                                        setToastMessage(m);
+                                    }}
+                                />
+                            ) : (
+                                <OAuthConnectButton provider='discord'>
+                                    Connect
+                                </OAuthConnectButton>
+                            )}
+                        </div>
+
+                        <div className='flex items-center justify-between'>
+                            <div>
+                                <div className='font-medium'>Google</div>
+                                <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                    {user.googleID ? 'Connected' : 'Not connected'}
+                                </div>
+                            </div>
+                            {user.googleID ? (
+                                <OAuthDisconnectButton
+                                    provider='google'
+                                    onSuccess={() => {
+                                        updateUserCache({ googleID: undefined as any });
+                                        setToastType('success');
+                                        setToastMessage('Google disconnected');
+                                    }}
+                                    onError={(m) => {
+                                        setToastType('error');
+                                        setToastMessage(m);
+                                    }}
+                                />
+                            ) : (
+                                <OAuthConnectButton provider='google'>
+                                    Connect
+                                </OAuthConnectButton>
+                            )}
+                        </div>
+                    </div>
                 </SettingsSection>
 
                 <SettingsSection

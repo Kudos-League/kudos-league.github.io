@@ -12,6 +12,34 @@ import Pill from '@/components/common/Pill';
 
 import type { UserDTO } from '@/shared/api/types';
 
+const DISCORD_ICON_SRC = '/images/discord.svg';
+const GOOGLE_ICON_SRC = '/images/google.png';
+
+const SocialBadgeIcon = ({ src, alt, bg, label }: { src?: string; alt: string; bg?: string; label?: string }) => {
+    if (src) {
+        return (
+            <img
+                src={src}
+                alt={alt}
+                title={alt}
+                width={16}
+                height={16}
+                className='inline-block rounded-[3px] align-middle'
+            />
+        );
+    }
+
+    return (
+        <span
+            className='inline-flex items-center justify-center rounded-full text-[10px] font-bold text-white'
+            style={{ width: 16, height: 16, backgroundColor: bg || '#6b7280' }}
+            title={alt}
+        >
+            {label ?? ''}
+        </span>
+    );
+};
+
 type TriggerVariant = 'name' | 'avatar-name';
 
 interface Props {
@@ -297,6 +325,24 @@ const UserCard: React.FC<Props> = ({
                                             Not Verified
                                         </Pill>
                                     )}
+                                    <div className='ml-1 inline-flex items-center gap-1'>
+                                        {user.discordID ? (
+                                            <SocialBadgeIcon
+                                                src={DISCORD_ICON_SRC}
+                                                alt='Discord connected'
+                                                bg='#7289DA'
+                                                label='D'
+                                            />
+                                        ) : null}
+                                        {user.googleID ? (
+                                            <SocialBadgeIcon
+                                                src={GOOGLE_ICON_SRC}
+                                                alt='Google connected'
+                                                bg='#4285F4'
+                                                label='G'
+                                            />
+                                        ) : null}
+                                    </div>
                                 </div>
 
                                 <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
@@ -314,22 +360,6 @@ const UserCard: React.FC<Props> = ({
                                         </span>{' '}
                                         {fmtDate(user.createdAt) || '—'}
                                     </div>
-                                    {user.discordID ? (
-                                        <div className='truncate col-span-2'>
-                                            <span className='opacity-70'>
-                                                Discord:
-                                            </span>{' '}
-                                            {user.discordID}
-                                        </div>
-                                    ) : null}
-                                    {user.googleID ? (
-                                        <div className='truncate col-span-2'>
-                                            <span className='opacity-70'>
-                                                Google:
-                                            </span>{' '}
-                                            {user.googleID}
-                                        </div>
-                                    ) : null}
                                     {user.email ? (
                                         <div className='truncate col-span-2'>
                                             <span className='opacity-70'>
