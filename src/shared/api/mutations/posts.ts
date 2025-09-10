@@ -176,3 +176,20 @@ export function useCreatePost() {
         }
     });
 }
+
+export function useReportPastGift() {
+    const qc = useQueryClient();
+    return useMutation<PostDTO, Error, (CreatePostDTO & { receiverID: number })>({
+        mutationFn: (payload) =>
+            apiMutate<PostDTO, any>('/posts/past-gift', 'post', payload, {
+                as: 'form'
+            }),
+        onSuccess: (created) => {
+            qc.invalidateQueries({ queryKey: ['posts'] });
+            pushAlert({ type: 'success', message: 'Past gift logged.' });
+        },
+        onError: (err) => {
+            pushAlert({ type: 'danger', message: extractErrMessage(err) });
+        }
+    });
+}

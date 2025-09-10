@@ -30,6 +30,7 @@ export type PostDTO = {
     title: string;
     body: string;
     isRequest: boolean;
+    isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';
     status: string;

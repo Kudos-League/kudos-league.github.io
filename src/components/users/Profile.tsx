@@ -12,6 +12,7 @@ import { createDMChannel, reactivateUser } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
+import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 
 type Props = {
     user: UserDTO;
@@ -33,6 +34,7 @@ const Profile: React.FC<Props> = ({
 
     const isSelf = currentUser?.id === user.id;
     const [editing, setEditing] = useState(false);
+    const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const Filters = getFilters(isSelf);
     const [filter, setFilter] = useState<FilterType>(Filters[0]);
 
@@ -75,15 +77,22 @@ const Profile: React.FC<Props> = ({
     }
 
     return (
-        <div className='max-w-5xl mx-auto'>
+        <><div className='max-w-5xl mx-auto'>
             <div className='bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg px-4 sm:px-6 lg:px-8 py-8 space-y-8'>
                 <ProfileHeader
                     user={user}
                     userSettings={user.settings}
                     isSelf={isSelf}
                     onEditProfile={() => setEditing(true)}
-                    onStartDM={handleStartDM}
-                />
+                    onStartDM={handleStartDM} />
+
+                {!isSelf && (
+                    <div className='flex justify-center'>
+                        <Button onClick={() => setShowPastGiftModal(true)} className='!bg-teal-600 !text-white'>
+                            Log Past Gift
+                        </Button>
+                    </div>
+                )}
 
                 {currentUser?.admin && !isSelf && user.deactivatedAt && (
                     <div className='flex justify-center'>
@@ -91,7 +100,7 @@ const Profile: React.FC<Props> = ({
                             <span>This account is deactivated.</span>
                             <button
                                 className='px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700'
-                                onClick={handleReactivate}
+                                onClick={ handleReactivate }
                             >
                                 Reactivate
                             </button>
@@ -99,10 +108,10 @@ const Profile: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Divider under header */}
+                {/* Divider under header */ }
                 <div className='border-t border-gray-200 dark:border-white/10' />
 
-                {/* Profession */}
+                {/* Profession */ }
                 {user.settings?.profession && (
                     <div className='flex justify-center'>
                         <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
@@ -116,7 +125,7 @@ const Profile: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Filter Buttons */}
+                {/* Filter Buttons */ }
                 <div className='flex flex-wrap gap-3 justify-center'>
                     {Filters.map((type) => {
                         const active = filter === type;
@@ -137,10 +146,10 @@ const Profile: React.FC<Props> = ({
                     })}
                 </div>
 
-                {/* Divider under filters */}
+                {/* Divider under filters */ }
                 <div className='border-t border-gray-200 dark:border-white/10' />
 
-                {/* Filtered Content */}
+                {/* Filtered Content */ }
                 {filter === FiltersEnum.RequestsGifts ? (
                     <div className='grid gap-4'>
                         {handshakes.length === 0 ? (
@@ -155,8 +164,7 @@ const Profile: React.FC<Props> = ({
                                 onShowAll={() => {
                                     console.log('Show all handshakes'); // TODO
                                 }}
-                                showPostDetails
-                            />
+                                showPostDetails />
                         )}
                     </div>
                 ) : filter === 'events' ? (
@@ -167,20 +175,19 @@ const Profile: React.FC<Props> = ({
                             </p>
                         ) : (
                             events.map((event) => (
-                                <EventCard key={event.id} event={event} />
+                                <EventCard key={ event.id } event={ event } />
                             ))
                         )}
                     </div>
                 ) : (
                     <PostList
-                        posts={posts.filter(
+                        posts={ posts.filter(
                             (post) => filter === 'all' || post.type === filter
                         )}
-                        showHandshakeShortcut
-                    />
+                        showHandshakeShortcut />
                 )}
             </div>
-        </div>
+        </div><ReportPastGiftModal open={ showPastGiftModal } onClose={ () => setShowPastGiftModal(false) } receiverID={ user.id } /></>
     );
 };
 
