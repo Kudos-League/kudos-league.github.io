@@ -893,6 +893,7 @@ export async function getGeocodedLocation(query: string, token: string) {
     return response.data;
 }
 
+/** @throws {AxiosError} */
 export async function fetchNotifications(token: string, limit = 50) {
     const res = await instance.get('/notifications', {
         params: { limit },
@@ -902,9 +903,19 @@ export async function fetchNotifications(token: string, limit = 50) {
     return res.data;
 }
 
+/** @throws {AxiosError} */
 export async function markAllNotificationsRead(token: string) {
     await instance.post('/notifications/mark-all-read', null, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
     });
+}
+
+/** @throws {AxiosError} */
+export async function getMonthlyActiveUsers(token: string): Promise<{ month: string; count: number }[]> {
+    if (!token) throw new Error('Invalid token');
+    const res = await instance.get('/admin/analytics/mau', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data ?? [];
 }

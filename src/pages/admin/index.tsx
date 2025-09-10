@@ -3,12 +3,13 @@ import { useAuth } from '@/contexts/useAuth';
 import { getReports, getFeedbacks } from '@/shared/api/actions';
 import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import Button from '@/components/common/Button';
 
 export default function AdminDashboard() {
     const { token, user } = useAuth();
 
-    const [tab, setTab] = useState<'reports' | 'feedback'>('reports');
+    const [tab, setTab] = useState<'reports' | 'feedback' | 'analytics'>('reports');
 
     const [reports, setReports] = useState<any[]>([]);
     const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -69,16 +70,26 @@ export default function AdminDashboard() {
                     >
                         Feedback
                     </Button>
+                    <Button
+                        variant={tab === 'analytics' ? 'primary' : 'ghost'}
+                        onClick={() => setTab('analytics')}
+                    >
+                        Analytics
+                    </Button>
                 </div>
             </div>
 
-            {tab === 'reports' ? (
+            {tab === 'reports' && (
                 <ReportsDashboard reports={reports} setReports={setReports} />
-            ) : (
+            )}
+            {tab === 'feedback' && (
                 <FeedbackDashboard
                     feedbacks={feedbacks}
                     setFeedbacks={setFeedbacks}
                 />
+            )}
+            {tab === 'analytics' && (
+                <AdminAnalytics />
             )}
         </div>
     );
