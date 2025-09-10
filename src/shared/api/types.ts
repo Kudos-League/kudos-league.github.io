@@ -10,6 +10,7 @@ export type CreatePostDTO = {
     files?: File[];
     categoryID: number;
     location?: LocationDTO | null;
+    itemsLimit?: number | null;
 };
 
 export type UpdatePostDTO = Omit<Partial<PostDTO>, 'tags'> & {
@@ -40,6 +41,7 @@ export type PostDTO = {
     updatedAt: Date;
     location: LocationDTO;
     category: CategoryDTO;
+    itemsLimit?: number | null;
     handshakes?: HandshakeDTO[];
     rewardOffers?: RewardOfferDTO[];
     messages?: MessageDTO[];

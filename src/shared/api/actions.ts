@@ -56,6 +56,9 @@ function toFormData(dto: Record<string, any>): FormData {
         else if (val !== undefined && val !== null) {
             fd.append(key, val);
         }
+        else if (val === null) {
+            fd.append(key, '');
+        }
     }
 
     return fd;

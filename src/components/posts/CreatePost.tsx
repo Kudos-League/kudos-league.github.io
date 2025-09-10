@@ -22,6 +22,7 @@ type FormValues = {
     files?: File[];
     tags: string[];
     categoryID: number;
+    itemsLimit?: string;
 };
 
 type Props = { setShowLoginForm: (show: boolean) => void };
@@ -32,7 +33,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const routerLocation = useLocation();
 
     const form = useForm<FormValues>({
-        defaultValues: { tags: [], categoryID: 0, type: 'gift' }
+        defaultValues: { tags: [], categoryID: 0, type: 'gift', itemsLimit: '' }
     });
 
     const { data: categories = [], isLoading: catsLoading } = useCategories();
@@ -100,6 +101,17 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
+        if (!data.categoryID || data.categoryID < 1) {
+            form.setError('categoryID', {
+                type: 'required',
+                message: 'Please select a category'
+            });
+            return;
+        }
+
+        const limit = (data.itemsLimit ?? '').trim();
+        const itemsLimit = limit === '' ? null : Math.max(1, parseInt(limit, 10));
+
         const payload: CreatePostDTO = {
             title: data.title,
             body: data.body,
@@ -107,7 +119,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             tags: data.tags,
             categoryID: data.categoryID,
             files: selectedImages,
-            location
+            location,
+            itemsLimit
         };
 
         setServerError(null);
@@ -119,7 +132,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 body: '',
                 tags: [],
                 categoryID: 0,
-                type: 'gift'
+                type: 'gift',
+                itemsLimit: ''
             });
             setSelectedImages([]);
             setLocation(null);
@@ -182,12 +196,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     value: String(c.id)
                 }))}
                 value={String(form.watch('categoryID') || '')}
-                onChange={(val) =>
+                onChange={(val) => {
+                    form.clearErrors('categoryID');
                     form.setValue('categoryID', parseInt(val), {
                         shouldValidate: true,
                         shouldDirty: true
-                    })
-                }
+                    });
+                }}
                 placeholder={catsLoading ? 'Loading…' : 'Select a category'}
             />
             {form.formState.errors.categoryID && (
@@ -195,6 +210,30 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     {form.formState.errors.categoryID.message as any}
                 </p>
             )}
+
+            <div className='mt-2'>
+                <label className='block text-sm font-semibold text-gray-800 dark:text-gray-200'>
+                    Number of items (leave blank for unlimited)
+                </label>
+                <input
+                    type='text'
+                    inputMode='numeric'
+                    pattern='[0-9]*'
+                    className='w-full border rounded px-3 py-2'
+                    placeholder='e.g., 1'
+                    value={form.watch('itemsLimit') || ''}
+                    onChange={(e) => {
+                        const v = e.target.value.replace(/[^0-9]/g, '');
+                        form.setValue('itemsLimit', v, {
+                            shouldDirty: true,
+                            shouldValidate: true
+                        });
+                    }}
+                />
+                <p className='text-xs text-gray-500 mt-1'>
+                    Limits how many accepted/completed handshakes this post can have.
+                </p>
+            </div>
 
             {/* Images */}
             <div>

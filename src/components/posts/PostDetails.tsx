@@ -77,7 +77,8 @@ export default function PostDetails(props: Props) {
         title: '',
         body: '',
         tags: [] as string[],
-        location: null as LocationDTO | null
+        location: null as LocationDTO | null,
+        itemsLimit: '' as string
     });
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -385,7 +386,11 @@ export default function PostDetails(props: Props) {
             title: postDetails.title,
             body: postDetails.body,
             tags: postDetails.tags?.map((tag) => tag.name) || [],
-            location: postDetails.location || null
+            location: postDetails.location || null,
+            itemsLimit:
+                typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0
+                    ? String(postDetails.itemsLimit)
+                    : ''
         });
         setIsEditing(true);
     };
@@ -406,6 +411,10 @@ export default function PostDetails(props: Props) {
             ) {
                 updateData.location = editData.location;
             }
+
+            const limitStr = (editData.itemsLimit || '').trim();
+            if (limitStr === '') updateData.itemsLimit = null;
+            else if (/^\d+$/.test(limitStr)) updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
 
             const updated = await updatePostMut.mutateAsync({
                 id: postDetails.id,
@@ -500,6 +509,9 @@ export default function PostDetails(props: Props) {
                     </span>
                     <span className='px-2 py-1 rounded bg-gray-700 text-white text-xs'>
                         {postDetails.status}
+                    </span>
+                    <span className='px-2 py-1 rounded bg-gray-700 text-white text-xs'>
+                        Items: {typeof postDetails.itemsLimit === 'number' ? postDetails.itemsLimit : '∞'}
                     </span>
 
                     {postDetails.tags?.map((tag, i) => (
@@ -606,6 +618,28 @@ export default function PostDetails(props: Props) {
                             exactLocation={user?.id === postDetails.sender?.id}
                             onLocationChange={handleLocationChange}
                         />
+                    </div>
+
+                    <div>
+                        <label className='block text-sm font-medium mb-1'>
+                            Number of items (leave blank for unlimited)
+                        </label>
+                        <input
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            inputMode='numeric'
+                            pattern='[0-9]*'
+                            placeholder='e.g., 1'
+                            value={editData.itemsLimit}
+                            onChange={(e) =>
+                                setEditData({
+                                    ...editData,
+                                    itemsLimit: e.target.value.replace(/[^0-9]/g, '')
+                                })
+                            }
+                        />
+                        <p className='text-xs text-gray-500 mt-1'>
+                            Limits how many accepted/completed handshakes the post can have.
+                        </p>
                     </div>
 
                     {/* Action Buttons */}
