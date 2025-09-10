@@ -5,6 +5,8 @@ import { toZonedTime } from 'date-fns-tz';
 import { useAuth } from '@/contexts/useAuth';
 import { EventDTO } from '@/shared/api/types';
 import { joinEvent, leaveEvent } from '@/shared/api/actions';
+import { useJoinEvent } from '@/shared/api/mutations/events';
+import { useQueryClient } from '@tanstack/react-query';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
@@ -19,6 +21,8 @@ export default function EventDetails({ event, setEvent }: Props) {
     const { user, token } = useAuth();
 
     const [joining, setJoining] = useState(false);
+    const joinMutation = useJoinEvent(event.id);
+    const qc = useQueryClient();
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -27,7 +31,7 @@ export default function EventDetails({ event, setEvent }: Props) {
 
         setJoining(true);
         try {
-            await joinEvent(event.id, token);
+            await joinMutation.mutateAsync();
             setEvent({
                 ...event,
                 participants: [...(event.participants || []), user]
@@ -46,6 +50,7 @@ export default function EventDetails({ event, setEvent }: Props) {
 
         try {
             await leaveEvent(event.id, token);
+            qc.invalidateQueries({ queryKey: ['events'] });
             setEvent({
                 ...event,
                 participants: event.participants.filter(
