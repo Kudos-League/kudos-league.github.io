@@ -546,7 +546,7 @@ export default function PostDetails(props: Props) {
 
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className='bg-white p-6 border rounded-lg mb-6 space-y-4'>
+                <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100'>
                     <h3 className='text-lg font-semibold'>Edit Post</h3>
 
                     {/* Title */}
@@ -555,7 +555,7 @@ export default function PostDetails(props: Props) {
                             Title
                         </label>
                         <input
-                            className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             value={editData.title}
                             onChange={(e) =>
                                 setEditData({
@@ -573,7 +573,7 @@ export default function PostDetails(props: Props) {
                             Description
                         </label>
                         <textarea
-                            className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             rows={4}
                             value={editData.body}
                             onChange={(e) =>
@@ -622,10 +622,12 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-100 rounded p-4 mb-6 break-all'>
-                    <TextWithLinks>{postDetails.body}</TextWithLinks>
+                <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
+                    <TextWithLinks className='text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words'>
+                        {postDetails.body}
+                    </TextWithLinks>
                     {postDetails.rewardOffers?.[0]?.kudosFinal && (
-                        <p className='mt-2 font-semibold text-blue-600'>
+                        <p className='mt-2 font-semibold text-blue-600 dark:text-blue-400'>
                             Final Kudos:{' '}
                             {postDetails.rewardOffers[0].kudosFinal}
                         </p>
@@ -749,13 +751,13 @@ export default function PostDetails(props: Props) {
             {/* Report Modal */}
             {reportModalVisible && (
                 <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
-                    <div className='bg-white rounded-lg p-6 w-full max-w-md shadow-xl'>
+                    <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
                         <h2 className='text-xl font-bold mb-2'>Report Post</h2>
-                        <p className='text-sm text-gray-600 mb-4'>
+                        <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
                             Why are you reporting this post?
                         </p>
                         <textarea
-                            className='w-full border border-gray-300 rounded p-2 mb-4'
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                             rows={4}
                             placeholder='Enter reason...'
                             value={reportReason}
