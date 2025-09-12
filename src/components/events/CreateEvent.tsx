@@ -203,6 +203,7 @@ export default function CreateEvent() {
         catch (msgs: any) {
             setErrorMessages((msgs as string[]) ?? ['Failed to create event']);
         }
+        navigate('/events');
     };
 
     const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {
