@@ -8,6 +8,7 @@ interface Props {
     onSearch: (value: string) => void;
     onSelect: (channel: ChannelDTO) => void;
     selectedChannel: ChannelDTO | null;
+    isMobile?: boolean;
 }
 
 const DMList: React.FC<Props> = ({
@@ -15,7 +16,8 @@ const DMList: React.FC<Props> = ({
     searchQuery,
     onSearch,
     onSelect,
-    selectedChannel
+    selectedChannel,
+    isMobile = false
 }) => {
     const filteredChannels = channels.filter((c) =>
         c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -56,8 +58,14 @@ const DMList: React.FC<Props> = ({
     };
 
     return (
-        <div className='w-1/3 border-r border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 h-full flex flex-col p-4'>
-            <h2 className='text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4'>
+        <div className={`${
+            isMobile ? 'w-full' : 'w-1/3'
+        } border-r border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 h-full flex flex-col ${
+            isMobile ? 'p-4' : 'p-4'
+        }`}>
+            <h2 className={`font-bold text-zinc-900 dark:text-zinc-100 mb-4 ${
+                isMobile ? 'text-xl text-center' : 'text-xl'
+            }`}>
                 Direct Messages
             </h2>
 
@@ -66,12 +74,14 @@ const DMList: React.FC<Props> = ({
                 placeholder='Search by username...'
                 value={searchQuery}
                 onChange={(e) => onSearch(e.target.value)}
-                className='border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 mb-4 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
+                className={`border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 mb-4 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors ${
+                    isMobile ? 'py-3 text-base' : 'py-2 text-sm'
+                }`}
             />
 
             <div className='overflow-y-auto flex-1 space-y-2'>
                 {filteredChannels.length === 0 && (
-                    <p className='text-sm text-gray-500'>
+                    <p className={`text-gray-500 ${isMobile ? 'text-center text-base' : 'text-sm'}`}>
                         {channels.length === 0
                             ? 'No conversations found.'
                             : 'No matches found.'}
@@ -89,29 +99,37 @@ const DMList: React.FC<Props> = ({
                         <div
                             key={channel.id}
                             onClick={() => onSelect(channel)}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                            className={`flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                                isMobile 
+                                    ? 'p-4 active:bg-zinc-200 dark:active:bg-zinc-700' 
+                                    : 'p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            } ${
                                 isSelected
                                     ? 'bg-teal-100 dark:bg-teal-800 text-teal-900 dark:text-teal-100'
-                                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                                    : ''
                             }`}
                         >
                             <div className='flex-1 min-w-0'>
                                 <div className='flex justify-between items-baseline'>
-                                    <p className='font-semibold text-zinc-900 dark:text-zinc-100 truncate'>
+                                    <p className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
+                                        isMobile ? 'text-base' : 'text-sm'
+                                    }`}>
                                         <UserCard user={user} />
                                     </p>
                                     {timestamp && (
-                                        <span className='text-xs text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0'>
+                                        <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
+                                            isMobile ? 'text-sm' : 'text-xs'
+                                        }`}>
                                             {timestamp}
                                         </span>
                                     )}
                                 </div>
                                 <p
-                                    className={`text-sm truncate ${
+                                    className={`truncate ${
                                         channel.lastMessage?.content
                                             ? 'text-zinc-600 dark:text-zinc-400'
                                             : 'text-zinc-400 dark:text-zinc-500 italic'
-                                    }`}
+                                    } ${isMobile ? 'text-sm' : 'text-sm'}`}
                                 >
                                     {lastMessageText}
                                 </p>

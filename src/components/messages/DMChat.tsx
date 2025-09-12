@@ -16,6 +16,7 @@ export default function DMChat() {
         null
     );
     const [searchQuery, setSearchQuery] = useState('');
+    const [showChatOnMobile, setShowChatOnMobile] = useState(false);
     const { state: notifState } = useNotifications();
 
     const { messages, setMessages, joinChannel, leaveChannel, send } =
@@ -93,6 +94,7 @@ export default function DMChat() {
                         if (matchedChannel) {
                             joinChannel(matchedChannel.id);
                             setSelectedChannel(matchedChannel);
+                            setShowChatOnMobile(true);
                         }
                     }
                 }
@@ -117,6 +119,7 @@ export default function DMChat() {
         if (selectedChannel) leaveChannel(selectedChannel.id);
         joinChannel(channel.id);
         setSelectedChannel(channel);
+        setShowChatOnMobile(true);
     };
 
     const handleSend = async (content: string) => {
@@ -127,25 +130,61 @@ export default function DMChat() {
         await send({ receiverID: receiver.id, content });
     };
 
+    const handleBackToList = () => {
+        setShowChatOnMobile(false);
+        setSelectedChannel(null);
+        if (selectedChannel) {
+            leaveChannel(selectedChannel.id);
+        }
+    };
+
     return (
-        <div className='flex h-full bg-white dark:bg-zinc-900'>
-            <DMList
-                channels={channels}
-                onSearch={setSearchQuery}
-                onSelect={openChat}
-                searchQuery={searchQuery}
-                selectedChannel={selectedChannel}
-            />
-            <ChatWindow
-                user={user}
-                channel={selectedChannel}
-                messages={messages}
-                onSend={handleSend}
-                onBack={() => {
-                    if (selectedChannel) leaveChannel(selectedChannel.id);
-                    setSelectedChannel(null);
-                }}
-            />
+        <div className='flex h-full bg-white dark:bg-zinc-900 overflow-hidden'>
+            {/* Mobile Layout - Show list OR chat */}
+            <div className='md:hidden w-full h-full'>
+                {!showChatOnMobile ? (
+                    <DMList
+                        channels={channels}
+                        onSearch={setSearchQuery}
+                        onSelect={openChat}
+                        searchQuery={searchQuery}
+                        selectedChannel={selectedChannel}
+                        isMobile={true}
+                    />
+                ) : (
+                    <ChatWindow
+                        user={user}
+                        channel={selectedChannel}
+                        messages={messages}
+                        onSend={handleSend}
+                        onBack={handleBackToList}
+                        isMobile={true}
+                    />
+                )}
+            </div>
+
+            {/* Desktop Layout - Show both side by side */}
+            <div className='hidden md:flex w-full h-full'>
+                <DMList
+                    channels={channels}
+                    onSearch={setSearchQuery}
+                    onSelect={openChat}
+                    searchQuery={searchQuery}
+                    selectedChannel={selectedChannel}
+                    isMobile={false}
+                />
+                <ChatWindow
+                    user={user}
+                    channel={selectedChannel}
+                    messages={messages}
+                    onSend={handleSend}
+                    onBack={() => {
+                        if (selectedChannel) leaveChannel(selectedChannel.id);
+                        setSelectedChannel(null);
+                    }}
+                    isMobile={false}
+                />
+            </div>
         </div>
     );
 }
