@@ -58,6 +58,8 @@ export default function LoginForm({
                 return 'Your account has been restricted. Contact support for assistance.';
             }
             return 'Your account needs verification. Please check your email for a verification link, or contact support if you need help.';
+        case 409:
+            return 'You already have an account with that username or email. Please Log In.';
         case 429:
             return 'Too many login attempts. Please wait a few minutes before trying again.';
         case 500:
