@@ -267,6 +267,7 @@ const UserCard: React.FC<Props> = ({
                             ['--card-w' as any]: `${panelWidth}px`
                         } as React.CSSProperties
                     }
+                    onClick ={(e) => e.stopPropagation()}
                 >
                     {user ? (
                         <div className='flex items-start gap-3'>
