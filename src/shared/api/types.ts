@@ -8,6 +8,7 @@ export type CreatePostDTO = {
     tags: string[];
     type: string;
     files?: File[];
+    quantity: number;
     categoryID: number;
     location?: LocationDTO | null;
     itemsLimit?: number | null;
@@ -199,6 +200,18 @@ export type CreateEventDTO = {
     content?: string;
     location: LocationDTO | null;
 };
+
+export interface UpdateEventDTO {
+    title: string;
+    description: string;
+    startTime: Date;
+    endTime?: Date | null;
+    location?: {
+        regionID?: string | null;
+        name?: string;
+        global?: boolean;
+    } | null;
+}
 
 export type CategoryDTO = {
     id: number;

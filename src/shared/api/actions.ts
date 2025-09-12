@@ -1,4 +1,4 @@
-import { MessageDTO, UpdateMessageDTO, UserDTO } from '@/shared/api/types';
+import { MessageDTO, UpdateEventDTO, UpdateMessageDTO, UserDTO } from '@/shared/api/types';
 import { getEndpointUrl } from './config';
 import {
     CategoryDTO,
@@ -612,6 +612,44 @@ export async function createEvent(
             Authorization: `Bearer ${token}`
         }
     });
+}
+
+/** @throws {AxiosError} */
+export async function updateEvent(
+    eventId: number,
+    updateData: UpdateEventDTO,
+    token: string
+): Promise<EventDTO> {
+    const formData = new FormData();
+    
+    // Add basic fields
+    formData.append('title', updateData.title);
+    formData.append('description', updateData.description);
+    formData.append('startTime', updateData.startTime.toISOString());
+    
+    if (updateData.endTime) {
+        formData.append('endTime', updateData.endTime.toISOString());
+    }
+    
+    // Add location data
+    if (updateData.location) {
+        formData.append('location', JSON.stringify(updateData.location));
+    }
+
+    const response = await fetch(`${getEndpointUrl()}/events/${eventId}`, {
+        method: 'PATCH', // or 'PATCH' depending on your API
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to update event: ${response.statusText}`);
+    }
+
+    return response.json();
 }
 
 /** @throws {AxiosError} */

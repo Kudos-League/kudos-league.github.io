@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
-import type { EventDTO, CreateEventDTO } from '@/shared/api/types';
+import type { EventDTO, CreateEventDTO, UpdateEventDTO } from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
+import { updateEvent } from '../actions';
 
 export function useCreateEvent(p0: { onSuccess: () => void; }) {
     const { token } = useAuth();
@@ -58,3 +59,31 @@ export function useJoinEvent(eventId: number) {
         }
     });
 }
+
+interface UpdateEventMutationData {
+    id: number;
+    data: UpdateEventDTO;
+}
+
+
+export const useUpdateEvent = () => {
+    const { token } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: UpdateEventMutationData): Promise<EventDTO> => {
+            if (!token) throw new Error('Authentication required');
+            return updateEvent(id, data, token);
+        },
+        onSuccess: (updatedEvent) => {
+            // Update the specific event in the cache
+            queryClient.setQueryData(['event', updatedEvent.id], updatedEvent);
+            
+            // Invalidate events list to ensure consistency
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+        },
+        onError: (error) => {
+            console.error('Failed to update event:', error);
+        }
+    });
+};
