@@ -136,7 +136,7 @@ const ProfileHeader: React.FC<Props> = ({
                         </>
                     ) : (
                         <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
-                            Location: not submitted
+                            Location: not submitted. Please edit your profile to add one.
                         </p>
                     )}
                 </div>
