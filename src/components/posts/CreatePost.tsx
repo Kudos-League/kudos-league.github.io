@@ -19,10 +19,10 @@ type FormValues = {
     title: string;
     body: string;
     type: 'gift' | 'request';
+    quantity: number;
     files?: File[];
     tags: string[];
     categoryID: number;
-    itemsLimit?: string;
 };
 
 type Props = { setShowLoginForm: (show: boolean) => void };
@@ -33,7 +33,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const routerLocation = useLocation();
 
     const form = useForm<FormValues>({
-        defaultValues: { tags: [], categoryID: 0, type: 'gift', itemsLimit: '' }
+        defaultValues: { 
+            tags: [], 
+            categoryID: 0, 
+            type: 'gift',
+            quantity: 1 // Default to 1 item
+        }
     });
 
     const { data: categories = [], isLoading: catsLoading } = useCategories();
@@ -95,32 +100,33 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
 
+    const validateQuantity = (value: number) => {
+        if (!value || value < 1) return 'Quantity must be at least 1';
+        if (value > 999) return 'Quantity cannot exceed 999';
+        if (!Number.isInteger(value)) return 'Quantity must be a whole number';
+        return true;
+    };
+
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         if (!isLoggedIn) return setShowLoginForm(true);
 
         const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
-        if (!data.categoryID || data.categoryID < 1) {
-            form.setError('categoryID', {
-                type: 'required',
-                message: 'Please select a category'
-            });
-            return;
+        const quantityValidation = validateQuantity(data.quantity);
+        if (quantityValidation !== true) {
+            return setServerError(quantityValidation);
         }
-
-        const limit = (data.itemsLimit ?? '').trim();
-        const itemsLimit = limit === '' ? null : Math.max(1, parseInt(limit, 10));
 
         const payload: CreatePostDTO = {
             title: data.title,
             body: data.body,
             type: postType,
+            quantity: data.quantity,
             tags: data.tags,
             categoryID: data.categoryID,
             files: selectedImages,
-            location,
-            itemsLimit
+            location
         };
 
         setServerError(null);
@@ -133,7 +139,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 tags: [],
                 categoryID: 0,
                 type: 'gift',
-                itemsLimit: ''
+                quantity: 1
             });
             setSelectedImages([]);
             setLocation(null);
@@ -178,13 +184,43 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 form={form}
                 registerOptions={{ required: true }}
             />
+            
             <Input
                 name='body'
-                label='Info *'
+                label='Description *'
                 form={form}
                 registerOptions={{ required: true }}
                 multiline
             />
+
+            {/* Quantity Field */}
+            <div>
+                <label className='block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-200'>
+                    Number of Items *
+                </label>
+                <input
+                    type='number'
+                    min='1'
+                    max='999'
+                    step='1'
+                    {...form.register('quantity', {
+                        required: 'Quantity is required',
+                        min: { value: 1, message: 'Quantity must be at least 1' },
+                        max: { value: 999, message: 'Quantity cannot exceed 999' },
+                        valueAsNumber: true
+                    })}
+                    className='w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500'
+                    placeholder='1'
+                />
+                {form.formState.errors.quantity && (
+                    <p className='text-red-600 text-sm mt-1'>
+                        {form.formState.errors.quantity.message}
+                    </p>
+                )}
+                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    How many items are you {postType === 'gift' ? 'giving away' : 'requesting'}?
+                </p>
+            </div>
 
             {/* Category */}
             <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>
@@ -196,13 +232,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     value: String(c.id)
                 }))}
                 value={String(form.watch('categoryID') || '')}
-                onChange={(val) => {
-                    form.clearErrors('categoryID');
+                onChange={(val) =>
                     form.setValue('categoryID', parseInt(val), {
                         shouldValidate: true,
                         shouldDirty: true
-                    });
-                }}
+                    })
+                }
                 placeholder={catsLoading ? 'Loading…' : 'Select a category'}
             />
             {form.formState.errors.categoryID && (
@@ -210,30 +245,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     {form.formState.errors.categoryID.message as any}
                 </p>
             )}
-
-            <div className='mt-2'>
-                <label className='block text-sm font-semibold text-gray-800 dark:text-gray-200'>
-                    Number of items (leave blank for unlimited)
-                </label>
-                <input
-                    type='text'
-                    inputMode='numeric'
-                    pattern='[0-9]*'
-                    className='w-full border rounded px-3 py-2'
-                    placeholder='e.g., 1'
-                    value={form.watch('itemsLimit') || ''}
-                    onChange={(e) => {
-                        const v = e.target.value.replace(/[^0-9]/g, '');
-                        form.setValue('itemsLimit', v, {
-                            shouldDirty: true,
-                            shouldValidate: true
-                        });
-                    }}
-                />
-                <p className='text-xs text-gray-500 mt-1'>
-                    Limits how many accepted/completed handshakes this post can have.
-                </p>
-            </div>
 
             {/* Images */}
             <div>
