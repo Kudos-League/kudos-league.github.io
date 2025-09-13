@@ -19,7 +19,7 @@ type FormValues = {
     title: string;
     body: string;
     type: 'gift' | 'request';
-    quantity: number;
+    itemsLimit: number;
     files?: File[];
     tags: string[];
     categoryID: number;
@@ -37,7 +37,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             tags: [], 
             categoryID: 0, 
             type: 'gift',
-            quantity: 1 // Default to 1 item
+            itemsLimit: 1
         }
     });
 
@@ -113,7 +113,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
-        const quantityValidation = validateQuantity(data.quantity);
+        const quantityValidation = validateQuantity(data.itemsLimit);
         if (quantityValidation !== true) {
             return setServerError(quantityValidation);
         }
@@ -122,7 +122,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             title: data.title,
             body: data.body,
             type: postType,
-            quantity: data.quantity,
+            itemsLimit: data.itemsLimit,
             tags: data.tags,
             categoryID: data.categoryID,
             files: selectedImages,
@@ -139,7 +139,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 tags: [],
                 categoryID: 0,
                 type: 'gift',
-                quantity: 1
+                itemsLimit: 1
             });
             setSelectedImages([]);
             setLocation(null);
@@ -203,7 +203,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     min='1'
                     max='999'
                     step='1'
-                    {...form.register('quantity', {
+                    {...form.register('itemsLimit', {
                         required: 'Quantity is required',
                         min: { value: 1, message: 'Quantity must be at least 1' },
                         max: { value: 999, message: 'Quantity cannot exceed 999' },
@@ -212,9 +212,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     className='w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500'
                     placeholder='1'
                 />
-                {form.formState.errors.quantity && (
+                {form.formState.errors.itemsLimit && (
                     <p className='text-red-600 text-sm mt-1'>
-                        {form.formState.errors.quantity.message}
+                        {form.formState.errors.itemsLimit.message}
                     </p>
                 )}
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>

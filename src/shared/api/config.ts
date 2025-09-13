@@ -23,19 +23,21 @@ export function getWSSURL(): string {
     return u.origin;
 }
 
-export function getImagePath(avatarPath?: string | null): string | null {
-    if (!avatarPath) return null;
+export function getImagePath(url?: string | null): string | null {
+    if (!url) return null;
 
-    if (avatarPath.startsWith('blob:') || avatarPath.startsWith('data:')) {
-        return avatarPath;
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+        return url;
     }
 
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-        return avatarPath;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
     }
 
     const base = getEndpointUrl();
-    const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+    const path = url.startsWith('/') ? url : `/${url}`;
 
-    return `${base}${path}`;
+    const final = `${base}${path}`;
+
+    return final;
 }
