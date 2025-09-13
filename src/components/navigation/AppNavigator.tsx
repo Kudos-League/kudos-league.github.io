@@ -8,8 +8,7 @@ import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 
 const Home = lazy(() => import('@/pages/home'));
-const Success = lazy(() => import('@/pages/donate/success'));
-const Cancel = lazy(() => import('@/pages/donate/cancel'));
+const Result = lazy(() => import('@/pages/donate/Result'));
 const Post = lazy(() => import('@/pages/post'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
@@ -33,8 +32,7 @@ function AppNavigator() {
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.home} element={<Home />} />
-                    <Route path={routes.success} element={<Success />} />
-                    <Route path={routes.cancel} element={<Cancel />} />
+                    <Route path={routes.result} element={<Result />} />
 
                     <Route
                         path={routes.donate}
