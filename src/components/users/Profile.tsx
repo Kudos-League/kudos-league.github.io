@@ -7,10 +7,11 @@ import { useAuth } from '@/contexts/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
-import { createDMChannel } from '@/shared/api/actions';
+import { createDMChannel, reactivateUser } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
+import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes';
 
@@ -34,6 +35,8 @@ const Profile: React.FC<Props> = ({
 
     const isSelf = currentUser?.id === user.id;
     const [editing, setEditing] = useState(false);
+
+    const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     
     // Define available filters - show handshakes only for own profile
     const availableFilters: FilterType[] = isSelf 
@@ -63,6 +66,21 @@ const Profile: React.FC<Props> = ({
         };
         return labels[filterType];
     };
+
+    const handleReactivate = async () => {
+        if (!currentUser?.admin || !user?.id) return;
+        const confirmReactivate = window.confirm('Reactivate this account?');
+        if (!confirmReactivate) return;
+        try {
+            const updated = await reactivateUser(user.id, token!);
+            setUser?.(updated);
+            alert('User reactivated.');
+        }
+        catch (err) {
+            console.error('Failed to reactivate user', err);
+            alert('Failed to reactivate user.');
+        }
+    }
 
     if (editing) {
         return (
@@ -213,8 +231,44 @@ const Profile: React.FC<Props> = ({
                     onStartDM={handleStartDM}
                 />
 
+                {!isSelf && (
+                    <div className='flex justify-center'>
+                        <Button onClick={() => setShowPastGiftModal(true)} className='!bg-teal-600 !text-white'>
+                            Log Past Gift
+                        </Button>
+                    </div>
+                )}
+
+                {currentUser?.admin && !isSelf && user.deactivatedAt && (
+                    <div className='flex justify-center'>
+                        <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-md px-4 py-3 flex items-center gap-3'>
+                            <span>This account is deactivated.</span>
+                            <button
+                                className='px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700'
+                                onClick={handleReactivate}
+                            >
+                                Reactivate
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Divider under header */}
                 <div className='border-t border-gray-200 dark:border-white/10' />
+
+                {/* Profession */ }
+                {user.settings?.profession && (
+                    <div className='flex justify-center'>
+                        <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
+                            <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
+                                Profession
+                            </span>
+                            <p className='mt-1 text-gray-700 dark:text-gray-300 text-sm'>
+                                {user.settings.profession}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Filter Buttons */}
                 <div className='flex flex-wrap gap-3 justify-center'>
@@ -242,6 +296,8 @@ const Profile: React.FC<Props> = ({
 
                 {/* Filtered Content */}
                 {renderFilteredContent()}
+
+                <ReportPastGiftModal open={showPastGiftModal} onClose={() => setShowPastGiftModal(false)} receiverID={user.id} />
             </div>
         </div>
     );
