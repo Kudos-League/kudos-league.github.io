@@ -8,7 +8,7 @@ import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 
 const Home = lazy(() => import('@/pages/home'));
-const Result = lazy(() => import('@/pages/donate/Result'));
+const Result = lazy(() => import('@/pages/donate/result'));
 const Post = lazy(() => import('@/pages/post'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
