@@ -2,22 +2,7 @@ import React from 'react';
 import Spinner from '../common/Spinner';
 import { useAuth } from '@/contexts/useAuth';
 import { useDonationsInfinite } from '@/shared/api/queries/donations';
-
-function formatRelativeTime(dateString?: string | null) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = Date.now();
-    const diff = (date.getTime() - now) / 1000;
-    const rtf = new Intl.RelativeTimeFormat(navigator.language || 'en', { numeric: 'auto' });
-
-    const abs = Math.abs(diff);
-    if (abs < 60) return rtf.format(Math.round(diff), 'second');
-    if (abs < 3600) return rtf.format(Math.round(diff / 60), 'minute');
-    if (abs < 86400) return rtf.format(Math.round(diff / 3600), 'hour');
-    if (abs < 7 * 86400) return rtf.format(Math.round(diff / 86400), 'day');
-
-    return date.toLocaleString();
-}
+import { timeAgoLabel } from '@/shared/timeAgoLabel';
 
 export default function DonationsList() {
     const { user } = useAuth();
@@ -52,7 +37,7 @@ export default function DonationsList() {
                     )}
                     {d.createdAt && (
                         <div className='text-xs text-gray-400'>
-                            {formatRelativeTime(d.createdAt)}
+                            {timeAgoLabel(d.createdAt)}
                         </div>
                     )}
                 </div>
