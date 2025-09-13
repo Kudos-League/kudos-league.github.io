@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { getEndpointUrl } from 'shared/api/config';
+import Spinner from '../../components/common/Spinner';
 
 export default function DonateResult() {
     const [status, setStatus] = useState<'processing' | 'succeeded' | 'failed' | 'unknown'>('processing');
     const [message, setMessage] = useState<string | undefined>(undefined);
+    const [donation, setDonation] = useState<{ amount?: number; interval?: string; kudos?: number } | null>(null);
     const [attempts, setAttempts] = useState(0);
 
     useEffect(() => {
@@ -27,6 +29,9 @@ export default function DonateResult() {
                 if (!mounted) return;
                 setStatus(body.status ?? 'unknown');
                 setMessage(body.message);
+                if (body.amount) {
+                    setDonation({ amount: body.amount, interval: body.interval, kudos: body.kudos });
+                }
                 setAttempts((a) => a + 1);
 
                 if ((body.status === 'processing' || !body.status) && attempts < maxAttempts) {
@@ -52,8 +57,19 @@ export default function DonateResult() {
     return (
         <div className="p-6 max-w-xl mx-auto">
             <h1 className="text-2xl font-semibold mb-4">Donation Result</h1>
-            {status === 'processing' && <p>Your payment is being processed. This may take a moment.</p>}
-            {status === 'succeeded' && <p>Thank you! Your donation was processed successfully.</p>}
+            {status === 'processing' && <Spinner text='Processing your payment...' />}
+            {status === 'succeeded' && (
+                <div>
+                    <p>Thank you! Your donation was processed successfully.</p>
+                    {donation && (
+                        <div className="mt-4">
+                            <p>Amount: ${(donation.amount ?? 0) / 100}</p>
+                            {donation.interval && <p>Recurring: {donation.interval}</p>}
+                            {donation.kudos !== undefined && <p>Kudos awarded: {donation.kudos}</p>}
+                        </div>
+                    )}
+                </div>
+            )}
             {status === 'failed' && <p className="text-red-600">Payment failed: {message || 'Unknown error'}</p>}
             {status === 'unknown' && <p className="text-yellow-600">Status unknown: {message || 'No details available'}</p>}
         </div>
