@@ -7,13 +7,14 @@ import { useAuth } from '@/contexts/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
+import Spinner from '../common/Spinner';
 import { createDMChannel, reactivateUser } from '@/shared/api/actions';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 
-type FilterType = 'all' | 'posts' | 'events' | 'handshakes';
+type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'donations';
 
 type Props = {
     user: UserDTO;
@@ -39,8 +40,8 @@ const Profile: React.FC<Props> = ({
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     
     // Define available filters - show handshakes only for own profile
-    const availableFilters: FilterType[] = isSelf 
-        ? ['all', 'posts', 'events', 'handshakes']
+    const availableFilters: FilterType[] = isSelf
+        ? ['all', 'posts', 'events', 'handshakes', 'donations']
         : ['all', 'posts', 'events'];
         
     const [filter, setFilter] = useState<FilterType>('all');
@@ -62,7 +63,8 @@ const Profile: React.FC<Props> = ({
             all: 'All',
             posts: 'Posts', 
             events: 'Events',
-            handshakes: 'Handshakes'
+            handshakes: 'Handshakes',
+            donations: 'Donations'
         };
         return labels[filterType];
     };
@@ -72,7 +74,8 @@ const Profile: React.FC<Props> = ({
         const confirmReactivate = window.confirm('Reactivate this account?');
         if (!confirmReactivate) return;
         try {
-            const updated = await reactivateUser(user.id, token!);
+            if (!token) throw new Error('Missing auth token');
+            const updated = await reactivateUser(user.id, token);
             setUser?.(updated);
             alert('User reactivated.');
         }
@@ -95,6 +98,13 @@ const Profile: React.FC<Props> = ({
 
     const renderFilteredContent = () => {
         switch (filter) {
+        case 'donations':
+            return (
+                <React.Suspense fallback={<Spinner text='Loading donations...' />}>
+                    <Donations />
+                </React.Suspense>
+            );
+
         case 'handshakes':
             return (
                 <div className='grid gap-4'>
@@ -219,6 +229,8 @@ const Profile: React.FC<Props> = ({
             );
         }
     };
+
+    const Donations = React.lazy(() => import('./Donations'));
 
     return (
         <div className='max-w-5xl mx-auto'>
