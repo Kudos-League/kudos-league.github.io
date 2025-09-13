@@ -12,6 +12,7 @@ export default function StripeWeb() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [donationAmount, setDonationAmount] = useState(500);
+    const [interval, setInterval] = useState<string | undefined>(undefined);
 
     const formMethods = useForm();
 
@@ -58,7 +59,7 @@ export default function StripeWeb() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({ amount: donationAmount })
+                body: JSON.stringify({ amount: donationAmount, interval })
             }
         );
 
@@ -77,6 +78,20 @@ export default function StripeWeb() {
                     Support Us with a Donation
                 </h1>
                 <DonationAmountPicker onAmountChange={setDonationAmount} />
+                <div className='w-full max-w-xs'>
+                    <label className='block text-sm font-semibold'>
+                        Donation Type:
+                    </label>
+                    <select
+                        className='w-full border rounded p-2'
+                        value={interval ?? ''}
+                        onChange={(e) => setInterval(e.target.value || undefined)}
+                    >
+                        <option value=''>One-time</option>
+                        <option value='week'>Weekly</option>
+                        <option value='month'>Monthly</option>
+                    </select>
+                </div>
                 <Button onClick={handlePayment} disabled={!loading}>
                     Donate
                 </Button>
