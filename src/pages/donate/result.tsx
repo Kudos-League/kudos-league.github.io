@@ -4,6 +4,7 @@ import { getEndpointUrl } from 'shared/api/config';
 export default function DonateResult() {
     const [status, setStatus] = useState<'processing' | 'succeeded' | 'failed' | 'unknown'>('processing');
     const [message, setMessage] = useState<string | undefined>(undefined);
+    const [attempts, setAttempts] = useState(0);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -14,21 +15,38 @@ export default function DonateResult() {
             return;
         }
 
+        let mounted = true;
+        const maxAttempts = 30;
+        const intervalMs = 2000;
+
         const fetchStatus = async () => {
             try {
                 const res = await fetch(`${getEndpointUrl()}/stripe/session-status?session_id=${encodeURIComponent(sessionId)}`);
                 if (!res.ok) throw new Error(`Status fetch failed: ${res.status}`);
                 const body = await res.json();
+                if (!mounted) return;
                 setStatus(body.status ?? 'unknown');
                 setMessage(body.message);
+                setAttempts((a) => a + 1);
+
+                if ((body.status === 'processing' || !body.status) && attempts < maxAttempts) {
+                    setTimeout(() => {
+                        if (mounted) fetchStatus();
+                    }, intervalMs);
+                }
             }
             catch (e: any) {
+                if (!mounted) return;
                 setStatus('unknown');
                 setMessage(e.message);
             }
         };
 
         fetchStatus();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     return (
