@@ -40,7 +40,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     useEffect(() => {
         if (!token || !user?.id) return;
-        dispatch(loadNotifications({ token, limit: 50 }) as any);
+        dispatch(loadNotifications({ limit: 50 }) as any);
     }, [dispatch, token, user?.id]);
 
     useEffect(() => {
@@ -103,8 +103,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             state,
             push: (n) => dispatch(pushAction(n)),
             markAllRead: async () => {
-                if (!token) return;
-                await dispatch(markAllReadThunk({ token }) as any);
+                await dispatch(markAllReadThunk() as any);
             }
         }),
         [dispatch, state, token]

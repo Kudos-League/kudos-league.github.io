@@ -7,7 +7,7 @@ import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import Button from '@/components/common/Button';
 
 export default function AdminDashboard() {
-    const { token, user } = useAuth();
+    const { user } = useAuth();
 
     const [tab, setTab] = useState<'reports' | 'feedback' | 'analytics'>('reports');
 
@@ -19,7 +19,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         const load = async () => {
-            if (!token || !user?.admin) {
+            if (!user?.admin) {
                 setError('Admin access required.');
                 setLoading(false);
                 return;
@@ -27,8 +27,8 @@ export default function AdminDashboard() {
 
             try {
                 const [r, f] = await Promise.all([
-                    apiGet<any>('/admin/reports', { headers: { Authorization: token ? `Bearer ${token}` : undefined } }),
-                    apiGet<any>('/feedback', { headers: { Authorization: token ? `Bearer ${token}` : undefined } })
+                    apiGet<any>('/admin/reports'),
+                    apiGet<any>('/feedback')
                 ]);
                 setReports(r ?? []);
                 setFeedbacks(f ?? []);
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
         };
 
         load();
-    }, [token, user]);
+    }, [user]);
 
     if (loading) {
         return <div className='text-center mt-10 text-gray-500'>Loading…</div>;

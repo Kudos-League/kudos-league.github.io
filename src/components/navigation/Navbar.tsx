@@ -244,14 +244,14 @@ export default function Navbar({
     );
 
     const [feedbackOpen, setFeedbackOpen] = useState(false);
-    const { user: authUser, token } = useAuth();
+    const { user: authUser } = useAuth();
 
     const handleSubmitFeedback = async (content: string) => {
         const userID = authUser?.id ?? user?.id;
         if (!userID) {
             throw new Error('You need to be logged in to send feedback.');
         }
-        await apiMutate('/feedback', 'post', { userID, content }, { headers: { Authorization: token ? `Bearer ${token}` : undefined } });
+        await apiMutate('/feedback', 'post', { userID, content });
     };
 
     return (

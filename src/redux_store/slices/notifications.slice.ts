@@ -27,21 +27,18 @@ const dedupe = (
 
 export const loadNotifications = createAsyncThunk<
     NotificationPayload[],
-    { token: string; limit?: number }
->('notifications/load', async ({ token, limit = 50 }) => {
+    { limit?: number }
+>('notifications/load', async ({ limit = 50 } = {}) => {
     const list = await apiGet<NotificationPayload[]>('/notifications', {
-        params: { limit },
-        headers: { Authorization: token ? `Bearer ${token}` : undefined }
+        params: { limit }
     });
     return list as NotificationPayload[];
 });
 
-export const markAllRead = createAsyncThunk<void, { token: string }>(
+export const markAllRead = createAsyncThunk<void>(
     'notifications/markAllRead',
-    async ({ token }) => {
-        await apiMutate('/notifications/mark-all-read', 'post', undefined, {
-            headers: { Authorization: token ? `Bearer ${token}` : undefined }
-        });
+    async () => {
+        await apiMutate('/notifications/mark-all-read', 'post');
     }
 );
 

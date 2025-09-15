@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
-// import { useWebSocket } from '@/hooks/useWebSocket';
 import {
     ChannelDTO,
     CreateMessageDTO,
@@ -13,7 +12,6 @@ import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
 import { ArrowUturnLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { deleteMessage as deleteMessageApi } from '@/shared/api/actions';
 import { useSendDirectMessage } from '@/shared/api/mutations/messages';
 import UserCard from '../users/UserCard';
 
@@ -567,10 +565,7 @@ export default function ChatModal({
                                                     onClick={async () => {
                                                         if (!token) return;
                                                         try {
-                                                            await deleteMessageApi(
-                                                                safeMsg.id,
-                                                                token
-                                                            );
+                                                            await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
                                                         }
                                                         catch (e) {
                                                             console.error(

@@ -31,9 +31,7 @@ export default function OAuthDisconnectButton({
         if (!token || pending) return;
         try {
             setPending(true);
-            await apiMutate(`/users/connections/${provider}`, 'delete', undefined, {
-                headers: { Authorization: token ? `Bearer ${token}` : undefined }
-            });
+            await apiMutate(`/users/connections/${provider}`, 'delete');
             if (provider === 'discord') updateUser({ discordID: undefined as any });
             if (provider === 'google') updateUser({ googleID: undefined as any });
             onSuccess?.();

@@ -27,7 +27,7 @@ const HandshakeCard: React.FC<Props> = ({
     onDelete
 }) => {
     const navigate = useNavigate();
-    const { token } = useAuth();
+    useAuth();
 
     const isSender = handshake.senderID === userID;
     const [status, setStatus] = useState(handshake.status);
@@ -427,7 +427,7 @@ const HandshakeCard: React.FC<Props> = ({
                     <Button
                         onClick={async () => {
                             try {
-                                await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' }, { headers: { Authorization: `Bearer ${token}` } });
+                                await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
                                 setStatus('new');
                             }
                             catch (err) {

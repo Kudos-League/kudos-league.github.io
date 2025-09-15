@@ -26,7 +26,7 @@ const TagInput: React.FC<TagInputProps> = ({
     const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const { token } = useAuth();
+    useAuth();
     const currentRequestRef = useRef<number>(0);
 
     // Memoize the debounced function to prevent recreation on every render
@@ -39,14 +39,8 @@ const TagInput: React.FC<TagInputProps> = ({
             }
 
             try {
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-
                 const response = await apiGet<{ data: Tag[] }>('/tags/top', {
-                    params: { q: query },
-                    headers: { Authorization: token ? `Bearer ${token}` : undefined }
+                    params: { q: query }
                 });
 
                 // Check if this is still the latest request
@@ -71,7 +65,7 @@ const TagInput: React.FC<TagInputProps> = ({
                 }
             }
         }, 400),
-        [token, selectedTags] // Include dependencies that the function uses
+        [selectedTags] // Include dependencies that the function uses
     );
 
     // Handle input changes and trigger suggestions

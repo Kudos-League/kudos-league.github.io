@@ -82,7 +82,7 @@ function LineChart({ data }: { data: MAUPoint[] }) {
 }
 
 export default function AdminAnalytics() {
-    const { token } = useAuth();
+    useAuth();
     const [mau, setMau] = useState<MAUPoint[] | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -90,8 +90,7 @@ export default function AdminAnalytics() {
         let mounted = true;
         (async () => {
             try {
-                if (!token) return;
-                const data = await apiGet<{ month: string; count: number }[]>('/admin/analytics/mau', { headers: { Authorization: token ? `Bearer ${token}` : undefined } });
+                const data = await apiGet<{ month: string; count: number }[]>('/admin/analytics/mau');
                 const sorted = [...(data ?? [])].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
                 if (mounted) setMau(sorted);
             }
@@ -102,7 +101,7 @@ export default function AdminAnalytics() {
         return () => {
             mounted = false;
         };
-    }, [token]);
+    }, []);
 
     if (error) return <p className="text-red-600 dark:text-red-400">{error}</p>;
     if (!mau) return <div className="text-gray-500 dark:text-gray-400">Loading analytics…</div>;
