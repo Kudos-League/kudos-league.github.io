@@ -2,12 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { FormProvider, useForm } from 'react-hook-form';
 import DonationAmountPicker from './DonationAmountPicker';
-import { getEndpointUrl } from 'shared/api/config';
-import { useAuth } from '@/contexts/useAuth';
+import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import Button from '../common/Button';
 
 export default function StripeWeb() {
-    const { token } = useAuth();
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -18,12 +16,10 @@ export default function StripeWeb() {
 
     const fetchPublishableKey = async () => {
         try {
-            const response = await fetch(
-                `${getEndpointUrl()}/stripe/publishable-key`
+            const body = await apiGet<{ publishableKey: string }>(
+                '/stripe/publishable-key'
             );
-            if (!response.ok) throw new Error(`Error: ${response.status}`);
-            const { publishableKey } = await response.json();
-            return publishableKey;
+            return body.publishableKey;
         }
         catch (err) {
             console.error('Failed to fetch Stripe publishable key:', err);
@@ -50,22 +46,9 @@ export default function StripeWeb() {
 
     const handlePayment = async () => {
         if (!stripe) return;
-
-        const response = await fetch(
-            `${getEndpointUrl()}/stripe/checkout-session`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ amount: donationAmount, interval })
-            }
-        );
-
-        const session = await response.json();
+        const session = (await apiMutate('/stripe/checkout-session', 'post', { amount: donationAmount, interval })) as any;
         const { error } = await stripe.redirectToCheckout({
-            sessionId: session.id
+            sessionId: session?.id
         });
         if (error) console.warn('Stripe checkout error:', error);
     };

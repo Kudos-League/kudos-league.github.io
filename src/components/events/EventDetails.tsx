@@ -5,7 +5,8 @@ import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { EventDTO, LocationDTO } from '@/shared/api/types';
-import { joinEvent, leaveEvent } from '@/shared/api/actions';
+import { useJoinEvent } from '@/shared/api/mutations/events';
+import { apiMutate } from '@/shared/api/apiClient';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
@@ -38,7 +39,7 @@ function EditEventButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function EventDetails({ event, setEvent }: Props) {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
 
     const [joining, setJoining] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -108,7 +109,7 @@ export default function EventDetails({ event, setEvent }: Props) {
     };
 
     const handleSaveEdit = async () => {
-        if (!dateValidation.canSubmit || !token) return;
+        if (!dateValidation.canSubmit) return;
 
         setSaving(true);
         setError(null);
@@ -125,34 +126,8 @@ export default function EventDetails({ event, setEvent }: Props) {
                 } as LocationDTO
             };
 
-            // Create FormData for the API call
-            const formData = new FormData();
-            formData.append('title', updateData.title);
-            formData.append('description', updateData.description);
-            formData.append('startTime', updateData.startTime.toISOString());
-            
-            if (updateData.endTime) {
-                formData.append('endTime', updateData.endTime.toISOString());
-            }
-            
-            if (updateData.location) {
-                formData.append('location', JSON.stringify(updateData.location));
-            }
+            const updatedEvent = await apiMutate<EventDTO, any>(`/events/${event.id}`, 'put', updateData, { as: 'form' });
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/events/${event.id}`, {
-                method: 'PATCH',
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Failed to update event: ${response.statusText}`);
-            }
-
-            const updatedEvent = await response.json();
             setEvent(updatedEvent);
             setIsEditing(false);
         }
@@ -178,12 +153,13 @@ export default function EventDetails({ event, setEvent }: Props) {
         });
     };
 
-    const handleJoin = async () => {
-        if (!token || !event.id) return;
+    const joinMutation = useJoinEvent(event.id);
 
+    const handleJoin = async () => {
+        if (!user || !event.id) return;
         setJoining(true);
         try {
-            await joinEvent(event.id, token);
+            await joinMutation.mutateAsync();
             setEvent({
                 ...event,
                 participants: [...(event.participants || []), user]
@@ -198,10 +174,9 @@ export default function EventDetails({ event, setEvent }: Props) {
     };
 
     const handleLeave = async () => {
-        if (!token || !event.id) return;
-
+        if (!user || !event.id) return;
         try {
-            await leaveEvent(event.id, token);
+            await apiMutate(`/events/${event.id}/leave`, 'post');
             setEvent({
                 ...event,
                 participants: event.participants.filter(

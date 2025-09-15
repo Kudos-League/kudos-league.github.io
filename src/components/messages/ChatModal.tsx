@@ -1,12 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    getMessages,
-    getUserDetails,
-    sendDirectMessage
-} from 'shared/api/actions';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
-// import { useWebSocket } from '@/hooks/useWebSocket';
 import {
     ChannelDTO,
     CreateMessageDTO,
@@ -17,7 +12,7 @@ import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
 import { ArrowUturnLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { deleteMessage as deleteMessageApi } from '@/shared/api/actions';
+import { useSendDirectMessage } from '@/shared/api/mutations/messages';
 import UserCard from '../users/UserCard';
 
 interface ChatModalProps {
@@ -193,6 +188,7 @@ export default function ChatModal({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const token = useAppSelector((s) => s.auth.token);
+    const sendDirectInitial = useSendDirectMessage(recipientID ?? undefined);
 
     const channelID = selectedChannel?.id ?? null;
 
@@ -225,11 +221,9 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const userDetails = await getUserDetails('me', token, {
-                dmChannels: true
-            });
-            let channel = userDetails.dmChannels.find((ch) =>
-                ch.users.some((u) => u.id === recipientId)
+            const userDetails = await apiGet<any>('/users/me', { params: { dmChannels: true } });
+            let channel = userDetails.dmChannels.find((ch: any) =>
+                ch.users.some((u: any) => u.id === recipientId)
             );
             if (channel) {
                 const otherUser = channel.users.find((u) => u.id !== user?.id);
@@ -242,7 +236,7 @@ export default function ChatModal({
                     id: -1,
                     name: 'Pending Channel',
                     type: 'direct',
-                    users: [user!, { id: recipientId }],
+                    users: [user ?? ({} as any), { id: recipientId }],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 } as any);
@@ -259,7 +253,7 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const msgs = await getMessages(channelId, token);
+            const msgs = await apiGet<MessageDTO[]>(`/channels/${channelId}/messages`);
 
             // Debug: Log the raw messages from the API
             console.log('Raw messages from API:', msgs);
@@ -279,9 +273,10 @@ export default function ChatModal({
 
                 return {
                     ...msg,
-                    // Use the best available timestamp
-                    createdAt: timestamp,
-                    author: msg.author || {
+                    // Use the best available timestamp converted to Date
+                    createdAt: (parseMessageDate(timestamp) as Date) || new Date(),
+                    // Ensure the author satisfies UserDTO shape for TypeScript by casting fallback
+                    author: (msg.author ?? ({
                         id: 0,
                         username: 'Unknown',
                         email: '',
@@ -289,8 +284,9 @@ export default function ChatModal({
                         kudos: 0,
                         locationID: null,
                         createdAt: new Date(),
-                        updatedAt: new Date()
-                    }
+                        updatedAt: new Date(),
+                        // minimal placeholders for optional fields
+                    } as any)) as UserDTO
                 };
             });
 
@@ -320,7 +316,7 @@ export default function ChatModal({
 
             if (!selectedChannel || selectedChannel.id === -1) {
                 if (!recipientID || recipientID === 0) return;
-                response = await sendDirectMessage(+recipientID, msg, token);
+                response = await sendDirectInitial.mutateAsync(msg as any);
                 if (response.channel) {
                     const newChannel = {
                         ...response.channel,
@@ -338,7 +334,7 @@ export default function ChatModal({
                     (u) => u.id !== user?.id
                 );
                 if (!receiver) return;
-                response = await sendDirectMessage(receiver.id, msg, token);
+                response = await apiMutate<MessageDTO, CreateMessageDTO>(`/users/${receiver.id}/dm`, 'post', msg);
             }
 
             // Debug: Log the response from sending a message
@@ -358,8 +354,7 @@ export default function ChatModal({
                     updatedAt: new Date()
                 },
                 // IMPORTANT: Preserve the server's timestamp if available, fallback to current time for new messages
-                createdAt:
-                    getMessageTimestamp(response) || new Date().toISOString()
+                createdAt: (parseMessageDate(getMessageTimestamp(response)) as Date) || new Date()
             };
 
             setMessages((prev) => [...prev, fullMessage]);
@@ -570,10 +565,7 @@ export default function ChatModal({
                                                     onClick={async () => {
                                                         if (!token) return;
                                                         try {
-                                                            await deleteMessageApi(
-                                                                safeMsg.id,
-                                                                token
-                                                            );
+                                                            await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
                                                         }
                                                         catch (e) {
                                                             console.error(

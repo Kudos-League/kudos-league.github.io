@@ -10,12 +10,8 @@ import React, {
 } from 'react';
 import { Socket } from 'socket.io-client';
 import { Events } from 'shared/constants';
-import {
-    getMessages,
-    sendDirectMessage,
-    sendMessage
-} from 'shared/api/actions';
-import type { MessageDTO, NotificationPayload } from 'shared/api/types';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
+import type { MessageDTO } from 'shared/api/types';
 import { useAuth } from './useAuth';
 import { pushAlert } from '@/components/common/alertBus';
 import { getSocket } from '@/hooks/useWebsocketClient';
@@ -40,13 +36,7 @@ type Ctx = {
 
 const WebSocketContext = createContext<Ctx | null>(null);
 
-export function WebSocketProvider({
-    children,
-    onNotification
-}: {
-    children: ReactNode;
-    onNotification?: (n: NotificationPayload) => void;
-}) {
+export function WebSocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuth();
     const socketRef = useRef<Socket | null>(null);
 
@@ -209,13 +199,13 @@ export function WebSocketProvider({
     }, [token, currentUserId, clearPolling]);
 
     const actuallyJoin = useCallback(
-        (channelID: number, sock: Socket, tokenNonNull: string) => {
+        (channelID: number, sock: Socket) => {
             const onJoined = (data: {
                 channelID: number;
                 success: boolean;
             }) => {
                 if (data.channelID === channelID && data.success) {
-                    getMessages(channelID, tokenNonNull).then((list) => {
+                    apiGet<any>(`/channels/${channelID}/messages`).then((list) => {
                         if (Array.isArray(list)) {
                             const cleaned = list.filter(Boolean);
                             setMessages(cleaned);
@@ -230,11 +220,11 @@ export function WebSocketProvider({
     );
 
     const startPolling = useCallback(
-        (channelID: number, tokenNonNull: string) => {
+        (channelID: number) => {
             clearPolling();
             pollInterval.current = setInterval(async () => {
                 try {
-                    const fresh = await getMessages(channelID, tokenNonNull);
+                    const fresh = await apiGet<any>(`/channels/${channelID}/messages`);
                     if (Array.isArray(fresh)) {
                         setMessages(fresh.filter(Boolean));
                     }
@@ -262,12 +252,12 @@ export function WebSocketProvider({
 
             if (!sock || !connected) {
                 pendingJoins.current.add(channelID);
-                startPolling(channelID, token);
+                startPolling(channelID);
                 return;
             }
 
             clearPolling();
-            actuallyJoin(channelID, sock, token);
+            actuallyJoin(channelID, sock);
         },
         [token, isConnected, clearPolling, actuallyJoin, startPolling]
     );
@@ -298,23 +288,21 @@ export function WebSocketProvider({
         }) => {
             if (!token) return;
             try {
-                const newMsg = receiverID
-                    ? await sendDirectMessage(
-                        receiverID,
-                        {
-                            content,
-                            ...(replyToMessageID ? { replyToMessageID } : {})
-                        },
-                        token
-                    )
-                    : await sendMessage(
-                        {
-                            channelID: channel!.id,
-                            content,
-                            ...(replyToMessageID ? { replyToMessageID } : {})
-                        },
-                        token
-                    );
+                let newMsg: any = null;
+
+                if (receiverID) {
+                    newMsg = await apiMutate(`/users/${receiverID}/dm`, 'post', {
+                        content,
+                        ...(replyToMessageID ? { replyToMessageID } : {})
+                    });
+                }
+                else if (channel && channel.id != null) {
+                    newMsg = await apiMutate('/messages', 'post', {
+                        channelID: channel.id,
+                        content,
+                        ...(replyToMessageID ? { replyToMessageID } : {})
+                    });
+                }
 
                 if (!newMsg || (newMsg as any).id == null) return;
                 const withAuthor: MessageDTO = {

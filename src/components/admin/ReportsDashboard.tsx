@@ -1,9 +1,5 @@
 import { useAuth } from '@/contexts/useAuth';
-import {
-    deleteReport,
-    updateReportStatus,
-    resolveReport
-} from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import React, { useState } from 'react';
 import Button from '../common/Button';
 import RewardKudosModal from './RewardKudosModal';
@@ -15,12 +11,12 @@ type Props = {
 };
 
 export default function Dashboard({ reports, setReports }: Props) {
-    const { token } = useAuth();
+    useAuth();
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
 
     const handleDeleteReport = async (reportID: number) => {
         try {
-            await deleteReport(reportID, token);
+            await apiMutate<void, void>(`/admin/reports/${reportID}`, 'delete');
             setReports((prev) => prev.filter((r) => r.id !== reportID));
         }
         catch (err) {
@@ -34,7 +30,11 @@ export default function Dashboard({ reports, setReports }: Props) {
         status: 'ignored' | 'resolved'
     ) => {
         try {
-            await updateReportStatus(reportID, status, token);
+            await apiMutate<void, { status: string }>(
+                `/admin/reports/${reportID}`,
+                'put',
+                { status }
+            );
             setReports((prev: any[]) =>
                 prev.map((r) => (r.id === reportID ? { ...r, status } : r))
             );
@@ -49,14 +49,24 @@ export default function Dashboard({ reports, setReports }: Props) {
         reportID: number,
         rewardKudos: number
     ) => {
-        await resolveReport(reportID, rewardKudos, token);
-        setReports((prev) =>
-            prev.map((r) =>
-                r.id === reportID
-                    ? { ...r, status: 'resolved', rewardKudos }
-                    : r
-            )
-        );
+        try {
+            await apiMutate<void, { rewardKudos: number }>(
+                `/admin/reports/${reportID}/resolve`,
+                'put',
+                { rewardKudos }
+            );
+            setReports((prev) =>
+                prev.map((r) =>
+                    r.id === reportID
+                        ? { ...r, status: 'resolved', rewardKudos }
+                        : r
+                )
+            );
+        }
+        catch (err) {
+            console.error('Failed to resolve report:', err);
+            alert('Error resolving report');
+        }
     };
 
     return (

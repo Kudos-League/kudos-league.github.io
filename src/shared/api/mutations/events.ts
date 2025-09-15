@@ -3,7 +3,6 @@ import { apiMutate } from '@/shared/api/apiClient';
 import type { EventDTO, CreateEventDTO, UpdateEventDTO } from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
-import { updateEvent } from '../actions';
 
 export function useCreateEvent(p0: { onSuccess: () => void; }) {
     const { token } = useAuth();
@@ -19,8 +18,9 @@ export function useCreateEvent(p0: { onSuccess: () => void; }) {
             );
         },
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: qk.events(undefined) });
+            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qk.event(created.id as number), created);
+            p0?.onSuccess?.();
         }
     });
 }
@@ -73,7 +73,7 @@ export const useUpdateEvent = () => {
     return useMutation({
         mutationFn: async ({ id, data }: UpdateEventMutationData): Promise<EventDTO> => {
             if (!token) throw new Error('Authentication required');
-            return updateEvent(id, data, token);
+            return apiMutate<EventDTO, UpdateEventDTO>(`/events/${id}`, 'patch', data, { as: 'form' });
         },
         onSuccess: (updatedEvent) => {
             // Update the specific event in the cache

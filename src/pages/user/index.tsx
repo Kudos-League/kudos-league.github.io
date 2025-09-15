@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import {
-    getUserDetails,
-    getUserEvents,
-    getUserHandshakes,
-    getUserPosts
-} from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import Profile from '@/components/users/Profile';
 import { useAuth } from '@/contexts/useAuth';
 import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {
-    const { user: userProfile, isLoggedIn, authState } = useAuth();
+    const { user: userProfile, isLoggedIn } = useAuth();
     const { id: routeID } = useParams<{ id: string }>();
     const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
     const targetUserID = routeID ? Number(routeID) : userProfile?.id;
@@ -27,8 +22,8 @@ export default function UserProfile() {
         const fetchUser = async () => {
             setError(null);
 
-            if (!targetUserID || !authState?.token) {
-                setError('Missing user ID or token.');
+            if (!targetUserID) {
+                setError('Missing user ID.');
                 return;
             }
 
@@ -38,26 +33,19 @@ export default function UserProfile() {
                     // setFormState(userProfile);
                 }
                 else {
-                    const [
-                        fetchedUser,
-                        fetchedPosts,
-                        // fetchedHandshakes,
-                        fetchedEvents
-                    ] = await Promise.all([
-                        getUserDetails(targetUserID, authState.token, {
-                            settings: true
-                        }),
-                        getUserPosts(targetUserID, authState.token),
-                        // getUserHandshakes(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, {
-                            filter: 'all'
-                        })
-                    ]);
+                    const [fetchedUser, fetchedPosts, fetchedEvents] =
+                        await Promise.all([
+                            apiGet<UserDTO>(`/users/${targetUserID}`, {
+                                params: { settings: true }
+                            }),
+                            apiGet<PostDTO[]>(`/users/${targetUserID}/posts`),
+                            apiGet<EventDTO[]>(`/users/${targetUserID}/events`, {
+                                params: { filter: 'all' }
+                            })
+                        ]);
 
                     setUser(fetchedUser);
-                    // setFormState(fetchedUser);
                     setPosts(fetchedPosts);
-                    // setHandshakes(fetchedHandshakes);
                     setEvents(fetchedEvents);
 
                     return;
@@ -66,9 +54,9 @@ export default function UserProfile() {
                 // Only fetch posts/events if not already loaded
                 if (!posts.length) {
                     const [fetchedPosts, fetchedEvents] = await Promise.all([
-                        getUserPosts(targetUserID, authState.token),
-                        getUserEvents(targetUserID, authState.token, {
-                            filter: 'all'
+                        apiGet<PostDTO[]>(`/users/${targetUserID}/posts`),
+                        apiGet<EventDTO[]>(`/users/${targetUserID}/events`, {
+                            params: { filter: 'all' }
                         })
                     ]);
                     setPosts(fetchedPosts);
@@ -76,10 +64,7 @@ export default function UserProfile() {
                 }
 
                 if (isViewingOwnProfile && !handshakes.length) {
-                    const fetchedHandshakes = await getUserHandshakes(
-                        targetUserID,
-                        authState.token
-                    );
+                    const fetchedHandshakes = await apiGet<HandshakeDTO[]>(`/handshakes/by-sender/${targetUserID}`);
                     setHandshakes(fetchedHandshakes);
                 }
             }
@@ -90,7 +75,7 @@ export default function UserProfile() {
         };
 
         fetchUser();
-    }, [targetUserID, authState?.token]);
+    }, [targetUserID]);
 
     if (!isLoggedIn) {
         return (
