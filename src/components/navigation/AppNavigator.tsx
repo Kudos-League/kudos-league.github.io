@@ -9,6 +9,7 @@ import { routes } from '@/routes';
 import About from '@/pages/about';
 
 const Home = lazy(() => import('@/pages/home'));
+const Result = lazy(() => import('@/pages/donate/result'));
 const Post = lazy(() => import('@/pages/post'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
@@ -32,6 +33,7 @@ function AppNavigator() {
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About/>} />
                     <Route path={routes.home} element={<Home />} />
+                    <Route path={routes.result} element={<Result />} />
 
                     <Route
                         path={routes.donate}
