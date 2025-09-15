@@ -5,7 +5,6 @@ import UserCard from '../users/UserCard';
 interface Props {
     channels: ChannelDTO[];
     searchQuery: string;
-    onSearch: (value: string) => void;
     onSelect: (channel: ChannelDTO) => void;
     selectedChannel: ChannelDTO | null;
     isMobile?: boolean;
@@ -14,7 +13,7 @@ interface Props {
 const DMList: React.FC<Props> = ({
     channels,
     searchQuery,
-    onSearch,
+    
     onSelect,
     selectedChannel,
     isMobile = false
@@ -68,16 +67,6 @@ const DMList: React.FC<Props> = ({
             }`}>
                 Direct Messages
             </h2>
-
-            <input
-                type='text'
-                placeholder='Search by username...'
-                value={searchQuery}
-                onChange={(e) => onSearch(e.target.value)}
-                className={`border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 mb-4 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors ${
-                    isMobile ? 'py-3 text-base' : 'py-2 text-sm'
-                }`}
-            />
 
             <div className='overflow-y-auto flex-1 space-y-2'>
                 {filteredChannels.length === 0 && (
