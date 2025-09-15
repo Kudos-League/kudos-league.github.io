@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getUserDetails, getMessages } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
+import { MessageDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import { ChannelDTO } from '@/shared/api/types';
@@ -12,106 +13,83 @@ export default function DMChat() {
     const { id: targetUserId } = useParams<{ id: string }>();
     const { user, token } = useAuth();
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
-    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
-        null
-    );
+    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showChatOnMobile, setShowChatOnMobile] = useState(false);
     const { state: notifState } = useNotifications();
 
-    const { messages, setMessages, joinChannel, leaveChannel, send } =
-        useWebSocketContext();
+    const { messages, setMessages, joinChannel, leaveChannel, send } = useWebSocketContext();
 
+    // Apply notification updates to channels/messages
     useEffect(() => {
         const n = notifState.items[0];
         if (!n) return;
 
         if (n.type === 'direct-message') {
-            setChannels((prev) =>
-                prev.map((c) =>
-                    c.id === n.channelID ? { ...c, lastMessage: n.message } : c
-                )
-            );
+            setChannels((prev) => prev.map((c) => (c.id === n.channelID ? { ...c, lastMessage: n.message } : c)));
 
             if (selectedChannel?.id === n.channelID) {
                 const msg = n.message;
-                setMessages((prev) =>
-                    prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
-                );
+                setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
             }
         }
     }, [notifState.items, selectedChannel?.id, setMessages]);
 
+    // Load user's DM channels and their last messages
     useEffect(() => {
-        if (user && token) {
-            getUserDetails(user.id, token, { dmChannels: true }).then(
-                async (res) => {
-                    const formatted = res.dmChannels
-                        .map((channel) => {
-                            const otherUser = channel.users.find(
-                                (u) => u.id !== user.id
-                            );
-                            return otherUser ? { ...channel, otherUser } : null;
-                        })
-                        .filter(Boolean) as ChannelDTO[];
+        const fetchChannels = async () => {
+            if (!(user && token)) return;
 
-                    const channelsWithLastMessage = await Promise.all(
-                        formatted.map(async (channel) => {
-                            try {
-                                const channelMessages = await getMessages(
-                                    channel.id,
-                                    token
-                                );
-                                const lastMessage =
-                                    channelMessages &&
-                                    channelMessages.length > 0
-                                        ? channelMessages[
-                                            channelMessages.length - 1
-                                        ]
-                                        : null;
-                                return { ...channel, lastMessage };
-                            }
-                            catch (error) {
-                                console.error(
-                                    `Error fetching messages for channel ${channel.id}:`,
-                                    error
-                                );
-                                return channel;
-                            }
-                        })
-                    );
+            try {
+                const res = await apiGet<any>(`/users/${user.id}`, { params: { dmChannels: true } });
 
-                    setChannels(channelsWithLastMessage);
+                const formatted = res.dmChannels
+                    .map((channel: any) => {
+                        const otherUser = channel.users.find((u: any) => u.id !== user.id);
+                        return otherUser ? { ...channel, otherUser } : null;
+                    })
+                    .filter(Boolean) as ChannelDTO[];
 
-                    if (targetUserId) {
-                        const matchedChannel = channelsWithLastMessage.find(
-                            (channel) =>
-                                channel.users.some(
-                                    (u) => u.id === +targetUserId
-                                )
-                        );
-
-                        if (matchedChannel) {
-                            joinChannel(matchedChannel.id);
-                            setSelectedChannel(matchedChannel);
-                            setShowChatOnMobile(true);
+                const channelsWithLastMessage = await Promise.all(
+                    formatted.map(async (channel) => {
+                        try {
+                            const channelMessages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
+                            const lastMessage = channelMessages && channelMessages.length > 0 ? channelMessages[channelMessages.length - 1] : null;
+                            return { ...channel, lastMessage } as ChannelDTO;
                         }
+                        catch (error) {
+                            console.error(`Error fetching messages for channel ${channel.id}:`, error);
+                            return channel;
+                        }
+                    })
+                );
+
+                setChannels(channelsWithLastMessage);
+
+                if (targetUserId) {
+                    const parsedId = Number(targetUserId);
+                    const matchedChannel = channelsWithLastMessage.find((channel) => channel.users.some((u: any) => u.id === parsedId));
+
+                    if (matchedChannel) {
+                        joinChannel(matchedChannel.id);
+                        setSelectedChannel(matchedChannel);
+                        setShowChatOnMobile(true);
                     }
                 }
-            );
-        }
+            }
+            catch (e) {
+                console.error('Failed to load DM channels', e);
+            }
+        };
+
+        fetchChannels();
     }, [user, token, targetUserId, joinChannel]);
 
+    // Keep channel list lastMessage updated as websocket messages arrive
     useEffect(() => {
         if (messages.length > 0 && selectedChannel) {
             const lastMessage = messages[messages.length - 1];
-            setChannels((prevChannels) =>
-                prevChannels.map((channel) =>
-                    channel.id === selectedChannel.id
-                        ? { ...channel, lastMessage }
-                        : channel
-                )
-            );
+            setChannels((prevChannels) => prevChannels.map((channel) => (channel.id === selectedChannel.id ? { ...channel, lastMessage } : channel)));
         }
     }, [messages, selectedChannel]);
 

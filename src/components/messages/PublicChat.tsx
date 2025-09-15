@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { getMessages, getPublicChannels, updateMessage, deleteMessage } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import { ChannelDTO, MessageDTO } from '@/shared/api/types';
+import { usePublicChannels } from '@/shared/api/queries/messages';
+import { useUpdateMessage, useDeleteMessage } from '@/shared/api/mutations/messages';
 import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
@@ -241,22 +243,13 @@ export default function PublicChat() {
         }
     }, [messages]);
 
+    const channelsQuery = usePublicChannels();
     useEffect(() => {
-        const fetchChannels = async () => {
-            if (!token) return;
-            try {
-                const publicChannels = await getPublicChannels(token);
-                setChannels(publicChannels);
-                if (publicChannels.length > 0 && !selectedChannel) {
-                    selectChannel(publicChannels[0]);
-                }
-            }
-            catch (error) {
-                console.error('Error fetching public channels:', error);
-            }
-        };
-        fetchChannels();
-    }, [token]);
+        if (channelsQuery.data) {
+            setChannels(channelsQuery.data);
+            if (channelsQuery.data.length > 0 && !selectedChannel) selectChannel(channelsQuery.data[0]);
+        }
+    }, [channelsQuery.data]);
 
     const selectChannel = async (channel: ChannelDTO) => {
         setSelectedChannel(channel);
@@ -264,7 +257,8 @@ export default function PublicChat() {
         if (!token) return;
 
         try {
-            const messagesData = await getMessages(channel.id, token);
+            // messages are managed via react-query hooks elsewhere; fetch directly for initial population
+            const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
             if (messagesData) setMessages(messagesData);
 
             if (selectedChannel && selectedChannel.id !== channel.id) {
@@ -287,47 +281,33 @@ export default function PublicChat() {
         setMessageInput('');
     };
 
+    const updateMessageMutation = useUpdateMessage();
     const handleEditMessage = async (messageId: number, newContent: string) => {
-        if (!token || !newContent.trim()) return;
-
+        if (!newContent.trim()) return;
         try {
-            const updatedMessage = await updateMessage(messageId, { content: newContent }, token);
-            
-            // Update the message in the local state
-            setMessages(prevMessages => 
-                prevMessages.map(msg => 
-                    msg.id === messageId 
-                        ? msg = updatedMessage 
-                        : msg
-                )
-            );
-            
+            const updated = await updateMessageMutation.mutateAsync({ id: messageId, content: newContent });
+            setMessages(prev => prev.map(m => (m.id === messageId ? updated : m)));
             setEditingMessageId(null);
         }
-        catch (error) {
-            console.error('Failed to edit message:', error);
+        catch (err) {
+            console.error('Failed to edit message:', err);
             alert('Failed to edit message. Please try again.');
         }
     };
 
+    const deleteMessageMutation = useDeleteMessage();
     const handleDeleteMessage = async (messageId: number) => {
-        if (!token) return;
-
         try {
-            await deleteMessage(messageId, token);
-            
-            // Remove the message from local state
-            setMessages(prevMessages => 
-                prevMessages.filter(msg => msg.id !== messageId)
-            );
+            await deleteMessageMutation.mutateAsync(messageId);
+            setMessages(prev => prev.filter(m => m.id !== messageId));
         }
-        catch (error) {
-            console.error('Failed to delete message:', error);
+        catch (err) {
+            console.error('Failed to delete message:', err);
             alert('Failed to delete message. Please try again.');
         }
     };
 
-    const handleStartEdit = (messageId: number, currentContent: string) => {
+    const handleStartEdit = (messageId: number) => {
         setEditingMessageId(messageId);
     };
 

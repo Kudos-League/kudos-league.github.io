@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
-import { getReports, getFeedbacks } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
@@ -27,8 +27,8 @@ export default function AdminDashboard() {
 
             try {
                 const [r, f] = await Promise.all([
-                    getReports(token),
-                    getFeedbacks(token)
+                    apiGet<any>('/admin/reports', { headers: { Authorization: token ? `Bearer ${token}` : undefined } }),
+                    apiGet<any>('/feedback', { headers: { Authorization: token ? `Bearer ${token}` : undefined } })
                 ]);
                 setReports(r ?? []);
                 setFeedbacks(f ?? []);

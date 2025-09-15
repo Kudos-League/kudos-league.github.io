@@ -1,10 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
 import { NotificationPayload, NotificationType } from '@/shared/api/types';
-import {
-    fetchNotifications,
-    markAllNotificationsRead
-} from '@/shared/api/actions';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 
 type Key = string;
 const keyOf = (n: NotificationPayload): Key => {
@@ -32,14 +29,19 @@ export const loadNotifications = createAsyncThunk<
     NotificationPayload[],
     { token: string; limit?: number }
 >('notifications/load', async ({ token, limit = 50 }) => {
-    const list = await fetchNotifications(token, limit);
+    const list = await apiGet<NotificationPayload[]>('/notifications', {
+        params: { limit },
+        headers: { Authorization: token ? `Bearer ${token}` : undefined }
+    });
     return list as NotificationPayload[];
 });
 
 export const markAllRead = createAsyncThunk<void, { token: string }>(
     'notifications/markAllRead',
     async ({ token }) => {
-        await markAllNotificationsRead(token);
+        await apiMutate('/notifications/mark-all-read', 'post', undefined, {
+            headers: { Authorization: token ? `Bearer ${token}` : undefined }
+        });
     }
 );
 

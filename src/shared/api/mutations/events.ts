@@ -19,8 +19,9 @@ export function useCreateEvent(p0: { onSuccess: () => void; }) {
             );
         },
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: qk.events(undefined) });
+            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qk.event(created.id as number), created);
+            p0?.onSuccess?.();
         }
     });
 }

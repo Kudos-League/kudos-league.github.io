@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import debounce from 'lodash/debounce';
-import { getTopTags } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import Button from './common/Button';
 
@@ -44,7 +44,10 @@ const TagInput: React.FC<TagInputProps> = ({
                     return;
                 }
 
-                const response = await getTopTags(query, token);
+                const response = await apiGet<{ data: Tag[] }>('/tags/top', {
+                    params: { q: query },
+                    headers: { Authorization: token ? `Bearer ${token}` : undefined }
+                });
 
                 // Check if this is still the latest request
                 if (requestId === currentRequestRef.current) {

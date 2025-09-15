@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getMonthlyActiveUsers } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -91,8 +91,8 @@ export default function AdminAnalytics() {
         (async () => {
             try {
                 if (!token) return;
-                const data = await getMonthlyActiveUsers(token);
-                const sorted = [...data].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                const data = await apiGet<{ month: string; count: number }[]>('/admin/analytics/mau', { headers: { Authorization: token ? `Bearer ${token}` : undefined } });
+                const sorted = [...(data ?? [])].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
                 if (mounted) setMau(sorted);
             }
             catch (e) {

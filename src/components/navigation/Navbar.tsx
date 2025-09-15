@@ -14,7 +14,7 @@ import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
 import FeedbackModal from '@/components/common/FeedbackModal';
-import { createFeedback } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 type NavItem = {
@@ -251,7 +251,7 @@ export default function Navbar({
         if (!userID) {
             throw new Error('You need to be logged in to send feedback.');
         }
-        await createFeedback({ userID, content }, token);
+        await apiMutate('/feedback', 'post', { userID, content }, { headers: { Authorization: token ? `Bearer ${token}` : undefined } });
     };
 
     return (

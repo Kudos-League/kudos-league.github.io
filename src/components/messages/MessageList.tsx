@@ -4,11 +4,8 @@ import {
     MessageDTO,
     UpdateMessageDTO
 } from '@/shared/api/types';
-import {
-    sendMessage,
-    updateMessage,
-    deleteMessage
-} from '@/shared/api/actions';
+// apiClient used by hooks
+import { useSendMessage, useUpdateMessage, useDeleteMessage } from '@/shared/api/mutations/messages';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
@@ -41,6 +38,9 @@ const MessageList: React.FC<Props> = ({
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
+    const sendMessageMutation = useSendMessage(postID as number | undefined);
+    const updateMessageMutation = useUpdateMessage();
+    const deleteMessageMutation = useDeleteMessage();
     const [showAllMessages, setShowAllMessages] = useState(false);
     const [messageContent, setMessageContent] = useState('');
     const [editingMessageId, setEditingMessageId] = useState<number | null>(
@@ -68,7 +68,7 @@ const MessageList: React.FC<Props> = ({
         };
 
         try {
-            const response = await sendMessage(newMessage, token);
+            const response = await sendMessageMutation.mutateAsync(newMessage as any);
             // Ensure author info is present locally to avoid "Anonymous" until refresh
             const enriched: MessageDTO = {
                 ...response,
@@ -101,11 +101,7 @@ const MessageList: React.FC<Props> = ({
         if (!originalMessage) return;
 
         try {
-            const response = await updateMessage(
-                messageId,
-                { content: editContent },
-                token
-            );
+            const response = await updateMessageMutation.mutateAsync({ id: messageId, content: editContent });
 
             // Merge the response with original author data to ensure we don't lose it
             const updatedMessage: MessageDTO = {
@@ -144,7 +140,7 @@ const MessageList: React.FC<Props> = ({
         }
 
         try {
-            await deleteMessage(messageId, token);
+            await deleteMessageMutation.mutateAsync(messageId);
 
             // Use specific callback for deletions, fallback to general callback
             if (onMessageDelete) {

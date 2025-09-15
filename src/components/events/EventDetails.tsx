@@ -5,7 +5,8 @@ import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { EventDTO, LocationDTO } from '@/shared/api/types';
-import { joinEvent, leaveEvent } from '@/shared/api/actions';
+import { useJoinEvent } from '@/shared/api/mutations/events';
+import { apiMutate } from '@/shared/api/apiClient';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
@@ -140,7 +141,7 @@ export default function EventDetails({ event, setEvent }: Props) {
             }
 
             const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/events/${event.id}`, {
-                method: 'PATCH',
+                method: 'PUT',
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
@@ -178,12 +179,13 @@ export default function EventDetails({ event, setEvent }: Props) {
         });
     };
 
+    const joinMutation = useJoinEvent(event.id);
+
     const handleJoin = async () => {
         if (!token || !event.id) return;
-
         setJoining(true);
         try {
-            await joinEvent(event.id, token);
+            await joinMutation.mutateAsync();
             setEvent({
                 ...event,
                 participants: [...(event.participants || []), user]
@@ -199,9 +201,8 @@ export default function EventDetails({ event, setEvent }: Props) {
 
     const handleLeave = async () => {
         if (!token || !event.id) return;
-
         try {
-            await leaveEvent(event.id, token);
+            await apiMutate(`/events/${event.id}/leave`, 'post');
             setEvent({
                 ...event,
                 participants: event.participants.filter(

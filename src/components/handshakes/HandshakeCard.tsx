@@ -3,16 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Tippy from '@tippyjs/react';
 import { XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 
-import {
-    getUserDetails,
-    updateHandshake,
-    createRewardOffer,
-    deleteHandshake,
-    createDMChannel,
-    getMessages
-} from '@/shared/api/actions';
-import type { HandshakeDTO, UserDTO, MessageDTO } from '@/shared/api/types';
-import type { CreateRewardOfferDTO } from '@/shared/api/types';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
+import { useCompleteHandshake, useDeleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
+import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
@@ -80,7 +73,7 @@ const HandshakeCard: React.FC<Props> = ({
     useEffect(() => {
         const fetchSender = async () => {
             try {
-                const sender = await getUserDetails(handshake.senderID, token);
+                const sender = await apiGet<UserDTO>(`/users/${handshake.senderID}`);
                 setSenderUser(sender);
             }
             catch (err) {
@@ -89,7 +82,7 @@ const HandshakeCard: React.FC<Props> = ({
             }
         };
         fetchSender();
-    }, [handshake, token]);
+    }, [handshake]);
 
     // Fetch last message if handshake is accepted and user is a participant
     useEffect(() => {
@@ -106,14 +99,14 @@ const HandshakeCard: React.FC<Props> = ({
             setLoadingMessage(true);
             try {
                 // Create or get DM channel between the two users
-                const channel = await createDMChannel(
-                    userID,
-                    otherUserID,
-                    token
-                );
+                const channel = await apiMutate<ChannelDTO, any>('/channels', 'post', {
+                    name: `DM: User ${userID} & User ${otherUserID}`,
+                    channelType: 'dm',
+                    userIDs: [userID, otherUserID]
+                });
                 console.log('DM Channel:', channel);
 
-                const messages = await getMessages(channel.id, token);
+                const messages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
                 console.log('All messages:', messages);
 
                 // Get the last message from the other user
@@ -137,7 +130,7 @@ const HandshakeCard: React.FC<Props> = ({
         };
 
         fetchLastMessage();
-    }, [status, userID, otherUserID, token, isParticipant]);
+    }, [status, userID, otherUserID, isParticipant]);
 
     const handleAccept = async (): Promise<boolean> => {
         setError(null);
@@ -145,7 +138,7 @@ const HandshakeCard: React.FC<Props> = ({
 
         setProcessing(true);
         try {
-            await updateHandshake(handshake.id, { status: 'accepted' }, token);
+            await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'accepted' });
             setStatus('accepted');
             setIsChatOpen(true);
             return true;
@@ -168,15 +161,15 @@ const HandshakeCard: React.FC<Props> = ({
 
         setSubmitting(true);
         try {
-            const dto: CreateRewardOfferDTO = {
+            const dto: any = {
                 postID: handshake.postID,
                 amount: Number(kudosValue),
                 currency: 'kudos',
                 kudos: Number(kudosValue),
                 receiverID: gifterID
             };
-            await createRewardOffer(dto, token);
-            await updateHandshake(handshake.id, { status: 'completed' }, token);
+            await createOfferMutation.mutateAsync(dto);
+            await completeHandshakeMutation.mutateAsync();
             setStatus('completed');
             setKudosValue('');
         }
@@ -196,19 +189,11 @@ const HandshakeCard: React.FC<Props> = ({
         return content;
     };
 
-    const getTimeAgo = (date: Date) => {
-        const now = new Date();
-        const diffMs = now.getTime() - new Date(date).getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return new Date(date).toLocaleDateString();
-    };
+    // time-ago helper intentionally removed (unused)
+    
+    const createOfferMutation = useCreateOffer();
+    const deleteHandshakeMutation = useDeleteHandshake();
+    const completeHandshakeMutation = useCompleteHandshake();
 
     return (
         <>
@@ -250,10 +235,7 @@ const HandshakeCard: React.FC<Props> = ({
                                             return;
 
                                         try {
-                                            await deleteHandshake(
-                                                handshake.id,
-                                                token
-                                            );
+                                            await deleteHandshakeMutation.mutateAsync();
                                             onDelete?.(handshake.id);
                                         }
                                         catch (err) {
@@ -445,11 +427,7 @@ const HandshakeCard: React.FC<Props> = ({
                     <Button
                         onClick={async () => {
                             try {
-                                await updateHandshake(
-                                    handshake.id,
-                                    { status: 'new' },
-                                    token
-                                );
+                                await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' }, { headers: { Authorization: `Bearer ${token}` } });
                                 setStatus('new');
                             }
                             catch (err) {

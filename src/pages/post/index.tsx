@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppSelector } from 'redux_store/hooks';
 
-import { getPostDetails } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import PostDetails from '@/components/posts/PostDetails';
 
 import type { PostDTO } from '@/shared/api/types';
@@ -18,9 +18,11 @@ const Post = () => {
 
     const fetchPostDetails = async (postID: number) => {
         try {
-            const data = await getPostDetails(token, postID);
+            const data = await apiGet<PostDTO>(`/posts/${postID}`, {
+                headers: { Authorization: token ? `Bearer ${token}` : undefined }
+            });
             setPostDetails(data);
-            const userLike = data.likes?.[0]?.like ?? null;
+            const userLike = (data as any).likes?.[0]?.like ?? null;
             setLiked(userLike);
             setLoading(false);
         }
