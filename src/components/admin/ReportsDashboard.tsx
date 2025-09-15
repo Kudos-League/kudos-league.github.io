@@ -11,7 +11,6 @@ type Props = {
 };
 
 export default function Dashboard({ reports, setReports }: Props) {
-    // token is no longer passed per-request; setAuthToken handles headers globally.
     useAuth();
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
 

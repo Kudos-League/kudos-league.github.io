@@ -8,12 +8,9 @@ type Props = {
 };
 
 const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
-    // Track failures by original index
     const [failed, setFailed] = useState<Set<number>>(new Set());
-    // Current slide index within *valid* list
     const [idx, setIdx] = useState(0);
 
-    // Build a mapped list so we can relate valid slides back to original indices
     const valid = useMemo(() => {
         return images
             .map((src, orig) => ({ src, orig }))
@@ -22,7 +19,6 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
 
     const total = valid.length;
 
-    // Clamp idx if list shrinks (e.g., an image failed)
     useEffect(() => {
         if (total === 0) return;
         if (idx > total - 1) setIdx(total - 1);
@@ -40,7 +36,6 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
         return () => clearInterval(timer);
     }, [interval, total]);
 
-    // Nothing to render
     if (total === 0) return null;
 
     const goLeft = useCallback(() => {
@@ -58,7 +53,6 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
         [setFailed]
     );
 
-    // Width of the sliding track (100% per slide)
     const trackStyle = {
         width: `${total * 100}%`,
         transform: `translateX(-${idx * (100 / total)}%)`
@@ -66,7 +60,6 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
 
     return (
         <div className='relative w-full max-w-2xl mx-auto h-60 mb-6 overflow-hidden'>
-            {/* Track */}
             <div
                 className='h-full flex transition-transform duration-300 ease-in-out'
                 style={trackStyle}

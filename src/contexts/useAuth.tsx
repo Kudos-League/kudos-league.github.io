@@ -40,12 +40,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const token = authState?.token || null;
 
-    // Keep axios default header in sync with current token
     useEffect(() => {
         setAuthToken(token ?? undefined);
     }, [token]);
 
-    // useMutation for login via apiMutate
     const qc = useQueryClient();
 
     type LoginData = { token: string; user?: { username?: string } };
@@ -87,9 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setAuthState(newAuthState);
             dispatch(updateAuth(newAuthState));
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
-            // ensure axios header is set immediately
             setAuthToken(newAuthState.token);
-            // refetch user query
             qc.invalidateQueries({ queryKey: ['user', 'me'] });
         }
         catch (error: any) {
@@ -103,7 +99,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    // React Query: fetch current user if token present
     const userQuery = useQuery<UserDTO, any>({
         queryKey: ['user', 'me'],
         queryFn: () => apiGet<UserDTO>('/users/me'),
@@ -111,14 +106,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         retry: false
     });
 
-    // sync fetched user data into local state when available
     useEffect(() => {
         if (userQuery.data) {
             setUserProfile(userQuery.data);
         }
     }, [userQuery.data]);
 
-    // handle errors from fetching user
     useEffect(() => {
         if (userQuery.isError) {
             console.error('Failed to fetch user profile:', userQuery.error);
@@ -153,10 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                 }
 
-                // If we already have a token in authState, ensure user query runs (it is enabled by token)
                 if (isJwt(authState?.token ?? '')) {
-                    // userQuery will fetch automatically via react-query enabled flag
-                    // ensure username is populated from cached profile if available
                     if (!authState?.username && userQuery.data) {
                         const usernameFromData = (userQuery.data as UserDTO).username || '';
                         const patched = { ...authState, username: usernameFromData } as AuthState;

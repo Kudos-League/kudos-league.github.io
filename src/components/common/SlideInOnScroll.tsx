@@ -3,13 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 
 type Props = {
     children: React.ReactNode;
-    /** Stagger index for sequential delay */
     index?: number;
-    /** How much extra delay per index, in ms */
-    delayStep?: number; // default 60
-    /** Animate only once? */
-    once?: boolean; // default true
-    /** IntersectionObserver options */
+    delayStep?: number;
+    once?: boolean;
     threshold?: number;
     rootMargin?: string;
     className?: string;
@@ -31,7 +27,6 @@ export default function SlideInOnScroll({
         const el = ref.current;
         if (!el) return;
 
-        // Respect reduced motion
         const prefersReduced = window.matchMedia(
             '(prefers-reduced-motion: reduce)'
         ).matches;

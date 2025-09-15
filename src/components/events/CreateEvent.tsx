@@ -151,7 +151,7 @@ export default function CreateEvent() {
         ) {
             const suggestedEndDate = new Date(
                 new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000
-            ); // 1 day later
+            );
             setEndDate(suggestedEndDate);
         }
 
