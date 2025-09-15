@@ -126,9 +126,9 @@ export default function EventDetails({ event, setEvent }: Props) {
                 } as LocationDTO
             };
 
-            const updatedEvent = await apiMutate<EventDTO, any>(`/events/${event.id}`, 'put', updateData, { as: 'form' });
+            const updatedEvent = await apiMutate<EventDTO, any>(`/events/${event.id}`, 'put', updateData, { as: 'json' });
 
-            setEvent(updatedEvent);
+            setEvent({ ...event, ...(updatedEvent as Partial<EventDTO>) } as EventDTO);
             setIsEditing(false);
         }
         catch (err: any) {
