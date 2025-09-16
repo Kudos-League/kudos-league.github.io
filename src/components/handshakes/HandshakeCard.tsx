@@ -423,7 +423,7 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {!isSender && status === 'accepted' && (
+                {((handshake.post.type === 'request' && handshake.post.senderID === userID) || (handshake.post.type === 'gift' && handshake.receiverID === userID)) && status === 'accepted' && (
                     <Button
                         onClick={async () => {
                             try {

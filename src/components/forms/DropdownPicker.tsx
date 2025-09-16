@@ -40,7 +40,7 @@ export default function DropdownPicker({
 
             <MenuItems
                 transition
-                className='absolute z-10 mt-2 w-full origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 z-10'
+                className='absolute z-10 mt-2 w-full origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 max-h-60 overflow-y-auto'
             >
                 <div className='py-1'>
                     {options.map((opt) => (
