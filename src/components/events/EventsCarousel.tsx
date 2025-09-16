@@ -117,12 +117,12 @@ export default function EventsCarousel() {
     >('all');
     const [showLocationModal, setShowLocationModal] = useState(false);
 
-    const TIME_FILTERS = [
-        { label: 'All Time + Past', value: 'all' },
-        { label: 'Active Today', value: 'today' },
-        { label: 'Active Next 7 Days', value: 'next7d' },
-        { label: 'Active Next Month', value: 'nextmonth' }
-    ] as const;
+    // const TIME_FILTERS = [
+    //     { label: 'All Time + Past', value: 'all' },
+    //     { label: 'Active Today', value: 'today' },
+    //     { label: 'Active Next 7 Days', value: 'next7d' },
+    //     { label: 'Active Next Month', value: 'nextmonth' }
+    // ] as const;
 
     const canQueryLocal = locationFilter && !!user?.location?.name;
     const serverFilters = useMemo(
@@ -137,46 +137,47 @@ export default function EventsCarousel() {
 
     const selectByTime = useMemo(() => {
         return (events: EventDTO[]) => {
-            if (timeFilter === 'all') return events;
+            // if (timeFilter === 'all') return events;
 
-            const now = dayjs();
-            const startOfToday = now.startOf('day');
-            const endOfToday = now.endOf('day');
+            // const now = dayjs();
+            // const startOfToday = now.startOf('day');
+            // const endOfToday = now.endOf('day');
 
-            return events.filter((e) => {
-                const start = dayjs(e.startTime);
-                const end = dayjs(e.endTime ?? e.startTime);
+            // return events.filter((e) => {
+            //     const start = dayjs(e.startTime);
+            //     const end = dayjs(e.endTime ?? e.startTime);
 
-                if (timeFilter === 'today') {
-                    return (
-                        (start.isBefore(endOfToday) ||
-                            start.isSame(endOfToday)) &&
-                        (end.isAfter(startOfToday) || end.isSame(startOfToday))
-                    );
-                }
+            //     if (timeFilter === 'today') {
+            //         return (
+            //             (start.isBefore(endOfToday) ||
+            //                 start.isSame(endOfToday)) &&
+            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
+            //         );
+            //     }
 
-                if (timeFilter === 'next7d') {
-                    const endOfNext7 = now.add(7, 'day').endOf('day');
-                    return (
-                        (start.isBefore(endOfNext7) ||
-                            start.isSame(endOfNext7)) &&
-                        (end.isAfter(startOfToday) || end.isSame(startOfToday))
-                    );
-                }
+            //     if (timeFilter === 'next7d') {
+            //         const endOfNext7 = now.add(7, 'day').endOf('day');
+            //         return (
+            //             (start.isBefore(endOfNext7) ||
+            //                 start.isSame(endOfNext7)) &&
+            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
+            //         );
+            //     }
 
-                if (timeFilter === 'nextmonth') {
-                    const endOfNextMonth = now.add(1, 'month').endOf('day');
-                    return (
-                        (start.isBefore(endOfNextMonth) ||
-                            start.isSame(endOfNextMonth)) &&
-                        (end.isAfter(startOfToday) || end.isSame(startOfToday))
-                    );
-                }
+            //     if (timeFilter === 'nextmonth') {
+            //         const endOfNextMonth = now.add(1, 'month').endOf('day');
+            //         return (
+            //             (start.isBefore(endOfNextMonth) ||
+            //                 start.isSame(endOfNextMonth)) &&
+            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
+            //         );
+            //     }
 
-                return true;
-            });
+            //     return true;
+            // });
+            return events;
         };
-    }, [timeFilter]);
+    }, [{/*timeFilter*/}]);
 
     const {
         data: events = [],
@@ -213,14 +214,14 @@ export default function EventsCarousel() {
                     {locationFilter ? 'Local (On)' : 'Local (Off)'}
                 </Button>
 
-                <div className='relative'>
+                {/* <div className='relative'>
                     <Dropdown
                         value={timeFilter}
                         onChange={setTimeFilter}
                         options={TIME_FILTERS}
                         label='Time'
                     />
-                </div>
+                </div> */}
             </div>
 
             {isLoading ? (
