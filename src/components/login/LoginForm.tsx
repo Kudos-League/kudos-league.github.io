@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { PasswordInput, TextInput, TinyHelpLink } from './fields';
+import { TinyHelpLink } from './fields';
+import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
@@ -27,9 +28,7 @@ export default function LoginForm({
 }: LoginFormProps) {
     const { login, token, logout } = useAuth();
     const methods = useForm<FormValues>({ mode: 'onBlur' });
-    const { setValue } = methods;
     const [errorMessage, setErrorMessage] = useState<string | null>(initialError ?? null);
-    const [passwordVisible, setPasswordVisible] = useState(false);
     const navigate = useNavigate();
 
     const getErrorMessage = (error: any): string => {
@@ -114,47 +113,24 @@ export default function LoginForm({
             <Form methods={methods} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
                 <div>
                     <div className='col-span-2'>
-                        <FormField name='username' label='Username'>
-                            <Controller
+                        <FormField name='username'>
+                            <Input
                                 name='username'
-                                control={methods.control}
-                                rules={{ required: 'Username is required' }}
-                                render={({ field }) => (
-                                    <TextInput
-                                        rounded='top'
-                                        placeholder='Username'
-                                        aria-label='Username'
-                                        value={field.value || ''}
-                                        onChange={(e) => {
-                                            field.onChange(e);
-                                            setValue('username', e.target.value);
-                                        }}
-                                        onBlur={field.onBlur}
-                                    />
-                                )}
+                                label=''
+                                placeholder='Username'
+                                form={methods}
+                                registerOptions={{ required: 'Username is required' }}
                             />
                         </FormField>
                     </div>
-                    <FormField name='password' helper=''>
-                        <Controller
+                    <FormField name='password'>
+                        <Input
                             name='password'
-                            control={methods.control}
-                            rules={{ required: 'Password is required' }}
-                            render={({ field }) => (
-                                <PasswordInput
-                                    rounded='bottom'
-                                    placeholder='Password'
-                                    aria-label='Password'
-                                    visible={passwordVisible}
-                                    setVisible={setPasswordVisible}
-                                    value={field.value || ''}
-                                    onChange={(e) => {
-                                        field.onChange(e);
-                                        setValue('password', e.target.value);
-                                    }}
-                                    onBlur={field.onBlur}
-                                />
-                            )}
+                            label=''
+                            placeholder='Password'
+                            form={methods}
+                            registerOptions={{ required: 'Password is required' }}
+                            htmlInputType='password'
                         />
                     </FormField>
                 </div>
