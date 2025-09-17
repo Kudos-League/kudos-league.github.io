@@ -86,7 +86,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             dispatch(updateAuth(newAuthState));
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
             setAuthToken(newAuthState.token);
-            qc.invalidateQueries({ queryKey: ['user', 'me'] });
+            try {
+                await qc.fetchQuery({ queryKey: ['user', 'me'], queryFn: () => apiGet<UserDTO>('/users/me') });
+                const cached = qc.getQueryData<UserDTO>(['user', 'me']);
+                if (cached) setUserProfile(cached);
+            }
+            catch (e) {
+                console.warn('Failed to fetch profile after login:', e);
+                setUserProfile(null);
+            }
         }
         catch (error: any) {
             const message = error?.message || error?.response?.data?.message;
