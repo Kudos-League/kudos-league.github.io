@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
@@ -8,8 +9,15 @@ import { useCreateEvent } from '@/shared/api/mutations/events';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
-    const createEvent = useCreateEvent();
+    const createEvent = useCreateEvent({
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+            queryClient.invalidateQueries({ queryKey: ['user-events'] });
+            navigate('/events');
+        }
+    });
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -143,7 +151,7 @@ export default function CreateEvent() {
         ) {
             const suggestedEndDate = new Date(
                 new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000
-            ); // 1 day later
+            );
             setEndDate(suggestedEndDate);
         }
 
@@ -184,11 +192,18 @@ export default function CreateEvent() {
 
         try {
             await createEvent.mutateAsync(payload);
-            navigate('/events');
         }
         catch (msgs: any) {
             setErrorMessages((msgs as string[]) ?? ['Failed to create event']);
         }
+        try {
+            await queryClient.invalidateQueries({ queryKey: ['events'] });
+            await queryClient.invalidateQueries({ queryKey: ['user-events'] });
+        }
+        catch (e) {
+            // noop
+        }
+        navigate('/events');
     };
 
     const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {

@@ -10,8 +10,11 @@ import MapDisplay from '@/components/Map';
 import Input from '@/components/forms/Input';
 import TagInput from '@/components/TagInput';
 import DropdownPicker from '@/components/forms/DropdownPicker';
+import Form from '@/components/forms/Form';
+import FormField from '@/components/forms/FormField';
+import Button from '@/components/common/Button';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm, Controller } from 'react-hook-form';
 import { useCategories } from '@/shared/api/queries/categories';
 import { useCreatePost } from '@/shared/api/mutations/posts';
 
@@ -19,6 +22,7 @@ type FormValues = {
     title: string;
     body: string;
     type: 'gift' | 'request';
+    itemsLimit: number;
     files?: File[];
     tags: string[];
     categoryID: number;
@@ -32,7 +36,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const routerLocation = useLocation();
 
     const form = useForm<FormValues>({
-        defaultValues: { tags: [], categoryID: 0, type: 'gift' }
+        mode: 'onBlur',
+        defaultValues: { 
+            tags: [], 
+            categoryID: 0, 
+            type: 'gift',
+            itemsLimit: 1
+        }
     });
 
     const { data: categories = [], isLoading: catsLoading } = useCategories();
@@ -94,16 +104,29 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
 
+    const validateQuantity = (value: number) => {
+        if (!value || value < 1) return 'Quantity must be at least 1';
+        if (value > 999) return 'Quantity cannot exceed 999';
+        if (!Number.isInteger(value)) return 'Quantity must be a whole number';
+        return true;
+    };
+
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         if (!isLoggedIn) return setShowLoginForm(true);
 
         const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
+        const quantityValidation = validateQuantity(data.itemsLimit);
+        if (quantityValidation !== true) {
+            return setServerError(quantityValidation);
+        }
+
         const payload: CreatePostDTO = {
             title: data.title,
             body: data.body,
             type: postType,
+            itemsLimit: data.itemsLimit,
             tags: data.tags,
             categoryID: data.categoryID,
             files: selectedImages,
@@ -119,7 +142,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 body: '',
                 tags: [],
                 categoryID: 0,
-                type: 'gift'
+                type: 'gift',
+                itemsLimit: 1
             });
             setSelectedImages([]);
             setLocation(null);
@@ -127,6 +151,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             navigate('/feed');
         }
         catch (errs: any) {
+            form.clearErrors();
+
             const first = Array.isArray(errs) ? errs[0] : null;
             if (
                 first?.includes('413') ||
@@ -141,62 +167,87 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     };
 
     return (
-        <div className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow'>
-            {/* Post type toggle */}
+        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow' serverError={serverError}>
             <div className='flex gap-3'>
-                <button
-                    className={`px-4 py-2 rounded transition ${postType === 'gift' ? 'bg-teal-600 text-white dark:bg-teal-700' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}
+                <Button
+                    variant={postType === 'gift' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('gift')}
                 >
                     Give stuff
-                </button>
-                <button
-                    className={`px-4 py-2 rounded transition ${postType === 'request' ? 'bg-teal-600 text-white dark:bg-teal-700' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}
+                </Button>
+                <Button
+                    variant={postType === 'request' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('request')}
                 >
                     Request stuff
-                </button>
+                </Button>
             </div>
 
-            <Input
-                name='title'
-                label='Title *'
-                form={form}
-                registerOptions={{ required: true }}
-            />
-            <Input
-                name='body'
-                label='Info *'
-                form={form}
-                registerOptions={{ required: true }}
-                multiline
-            />
+            <FormField name='title' label='Title *'>
+                <Input
+                    name='title'
+                    label=''
+                    form={form}
+                    registerOptions={{ required: 'Title is required' }}
+                />
+            </FormField>
+            
+            <FormField name='body' label='Description *'>
+                <Input
+                    name='body'
+                    label=''
+                    form={form}
+                    registerOptions={{ required: 'Description is required' }}
+                    multiline
+                />
+            </FormField>
 
-            {/* Category */}
-            <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>
-                Category
-            </label>
-            <DropdownPicker
-                options={(categories as CategoryDTO[]).map((c) => ({
-                    label: c.name,
-                    value: String(c.id)
-                }))}
-                value={String(form.watch('categoryID') || '')}
-                onChange={(val) =>
-                    form.setValue('categoryID', parseInt(val), {
-                        shouldValidate: true,
-                        shouldDirty: true
-                    })
-                }
-                placeholder={catsLoading ? 'Loading…' : 'Select a category'}
-            />
-            {form.formState.errors.categoryID && (
-                <p className='text-red-600 text-sm mt-1'>
-                    {form.formState.errors.categoryID.message as any}
-                </p>
-            )}
+            <FormField name='itemsLimit' label='Number of Items *' helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}?`}>
+                <Input
+                    name='itemsLimit'
+                    label=''
+                    form={form}
+                    placeholder='1'
+                    htmlInputType='number'
+                    valueTransformer={(v) => (v === '' ? '' : Number(v))}
+                    registerOptions={{
+                        required: 'Quantity is required',
+                        min: { value: 1, message: 'Quantity must be at least 1' },
+                        max: { value: 999, message: 'Quantity cannot exceed 999' },
+                        validate: (v: any) => {
+                            const num = Number(v);
+                            if (!num || num < 1) return 'Quantity must be at least 1';
+                            if (num > 999) return 'Quantity cannot exceed 999';
+                            if (!Number.isInteger(num)) return 'Quantity must be a whole number';
+                            return true;
+                        }
+                    }}
+                />
+            </FormField>
 
-            {/* Images */}
+            <FormField name='categoryID' label='Category'>
+                <Controller
+                    control={form.control}
+                    name='categoryID'
+                    rules={{ validate: (v) => (v && v !== 0) || 'Please select a category.' }}
+                    render={({ field }) => (
+                        <DropdownPicker
+                            options={(categories as CategoryDTO[]).map((c) => ({
+                                label: c.name,
+                                value: String(c.id)
+                            }))}
+                            value={field.value ? String(field.value) : ''}
+                            onChange={(val) => {
+                                const parsed = val ? parseInt(val) : 0;
+                                field.onChange(parsed);
+                            }}
+                            onBlur={field.onBlur}
+                            placeholder={catsLoading ? 'Loading…' : 'Select a category'}
+                        />
+                    )}
+                />
+            </FormField>
+
             <div>
                 <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
                     Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
@@ -218,14 +269,16 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                     alt={`Preview ${index + 1}`}
                                     className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
                                 />
-                                <button
+                                <Button
                                     type='button'
+                                    shape='circle'
+                                    variant='danger'
                                     onClick={() => removeImage(index)}
-                                    className='absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold transition-colors'
+                                    className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm'
                                     title='Remove image'
                                 >
                                     ×
-                                </button>
+                                </Button>
                                 <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
                                     {file.name}
                                 </div>
@@ -235,13 +288,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 )}
             </div>
 
-            {/* Tags */}
             <TagInput
                 initialTags={form.watch('tags')}
                 onTagsChange={handleTagsChange}
             />
 
-            {/* Location */}
             <label className='block text-sm font-semibold mt-4 text-gray-800 dark:text-gray-200'>
                 Location
             </label>
@@ -258,17 +309,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 }}
             />
 
-            {serverError && (
-                <p className='text-red-600 text-sm mt-2'>{serverError}</p>
-            )}
-
-            <button
-                onClick={form.handleSubmit(onSubmit)}
-                className='mt-4 px-6 py-2 bg-teal-600 dark:bg-teal-700 text-white rounded hover:bg-teal-700 dark:hover:bg-teal-600 transition disabled:opacity-60'
+            <Button
+                type='submit'
+                className='mt-4'
                 disabled={createPost.isPending}
             >
-                {createPost.isPending ? 'Creating…' : 'Create'}
-            </button>
-        </div>
+                {createPost.isPending ? 'Creating...' : 'Create'}
+            </Button>
+        </Form>
     );
 }

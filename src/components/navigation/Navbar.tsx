@@ -6,17 +6,16 @@ import {
     PopoverBackdrop,
     PopoverPanel
 } from '@headlessui/react';
-import {
-    BellIcon,
-    ChevronDownIcon,
-    XMarkIcon
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon, XMarkIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
+import FeedbackModal from '@/components/common/FeedbackModal';
+import { apiMutate } from '@/shared/api/apiClient';
+import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 type NavItem = {
     name: string;
@@ -147,7 +146,7 @@ function ThemeToggleButton() {
             type='button'
             aria-label={`Switch to ${other} theme`}
             onClick={toggleTheme}
-            className='group rounded-full bg-white/90 px-3 py-2 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm transition dark:bg-zinc-800/90 dark:ring-white/10 dark:hover:ring-white/20'
+            className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 dark:hover:ring-white/20'
         >
             <span className='block dark:hidden'>
                 <svg
@@ -225,17 +224,6 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-function NotificationsIcon() {
-    return (
-        <button
-            type='button'
-            className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 dark:hover:ring-white/20'
-        >
-            <BellIcon className='h-5 w-5' />
-        </button>
-    );
-}
-
 export type NavbarProps = {
     isLoggedIn: boolean;
     user?: { id: number; admin?: boolean };
@@ -255,39 +243,67 @@ export default function Navbar({
         [isLoggedIn, user]
     );
 
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
+    const { user: authUser } = useAuth();
+
+    const handleSubmitFeedback = async (content: string) => {
+        const userID = authUser?.id ?? user?.id;
+        if (!userID) {
+            throw new Error('You need to be logged in to send feedback.');
+        }
+        await apiMutate('/feedback', 'post', { userID, content });
+    };
+
     return (
-        <header className='sticky top-0 z-50 flex justify-between items-center gap-4 bg-transparent px-4 py-4 backdrop-blur-md'>
-            <div className='flex items-center'>{brand || <></>}</div>
+        <>
+            <header className='sticky top-0 z-50 flex justify-between items-center gap-4 bg-transparent px-4 py-4 backdrop-blur-md'>
+                <div className='flex items-center'>{brand || <></>}</div>
 
-            <div className='flex flex-1 justify-end md:justify-center'>
-                <MobileNavigation items={navItems} />
-                <DesktopNavigation items={navItems} />
-            </div>
+                <div className='flex flex-1 justify-end md:justify-center'>
+                    <MobileNavigation items={navItems} />
+                    <DesktopNavigation items={navItems} />
+                </div>
 
-            <div className='flex items-center gap-2'>
-                <ThemeToggleButton />
-                {isLoggedIn ? (
-                    <>
-                        <NotificationsIcon />
-                        <UserMenu onLogout={onLogout} />
-                    </>
-                ) : (
-                    <div className='flex items-center gap-2'>
-                        <Link
-                            to={routes.login}
-                            className='rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
-                        >
-                            Login
-                        </Link>
-                        <Link
-                            to={routes.signUp}
-                            className='rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
-                        >
-                            Register
-                        </Link>
-                    </div>
-                )}
-            </div>
-        </header>
+                <div className='flex items-center gap-2'>
+                    <ThemeToggleButton />
+
+                    {isLoggedIn ? (
+                        <>
+                            <NotificationsBell />
+                            <button
+                                type='button'
+                                aria-label='Feedback'
+                                onClick={() => setFeedbackOpen(true)}
+                                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                            >
+                                <FlagIcon className='h-5 w-5' />
+                            </button>
+                            <UserMenu onLogout={onLogout} />
+                        </>
+                    ) : (
+                        <div className='flex items-center gap-2'>
+                            <Link
+                                to={routes.login}
+                                className='rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                            >
+                                Login
+                            </Link>
+                            <Link
+                                to={routes.signUp}
+                                className='rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
+                            >
+                                Register
+                            </Link>
+                        </div>
+                    )}
+                </div>
+            </header>
+
+            <FeedbackModal
+                open={feedbackOpen}
+                onClose={() => setFeedbackOpen(false)}
+                onSubmit={handleSubmitFeedback}
+            />
+        </>
     );
 }

@@ -10,13 +10,10 @@ import React, {
 } from 'react';
 import { Socket } from 'socket.io-client';
 import { Events } from 'shared/constants';
-import {
-    getMessages,
-    sendDirectMessage,
-    sendMessage
-} from 'shared/api/actions';
-import type { MessageDTO, NotificationPayload } from 'shared/api/types';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
+import type { MessageDTO } from 'shared/api/types';
 import { useAuth } from './useAuth';
+import { pushAlert } from '@/components/common/alertBus';
 import { getSocket } from '@/hooks/useWebsocketClient';
 
 type Ctx = {
@@ -29,6 +26,7 @@ type Ctx = {
         channel?: { id: number };
         receiverID?: number;
         content: string;
+        replyToMessageID?: number;
     }) => Promise<void>;
     isConnected: boolean;
     isConnecting: boolean;
@@ -38,13 +36,7 @@ type Ctx = {
 
 const WebSocketContext = createContext<Ctx | null>(null);
 
-export function WebSocketProvider({
-    children,
-    onNotification
-}: {
-    children: ReactNode;
-    onNotification?: (n: NotificationPayload) => void;
-}) {
+export function WebSocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuth();
     const socketRef = useRef<Socket | null>(null);
 
@@ -142,10 +134,50 @@ export function WebSocketProvider({
             console.warn('[WS] Disconnected:', reason);
         };
 
-        const handleNewMessage = (m: MessageDTO) => {
-            setMessages((prev) =>
-                prev.some((x) => x.id === m.id) ? prev : [...prev, m]
-            );
+        const handleNewMessage = (m: MessageDTO | undefined | null) => {
+            if (!m || typeof (m as any) !== 'object' || m.id == null) return;
+            setMessages((prev) => {
+                const idx = prev.findIndex((x) => x?.id === m.id);
+                const enriched: MessageDTO = {
+                    ...(m as any),
+                    author:
+                        (m as any).author ||
+                        ((currentUserId != null &&
+                            ((m as any).authorID === currentUserId ||
+                                (m as any).author?.id === currentUserId))
+                            ? (user as any)
+                            : undefined),
+                    authorID:
+                        (m as any).authorID ??
+                        (m as any).author?.id ??
+                        (currentUserId != null &&
+                        ((m as any).author?.id === currentUserId ||
+                            (m as any).authorID === currentUserId)
+                            ? currentUserId
+                            : undefined)
+                } as MessageDTO;
+
+                if (idx === -1) {
+                    return [...prev, enriched];
+                }
+
+                const existing = prev[idx];
+                const merged: MessageDTO = {
+                    ...existing,
+                    ...enriched,
+                    author: existing.author || enriched.author,
+                    authorID: existing.authorID ?? enriched.authorID
+                } as MessageDTO;
+                const copy = [...prev];
+                copy[idx] = merged;
+                return copy;
+            });
+        };
+
+        const handleKudosUpdate = (p: { delta: number; total: number } | null | undefined) => {
+            if (!p || typeof p.delta !== 'number' || typeof p.total !== 'number') return;
+            const sign = p.delta >= 0 ? '+' : '';
+            pushAlert({ type: 'success', message: `You ${p.delta >= 0 ? 'gained' : 'lost'} ${sign}${p.delta} kudos. Total: ${p.total}` });
         };
 
         if (!(sock as any).__listenersAttached) {
@@ -153,6 +185,7 @@ export function WebSocketProvider({
             sock.on('connect_error', handleConnectError);
             sock.on('disconnect', handleDisconnect);
             sock.on(Events.MESSAGE_CREATE, handleNewMessage);
+            sock.on(Events.KUDOS_UPDATE, handleKudosUpdate);
             (sock as any).__listenersAttached = true;
         }
         else if (sock.connected) {
@@ -166,15 +199,18 @@ export function WebSocketProvider({
     }, [token, currentUserId, clearPolling]);
 
     const actuallyJoin = useCallback(
-        (channelID: number, sock: Socket, tokenNonNull: string) => {
+        (channelID: number, sock: Socket) => {
             const onJoined = (data: {
                 channelID: number;
                 success: boolean;
             }) => {
                 if (data.channelID === channelID && data.success) {
-                    getMessages(channelID, tokenNonNull).then(
-                        (list) => list?.length && setMessages(list)
-                    );
+                    apiGet<any>(`/channels/${channelID}/messages`).then((list) => {
+                        if (Array.isArray(list)) {
+                            const cleaned = list.filter(Boolean);
+                            setMessages(cleaned);
+                        }
+                    });
                 }
             };
             sock.once('joinedChannel', onJoined);
@@ -184,12 +220,14 @@ export function WebSocketProvider({
     );
 
     const startPolling = useCallback(
-        (channelID: number, tokenNonNull: string) => {
+        (channelID: number) => {
             clearPolling();
             pollInterval.current = setInterval(async () => {
                 try {
-                    const fresh = await getMessages(channelID, tokenNonNull);
-                    if (fresh?.length) setMessages(fresh);
+                    const fresh = await apiGet<any>(`/channels/${channelID}/messages`);
+                    if (Array.isArray(fresh)) {
+                        setMessages(fresh.filter(Boolean));
+                    }
                 }
                 catch (err) {
                     console.error('[Polling] Failed to fetch messages:', err);
@@ -214,12 +252,12 @@ export function WebSocketProvider({
 
             if (!sock || !connected) {
                 pendingJoins.current.add(channelID);
-                startPolling(channelID, token);
+                startPolling(channelID);
                 return;
             }
 
             clearPolling();
-            actuallyJoin(channelID, sock, token);
+            actuallyJoin(channelID, sock);
         },
         [token, isConnected, clearPolling, actuallyJoin, startPolling]
     );
@@ -240,25 +278,45 @@ export function WebSocketProvider({
         async ({
             channel,
             receiverID,
-            content
+            content,
+            replyToMessageID
         }: {
             channel?: { id: number };
             receiverID?: number;
             content: string;
+            replyToMessageID?: number;
         }) => {
             if (!token) return;
             try {
-                const newMsg = receiverID
-                    ? await sendDirectMessage(receiverID, { content }, token)
-                    : await sendMessage(
-                        { channelID: channel!.id, content },
-                        token
-                    );
+                let newMsg: any = null;
 
+                if (receiverID) {
+                    newMsg = await apiMutate(`/users/${receiverID}/dm`, 'post', {
+                        content,
+                        ...(replyToMessageID ? { replyToMessageID } : {})
+                    });
+                }
+                else if (channel && channel.id != null) {
+                    newMsg = await apiMutate('/messages', 'post', {
+                        channelID: channel.id,
+                        content,
+                        ...(replyToMessageID ? { replyToMessageID } : {})
+                    });
+                }
+
+                if (!newMsg || (newMsg as any).id == null) return;
+                const withAuthor: MessageDTO = {
+                    ...(newMsg as any),
+                    author: (newMsg as any).author || user || undefined,
+                    authorID:
+                        (newMsg as any).authorID ??
+                        user?.id ??
+                        (newMsg as any).author?.id
+                } as MessageDTO;
                 setMessages((prev) =>
-                    prev.some((m) => m.id === newMsg.id)
+                    prev.some((m) => m?.id === withAuthor.id)
                         ? prev
-                        : [...prev, newMsg]
+                        : [...prev, withAuthor]
                 );
             }
             catch (err) {
@@ -274,11 +332,22 @@ export function WebSocketProvider({
 
     const connectingVisible = isConnecting && !overlaySnoozed;
 
+    const safeSetMessages: React.Dispatch<React.SetStateAction<MessageDTO[]>> =
+        useCallback((updater: React.SetStateAction<MessageDTO[]>) => {
+            setMessages((prev) => {
+                const next =
+                    typeof updater === 'function'
+                        ? (updater as (p: MessageDTO[]) => MessageDTO[])(prev)
+                        : updater;
+                return Array.isArray(next) ? next.filter(Boolean) : [];
+            });
+        }, []);
+
     const value = useMemo<Ctx>(
         () => ({
             socket: socketRef.current,
             messages,
-            setMessages,
+            setMessages: safeSetMessages,
             joinChannel,
             leaveChannel,
             send,
@@ -295,7 +364,8 @@ export function WebSocketProvider({
             isConnected,
             connectingVisible,
             connectingText,
-            snoozeConnectingOverlay
+            snoozeConnectingOverlay,
+            safeSetMessages
         ]
     );
 

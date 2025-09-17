@@ -15,6 +15,7 @@ import {
 } from 'redux_store/slices/notifications.slice';
 
 import { NotificationPayload } from '@/shared/api/types';
+import { pushAlert } from '@/components/common/alertBus';
 import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
@@ -39,7 +40,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     useEffect(() => {
         if (!token || !user?.id) return;
-        dispatch(loadNotifications({ token, limit: 50 }) as any);
+        dispatch(loadNotifications({ limit: 50 }) as any);
     }, [dispatch, token, user?.id]);
 
     useEffect(() => {
@@ -59,6 +60,31 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const handleNotification = (n: NotificationPayload) => {
             dispatch(pushAction(n));
+
+            try {
+                if (n.type === 'direct-message') {
+                    const author = n.message?.author?.username || 'Someone';
+                    const text = n.message?.content || '';
+                    pushAlert({ type: 'info', message: `New DM from ${author}: ${text}` });
+                }
+                else if (n.type === 'post-reply') {
+                    const text = n.message?.content || '';
+                    pushAlert({ type: 'info', message: `New reply on your post: ${text}` });
+                }
+                else if (n.type === 'past-gift') {
+                    pushAlert({ type: 'info', message: `Past gift logged on your profile.` });
+                }
+                else if (n.type === 'post-auto-close') {
+                    const when = (n as any).closedAt || (n as any).closeAt;
+                    const msg = when
+                        ? `Post #${(n as any).postID} auto-close (${new Date(when).toLocaleString()})`
+                        : `Post #${(n as any).postID} auto-close`; 
+                    pushAlert({ type: 'warning', message: msg });
+                }
+            }
+            catch {
+                // noop
+            }
         };
 
         if (!(sock as any).__notifListenersAttached) {
@@ -77,8 +103,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             state,
             push: (n) => dispatch(pushAction(n)),
             markAllRead: async () => {
-                if (!token) return;
-                await dispatch(markAllReadThunk({ token }) as any);
+                await dispatch(markAllReadThunk() as any);
             }
         }),
         [dispatch, state, token]

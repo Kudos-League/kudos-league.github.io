@@ -10,6 +10,7 @@ export type CreatePostDTO = {
     files?: File[];
     categoryID: number;
     location?: LocationDTO | null;
+    itemsLimit?: number | null;
 };
 
 export type UpdatePostDTO = Omit<Partial<PostDTO>, 'tags'> & {
@@ -30,6 +31,7 @@ export type PostDTO = {
     title: string;
     body: string;
     isRequest: boolean;
+    isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';
     status: string;
@@ -39,6 +41,7 @@ export type PostDTO = {
     updatedAt: Date;
     location: LocationDTO;
     category: CategoryDTO;
+    itemsLimit?: number | null;
     handshakes?: HandshakeDTO[];
     rewardOffers?: RewardOfferDTO[];
     messages?: MessageDTO[];
@@ -51,6 +54,7 @@ export interface CustomFile extends File {
 
 export type ProfileFormValues = {
     about?: string;
+    profession?: string;
     username?: string;
     displayName?: string;
     email: string;
@@ -58,6 +62,7 @@ export type ProfileFormValues = {
     avatarURL?: string;
     location: MapCoordinates;
     tags?: string[];
+    admin?: boolean;
     mapCoordinates?: {
         latitude: number;
         longitude: number;
@@ -101,6 +106,7 @@ export interface MessageDTO {
     createdAt: Date;
     updatedAt: Date;
     readAt?: Date;
+    deletedAt?: Date | string | null;
     //TODO: Stuff is missing
     author?: UserDTO;
 }
@@ -157,7 +163,7 @@ export type HandshakeDTO = {
 export type ChannelDTO = {
     id: number;
     name: string;
-    type: string;
+    type: 'public' | 'dm' | 'group' | 'post' | 'community';
     createdAt: Date;
     updatedAt: Date;
     users?: any[]; // Array of users in the channel
@@ -170,6 +176,7 @@ export type EventDTO = {
     title: string;
     description: string;
     isGlobal: boolean;
+    link?: string | null;
     locationID: number | null;
     startTime: string;
     endTime: string;
@@ -185,12 +192,25 @@ export type EventDTO = {
 export type CreateEventDTO = {
     title: string;
     description: string;
+    link?: string | null;
     locationID?: string | null;
     startTime: Date;
     endTime?: Date | null;
     content?: string;
     location: LocationDTO | null;
 };
+
+export interface UpdateEventDTO {
+    title: string;
+    description: string;
+    startTime: Date;
+    endTime?: Date | null;
+    location?: {
+        regionID?: string | null;
+        name?: string;
+        global?: boolean;
+    } | null;
+}
 
 export type CategoryDTO = {
     id: number;
@@ -217,6 +237,7 @@ export interface UserSettingsDTO {
     userID: number;
     skills: string[];
     about: string;
+    profession?: string | null;
     tags: string[];
     blockedUsers: number[];
     invitationToken: string;
@@ -297,11 +318,14 @@ export interface UserDTO {
     settings?: UserSettingsDTO | null;
     createdAt: Date;
     updatedAt: Date;
+    deactivatedAt?: Date | null;
 }
 
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
-    POST_REPLY: 'post-reply'
+    POST_REPLY: 'post-reply',
+    POST_AUTO_CLOSE: 'post-auto-close',
+    PAST_GIFT: 'past-gift'
 } as const;
 
 export type NotificationTypeKeys =
@@ -321,4 +345,6 @@ export type PostReplyNotification = {
 
 export type NotificationPayload =
     | DirectMessageNotification
-    | PostReplyNotification;
+    | PostReplyNotification
+    | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
+    | { type: typeof NotificationType.PAST_GIFT; postID: number };

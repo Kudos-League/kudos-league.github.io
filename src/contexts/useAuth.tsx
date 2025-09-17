@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthState, updateAuth } from '@/redux_store/slices/auth-slice';
 import { useAppDispatch } from 'redux_store/hooks';
-import { getUserDetails, login, register } from '@/shared/api/actions';
 import { UserDTO } from '@/shared/api/types';
 import { isJwt } from '@/shared/constants';
 import { setAuthToken } from '@/shared/api/httpClient';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiMutate, apiGet } from '@/shared/api/apiClient';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -39,17 +40,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const token = authState?.token || null;
 
-    setAuthToken(token);
+    useEffect(() => {
+        setAuthToken(token ?? undefined);
+    }, [token]);
 
-    const loginHandler = async ({
-        username,
-        password,
-        token
-    }: {
-        username?: string;
-        password?: string;
-        token?: string;
-    }) => {
+    const qc = useQueryClient();
+
+    type LoginData = { token: string; user?: { username?: string } };
+    type LoginPayload = { username?: string; password?: string; token?: string };
+
+    const loginMutation = useMutation<LoginData, any, LoginPayload>({
+        mutationFn: (payload: LoginPayload) => {
+            if (payload.token && isJwt(payload.token)) {
+                return Promise.resolve({ token: payload.token, user: { username: '' } });
+            }
+            return apiMutate<LoginData, { username?: string; password?: string }>('/users/login', 'post', { username: payload.username, password: payload.password });
+        }
+    });
+
+    const registerMutation = useMutation<any, any, { username: string; email: string; password: string }>({
+        mutationFn: (payload) => apiMutate('/users/register', 'post', payload)
+    });
+
+    const loginHandler = async ({ username, password, token }: { username?: string; password?: string; token?: string; }) => {
         setErrorMessage(null);
 
         if (!token && (!username || !password)) {
@@ -63,38 +76,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         try {
-            if (token && isJwt(token)) {
-                const auth: AuthState = {
-                    token,
-                    username: '',
-                    tokenTimestamp: Date.now()
-                };
-                setAuthState(auth);
-                dispatch(updateAuth(auth));
-                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
-                return;
-            }
-
-            const response = await login({ username, password, token });
+            const response = await loginMutation.mutateAsync({ username, password, token });
             const newAuthState: AuthState = {
-                token: response.data.token,
-                username: response.data.user.username,
+                token: response.token,
+                username: response.user?.username ?? '',
                 tokenTimestamp: Date.now()
             };
             setAuthState(newAuthState);
             dispatch(updateAuth(newAuthState));
-            localStorage.setItem(
-                AUTH_STORAGE_KEY,
-                JSON.stringify(newAuthState)
-            );
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
+            setAuthToken(newAuthState.token);
+            try {
+                await qc.fetchQuery({ queryKey: ['user', 'me'], queryFn: () => apiGet<UserDTO>('/users/me') });
+                const cached = qc.getQueryData<UserDTO>(['user', 'me']);
+                if (cached) setUserProfile(cached);
+            }
+            catch (e) {
+                console.warn('Failed to fetch profile after login:', e);
+                setUserProfile(null);
+            }
         }
         catch (error: any) {
-            const message = error?.response?.data?.message;
-            setErrorMessage(
-                typeof message === 'string'
-                    ? message
-                    : 'Login failed. Please try again.'
-            );
+            const message = error?.message || error?.response?.data?.message;
+            setErrorMessage(typeof message === 'string' ? message : 'Login failed. Please try again.');
             console.error('Login failed:', error);
             localStorage.removeItem(AUTH_STORAGE_KEY);
             setAuthState(null);
@@ -103,24 +107,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            if (token) {
-                try {
-                    const profile = await getUserDetails('me', token);
-                    setUserProfile(profile);
-                }
-                catch (error) {
-                    console.error('Failed to fetch user profile:', error);
-                    localStorage.removeItem(AUTH_STORAGE_KEY);
-                    setAuthState(null);
-                    dispatch(updateAuth({} as any));
-                }
-            }
-        };
+    const userQuery = useQuery<UserDTO, any>({
+        queryKey: ['user', 'me'],
+        queryFn: () => apiGet<UserDTO>('/users/me'),
+        enabled: !!token,
+        retry: false
+    });
 
-        fetchUser();
-    }, [token]);
+    useEffect(() => {
+        if (userQuery.data) {
+            setUserProfile(userQuery.data);
+        }
+    }, [userQuery.data]);
+
+    useEffect(() => {
+        if (userQuery.isError) {
+            console.error('Failed to fetch user profile:', userQuery.error);
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            setAuthState(null);
+            dispatch(updateAuth({} as any));
+        }
+    }, [userQuery.isError, userQuery.error]);
 
     useEffect(() => {
         const bootstrap = async () => {
@@ -128,9 +135,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             try {
                 const url = new URL(window.location.href);
                 const tok = url.searchParams.get('token');
+                const path = url.pathname;
 
-                if (tok) {
-                    window.history.replaceState({}, '', url.pathname);
+                const isPasswordFlow =
+                    path === '/reset-password' || path === '/forgot-password';
+
+                if (tok && !isPasswordFlow) {
+                    window.history.replaceState({}, '', path);
                     await loginHandler({ token: tok });
                 }
 
@@ -144,22 +155,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 if (isJwt(authState?.token ?? '')) {
-                    const profile = await getUserDetails(
-                        'me',
-                        authState!.token
-                    );
-                    setUserProfile(profile);
-                    if (!authState!.username) {
-                        const patched = {
-                            ...authState!,
-                            username: profile.username
-                        };
+                    if (!authState?.username && userQuery.data) {
+                        const usernameFromData = (userQuery.data as UserDTO).username || '';
+                        const patched = { ...authState, username: usernameFromData } as AuthState;
                         setAuthState(patched);
                         dispatch(updateAuth(patched));
-                        localStorage.setItem(
-                            AUTH_STORAGE_KEY,
-                            JSON.stringify(patched)
-                        );
+                        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(patched));
                     }
                 }
             }
@@ -190,9 +191,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password: string
     ) => {
         try {
-            const res = await register({ username, email, password });
+            const res = await registerMutation.mutateAsync({ username, email, password });
 
-            if (res.data?.token) {
+            if (res?.token) {
                 return loginHandler({ username, password });
             }
             else {

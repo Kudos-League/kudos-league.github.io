@@ -21,9 +21,13 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
+import { apiMutate } from '@/shared/api/apiClient';
+import OAuthConnectButton from '@/components/login/OAuthConnectButton';
+import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
 
-const bustCache = (u: string) => `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
+const bustCache = (u: string) =>
+    `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
 interface Props {
     targetUser: UserDTO;
@@ -37,7 +41,9 @@ const EditProfile: React.FC<Props> = ({
     onClose,
     setTargetUser
 }) => {
-    const { user, updateUser: updateUserCache } = useAuth();
+    const auth = useAuth();
+    const { user, updateUser: updateUserCache } = auth;
+    const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
 
     const { setLocation } = useLocation();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -54,27 +60,35 @@ const EditProfile: React.FC<Props> = ({
         next: '',
         confirm: ''
     });
+    const [locationLabel, setLocationLabel] = useState<string>(
+        targetUser?.location?.name || ''
+    );
 
     const targetUserID = targetUser?.id;
 
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
-    const defaults = React.useMemo(() => ({
-        email: user.email,
-        username: user.username,
-        displayName: user.displayName,
-        avatar: [],
-        location: user.location || undefined,
-        tags: user.tags.map(t => t.name) || [],
-        about: user.settings?.about || '',
-        avatarURL: ''
-    }), [user.id]);
+    const defaults = React.useMemo(
+        () => ({
+            email: user.email,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: [],
+            location: user.location || undefined,
+            tags: user.tags.map((t) => t.name) || [],
+            about: user.settings?.about || '',
+            profession: user.settings?.profession || '',
+            avatarURL: '',
+            admin: targetUser?.admin ?? false
+        }),
+        [user.id, targetUser?.id, targetUser?.admin]
+    );
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
         defaultValues: defaults
     });
     const { control } = form;
-    const allValues = useWatch({ control }); 
+    const allValues = useWatch({ control });
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
@@ -87,8 +101,10 @@ const EditProfile: React.FC<Props> = ({
                 displayName: u.displayName || '',
                 username: u.username || '',
                 about: u.settings?.about || '',
+                profession: u.settings?.profession || '',
                 tags: (u.tags || []).map((t: any) => t.name),
-                location: u.location || undefined
+                location: u.location || undefined,
+                admin: u.admin ?? false
             },
             { keepDirty: false, keepTouched: false }
         );
@@ -111,12 +127,14 @@ const EditProfile: React.FC<Props> = ({
         }
     }, [allValues]);
 
-    const canSave = (Object.keys(effectiveChanges).length > 0 || locationDirty) && !updateUserMutation.isPending;
+    const canSave =
+        (Object.keys(effectiveChanges).length > 0 || locationDirty) &&
+        !updateUserMutation.isPending;
 
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
     }, [user?.id]);
-    
+
     useEffect(() => {
         if (!toastMessage) return;
         const t = setTimeout(() => setToastMessage(null), 3000);
@@ -125,14 +143,17 @@ const EditProfile: React.FC<Props> = ({
 
     useEffect(() => {
         const file =
-            Array.isArray(avatar) && avatar.length > 0 && avatar[0] instanceof File
+            Array.isArray(avatar) &&
+            avatar.length > 0 &&
+            avatar[0] instanceof File
                 ? (avatar[0] as File)
                 : null;
         const url = typeof avatarURL === 'string' ? avatarURL.trim() : '';
 
         if (file) {
             if (currentFileRef.current !== file) {
-                if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+                if (objectUrlRef.current)
+                    URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = URL.createObjectURL(file);
                 currentFileRef.current = file;
                 setPreviewUrl(objectUrlRef.current);
@@ -147,12 +168,12 @@ const EditProfile: React.FC<Props> = ({
         }
 
         if (url) {
-            setPreviewUrl(prev => (prev === url ? prev : url));
+            setPreviewUrl((prev) => (prev === url ? prev : url));
             return;
         }
 
         const fallback = targetUser?.avatar ?? null;
-        setPreviewUrl(prev => (prev === fallback ? prev : fallback));
+        setPreviewUrl((prev) => (prev === fallback ? prev : fallback));
     }, [avatar, avatarURL, targetUser?.avatar]);
 
     useEffect(() => {
@@ -224,7 +245,8 @@ const EditProfile: React.FC<Props> = ({
 
             try {
                 const currentLoc = form.getValues('location') ?? null;
-                const baselineLoc = (baselineRef.current as any)?.location ?? null;
+                const baselineLoc =
+                    (baselineRef.current as any)?.location ?? null;
                 if (currentLoc === null && baselineLoc != null) {
                     payload.location = null;
                 }
@@ -235,7 +257,8 @@ const EditProfile: React.FC<Props> = ({
 
             if (locationDirty && !('location' in payload)) {
                 const currentLoc2 = form.getValues('location') ?? null;
-                (payload as any).location = currentLoc2 === null ? null : currentLoc2;
+                (payload as any).location =
+                    currentLoc2 === null ? null : currentLoc2;
             }
 
             if ('avatar' in payload) {
@@ -244,7 +267,11 @@ const EditProfile: React.FC<Props> = ({
                 if (a instanceof File) {
                     (payload as any).avatar = a;
                 }
-                else if (Array.isArray(a) && a.length > 0 && a[0] instanceof File) {
+                else if (
+                    Array.isArray(a) &&
+                    a.length > 0 &&
+                    a[0] instanceof File
+                ) {
                     (payload as any).avatar = a[0];
                 }
                 else if (typeof a === 'string' && a.trim()) {
@@ -258,20 +285,42 @@ const EditProfile: React.FC<Props> = ({
 
             const updatedUser = await updateUserMutation.mutateAsync(payload);
 
-            if (user?.id === targetUser.id) {
-                updateUserCache({ ...user, ...updatedUser, avatar: updatedUser.avatar ?? user.avatar });
-            }
+            const submittedTags: string[] = form.getValues('tags') ?? [];
 
-            if (setTargetUser) {
-                setTargetUser({
-                    ...targetUser,
-                    ...updatedUser,
-                    avatar: updatedUser.avatar ?? targetUser.avatar,
+            const normalizedUpdatedUser = {
+                ...updatedUser,
+                tags:
+                    updatedUser.tags && updatedUser.tags.length > 0
+                        ? updatedUser.tags
+                        : submittedTags.map((name, idx) => ({
+                            id: idx,
+                            name
+                        }))
+            };
+
+            if (user?.id === targetUser.id) {
+                updateUserCache({
+                    ...user,
+                    ...normalizedUpdatedUser,
+                    avatar: normalizedUpdatedUser.avatar ?? user.avatar
                 });
             }
 
-            if ('avatar' in effectiveChanges || 'avatarURL' in effectiveChanges) {
-                setPreviewUrl(updatedUser.avatar ? bustCache(updatedUser.avatar) : null);
+            if (setTargetUser) {
+                setTargetUser?.({
+                    ...targetUser,
+                    ...normalizedUpdatedUser,
+                    avatar: normalizedUpdatedUser.avatar ?? targetUser.avatar
+                });
+            }
+
+            if (
+                'avatar' in effectiveChanges ||
+                'avatarURL' in effectiveChanges
+            ) {
+                setPreviewUrl(
+                    updatedUser.avatar ? bustCache(updatedUser.avatar) : null
+                );
             }
 
             resetFromUser(updatedUser);
@@ -283,12 +332,14 @@ const EditProfile: React.FC<Props> = ({
                 location: updatedUser.location || undefined,
                 tags: (updatedUser.tags || []).map((t: any) => t.name),
                 about: updatedUser.settings?.about || '',
-                avatarURL: ''
+                profession: updatedUser.settings?.profession || '',
+                avatarURL: '',
+                admin: updatedUser.admin ?? false
             } as any;
 
             setToastType('success');
             setToastMessage('Profile updated successfully');
-            
+
             setTimeout(() => {
                 onClose();
             }, 1500);
@@ -325,11 +376,29 @@ const EditProfile: React.FC<Props> = ({
         setLogoutPassword('');
     };
 
-    const handleDeleteAccount = (e: React.FormEvent) => {
+    const handleDeleteAccount = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: integrate real API
-        setToastType('error');
-        setToastMessage('Account deletion is not implemented yet.');
+        const confirmed = window.confirm(
+            'Are you sure you want to deactivate your account? You can contact support to reactivate later.'
+        );
+        if (!confirmed) return;
+
+        try {
+            await apiMutate<void, void>(`/users/me`, 'delete');
+        }
+        catch (err) {
+            console.error('Failed to deactivate account:', err);
+            setToastType('error');
+            setToastMessage('Failed to deactivate account. Please try again.');
+            return;
+        }
+
+        try {
+            await auth.logout();
+        }
+        finally {
+            window.location.assign('/');
+        }
     };
 
     return (
@@ -347,25 +416,27 @@ const EditProfile: React.FC<Props> = ({
                             previewUrl={previewUrl}
                             targetUser={targetUser}
                         />
-                        <div className='relative'>
-                            <Button
-                                variant='secondary'
-                                onClick={() => setShowImageOptions((v) => !v)}
-                            >
-                                Change avatar
-                            </Button>
-                            <AvatarMenu
-                                open={showImageOptions}
-                                fileInputRef={fileInputRef}
-                                urlInputRef={urlInputRef}
-                                watchedAvatar={avatar as any}
-                                watchedAvatarURL={avatarURL as any}
-                                onFileChange={handleFileSelect}
-                                onURLSubmit={handleURLSubmit}
-                                onClear={clearImage}
-                                onClose={() => setShowImageOptions(false)}
-                            />
-                        </div>
+                        {!isAdminEditingOther && (
+                            <div className='relative'>
+                                <Button
+                                    variant='secondary'
+                                    onClick={() => setShowImageOptions((v) => !v)}
+                                >
+                                    Change avatar
+                                </Button>
+                                <AvatarMenu
+                                    open={showImageOptions}
+                                    fileInputRef={fileInputRef}
+                                    urlInputRef={urlInputRef}
+                                    watchedAvatar={avatar as any}
+                                    watchedAvatarURL={avatarURL as any}
+                                    onFileChange={handleFileSelect}
+                                    onURLSubmit={handleURLSubmit}
+                                    onClear={clearImage}
+                                    onClose={() => setShowImageOptions(false)}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Main form */}
@@ -373,13 +444,33 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={form.handleSubmit(handleFormSubmit)}
                         className='space-y-6'
                     >
+                        {auth.user?.admin && (
+                            <FormField label='Admin'>
+                                <label className='inline-flex items-center gap-2'>
+                                    <input
+                                        type='checkbox'
+                                        checked={!!form.watch('admin')}
+                                        onChange={(e) =>
+                                            form.setValue('admin', e.target.checked, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            })
+                                        }
+                                    />
+                                    <span className='text-sm text-gray-700 dark:text-gray-200'>Grant this user admin access</span>
+                                </label>
+                            </FormField>
+                        )}
+
                         <FormField label='Email'>
                             <Input
                                 disabled
                                 name='email'
                                 form={form}
                                 label=''
-                                placeholder={targetUser.email || 'Enter email address'}
+                                placeholder={
+                                    targetUser.email || 'Enter email address'
+                                }
                             />
                         </FormField>
 
@@ -389,6 +480,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.username}
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
@@ -398,6 +490,18 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.displayName}
+                                disabled={isAdminEditingOther}
+                            />
+                        </FormField>
+
+                        <FormField label='Profession' help='Share your current profession or role.'>
+                            <Input
+                                data-testid='profession'
+                                name='profession'
+                                form={form}
+                                label=''
+                                placeholder='e.g., Software Engineer'
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
@@ -412,73 +516,88 @@ const EditProfile: React.FC<Props> = ({
                                 label=''
                                 placeholder='Write a short bio...'
                                 multiline
+                                disabled={isAdminEditingOther}
                             />
                         </FormField>
 
-                        <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
-                            <TagInput
-                                initialTags={tags}
-                                onTagsChange={(nextTags) => {
-                                    const next = nextTags.map((t) => t.name);
-                                    const prev = form.getValues('tags') || [];
-                                    if (
-                                        JSON.stringify(next) !==
-                                        JSON.stringify(prev)
-                                    ) {
-                                        form.setValue('tags', next, {
-                                            shouldDirty: true,
-                                            shouldValidate: true
-                                        });
-                                    }
-                                }}
-                            />
-                        </FormField>
-
-                        <FormField label='Location'>
-                            <MapDisplay
-                                regionID={targetUser.location?.regionID}
-                                width={400}
-                                height={300}
-                                edit
-                                exactLocation
-                                shouldGetYourLocation
-                                onLocationChange={(data) => {
-                                    if (!data) {
-                                        setLocation(null);
-                                        form.setValue('location', null as any, {
-                                            shouldDirty: true,
-                                            shouldValidate: true
-                                        });
-                                        setTargetUser({
-                                            ...targetUser,
-                                            location: {
-                                                ...targetUser.location,
-                                                regionID: null
-                                            }
-                                        });
-                                        return;
-                                    }
-                                    if (!data.changed) return;
-                                    if (data.coordinates) {
-                                        setLocation(data.coordinates);
-                                        const next = {
-                                            ...data.coordinates,
-                                            name: data.name,
-                                            regionID: data.placeID
-                                        };
-                                        const prev =
-                                            form.getValues('location') || null;
-                                        const changed = !deepEqual(next, prev);
-                                        if (changed) {
-                                            form.setValue('location', next, {
+                        {!isAdminEditingOther && (
+                            <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
+                                <TagInput
+                                    initialTags={tags}
+                                    onTagsChange={(nextTags) => {
+                                        const next = nextTags.map((t) => t.name);
+                                        const prev = form.getValues('tags') || [];
+                                        if (
+                                            JSON.stringify(next) !==
+                                            JSON.stringify(prev)
+                                        ) {
+                                            form.setValue('tags', next, {
                                                 shouldDirty: true,
                                                 shouldValidate: true
                                             });
                                         }
-                                    }
-                                }}
-                            />
-                        </FormField>
+                                    }}
+                                />
+                            </FormField>
+                        )}
+
+                        {!isAdminEditingOther && (
+                            <FormField
+                                label='Location'
+                                help='Only you can see your exact address or place name. Others see an approximate area.'
+                            >
+                                {locationLabel && (
+                                    <div className='mb-2 text-sm text-gray-700 dark:text-gray-300'>
+                                        {locationLabel}
+                                    </div>
+                                )}
+                                <MapDisplay
+                                    regionID={targetUser.location?.regionID}
+                                    width={400}
+                                    height={300}
+                                    edit
+                                    exactLocation
+                                    shouldGetYourLocation
+                                    inlineBanner={false}
+                                    onLabelChange={(label) => setLocationLabel(label)}
+                                    onLocationChange={(data) => {
+                                        if (!data) {
+                                            setLocation(null);
+                                            form.setValue('location', null as any, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            });
+                                            setTargetUser({
+                                                ...targetUser,
+                                                location: {
+                                                    ...targetUser.location,
+                                                    regionID: null
+                                                }
+                                            });
+                                            return;
+                                        }
+                                        if (!data.changed) return;
+                                        if (data.coordinates) {
+                                            setLocation(data.coordinates);
+                                            const next = {
+                                                ...data.coordinates,
+                                                name: data.name,
+                                                regionID: data.placeID
+                                            };
+                                            const prev =
+                                            form.getValues('location') || null;
+                                            const changed = !deepEqual(next, prev);
+                                            if (changed) {
+                                                form.setValue('location', next, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                            }
+                                        }
+                                    }}
+                                />
+                            </FormField>
+                        )}
 
                         <ActionsBar
                             canSave={canSave}
@@ -489,6 +608,69 @@ const EditProfile: React.FC<Props> = ({
                         <ErrorList errors={form.formState.errors as any} />
                     </form>
                 </SettingsSection>
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Connected accounts'
+                        description='Link or unlink your social accounts.'
+                    >
+                        <div className='space-y-4'>
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <div className='font-medium'>Discord</div>
+                                    <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                        {user.discordID ? 'Connected' : 'Not connected'}
+                                    </div>
+                                </div>
+                                {user.discordID ? (
+                                    <OAuthDisconnectButton
+                                        provider='discord'
+                                        onSuccess={() => {
+                                            updateUserCache({ discordID: undefined as any });
+                                            setToastType('success');
+                                            setToastMessage('Discord disconnected');
+                                        }}
+                                        onError={(m) => {
+                                            setToastType('error');
+                                            setToastMessage(m);
+                                        }}
+                                    />
+                                ) : (
+                                    <OAuthConnectButton provider='discord'>
+                                    Connect
+                                    </OAuthConnectButton>
+                                )}
+                            </div>
+
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <div className='font-medium'>Google</div>
+                                    <div className='text-sm text-gray-600 dark:text-gray-300'>
+                                        {user.googleID ? 'Connected' : 'Not connected'}
+                                    </div>
+                                </div>
+                                {user.googleID ? (
+                                    <OAuthDisconnectButton
+                                        provider='google'
+                                        onSuccess={() => {
+                                            updateUserCache({ googleID: undefined as any });
+                                            setToastType('success');
+                                            setToastMessage('Google disconnected');
+                                        }}
+                                        onError={(m) => {
+                                            setToastType('error');
+                                            setToastMessage(m);
+                                        }}
+                                    />
+                                ) : (
+                                    <OAuthConnectButton provider='google'>
+                                    Connect
+                                    </OAuthConnectButton>
+                                )}
+                            </div>
+                        </div>
+                    </SettingsSection>
+                )}
 
                 <SettingsSection
                     title='Change password'
@@ -542,42 +724,46 @@ const EditProfile: React.FC<Props> = ({
                     </form>
                 </SettingsSection>
 
-                <SettingsSection
-                    title='Log out other sessions'
-                    description='Enter your password to log out from other devices.'
-                >
-                    <form
-                        className='space-y-6'
-                        onSubmit={handleLogoutOtherSessions}
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Log out other sessions'
+                        description='Enter your password to log out from other devices.'
                     >
-                        <FormField label='Your password'>
-                            <input
-                                type='password'
-                                value={logoutPassword}
-                                onChange={(e) =>
-                                    setLogoutPassword(e.target.value)
-                                }
-                                className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
-                            />
-                        </FormField>
-                        <Button type='submit'>Log out other sessions</Button>
-                    </form>
-                </SettingsSection>
+                        <form
+                            className='space-y-6'
+                            onSubmit={handleLogoutOtherSessions}
+                        >
+                            <FormField label='Your password'>
+                                <input
+                                    type='password'
+                                    value={logoutPassword}
+                                    onChange={(e) =>
+                                        setLogoutPassword(e.target.value)
+                                    }
+                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                />
+                            </FormField>
+                            <Button type='submit'>Log out other sessions</Button>
+                        </form>
+                    </SettingsSection>
+                )}
 
-                <SettingsSection
-                    title='Delete account'
-                    description='This cannot be undone. All information will be permanently removed.'
-                    noBorder
-                >
-                    <form
-                        className='flex items-start'
-                        onSubmit={handleDeleteAccount}
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Deactivate account'
+                        description='This deactivates your account. You may request reactivation later.'
+                        noBorder
                     >
-                        <Button type='submit' variant='danger'>
-                            Yes, delete my account
-                        </Button>
-                    </form>
-                </SettingsSection>
+                        <form
+                            className='flex items-start'
+                            onSubmit={handleDeleteAccount}
+                        >
+                            <Button type='submit' variant='danger'>
+                            Deactivate my account
+                            </Button>
+                        </form>
+                    </SettingsSection>
+                )}
             </div>
 
             {/* Global toast */}
@@ -585,9 +771,7 @@ const EditProfile: React.FC<Props> = ({
                 <div className='fixed bottom-4 left-1/2 -translate-x-1/2 z-50'>
                     <Alert
                         type={toastType === 'success' ? 'success' : 'danger'}
-                        title={
-                            toastType === 'success' ? 'Success' : 'Error'
-                        }
+                        title={toastType === 'success' ? 'Success' : 'Error'}
                         message={toastMessage}
                         show={!!toastMessage}
                         onClose={() => setToastMessage(null)}

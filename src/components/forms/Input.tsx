@@ -23,6 +23,8 @@ type Props<T extends FieldValues> = {
     multipleFiles?: boolean;
     multiline?: boolean;
     onValueChange?: (value: string | File[]) => void;
+    valueTransformer?: (value: string) => any;
+    htmlInputType?: string;
 };
 
 export default function Input<T extends FieldValues>({
@@ -38,6 +40,8 @@ export default function Input<T extends FieldValues>({
     multipleFiles = true,
     multiline = false,
     onValueChange,
+    valueTransformer,
+    htmlInputType,
     ...props
 }: Props<T>) {
     const defaultValue: PathValue<T, Path<T>> = type === 'dropdown'
@@ -56,7 +60,6 @@ export default function Input<T extends FieldValues>({
     if (type === 'file' || type === 'file-image') {
         return (
             <FilePicker
-            
                 placeholder={placeholder || 'Choose Files'}
                 multiple={multipleFiles}
                 selectedFiles={field.value as File[]}
@@ -88,6 +91,7 @@ export default function Input<T extends FieldValues>({
                         field.onChange(val);
                         onValueChange?.(val);
                     }}
+                    onBlur={field.onBlur}
                 />
             </div>
         );
@@ -105,9 +109,11 @@ export default function Input<T extends FieldValues>({
                     id={name}
                     value={field.value}
                     onChange={(e) => {
-                        field.onChange(e.target.value);
-                        onValueChange?.(e.target.value);
+                        const transformed = valueTransformer ? valueTransformer(e.target.value) : e.target.value;
+                        field.onChange(transformed);
+                        onValueChange?.(transformed as string);
                     }}
+                    onBlur={field.onBlur}
                     className='w-full border rounded px-3 py-2'
                     placeholder={placeholder}
                     rows={4}
@@ -117,12 +123,14 @@ export default function Input<T extends FieldValues>({
                     {...props}
                     disabled={disabled}
                     id={name}
-                    type={type === 'password' ? 'password' : 'text'}
+                    type={htmlInputType ?? (type === 'password' ? 'password' : 'text')}
                     value={value ?? field.value}
                     onChange={(e) => {
-                        field.onChange(e.target.value);
-                        onValueChange?.(e.target.value);
+                        const transformed = valueTransformer ? valueTransformer(e.target.value) : e.target.value;
+                        field.onChange(transformed);
+                        onValueChange?.(transformed as string);
                     }}
+                    onBlur={field.onBlur}
                     className='w-full border rounded px-3 py-2'
                     placeholder={placeholder}
                     multiple={multipleFiles}

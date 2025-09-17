@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/useAuth';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import Pill from '@/components/common/Pill';
 import TextWithLinks from '../common/TextWithLinks';
+import { timeAgoLabel } from '@/shared/timeAgoLabel';
 
 function truncateBody(body: string, max = 100) {
     return body.length <= max ? body : body.slice(0, max) + '…';
@@ -32,6 +33,7 @@ export default function PostCard(props: Props) {
         images,
         sender,
         status,
+        createdAt,
         handshakes,
         tags = [],
         fake,
@@ -58,15 +60,20 @@ export default function PostCard(props: Props) {
         >
             <div className='flex justify-between items-start gap-4 w-full'>
                 <div className='flex-1 pr-4 w-4/5'>
-                    <div className='flex items-center gap-2 mb-2'>
-                        {status === 'closed' && (
-                            <span className='bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded whitespace-nowrap'>
-                                CLOSED
-                            </span>
-                        )}
-                        <h2 className='text-lg font-bold break-words text-gray-800 dark:text-gray-100'>
-                            {title}
-                        </h2>
+                    <div className='flex items-center justify-between gap-2 mb-2'>
+                        <div className='flex items-center gap-2 min-w-0'>
+                            {status === 'closed' && (
+                                <span className='bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded whitespace-nowrap'>
+                                    CLOSED
+                                </span>
+                            )}
+                            <h2 className='text-lg font-bold break-words text-gray-800 dark:text-gray-100 truncate'>
+                                {title}
+                            </h2>
+                        </div>
+                        <span className='text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap'>
+                            {timeAgoLabel(createdAt as any)}
+                        </span>
                     </div>
 
                     {sender && (
@@ -79,9 +86,7 @@ export default function PostCard(props: Props) {
                             <Pill key={i} name={tag.name} />
                         ))}
                     </div>
-                    <TextWithLinks 
-                        className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words"
-                    >
+                    <TextWithLinks className='text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mr-2 break-words'>
                         {body}
                     </TextWithLinks>
                 </div>

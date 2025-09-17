@@ -6,33 +6,34 @@ import Spinner from '../common/Spinner';
 import RequireAuth from './RequireAuth';
 import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
+import About from '@/pages/about';
 
 const Home = lazy(() => import('@/pages/home'));
-const Success = lazy(() => import('@/pages/donate/success'));
-const Cancel = lazy(() => import('@/pages/donate/cancel'));
+const Result = lazy(() => import('@/pages/donate/result'));
 const Post = lazy(() => import('@/pages/post'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
 const EventDetails = lazy(() => import('@/pages/event'));
 const SignIn = lazy(() => import('@/pages/login'));
 const SignUp = lazy(() => import('@/pages/signup'));
+const ForgotPassword = lazy(() => import('@/pages/forgot-password'));
+const ResetPassword = lazy(() => import('@/pages/reset-password'));
 const EventsPage = lazy(() => import('@/pages/events'));
 const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
-const DMChat = lazy(() => import('@/components/messages/DMChat'));
-const PublicChat = lazy(() => import('@/components/messages/PublicChat'));
+const Chat = lazy(() => import('@/components/messages/Chat'));
 
 function AppNavigator() {
     return (
         <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
+                    <Route path={routes.about} element={<About/>} />
                     <Route path={routes.home} element={<Home />} />
-                    <Route path={routes.success} element={<Success />} />
-                    <Route path={routes.cancel} element={<Cancel />} />
+                    <Route path={routes.result} element={<Result />} />
 
                     <Route
                         path={routes.donate}
@@ -96,7 +97,7 @@ function AppNavigator() {
                         path={routes.chat}
                         element={
                             <RequireAuth>
-                                <PublicChat />
+                                <Chat channelType='public' />
                             </RequireAuth>
                         }
                     />
@@ -104,7 +105,7 @@ function AppNavigator() {
                         path={routes.dms}
                         element={
                             <RequireAuth>
-                                <DMChat />
+                                <Chat channelType='dm' />
                             </RequireAuth>
                         }
                     />
@@ -112,7 +113,7 @@ function AppNavigator() {
                         path='/dms/:id?'
                         element={
                             <RequireAuth>
-                                <DMChat />
+                                <Chat channelType='dm' />
                             </RequireAuth>
                         }
                     />
@@ -150,6 +151,22 @@ function AppNavigator() {
                         element={
                             <PublicOnly>
                                 <SignUp />
+                            </PublicOnly>
+                        }
+                    />
+                    <Route
+                        path={routes.forgotPassword}
+                        element={
+                            <PublicOnly>
+                                <ForgotPassword />
+                            </PublicOnly>
+                        }
+                    />
+                    <Route
+                        path={routes.resetPassword}
+                        element={
+                            <PublicOnly>
+                                <ResetPassword />
                             </PublicOnly>
                         }
                     />

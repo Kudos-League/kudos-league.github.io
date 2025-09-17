@@ -35,7 +35,9 @@ export function useSearchPostsQuery(query: string) {
     return useQuery<PostDTO[]>({
         queryKey: qk.search(query),
         queryFn: () =>
-            apiGet<PostDTO[]>('/posts/search', { params: { query } }),
+            apiGet<PostDTO[]>('/posts/search', { 
+                params: { query, includeTags: true, includeSender: true} 
+            }),
         enabled: query.length >= 2
     });
 }

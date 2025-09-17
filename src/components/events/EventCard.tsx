@@ -18,9 +18,11 @@ export default function EventCard({ event }: Props) {
     return (
         <li
             onClick={() => navigate(`/event/${event.id}`)}
-            className='p-3 rounded shadow hover:bg-gray-100 cursor-pointer text-center'
+            className='p-3 rounded shadow hover:shadow-md cursor-pointer text-center border border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors'
         >
-            <p className='font-bold text-lg'>{event.title}</p>
+            <p className='font-bold text-lg text-gray-900 dark:text-gray-100'>
+                {event.title}
+            </p>
 
             {event.description && (
                 <p className='text-gray-600 text-sm mb-1'>
@@ -33,14 +35,30 @@ export default function EventCard({ event }: Props) {
                 {end ? format(end, 'MMM d, yyyy h:mm a') : 'Ongoing'}
             </p>
 
-            {event.location?.name && (
+            {event.location?.global ? (
+                event.link ? (
+                    <div className='mt-1'>
+                        <a
+                            href={event.link}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            onClick={(e) => e.stopPropagation()}
+                            className='inline-block text-sm text-blue-600 underline'
+                        >
+                            🔗 Join Link
+                        </a>
+                    </div>
+                ) : (
+                    <p className='text-sm text-gray-400 mt-1'>🌐 Online</p>
+                )
+            ) : event.location?.name ? (
                 <p className='text-sm text-gray-400'>
                     📍 {event.location.name}
                 </p>
-            )}
+            ) : null}
 
             {typeof event.participantCount === 'number' && (
-                <p className='text-sm text-blue-500'>
+                <p className='text-sm text-blue-600 dark:text-blue-400'>
                     👥 {event.participantCount} participant
                     {event.participantCount !== 1 ? 's' : ''}
                 </p>

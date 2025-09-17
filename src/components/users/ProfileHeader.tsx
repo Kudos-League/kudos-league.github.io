@@ -8,6 +8,7 @@ import { UserDTO } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
+import UserCard from './UserCard';
 
 interface Props {
     user: UserDTO;
@@ -24,7 +25,7 @@ const ProfileHeader: React.FC<Props> = ({
     onStartDM,
     isSelf
 }) => {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, user: currentUser } = useAuth();
 
     const getUserTitle = () => {
         if (targetUser.kudos > 10000) return 'Questing Knight';
@@ -56,7 +57,11 @@ const ProfileHeader: React.FC<Props> = ({
                 {getUserTitle()}
             </p>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-                {targetUser.username}
+                <UserCard
+                    user={targetUser}
+                    triggerVariant='name'
+                    disableTooltip
+                />
             </h1>
             <p className='text-gray-600 dark:text-gray-300 text-sm'>
                 {targetUser.kudos || 0} Kudos
@@ -82,7 +87,7 @@ const ProfileHeader: React.FC<Props> = ({
                         💬 Message
                     </Button>
                 )}
-                {isSelf && (
+                {(isSelf || currentUser?.admin) && (
                     <Button
                         data-testid='edit-profile'
                         onClick={onEditProfile}
@@ -113,18 +118,25 @@ const ProfileHeader: React.FC<Props> = ({
                         Location
                     </h3>
                     {targetUser.location?.regionID ? (
-                        <div className='flex justify-center'>
-                            <MapDisplay
-                                regionID={targetUser.location.regionID}
-                                edit={false}
-                                exactLocation={isSelf}
-                                width='100%'
-                                height={200}
-                            />
-                        </div>
+                        <>
+                            <div className='flex justify-center'>
+                                <MapDisplay
+                                    regionID={targetUser.location.regionID}
+                                    edit={false}
+                                    exactLocation={isSelf}
+                                    width='100%'
+                                    height={200}
+                                />
+                            </div>
+                            {isSelf && targetUser.location?.name && (
+                                <p className='mt-2 text-gray-600 dark:text-gray-300 text-sm text-center'>
+                                    {targetUser.location.name}
+                                </p>
+                            )}
+                        </>
                     ) : (
                         <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
-                            Location: not submitted
+                            Location: not submitted. Please edit your profile to add one.
                         </p>
                     )}
                 </div>

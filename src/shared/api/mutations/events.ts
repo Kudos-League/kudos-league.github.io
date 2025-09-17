@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
-import type { EventDTO, CreateEventDTO } from '@/shared/api/types';
+import type { EventDTO, CreateEventDTO, UpdateEventDTO } from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
 
-export function useCreateEvent() {
+export function useCreateEvent(p0: { onSuccess: () => void; }) {
     const { token } = useAuth();
     const qc = useQueryClient();
 
@@ -18,8 +18,9 @@ export function useCreateEvent() {
             );
         },
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: qk.events(undefined) });
+            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qk.event(created.id as number), created);
+            p0?.onSuccess?.();
         }
     });
 }
@@ -54,7 +55,35 @@ export function useJoinEvent(eventId: number) {
         },
         onSettled: () => {
             qc.invalidateQueries({ queryKey: qk.event(eventId) });
-            qc.invalidateQueries({ queryKey: qk.events(undefined) });
+            qc.invalidateQueries({ queryKey: ['events'] });
         }
     });
 }
+
+interface UpdateEventMutationData {
+    id: number;
+    data: UpdateEventDTO;
+}
+
+
+export const useUpdateEvent = () => {
+    const { token } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: UpdateEventMutationData): Promise<EventDTO> => {
+            if (!token) throw new Error('Authentication required');
+            return apiMutate<EventDTO, UpdateEventDTO>(`/events/${id}`, 'patch', data, { as: 'form' });
+        },
+        onSuccess: (updatedEvent) => {
+            // Update the specific event in the cache
+            queryClient.setQueryData(['event', updatedEvent.id], updatedEvent);
+            
+            // Invalidate events list to ensure consistency
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+        },
+        onError: (error) => {
+            console.error('Failed to update event:', error);
+        }
+    });
+};

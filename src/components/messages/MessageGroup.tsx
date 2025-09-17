@@ -8,19 +8,33 @@ interface MessageGroupProps {
     isOwn?: boolean;
     compact?: boolean;
     isPublic?: boolean;
+    onReply?: (m: MessageDTO) => void;
+    onDelete?: (m: MessageDTO) => void;
+    canDelete?: (m: MessageDTO) => boolean;
+    findMessageById?: (id: number) => MessageDTO | undefined;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
     messages,
     isOwn = false,
     compact = false,
-    isPublic = false
+    isPublic = false,
+    onReply,
+    onDelete,
+    canDelete,
+    findMessageById
 }) => {
     if (messages.length === 0) return null;
 
     const author = messages[0].author;
-    const authorName = isPublic && isOwn ? 'You' : author?.username || 'Anonymous';
-    const AuthorCard = <UserCard triggerVariant='name' user={{ ...author, username: authorName }} />;
+    const authorName =
+        isPublic && isOwn ? 'You' : author?.username || 'Anonymous';
+    const AuthorCard = (
+        <UserCard
+            triggerVariant='name'
+            user={{ ...author, username: authorName }}
+        />
+    );
 
     // TODO: Why is createdAt null???
     const createdAt = messages[0].createdAt
@@ -53,6 +67,14 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     message={msg}
                     isOwn={isOwn}
                     compact={compact}
+                    onReply={onReply}
+                    onDelete={onDelete}
+                    canDelete={canDelete ? canDelete(msg) : false}
+                    replyTo={
+                        msg.replyToMessageID && findMessageById
+                            ? (findMessageById(msg.replyToMessageID) ?? null)
+                            : null
+                    }
                 />
             ))}
 

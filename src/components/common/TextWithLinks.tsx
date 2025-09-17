@@ -1,5 +1,3 @@
-// src/components/common/TextWithLinks.tsx
-
 import React from 'react';
 import { parseTextWithLinks, isSafeUrl } from '@/shared/linkUtils';
 
@@ -11,9 +9,6 @@ interface TextWithLinksProps {
     onClick?: (url: string) => void;
 }
 
-/**
- * Component that renders text with URLs converted to clickable links
- */
 const TextWithLinks: React.FC<TextWithLinksProps> = ({
     children,
     className = '',
@@ -24,17 +19,24 @@ const TextWithLinks: React.FC<TextWithLinksProps> = ({
     const segments = parseTextWithLinks(children);
 
     const handleLinkClick = (e: React.MouseEvent, url: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
         if (onClick) {
-            e.preventDefault();
             onClick(url);
             return;
         }
 
-        // Security check
         if (!isSafeUrl(url)) {
-            e.preventDefault();
             console.warn('Blocked potentially unsafe URL:', url);
             return;
+        }
+
+        if (openInNewTab) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        else {
+            window.location.href = url;
         }
     };
 
@@ -48,12 +50,11 @@ const TextWithLinks: React.FC<TextWithLinksProps> = ({
                 return (
                     <a
                         key={index}
-                        href={segment.url}
+                        href="#"
                         className={linkClassName}
-                        target={openInNewTab ? '_blank' : undefined}
-                        rel={openInNewTab ? 'noopener noreferrer' : undefined}
                         onClick={(e) => handleLinkClick(e, segment.url!)}
                         title={segment.url}
+                        role="button"
                     >
                         {segment.content}
                     </a>

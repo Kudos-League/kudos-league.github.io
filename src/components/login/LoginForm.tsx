@@ -4,8 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { Alert, PasswordInput, TextInput, TinyHelpLink } from './fields';
+import { TinyHelpLink } from './fields';
+import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
+import Form from '@/components/forms/Form';
+import FormField from '@/components/forms/FormField';
 
 type LoginFormProps = {
     onSuccess?: () => void;
@@ -24,11 +27,8 @@ export default function LoginForm({
     initialError
 }: LoginFormProps) {
     const { login, token, logout } = useAuth();
-    const { register, handleSubmit, setValue } = useForm<FormValues>();
-    const [errorMessage, setErrorMessage] = useState<string | null>(
-        initialError ?? null
-    );
-    const [passwordVisible, setPasswordVisible] = useState(false);
+    const methods = useForm<FormValues>({ mode: 'onBlur' });
+    const [errorMessage, setErrorMessage] = useState<string | null>(initialError ?? null);
     const navigate = useNavigate();
 
     const getErrorMessage = (error: any): string => {
@@ -58,6 +58,8 @@ export default function LoginForm({
                 return 'Your account has been restricted. Contact support for assistance.';
             }
             return 'Your account needs verification. Please check your email for a verification link, or contact support if you need help.';
+        case 409:
+            return 'You already have an account with that username or email. Please Log In.';
         case 429:
             return 'Too many login attempts. Please wait a few minutes before trying again.';
         case 500:
@@ -108,28 +110,29 @@ export default function LoginForm({
 
     return (
         <Auth title='Sign in to your account'>
-            <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+            <Form methods={methods} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
                 <div>
                     <div className='col-span-2'>
-                        <TextInput
-                            rounded='top'
-                            placeholder='Username'
-                            aria-label='Username'
-                            {...register('username')}
-                            onChange={(e) =>
-                                setValue('username', e.target.value)
-                            }
-                        />
+                        <FormField name='username'>
+                            <Input
+                                name='username'
+                                label=''
+                                placeholder='Username'
+                                form={methods}
+                                registerOptions={{ required: 'Username is required' }}
+                            />
+                        </FormField>
                     </div>
-                    <PasswordInput
-                        rounded='bottom'
-                        placeholder='Password'
-                        aria-label='Password'
-                        visible={passwordVisible}
-                        setVisible={setPasswordVisible}
-                        {...register('password')}
-                        onChange={(e) => setValue('password', e.target.value)}
-                    />
+                    <FormField name='password'>
+                        <Input
+                            name='password'
+                            label=''
+                            placeholder='Password'
+                            form={methods}
+                            registerOptions={{ required: 'Password is required' }}
+                            htmlInputType='password'
+                        />
+                    </FormField>
                 </div>
 
                 <div className='flex items-center justify-between'>
@@ -163,44 +166,7 @@ export default function LoginForm({
                         Sign Up
                     </TinyHelpLink>
                 </p>
-
-                {errorMessage && (
-                    <Alert tone='error' title='Login Failed'>
-                        <p>{errorMessage}</p>
-                        {(() => {
-                            const m = errorMessage.toLowerCase();
-                            if (
-                                m.includes('verification') ||
-                                m.includes('verify') ||
-                                m.includes('email')
-                            ) {
-                                return (
-                                    <div className='mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'>
-                                        <p className='text-xs font-medium'>
-                                            What to do next:
-                                        </p>
-                                        <ul className='ml-4 mt-2 list-disc text-xs'>
-                                            <li>
-                                                Check your inbox and spam folder
-                                            </li>
-                                            <li>
-                                                Find the verification email from
-                                                Kudos League
-                                            </li>
-                                            <li>Click the verification link</li>
-                                            <li>
-                                                If you can’t find it, contact
-                                                support
-                                            </li>
-                                        </ul>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
-                    </Alert>
-                )}
-            </form>
+            </Form>
         </Auth>
     );
 }

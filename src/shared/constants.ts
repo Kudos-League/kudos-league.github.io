@@ -4,8 +4,12 @@ export const AUTH_TOKEN_LIFETIME_MS = 1000 * 60 * 60 * 24 * 7; // One week
 
 export enum Events {
     POST_CREATE = 'postCreate',
+    POST_UPDATE = 'postUpdate',
     MESSAGE_CREATE = 'messageCreate',
-    NOTIFICATION_CREATE = 'notificationCreate'
+    MESSAGE_DELETE = 'messageDelete',
+    NOTIFICATION_CREATE = 'notificationCreate',
+    KUDOS_UPDATE = 'kudosUpdate',
+    POST_AUTO_CLOSE_ALERT = 'postAutoCloseAlert'
 }
 
 export enum FiltersEnum {

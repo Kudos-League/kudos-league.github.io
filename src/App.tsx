@@ -25,7 +25,11 @@ function ErrorFallback({ error }: { error: string[] }) {
             className='w-full'
             type='danger'
             title='Error loading page'
-            message={Array.isArray(error) ? error.join('\n') : (error as any).toString()}
+            message={
+                Array.isArray(error)
+                    ? error.join('\n')
+                    : (error as any).toString()
+            }
         />
     );
 }
@@ -37,8 +41,8 @@ export default function App() {
                 FallbackComponent={ErrorFallback}
                 onError={console.error}
             >
-                <AuthProvider>
-                    <QueryClientProvider client={queryClient}>
+                <QueryClientProvider client={queryClient}>
+                    <AuthProvider>
                         <NotificationsProvider>
                             <ThemeProvider>
                                 <WebSocketProvider>
@@ -49,8 +53,8 @@ export default function App() {
                             </ThemeProvider>
                         </NotificationsProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
-                    </QueryClientProvider>
-                </AuthProvider>
+                    </AuthProvider>
+                </QueryClientProvider>
             </ErrorBoundary>
         </ReduxProvider>
     );
@@ -66,3 +70,5 @@ function AppCore() {
         </BrowserRouter>
     );
 }
+
+// noop 

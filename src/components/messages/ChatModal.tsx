@@ -1,12 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    getMessages,
-    getUserDetails,
-    sendDirectMessage
-} from 'shared/api/actions';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
-// import { useWebSocket } from '@/hooks/useWebSocket';
 import {
     ChannelDTO,
     CreateMessageDTO,
@@ -16,6 +11,9 @@ import {
 import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
+import { ArrowUturnLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useSendDirectMessage } from '@/shared/api/mutations/messages';
+import UserCard from '../users/UserCard';
 
 interface ChatModalProps {
     isChatOpen: boolean;
@@ -187,8 +185,10 @@ export default function ChatModal({
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
         initialSelected || null
     );
+    const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const token = useAppSelector((s) => s.auth.token);
+    const sendDirectInitial = useSendDirectMessage(recipientID ?? undefined);
 
     const channelID = selectedChannel?.id ?? null;
 
@@ -221,11 +221,9 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const userDetails = await getUserDetails('me', token, {
-                dmChannels: true
-            });
-            let channel = userDetails.dmChannels.find((ch) =>
-                ch.users.some((u) => u.id === recipientId)
+            const userDetails = await apiGet<any>('/users/me', { params: { dmChannels: true } });
+            let channel = userDetails.dmChannels.find((ch: any) =>
+                ch.users.some((u: any) => u.id === recipientId)
             );
             if (channel) {
                 const otherUser = channel.users.find((u) => u.id !== user?.id);
@@ -238,7 +236,7 @@ export default function ChatModal({
                     id: -1,
                     name: 'Pending Channel',
                     type: 'direct',
-                    users: [user!, { id: recipientId }],
+                    users: [user ?? ({} as any), { id: recipientId }],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 } as any);
@@ -255,7 +253,7 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const msgs = await getMessages(channelId, token);
+            const msgs = await apiGet<MessageDTO[]>(`/channels/${channelId}/messages`);
 
             // Debug: Log the raw messages from the API
             console.log('Raw messages from API:', msgs);
@@ -275,9 +273,10 @@ export default function ChatModal({
 
                 return {
                     ...msg,
-                    // Use the best available timestamp
-                    createdAt: timestamp,
-                    author: msg.author || {
+                    // Use the best available timestamp converted to Date
+                    createdAt: (parseMessageDate(timestamp) as Date) || new Date(),
+                    // Ensure the author satisfies UserDTO shape for TypeScript by casting fallback
+                    author: (msg.author ?? ({
                         id: 0,
                         username: 'Unknown',
                         email: '',
@@ -285,8 +284,9 @@ export default function ChatModal({
                         kudos: 0,
                         locationID: null,
                         createdAt: new Date(),
-                        updatedAt: new Date()
-                    }
+                        updatedAt: new Date(),
+                        // minimal placeholders for optional fields
+                    } as any)) as UserDTO
                 };
             });
 
@@ -308,12 +308,15 @@ export default function ChatModal({
         if (!token || !validateMessage(messageInput)) return;
         try {
             setLoading(true);
-            const msg: CreateMessageDTO = { content: messageInput };
+            const msg: CreateMessageDTO = {
+                content: messageInput,
+                ...(replyTo ? { replyToMessageID: replyTo.id } : {})
+            };
             let response;
 
             if (!selectedChannel || selectedChannel.id === -1) {
                 if (!recipientID || recipientID === 0) return;
-                response = await sendDirectMessage(+recipientID, msg, token);
+                response = await sendDirectInitial.mutateAsync(msg as any);
                 if (response.channel) {
                     const newChannel = {
                         ...response.channel,
@@ -331,7 +334,7 @@ export default function ChatModal({
                     (u) => u.id !== user?.id
                 );
                 if (!receiver) return;
-                response = await sendDirectMessage(receiver.id, msg, token);
+                response = await apiMutate<MessageDTO, CreateMessageDTO>(`/users/${receiver.id}/dm`, 'post', msg);
             }
 
             // Debug: Log the response from sending a message
@@ -351,12 +354,12 @@ export default function ChatModal({
                     updatedAt: new Date()
                 },
                 // IMPORTANT: Preserve the server's timestamp if available, fallback to current time for new messages
-                createdAt:
-                    getMessageTimestamp(response) || new Date().toISOString()
+                createdAt: (parseMessageDate(getMessageTimestamp(response)) as Date) || new Date()
             };
 
             setMessages((prev) => [...prev, fullMessage]);
             setMessageInput('');
+            setReplyTo(null);
             onMessageSent?.();
         }
         catch (err) {
@@ -409,7 +412,16 @@ export default function ChatModal({
                         </p>
                     )}
                     {messages
-                        .filter((msg) => msg && typeof msg === 'object')
+                        .filter((msg) => {
+                            if (!msg || typeof msg !== 'object') return false;
+                            const isOwn =
+                                !!user &&
+                                (msg.authorID === user.id ||
+                                    msg.author?.id === user.id);
+                            const canSeeDeleted =
+                                !!user && (user.admin || isOwn);
+                            return !msg.deletedAt || canSeeDeleted;
+                        })
                         .map((msg, i) => {
                             // Don't override the timestamp - use what we have
                             const safeMsg: MessageDTO = {
@@ -427,7 +439,9 @@ export default function ChatModal({
                                     } as UserDTO)
                             };
 
-                            const isOwn = safeMsg.author?.id === user?.id;
+                            const isOwn =
+                                (safeMsg.author?.id ?? safeMsg.authorID) ===
+                                user?.id;
                             const previousMsg = i > 0 ? messages[i - 1] : null;
                             const showDateSeparator = shouldShowDateSeparator(
                                 safeMsg,
@@ -438,6 +452,12 @@ export default function ChatModal({
                             const messageTimestamp =
                                 getMessageTimestamp(safeMsg);
 
+                            const canDelete = !!user && isOwn;
+                            const repliedTo = safeMsg.replyToMessageID
+                                ? messages.find(
+                                    (mm) => mm.id === safeMsg.replyToMessageID
+                                )
+                                : null;
                             return (
                                 <React.Fragment
                                     key={`${safeMsg.id || 'temp'}-${i}`}
@@ -455,15 +475,153 @@ export default function ChatModal({
                                         </div>
                                     )}
 
-                                    {/* Message */}
+                                    {repliedTo && (
+                                        <div
+                                            className={`max-w-xs ${isOwn ? 'ml-auto' : ''} mb-1`}
+                                        >
+                                            <button
+                                                type='button'
+                                                onClick={() => {
+                                                    const el =
+                                                        document.getElementById(
+                                                            `msg-${repliedTo.id}`
+                                                        );
+                                                    if (el) {
+                                                        el.scrollIntoView({
+                                                            behavior: 'smooth',
+                                                            block: 'center'
+                                                        });
+                                                        el.classList.add(
+                                                            'ring-2',
+                                                            'ring-teal-400'
+                                                        );
+                                                        setTimeout(() => {
+                                                            el.classList.remove(
+                                                                'ring-2',
+                                                                'ring-teal-400'
+                                                            );
+                                                        }, 1200);
+                                                    }
+                                                }}
+                                                className={`inline-flex items-center gap-1 max-w-full ${
+                                                    isOwn
+                                                        ? 'text-zinc-600 dark:text-zinc-300'
+                                                        : 'text-zinc-700 dark:text-zinc-200'
+                                                } text-xs pl-2 pr-2 py-1 border-l-2 ${
+                                                    isOwn
+                                                        ? 'border-teal-300/70'
+                                                        : 'border-zinc-400/60'
+                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
+                                                title={`${
+                                                    repliedTo.author
+                                                        ?.username ?? 'Unknown'
+                                                }: ${repliedTo.content}`}
+                                            >
+                                                <span className='font-semibold inline-flex items-center gap-1 shrink-0'>
+                                                    <UserCard
+                                                        triggerVariant='name'
+                                                        user={repliedTo.author}
+                                                    />
+                                                </span>
+                                                <span className='opacity-90 truncate'>
+                                                    {repliedTo.content}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <div
-                                        className={`max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
+                                        id={`msg-${safeMsg.id}`}
+                                        className={`group relative max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
                                             isOwn
                                                 ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto rounded-br-none'
                                                 : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                         }`}
                                     >
-                                        <TextWithLinks>{safeMsg.content}</TextWithLinks>
+                                        <TextWithLinks>
+                                            {safeMsg.deletedAt
+                                                ? `[deleted]: ${safeMsg.content}`
+                                                : safeMsg.content}
+                                        </TextWithLinks>
+                                        <div
+                                            className={`absolute z-10 -top-3 ${
+                                                isOwn ? 'left-2' : 'right-2'
+                                            } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
+                                        >
+                                            <button
+                                                type='button'
+                                                title='Reply'
+                                                onClick={() =>
+                                                    setReplyTo(safeMsg)
+                                                }
+                                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                            >
+                                                <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                            </button>
+                                            {canDelete && (
+                                                <button
+                                                    type='button'
+                                                    title='Delete'
+                                                    onClick={async () => {
+                                                        if (!token) return;
+                                                        try {
+                                                            await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
+                                                        }
+                                                        catch (e) {
+                                                            console.error(
+                                                                'Failed to delete message',
+                                                                e
+                                                            );
+                                                            return;
+                                                        }
+                                                        setMessages((prev) => {
+                                                            const idx =
+                                                                prev.findIndex(
+                                                                    (x) =>
+                                                                        x.id ===
+                                                                        safeMsg.id
+                                                                );
+                                                            if (idx === -1)
+                                                                return prev;
+                                                            const original =
+                                                                prev[idx];
+                                                            if (
+                                                                user &&
+                                                                (user.admin ||
+                                                                    original.authorID ===
+                                                                        user.id ||
+                                                                    original
+                                                                        .author
+                                                                        ?.id ===
+                                                                        user.id)
+                                                            ) {
+                                                                const updated =
+                                                                    {
+                                                                        ...original,
+                                                                        content: `[deleted]: ${original.content}`
+                                                                    } as MessageDTO;
+                                                                const copy = [
+                                                                    ...prev
+                                                                ];
+                                                                copy[idx] =
+                                                                    updated;
+                                                                return copy;
+                                                            }
+                                                            else {
+                                                                return prev.filter(
+                                                                    (x) =>
+                                                                        x.id !==
+                                                                        safeMsg.id
+                                                                );
+                                                            }
+                                                        });
+                                                    }}
+                                                    className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                >
+                                                    <TrashIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                </button>
+                                            )}
+                                        </div>
                                         <div
                                             className={`text-xs text-right mt-2 ${
                                                 isOwn
@@ -489,25 +647,40 @@ export default function ChatModal({
                 </div>
 
                 {/* Input */}
-                <div className='flex items-center gap-2'>
-                    <textarea
-                        rows={2}
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
-                        placeholder='Type your message...'
-                    />
-                    <Button
-                        disabled={!validateMessage(messageInput) || loading}
-                        onClick={sendMessage}
-                        className={`px-4 py-2 rounded-lg text-white transition-colors ${
-                            validateMessage(messageInput) && !loading
-                                ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
-                                : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
-                        }`}
-                    >
-                        Send
-                    </Button>
+                <div className='flex flex-col gap-2'>
+                    {replyTo && (
+                        <div className='flex items-center justify-between text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded'>
+                            <span>
+                                Replying to: {replyTo.content.slice(0, 80)}
+                            </span>
+                            <button
+                                className='text-blue-600 hover:underline'
+                                onClick={() => setReplyTo(null)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+                    <div className='flex items-center gap-2'>
+                        <textarea
+                            rows={2}
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
+                            placeholder='Type your message...'
+                        />
+                        <Button
+                            disabled={!validateMessage(messageInput) || loading}
+                            onClick={sendMessage}
+                            className={`px-4 py-2 rounded-lg text-white transition-colors ${
+                                validateMessage(messageInput) && !loading
+                                    ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
+                                    : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
+                            }`}
+                        >
+                            Send
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

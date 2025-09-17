@@ -42,8 +42,7 @@ export const routes = {
     home: '/' as const,
     about: '/about' as const,
     donate: '/donate' as const,
-    success: '/success' as const,
-    cancel: '/cancel' as const,
+    result: '/donate/result' as const,
     events: '/events' as const,
     createEvent: '/create-event' as const,
     createPost: '/create-post' as const,
@@ -53,6 +52,8 @@ export const routes = {
     admin: '/admin' as const,
     login: '/login' as const,
     signUp: '/sign-up' as const,
+    forgotPassword: '/forgot-password' as const,
+    resetPassword: '/reset-password' as const,
 
     user: makeParamProxy('/user/:id'),
     post: makeParamProxy('/post/:id'),

@@ -35,6 +35,7 @@ export default function PostsInfinite({
         () => data?.pages.flatMap((p) => p.data) ?? [],
         [data]
     );
+    filters.includeSender = true; //Ensure sender is always included
 
     const visible = React.useMemo(() => {
         const filtered =

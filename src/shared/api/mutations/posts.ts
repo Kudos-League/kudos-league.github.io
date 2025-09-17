@@ -42,20 +42,21 @@ export function useUpdatePost() {
                     )
                     : prev
             );
+
             qc.setQueriesData<{
-                data: PostDTO[];
+                data?: PostDTO[];
                 nextCursor?: number;
-                limit: number;
-            }>({ queryKey: ['posts', 'infinite'] }, (prev) =>
-                !prev
-                    ? prev
-                    : {
-                        ...prev,
-                        data: prev.data.map((p) =>
-                            p.id === updated.id ? { ...p, ...updated } : p
-                        )
-                    }
-            );
+                limit?: number;
+            }>({ queryKey: ['posts', 'infinite'] }, (prev) => {
+                if (!prev || !Array.isArray(prev.data)) return prev;
+                return {
+                    ...prev,
+                    data: prev.data.map((p) =>
+                        p.id === updated.id ? { ...p, ...updated } : p
+                    )
+                };
+            });
+
             pushAlert({ type: 'success', message: 'Post updated.' });
         },
         onError: (err) => {
@@ -66,7 +67,7 @@ export function useUpdatePost() {
 
 type LikeCtx = {
     prevList: PostDTO[] | undefined;
-    prevInfinite: Array<[QueryKey, { data: PostDTO[] } | undefined]>;
+    prevInfinite: Array<[QueryKey, { data?: PostDTO[] } | undefined]>;
 };
 
 export function useLikePost() {
@@ -81,7 +82,7 @@ export function useLikePost() {
             const infiniteFilter = { queryKey: ['posts', 'infinite'] as const };
 
             const prevList = qc.getQueryData<PostDTO[]>(listKey);
-            const prevInfinite = qc.getQueriesData<{ data: PostDTO[] }>(
+            const prevInfinite = qc.getQueriesData<{ data?: PostDTO[] }>(
                 infiniteFilter
             );
 
@@ -92,16 +93,16 @@ export function useLikePost() {
                     )
                     : prev
             );
-            qc.setQueriesData<{ data: PostDTO[] }>(infiniteFilter, (prev) =>
-                !prev
-                    ? prev
-                    : {
-                        ...prev,
-                        data: prev.data.map((p) =>
-                            p.id === id ? ({ ...p, liked: like } as any) : p
-                        )
-                    }
-            );
+
+            qc.setQueriesData<{ data?: PostDTO[] }>(infiniteFilter, (prev) => {
+                if (!prev || !Array.isArray(prev.data)) return prev;
+                return {
+                    ...prev,
+                    data: prev.data.map((p) =>
+                        p.id === id ? ({ ...p, liked: like } as any) : p
+                    )
+                };
+            });
 
             return { prevList, prevInfinite };
         },
@@ -124,7 +125,7 @@ export function useLikePost() {
 export function useReportPost() {
     return useMutation<void, Error, ReportPayload>({
         mutationFn: ({ id, reason }) =>
-            apiMutate<void, { reason: string }>(`/posts/${id}/report`, 'post', {
+            apiMutate<void, { reason: string }>(`/posts/${id}/report`, 'put', {
                 reason
             }),
         onSuccess: () => {
@@ -169,6 +170,23 @@ export function useCreatePost() {
                 prev ? [created, ...prev] : [created]
             );
             pushAlert({ type: 'success', message: 'Post created.' });
+        },
+        onError: (err) => {
+            pushAlert({ type: 'danger', message: extractErrMessage(err) });
+        }
+    });
+}
+
+export function useReportPastGift() {
+    const qc = useQueryClient();
+    return useMutation<PostDTO, Error, (CreatePostDTO & { receiverID: number })>({
+        mutationFn: (payload) =>
+            apiMutate<PostDTO, any>('/posts/past-gift', 'post', payload, {
+                as: 'form'
+            }),
+        onSuccess: (created) => {
+            qc.invalidateQueries({ queryKey: ['posts'] });
+            pushAlert({ type: 'success', message: 'Past gift logged.' });
         },
         onError: (err) => {
             pushAlert({ type: 'danger', message: extractErrMessage(err) });

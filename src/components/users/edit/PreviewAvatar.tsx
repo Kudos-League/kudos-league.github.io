@@ -10,7 +10,9 @@ function PreviewAvatar({
     previewUrl: string | null;
     targetUser: UserDTO;
 }) {
-    const avatar = previewUrl ? getImagePath(previewUrl) : getImagePath(targetUser.avatar);
+    const avatar = previewUrl
+        ? getImagePath(previewUrl)
+        : getImagePath(targetUser.avatar);
     if (previewUrl) {
         return (
             <img

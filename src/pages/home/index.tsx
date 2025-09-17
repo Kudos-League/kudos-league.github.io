@@ -1,5 +1,5 @@
 import React from 'react';
-import CurrentEvent from '@/components/events/CurrentEvent';
+import EventsCarousel from '@/components/events/EventsCarousel';
 import Button from '@/components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
@@ -34,7 +34,7 @@ export default function Feed() {
 
     return (
         <div className='max-w-4xl mx-auto space-y-4'>
-            <CurrentEvent />
+            <EventsCarousel />
 
             <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4'>
                 <h1 className='text-xl font-bold'>Welcome to Kudos League!</h1>
