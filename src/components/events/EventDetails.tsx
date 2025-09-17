@@ -4,6 +4,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 import { EventDTO, LocationDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
 import { apiMutate } from '@/shared/api/apiClient';
@@ -40,6 +41,7 @@ function EditEventButton({ onClick }: { onClick: () => void }) {
 
 export default function EventDetails({ event, setEvent }: Props) {
     const { user } = useAuth();
+    const queryClient = useQueryClient();
 
     const [joining, setJoining] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -119,16 +121,36 @@ export default function EventDetails({ event, setEvent }: Props) {
                 title: editData.title.trim(),
                 description: editData.description.trim(),
                 startTime: editData.startTime,
-                endTime: editData.endTime,
-                location: {
-                    ...editData.location,
-                    global: editData.global
-                } as LocationDTO
+                endTime: editData.endTime
             };
+
+            if (editData.global) {
+                updateData.location = { regionID: null, name: null, global: true } as unknown as LocationDTO;
+            }
+            else {
+                if (editData.location) {
+                    updateData.location = {
+                        regionID: editData.location.regionID ?? null,
+                        name: editData.location.name ?? null,
+                        global: false
+                    } as LocationDTO;
+                }
+                else {
+                    updateData.location = null;
+                }
+            }
 
             const updatedEvent = await apiMutate<EventDTO, any>(`/events/${event.id}`, 'put', updateData, { as: 'json' });
 
-            setEvent({ ...event, ...(updatedEvent as Partial<EventDTO>) } as EventDTO);
+            const serverEvent = updatedEvent as EventDTO;
+            setEvent(serverEvent);
+            try {
+                queryClient.setQueryData(['event', serverEvent.id], serverEvent);
+                queryClient.invalidateQueries({ queryKey: ['events'] });
+            }
+            catch (e) {
+                console.warn('Failed to update event cache after save', e);
+            }
             setIsEditing(false);
         }
         catch (err: any) {
