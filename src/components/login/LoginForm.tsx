@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { Alert, PasswordInput, TextInput, TinyHelpLink } from './fields';
+import { PasswordInput, TextInput, TinyHelpLink } from './fields';
 import OAuthGroup from './OAuthGroup';
+import Form from '@/components/forms/Form';
+import FormField from '@/components/forms/FormField';
 
 type LoginFormProps = {
     onSuccess?: () => void;
@@ -24,10 +26,9 @@ export default function LoginForm({
     initialError
 }: LoginFormProps) {
     const { login, token, logout } = useAuth();
-    const { register, handleSubmit, setValue } = useForm<FormValues>();
-    const [errorMessage, setErrorMessage] = useState<string | null>(
-        initialError ?? null
-    );
+    const methods = useForm<FormValues>({ mode: 'onBlur' });
+    const { setValue } = methods;
+    const [errorMessage, setErrorMessage] = useState<string | null>(initialError ?? null);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const navigate = useNavigate();
 
@@ -110,28 +111,52 @@ export default function LoginForm({
 
     return (
         <Auth title='Sign in to your account'>
-            <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+            <Form methods={methods} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
                 <div>
                     <div className='col-span-2'>
-                        <TextInput
-                            rounded='top'
-                            placeholder='Username'
-                            aria-label='Username'
-                            {...register('username')}
-                            onChange={(e) =>
-                                setValue('username', e.target.value)
-                            }
-                        />
+                        <FormField name='username' label='Username'>
+                            <Controller
+                                name='username'
+                                control={methods.control}
+                                rules={{ required: 'Username is required' }}
+                                render={({ field }) => (
+                                    <TextInput
+                                        rounded='top'
+                                        placeholder='Username'
+                                        aria-label='Username'
+                                        value={field.value || ''}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            setValue('username', e.target.value);
+                                        }}
+                                        onBlur={field.onBlur}
+                                    />
+                                )}
+                            />
+                        </FormField>
                     </div>
-                    <PasswordInput
-                        rounded='bottom'
-                        placeholder='Password'
-                        aria-label='Password'
-                        visible={passwordVisible}
-                        setVisible={setPasswordVisible}
-                        {...register('password')}
-                        onChange={(e) => setValue('password', e.target.value)}
-                    />
+                    <FormField name='password' helper=''>
+                        <Controller
+                            name='password'
+                            control={methods.control}
+                            rules={{ required: 'Password is required' }}
+                            render={({ field }) => (
+                                <PasswordInput
+                                    rounded='bottom'
+                                    placeholder='Password'
+                                    aria-label='Password'
+                                    visible={passwordVisible}
+                                    setVisible={setPasswordVisible}
+                                    value={field.value || ''}
+                                    onChange={(e) => {
+                                        field.onChange(e);
+                                        setValue('password', e.target.value);
+                                    }}
+                                    onBlur={field.onBlur}
+                                />
+                            )}
+                        />
+                    </FormField>
                 </div>
 
                 <div className='flex items-center justify-between'>
@@ -165,44 +190,7 @@ export default function LoginForm({
                         Sign Up
                     </TinyHelpLink>
                 </p>
-
-                {errorMessage && (
-                    <Alert tone='error' title='Login Failed'>
-                        <p>{errorMessage}</p>
-                        {(() => {
-                            const m = errorMessage.toLowerCase();
-                            if (
-                                m.includes('verification') ||
-                                m.includes('verify') ||
-                                m.includes('email')
-                            ) {
-                                return (
-                                    <div className='mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200'>
-                                        <p className='text-xs font-medium'>
-                                            What to do next:
-                                        </p>
-                                        <ul className='ml-4 mt-2 list-disc text-xs'>
-                                            <li>
-                                                Check your inbox and spam folder
-                                            </li>
-                                            <li>
-                                                Find the verification email from
-                                                Kudos League
-                                            </li>
-                                            <li>Click the verification link</li>
-                                            <li>
-                                                If you can’t find it, contact
-                                                support
-                                            </li>
-                                        </ul>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
-                    </Alert>
-                )}
-            </form>
+            </Form>
         </Auth>
     );
 }

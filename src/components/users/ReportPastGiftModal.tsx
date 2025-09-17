@@ -4,9 +4,11 @@ import Input from '@/components/forms/Input';
 import DropdownPicker from '@/components/forms/DropdownPicker';
 import TagInput from '@/components/TagInput';
 import Button from '@/components/common/Button';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useCategories } from '@/shared/api/queries/categories';
 import { useReportPastGift } from '@/shared/api/mutations/posts';
+import Form from '@/components/forms/Form';
+import FormField from '@/components/forms/FormField';
 
 type FormValues = {
   title: string;
@@ -38,18 +40,25 @@ export default function ReportPastGiftModal({ open, onClose, receiverID }: { ope
 
     return (
         <Modal open={open} onClose={onClose} title='Log Past Gift'>
-            <div className='space-y-3'>
+            <Form methods={form} onSubmit={onSubmit} className='space-y-3'>
                 <Input name='title' label='Title *' form={form} registerOptions={{ required: true }} />
                 <Input name='body' label='Description *' form={form} registerOptions={{ required: true }} multiline />
-                <div>
-                    <label className='block text-sm font-semibold mt-2 text-gray-800 dark:text-gray-200'>Category</label>
-                    <DropdownPicker
-                        options={(categories as any[]).map((c) => ({ label: c.name, value: String(c.id) }))}
-                        value={String(form.watch('categoryID') || '')}
-                        onChange={(val) => form.setValue('categoryID', parseInt(val), { shouldValidate: true, shouldDirty: true })}
-                        placeholder={catsLoading ? 'Loading…' : 'Select a category'}
+                <FormField name='categoryID' label='Category'>
+                    <Controller
+                        control={form.control}
+                        name='categoryID'
+                        rules={{ validate: (v) => (v && v !== 0) || 'Please select a category.' }}
+                        render={({ field }) => (
+                            <DropdownPicker
+                                options={(categories as any[]).map((c) => ({ label: c.name, value: String(c.id) }))}
+                                value={String(field.value || '')}
+                                onChange={(val) => field.onChange(val ? parseInt(val) : 0)}
+                                onBlur={field.onBlur}
+                                placeholder={catsLoading ? 'Loading…' : 'Select a category'}
+                            />
+                        )}
                     />
-                </div>
+                </FormField>
                 <TagInput
                     initialTags={form.watch('tags')}
                     onTagsChange={(tags) => form.setValue('tags', tags.map((t) => t.name))}
@@ -60,11 +69,11 @@ export default function ReportPastGiftModal({ open, onClose, receiverID }: { ope
                 </div>
                 <div className='flex justify-end gap-2'>
                     <Button variant='ghost' onClick={onClose}>Cancel</Button>
-                    <Button variant='primary' onClick={form.handleSubmit(onSubmit)} disabled={mutate.isPending}>
+                    <Button variant='primary' type='submit' disabled={mutate.isPending}>
                         {mutate.isPending ? 'Saving…' : 'Submit'}
                     </Button>
                 </div>
-            </div>
+            </Form>
         </Modal>
     );
 }

@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
 import { Alert, PasswordInput, TextInput, TinyHelpLink } from './fields';
 import OAuthGroup from './OAuthGroup';
+import Form from '@/components/forms/Form';
+import FormField from '@/components/forms/FormField';
 
 type SignUpFormValues = {
     username: string;
     email: string;
+    password?: string;
+    confirmPassword?: string;
 };
 
 type SignUpFormProps = {
@@ -61,14 +65,12 @@ function AccessGate({ onContinue }: { onContinue: () => void }) {
 
 export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const { register: registerUser } = useAuth();
-    const form = useForm<SignUpFormValues>();
+    const form = useForm<SignUpFormValues>({ mode: 'onBlur' });
     const navigate = useNavigate();
 
     const [authorized, setAuthorized] = useState(false);
     const [pwVisible, setPwVisible] = useState(false);
     const [cpwVisible, setCpwVisible] = useState(false);
-    const [pw, setPw] = useState('');
-    const [cpw, setCpw] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
     const [successMessage, setSuccess] = useState<string | null>(null);
@@ -76,25 +78,19 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     if (!authorized)
         return <AccessGate onContinue={() => setAuthorized(true)} />;
 
-    const onSubmit = async () => {
-        const { username, email } = form.getValues();
+    const onSubmit = async (values: SignUpFormValues & { password?: string; confirmPassword?: string }) => {
+        const { username, email, password, confirmPassword } = values as any;
 
-        if (!username || !email || !pw)
-            return setError(
-                'Missing required fields: username, email, password'
-            );
-        if (username.length < 3)
-            return setError('Username must be at least 3 characters long.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-            return setError('Please enter a valid email address.');
-        if (pw.length < 6)
-            return setError('Password must be at least 6 characters long.');
-        if (pw !== cpw) return setError('Passwords do not match.');
+        // basic client-side checks already applied by rules, but keep confirm/password match here
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+
         setError(null);
-
         try {
             setIsVerifying(true);
-            const result = await registerUser(username, email, pw);
+            const result = await registerUser(username, email, password);
             setIsVerifying(false);
 
             if (typeof result === 'string') {
@@ -117,49 +113,53 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
     return (
         <Auth title='Create your account'>
-            <form onSubmit={(e) => e.preventDefault()} className='space-y-6'>
+            <Form methods={form} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
                 <div>
                     <div className='col-span-2'>
-                        <TextInput
-                            rounded='top'
-                            placeholder='Username'
-                            aria-label='Username'
-                            {...form.register('username')}
-                        />
+                        <FormField name='username' label='Username'>
+                            <Controller
+                                name='username'
+                                control={form.control}
+                                rules={{ required: 'Username is required', minLength: { value: 3, message: 'Username must be at least 3 characters' } }}
+                                render={({ field }) => (
+                                    <TextInput rounded='top' placeholder='Username' aria-label='Username' {...field} />
+                                )}
+                            />
+                        </FormField>
                     </div>
-                    <TextInput
-                        rounded='none'
-                        placeholder='Email'
-                        aria-label='Email'
-                        type='email'
-                        {...form.register('email')}
-                    />
-                    <PasswordInput
-                        rounded='none'
-                        placeholder='Password'
-                        aria-label='Password'
-                        visible={pwVisible}
-                        setVisible={setPwVisible}
-                        value={pw}
-                        onChange={(e) => setPw(e.target.value)}
-                    />
-                    <PasswordInput
-                        rounded='bottom'
-                        placeholder='Confirm Password'
-                        aria-label='Confirm Password'
-                        visible={cpwVisible}
-                        setVisible={setCpwVisible}
-                        value={cpw}
-                        onChange={(e) => setCpw(e.target.value)}
-                    />
+                    <FormField name='email' label='Email'>
+                        <Controller
+                            name='email'
+                            control={form.control}
+                            rules={{ required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } }}
+                            render={({ field }) => (
+                                <TextInput rounded='none' placeholder='Email' aria-label='Email' type='email' {...field} />
+                            )}
+                        />
+                    </FormField>
+                    <FormField name='password' label='Password'>
+                        <Controller
+                            name='password'
+                            control={form.control}
+                            rules={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
+                            render={({ field }) => (
+                                <PasswordInput rounded='none' placeholder='Password' aria-label='Password' visible={pwVisible} setVisible={setPwVisible} value={field.value || ''} onChange={(e) => field.onChange(e.target.value)} onBlur={field.onBlur} />
+                            )}
+                        />
+                    </FormField>
+                    <FormField name='confirmPassword' label='Confirm Password'>
+                        <Controller
+                            name='confirmPassword'
+                            control={form.control}
+                            rules={{ required: 'Please confirm your password' }}
+                            render={({ field }) => (
+                                <PasswordInput rounded='bottom' placeholder='Confirm Password' aria-label='Confirm Password' visible={cpwVisible} setVisible={setCpwVisible} value={field.value || ''} onChange={(e) => field.onChange(e.target.value)} onBlur={field.onBlur} />
+                            )}
+                        />
+                    </FormField>
                 </div>
 
-                <Button
-                    type='button'
-                    onClick={onSubmit}
-                    disabled={isVerifying}
-                    className='w-full'
-                >
+                <Button type='submit' disabled={isVerifying} className='w-full'>
                     {isVerifying ? 'Loading...' : 'Sign Up'}
                 </Button>
 
@@ -175,11 +175,10 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     </TinyHelpLink>
                 </p>
 
-                {errorMessage && <Alert tone='error'>{errorMessage}</Alert>}
                 {successMessage && (
                     <Alert tone='success'>{successMessage}</Alert>
                 )}
-            </form>
+            </Form>
         </Auth>
     );
 }
