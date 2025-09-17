@@ -4,7 +4,7 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
-import MessageList from '@/components/messages/MessageList';
+import MessageList from '@/components/posts/MessageList';
 import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
@@ -322,13 +322,19 @@ export default function PostDetails(props: Props) {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
 
-            const filteredMessages = (prev.messages || []).filter(
-                (msg) => msg.id !== deletedMessageId
+            const updatedMessages = (prev.messages || []).map((msg) =>
+                msg.id === deletedMessageId
+                    ? {
+                        ...msg,
+                        deletedAt: new Date().toISOString(),
+                        content: `[deleted]: ${msg.content}`
+                    }
+                    : msg
             );
 
             return {
                 ...prev,
-                messages: filteredMessages
+                messages: updatedMessages
             };
         });
     };
