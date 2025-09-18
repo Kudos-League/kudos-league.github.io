@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
+import { getHandshakeStage } from '@/shared/handshakeUtils';
 
 interface Props {
     handshake: HandshakeDTO;
@@ -47,28 +48,13 @@ const HandshakeCard: React.FC<Props> = ({
     const showBodyInImageBox =
         imgError || !handshake.post.images?.length || !imageSrc;
 
-    // ─── who is receiving the item? ──────────────────────────────────────────────
-    const canAccept = status === 'new' && userID === handshake.post.senderID;
-    const itemReceiverID =
-        handshake.post.type === 'gift'
-            ? handshake.senderID // a gift post: requester is handshake.sender
-            : handshake.post.senderID; // a request post: OP is the receiver
-
-    const gifterID =
-        handshake.post.type === 'gift'
-            ? handshake.post.senderID // giver = post owner
-            : handshake.senderID; // giver = handshake sender
-    const userIsItemReceiver = userID === itemReceiverID;
-
-    // Check if current user is a participant in this handshake
-    const isParticipant =
-        userID === handshake.senderID || userID === handshake.post.senderID;
-
-    // Determine the other user in the conversation
-    const otherUserID =
-        userID === handshake.senderID
-            ? handshake.post.senderID
-            : handshake.senderID;
+    // Prefer a precomputed stage (attached by PostDetails) to avoid mismatches
+    const stage = (handshake as any)._stage ?? getHandshakeStage(handshake, userID);
+    const canAccept = stage.canAccept;
+    const gifterID = stage.gifterID;
+    const userIsItemReceiver = stage.userIsItemReceiver;
+    const isParticipant = stage.isParticipant;
+    const otherUserID = stage.otherUserID;
 
     useEffect(() => {
         const fetchSender = async () => {
@@ -98,31 +84,24 @@ const HandshakeCard: React.FC<Props> = ({
 
             setLoadingMessage(true);
             try {
-                // Create or get DM channel between the two users
                 const channel = await apiMutate<ChannelDTO, any>('/channels', 'post', {
                     name: `DM: User ${userID} & User ${otherUserID}`,
                     channelType: 'dm',
                     userIDs: [userID, otherUserID]
                 });
-                console.log('DM Channel:', channel);
 
                 const messages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
-                console.log('All messages:', messages);
 
-                // Get the last message from the other user
                 const otherUserMessages = messages.filter(
                     (msg: MessageDTO) => msg.authorID === otherUserID
                 );
-                console.log('Other user messages:', otherUserMessages);
 
                 const lastMsg = otherUserMessages[otherUserMessages.length - 1];
-                console.log('Last message from other user:', lastMsg);
 
                 setLastMessage(lastMsg || null);
             }
             catch (err) {
                 console.error('Error fetching last message:', err);
-                // Don't show error to user, just silently fail
             }
             finally {
                 setLoadingMessage(false);
@@ -423,7 +402,7 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {((handshake.post.type === 'request' && handshake.post.senderID === userID) || (handshake.post.type === 'gift' && handshake.receiverID === userID)) && status === 'accepted' && (
+                {stage.canUndoAccept && status === 'accepted' && (
                     <Button
                         onClick={async () => {
                             try {
