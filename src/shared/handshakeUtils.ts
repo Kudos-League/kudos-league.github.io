@@ -8,6 +8,7 @@ export type HandshakeStage = {
     isParticipant: boolean;
     canAccept: boolean;
     canUndoAccept: boolean;
+    postIsPast: boolean;
     userIsItemReceiver: boolean;
     otherUserID?: number;
 };
@@ -38,10 +39,13 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         (receiverID !== undefined && receiverID === currentUserId)
     );
 
-    const canAccept = status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID === currentUserId;
+    const postIsPast = !!handshake?.post?.isPast;
+
+    const canAccept = !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID === currentUserId;
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
 
     const canUndoAccept = (() => {
+        if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
             return postSenderID !== undefined && postSenderID === currentUserId;
@@ -68,6 +72,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         isParticipant,
         canAccept,
         canUndoAccept,
+        postIsPast,
         userIsItemReceiver,
         otherUserID
     };

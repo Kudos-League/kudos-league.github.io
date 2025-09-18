@@ -201,7 +201,7 @@ const HandshakeCard: React.FC<Props> = ({
                                   status.slice(1)}
                         </span>
 
-                        {isSender && status === 'new' && (
+                        {isSender && status === 'new' && !stage.postIsPast && (
                             <Tippy content='Rescind Offer'>
                                 <Button
                                     variant='danger'
@@ -324,7 +324,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {canAccept && (
+                    {canAccept && !stage.postIsPast && (
                         <Button
                             className={`
                                 relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
@@ -402,7 +402,7 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {stage.canUndoAccept && status === 'accepted' && (
+                {stage.canUndoAccept && status === 'accepted' && !stage.postIsPast && (
                     <Button
                         onClick={async () => {
                             try {
