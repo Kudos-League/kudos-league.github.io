@@ -4,13 +4,14 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
-import MessageList from '@/components/messages/MessageList';
+import MessageList from '@/components/posts/MessageList';
 import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
+import { getHandshakeStage } from '@/shared/handshakeUtils';
 // import Alert from '@/components/common/Alert';
 import {
     useUpdatePost,
@@ -81,7 +82,7 @@ export default function PostDetails(props: Props) {
         itemsLimit: '' as string
     });
     const [modalVisible, setModalVisible] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [showAllHandshakes, setShowAllHandshakes] = useState(false);
@@ -90,9 +91,7 @@ export default function PostDetails(props: Props) {
     const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(
         null
     );
-    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
-        null
-    );
+    const [selectedChannel] = useState<ChannelDTO | null>(null);
 
     // Add this helper function at the top of your PostDetails component,
     // right after the imports and before the main component function:
@@ -227,10 +226,13 @@ export default function PostDetails(props: Props) {
             const { data: newHandshake } =
                 await createHsMut.mutateAsync(handshakeData);
 
-            setPostDetails((prevDetails: PostDTO) => ({
-                ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
-            }));
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+                return {
+                    ...prevDetails,
+                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                } as PostDTO;
+            });
 
             alert(
                 'Handshake created successfully! You can now coordinate the details with the post owner.'
@@ -284,10 +286,13 @@ export default function PostDetails(props: Props) {
             const { data: newHandshake } =
                 await createHsMut.mutateAsync(handshakeData);
 
-            setPostDetails((prevDetails: PostDTO) => ({
-                ...prevDetails!,
-                handshakes: [...(prevDetails?.handshakes || []), newHandshake]
-            }));
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+                return {
+                    ...prevDetails,
+                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                } as PostDTO;
+            });
 
             alert(
                 'Handshake created successfully! You can now coordinate the details with the post owner.'
@@ -322,25 +327,32 @@ export default function PostDetails(props: Props) {
         setPostDetails((prev: PostDTO) => {
             if (!prev) return prev;
 
-            const filteredMessages = (prev.messages || []).filter(
-                (msg) => msg.id !== deletedMessageId
+            const updatedMessages = (prev.messages || []).map((msg) =>
+                msg.id === deletedMessageId
+                    ? {
+                        ...msg,
+                        deletedAt: new Date().toISOString(),
+                        content: `[deleted]: ${msg.content}`
+                    }
+                    : msg
             );
 
             return {
                 ...prev,
-                messages: filteredMessages
+                messages: updatedMessages
             };
         });
     };
 
     const handleHandshakeDeleted = (id: number) => {
         if (!postDetails) return;
-        setPostDetails((prev: any) => ({
-            ...prev!,
-            handshakes: prev!.handshakes.filter(
-                (h: { id: number }) => h.id !== id
-            )
-        }));
+        setPostDetails((prev: PostDTO | undefined) => {
+            if (!prev) return prev as any;
+            return {
+                ...prev,
+                handshakes: (prev.handshakes || []).filter((h: { id: number }) => h.id !== id)
+            } as PostDTO;
+        });
     };
 
     const handleReport = async () => {
@@ -723,9 +735,10 @@ export default function PostDetails(props: Props) {
 
                 <Handshakes
                     handshakes={sortHandshakesWithUserFirst(
-                        postDetails.handshakes?.map((h) => ({
+                        (postDetails.handshakes || []).map((h) => ({
                             ...h,
-                            post: postDetails
+                            post: postDetails,
+                            _stage: getHandshakeStage({ ...h, post: postDetails }, user?.id)
                         })) || [],
                         user?.id
                     )}
@@ -746,7 +759,7 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
-                    showPostDetails
+                    showPostDetails={false}
                 />
                 {/* Create handshake button if not the sender */}
                 {postDetails.status !== 'closed' &&

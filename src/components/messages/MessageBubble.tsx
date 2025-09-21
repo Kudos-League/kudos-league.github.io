@@ -83,7 +83,14 @@ const MessageBubble: React.FC<Props> = ({
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-none border border-zinc-300 dark:border-zinc-600'
                     }`}
                 >
-                    <TextWithLinks>{message.content}</TextWithLinks>
+                    {message.deletedAt ? (
+                        <div className='text-zinc-500 dark:text-teal-300 italic opacity-80'>
+                            <span className='font-semibold mr-1'>[deleted]:</span>
+                            <span className='whitespace-pre-wrap'>{message.content}</span>
+                        </div>
+                    ) : (
+                        <TextWithLinks>{message.content}</TextWithLinks>
+                    )}
 
                     <div
                         className={`absolute z-10 -top-3 ${
@@ -92,20 +99,22 @@ const MessageBubble: React.FC<Props> = ({
                     >
                         <button
                             type='button'
-                            title='Reply'
+                            title={message.deletedAt ? 'Message deleted' : 'Reply'}
                             onClick={() => onReply?.(message)}
-                            className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                            disabled={Boolean(message.deletedAt)}
+                            className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
-                            <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
                         {canDelete && (
                             <button
                                 type='button'
-                                title='Delete'
+                                title={message.deletedAt ? 'Message deleted' : 'Delete'}
                                 onClick={() => onDelete?.(message)}
-                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                             >
-                                <TrashIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                             </button>
                         )}
                     </div>

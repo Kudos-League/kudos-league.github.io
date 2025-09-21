@@ -198,7 +198,18 @@ export default function Chat({ channelType }: Props) {
     const handleDeleteMessage = async (messageId: number) => {
         try {
             await deleteMessageMutation.mutateAsync(messageId);
-            setMessages(prev => prev.filter(m => m.id !== messageId));
+            const original = messages.find((m) => m.id === messageId);
+            if (!original) {
+                setMessages((prev) => prev.filter((m) => m.id !== messageId));
+                return;
+            }
+
+            const enriched = {
+                ...original,
+                deletedAt: new Date().toISOString()
+            } as any;
+
+            setMessages((prev) => prev.map((m) => (m.id === messageId ? enriched : m)));
         }
         catch (err) {
             console.error('Failed to delete message:', err);
