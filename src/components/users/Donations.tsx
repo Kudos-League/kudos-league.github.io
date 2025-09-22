@@ -27,21 +27,34 @@ export default function DonationsList() {
 
     return (
         <div className='space-y-3'>
-            {all.map((d) => (
-                <div key={d.invoiceID} className='p-3 border rounded'>
-                    <div className='text-sm text-gray-600'>ID: {d.invoiceID}</div>
-                    <div className='font-medium'>Amount: ${(d.amount ?? 0) / 100}</div>
-                    {d.interval && <div className='text-sm'>Interval: {d.interval}</div>}
-                    {d.kudos !== undefined && d.kudos !== null && (
-                        <div className='text-sm'>Kudos awarded: {d.kudos}</div>
-                    )}
-                    {d.createdAt && (
-                        <div className='text-xs text-gray-400'>
-                            {timeAgoLabel(d.createdAt)}
+            {all.map((d) => {
+                const displayKudos = d.kudosLogDelta ?? d.kudos ?? undefined;
+                const displayCreatedAt = d.kudosLogCreatedAt ?? d.createdAt ?? undefined;
+
+                return (
+                    <div key={d.invoiceID} className='p-3 border rounded'>
+                        <div className='flex items-center justify-between'>
+                            <div className='text-sm text-gray-600'>ID: {d.invoiceID}</div>
+                            {d.kudosLogID ? (
+                                <div className='text-xs bg-gray-100 px-2 py-1 rounded text-gray-700'>
+                                    Log #{d.kudosLogID}
+                                </div>
+                            ) : null}
                         </div>
-                    )}
-                </div>
-            ))}
+
+                        <div className='font-medium'>Amount: ${(d.amount ?? 0) / 100}</div>
+                        {d.interval && <div className='text-sm'>Interval: {d.interval}</div>}
+                        {displayKudos !== undefined && displayKudos !== null && (
+                            <div className='text-sm'>Kudos awarded: {displayKudos}</div>
+                        )}
+                        {displayCreatedAt && (
+                            <div className='text-xs text-gray-400'>
+                                {timeAgoLabel(displayCreatedAt)}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
 
             <div className='text-center'>
                 {hasNextPage ? (
