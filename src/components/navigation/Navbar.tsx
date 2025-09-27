@@ -31,7 +31,8 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
             { name: 'Donate', to: routes.donate },
             { name: 'Leaderboard', to: routes.leaderboard },
             { name: 'Forum', to: routes.chat },
-            { name: 'Events', to: routes.events }
+            { name: 'Events', to: routes.events },
+            { name: 'About', to: routes.about },
         );
         if (isAdmin) {
             base.push({ name: 'Admin', to: routes.admin });
