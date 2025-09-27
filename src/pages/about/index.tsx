@@ -13,7 +13,7 @@ const About = () => {
                     We want to incentivize people to create better communities by helping each other.
                 </p>
                 <p className='text-lg font-semibold bg-white/20 rounded-lg p-3 inline-block'>
-                    Each time you help someone, they can give you points (Kudos) as a reward!
+                    Each time you help someone, they can give you points (Kudos) as a reward!                
                 </p>
             </div>
 
@@ -179,26 +179,41 @@ const About = () => {
                 <p className='text-xl mb-4 opacity-90'>
                     Everything is better when it&apos;s free!
                 </p>
-                <p className='text-lg'>
-                    We operate under an open source license - transparency for everyone!
+                <p className='text-lg font-semibold'>
+                    We operate with full transparency under an open source license!
+                </p>
+            </div>
+            <div className='bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white rounded-lg p-8 text-center shadow-xl space-y-6'>
+                <h2 className='text-4xl font-extrabold tracking-wider'>
+                    🤝 COMMUNITY DRIVEN
+                </h2>
+                <p className='text-xl font-bold opacity-90'>
+                    More Kudos = Higher chance of getting help!
+                </p>
+                <p className='text-lg opacity-85'>
+                    We still think that those who need it most should receive more help but this is our way of saying thank you!
+                </p>
+                <p className='text-md opacity-75'>
+                    That&apos;s how we believe communities should be built!
                 </p>
             </div>
 
+
             {/* Call to Action */}
-            <div className='text-center bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-8'>
-                <h2 className='text-2xl font-semibold mb-4'>
-                    Ready to Start Helping and Earning Kudos?
+            <div className='text-center bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg p-8'>
+                <h2 className='text-2xl font-bold mb-4'>
+                    Ready to Join and Earn Kudos?
                 </h2>
                 <div className='space-x-4'>
                     <a 
                         href='/sign-up' 
-                        className='inline-block bg-white text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors'
+                        className='inline-block bg-white text-emerald-600 px-6 py-2 rounded-lg font-bold hover:bg-emerald-50 transition-colors'
                     >
-                        Join the Community
+                        Join Now
                     </a>
                     <a 
                         href='/login' 
-                        className='inline-block border border-white text-white px-6 py-2 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors'
+                        className='inline-block border-2 border-white text-white px-6 py-2 rounded-lg font-bold hover:bg-white hover:text-emerald-600 transition-colors'
                     >
                         Log In
                     </a>
