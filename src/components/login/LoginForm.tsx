@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useController, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
@@ -20,6 +20,52 @@ type FormValues = {
     username: string;
     password: string;
 };
+
+const passwordInputClasses = 'w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
+
+type PasswordFieldProps = {
+    name: keyof FormValues;
+    form: UseFormReturn<FormValues>;
+    placeholder?: string;
+    registerOptions?: RegisterOptions<FormValues>;
+};
+
+function PasswordField({ name, form, placeholder, registerOptions }: PasswordFieldProps) {
+    const { field } = useController<FormValues>({
+        control: form.control,
+        name,
+        rules: registerOptions
+    });
+
+    const [visible, setVisible] = useState(false);
+
+    return (
+        <div className='my-2'>
+            <div className='relative'>
+                <input
+                    id={name}
+                    ref={field.ref}
+                    type={visible ? 'text' : 'password'}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    placeholder={placeholder}
+                    autoComplete={name === 'password' ? 'current-password' : undefined}
+                    className={`${passwordInputClasses} pr-10`}
+                />
+                <button
+                    type='button'
+                    onClick={() => setVisible((prev) => !prev)}
+                    className='absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-300'
+                    aria-label={visible ? 'Hide password' : 'Show password'}
+                    title={visible ? 'Hide password' : 'Show password'}
+                >
+                    {visible ? '🙈' : '👁️'}
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export default function LoginForm({
     onSuccess,
@@ -124,13 +170,11 @@ export default function LoginForm({
                         </FormField>
                     </div>
                     <FormField name='password'>
-                        <Input
+                        <PasswordField
                             name='password'
-                            label=''
                             placeholder='Password'
                             form={methods}
                             registerOptions={{ required: 'Password is required' }}
-                            htmlInputType='password'
                         />
                     </FormField>
                 </div>
