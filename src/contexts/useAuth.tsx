@@ -6,6 +6,7 @@ import { isJwt } from '@/shared/constants';
 import { setAuthToken } from '@/shared/api/httpClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiMutate, apiGet } from '@/shared/api/apiClient';
+import { clearAlerts } from '@/components/common/alertBus';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -183,6 +184,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserProfile(null);
         dispatch(updateAuth({} as any));
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        clearAlerts();
     };
 
     const signUpHandler = async (

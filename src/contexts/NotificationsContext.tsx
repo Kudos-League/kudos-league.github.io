@@ -44,7 +44,14 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [dispatch, token, user?.id]);
 
     useEffect(() => {
-        if (!token) return;
+        if (!token) {
+            if (socketRef.current && joinedUserId.current != null) {
+                socketRef.current.emit('leaveUser', { userID: joinedUserId.current });
+            }
+            joinedUserId.current = null;
+            socketRef.current = null;
+            return;
+        }
 
         const sock = getSocket(token);
         socketRef.current = sock;
@@ -96,6 +103,16 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         else if (sock.connected) {
             handleConnect();
         }
+
+        return () => {
+            sock.off('connect', handleConnect);
+            sock.off(Events.NOTIFICATION_CREATE, handleNotification);
+            sock.off('notification', handleNotification);
+            if (joinedUserId.current != null) {
+                sock.emit('leaveUser', { userID: joinedUserId.current });
+                joinedUserId.current = null;
+            }
+        };
     }, [dispatch, token, user?.id]);
 
     const value = useMemo<Ctx>(
