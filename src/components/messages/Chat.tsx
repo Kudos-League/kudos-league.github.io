@@ -8,8 +8,9 @@ import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { usePublicChannels } from '@/shared/api/queries/messages';
-import { useDeleteMessage } from '@/shared/api/mutations/messages';
+import { useDeleteMessage, useUpdateMessage } from '@/shared/api/mutations/messages';
 import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
 
 type Props = {
     channelType?: 'dm' | 'public'
@@ -29,6 +30,9 @@ export default function Chat({ channelType }: Props) {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const [editingMessage, setEditingMessage] = useState<MessageDTO | null>(null);
+    const [editContent, setEditContent] = useState('');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     const channelsQuery = usePublicChannels();
     const location = useLocation();
@@ -195,6 +199,7 @@ export default function Chat({ channelType }: Props) {
     };
 
     const deleteMessageMutation = useDeleteMessage();
+    const updateMessageMutation = useUpdateMessage();
     const handleDeleteMessage = async (messageId: number) => {
         try {
             await deleteMessageMutation.mutateAsync(messageId);
@@ -214,6 +219,48 @@ export default function Chat({ channelType }: Props) {
         catch (err) {
             console.error('Failed to delete message:', err);
             alert('Failed to delete message. Please try again.');
+        }
+    };
+
+    const handleEditMessage = (message: MessageDTO) => {
+        if (message.deletedAt) return;
+        setEditingMessage(message);
+        setEditContent(message.content ?? '');
+    };
+
+    const closeEditModal = () => {
+        setEditingMessage(null);
+        setEditContent('');
+        setIsSavingEdit(false);
+    };
+
+    const submitEditedMessage = async () => {
+        if (!editingMessage) return;
+        const trimmed = editContent.trim();
+        if (!trimmed) return;
+        if (trimmed === editingMessage.content) {
+            closeEditModal();
+            return;
+        }
+
+        try {
+            setIsSavingEdit(true);
+            const response = await updateMessageMutation.mutateAsync({ id: editingMessage.id, content: trimmed });
+            const merged: MessageDTO = {
+                ...editingMessage,
+                ...response,
+                content: response.content ?? trimmed,
+                author: editingMessage.author || response.author,
+                authorID: editingMessage.authorID ?? response.authorID ?? editingMessage.author?.id
+            };
+
+            setMessages((prev) => prev.map((m) => (m.id === editingMessage.id ? merged : m)));
+            closeEditModal();
+        }
+        catch (err) {
+            console.error('Failed to update message:', err);
+            alert('Failed to update message. Please try again.');
+            setIsSavingEdit(false);
         }
     };
 
@@ -237,120 +284,163 @@ export default function Chat({ channelType }: Props) {
         : { minHeight: '60vh', boxSizing: 'border-box', overflow: 'hidden' };
 
     return (
-        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
-            <div className='md:hidden w-full h-full min-h-0'>
-                <div className='p-3 flex flex-col h-full min-h-0'>
-                    <div className='flex items-center justify-between mb-2'>
-                        <div className='text-sm font-semibold'>Messages</div>
-                        <button
-                            onClick={() => setDrawerOpen(true)}
-                            className='rounded-md bg-gray-950/5 p-2 text-sm font-semibold text-gray-900 hover:bg-gray-950/10 dark:bg-white/10 dark:text-white'
-                            aria-label='Open channels'
-                        >
-                            <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                                <path fillRule='evenodd' d='M3 5h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2z' clipRule='evenodd' />
-                            </svg>
-                        </button>
-                    </div>
-                    {!showChatOnMobile ? (
-                        isDMView ? (
-                            <DMList
-                                channels={channels}
-                                onSelect={openChat}
-                                searchQuery={searchQuery}
-                                selectedChannel={selectedChannel}
-                                isMobile={true}
-                            />
+        <>
+            <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
+                <div className='md:hidden w-full h-full min-h-0'>
+                    <div className='p-3 flex flex-col h-full min-h-0'>
+                        <div className='flex items-center justify-between mb-2'>
+                            <div className='text-sm font-semibold'>Messages</div>
+                            <button
+                                onClick={() => setDrawerOpen(true)}
+                                className='rounded-md bg-gray-950/5 p-2 text-sm font-semibold text-gray-900 hover:bg-gray-950/10 dark:bg-white/10 dark:text-white'
+                                aria-label='Open channels'
+                            >
+                                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                                    <path fillRule='evenodd' d='M3 5h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2z' clipRule='evenodd' />
+                                </svg>
+                            </button>
+                        </div>
+                        {!showChatOnMobile ? (
+                            isDMView ? (
+                                <DMList
+                                    channels={channels}
+                                    onSelect={openChat}
+                                    searchQuery={searchQuery}
+                                    selectedChannel={selectedChannel}
+                                    isMobile={true}
+                                />
+                            ) : (
+                                <div className='p-3'>
+                                    {channels.map((channel) => (
+                                        <Button
+                                            key={channel.id}
+                                            onClick={() => openChat(channel)}
+                                            className={`block w-full text-left px-3 py-2 mb-1 rounded ${
+                                                selectedChannel?.id === channel.id
+                                                    ? 'bg-blue-100 font-semibold text-blue-800'
+                                                    : 'hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {channel.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            )
                         ) : (
-                            <div className='p-3'>
-                                {channels.map((channel) => (
-                                    <Button
-                                        key={channel.id}
-                                        onClick={() => openChat(channel)}
-                                        className={`block w-full text-left px-3 py-2 mb-1 rounded ${
-                                            selectedChannel?.id === channel.id
-                                                ? 'bg-blue-100 font-semibold text-blue-800'
-                                                : 'hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {channel.name}
-                                    </Button>
-                                ))}
+                            <div className='flex-1 min-h-0 flex flex-col'>
+                                <ChatWindow
+                                    user={user}
+                                    channel={selectedChannel}
+                                    messages={messages}
+                                    onSend={sendMessage}
+                                    onBack={() => setShowChatOnMobile(false)}
+                                    isMobile={true}
+                                    onEdit={handleEditMessage}
+                                    allowEdit={isDMView}
+                                />
                             </div>
-                        )
+                        )}
+                    </div>
+                </div>
+
+                <div className='hidden md:flex w-full h-full min-h-0'>
+                    {isDMView ? (
+                        <DMList
+                            channels={channels}
+                            onSelect={openChat}
+                            searchQuery={searchQuery}
+                            selectedChannel={selectedChannel}
+                            isMobile={false}
+                        />
                     ) : (
-                        <div className='flex-1 min-h-0 flex flex-col'>
-                            <ChatWindow
-                                user={user}
-                                channel={selectedChannel}
-                                messages={messages}
-                                onSend={sendMessage}
-                                onBack={() => setShowChatOnMobile(false)}
-                                isMobile={true}
-                            />
+                        <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
+                            {channels.map((channel) => (
+                                <Button
+                                    key={channel.id}
+                                    onClick={() => selectChannel(channel)}
+                                    className={`block w-full text-left px-3 py-2 mb-1 rounded ${
+                                        selectedChannel?.id === channel.id
+                                            ? 'bg-blue-100 font-semibold text-blue-800'
+                                            : 'hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {channel.name}
+                                </Button>
+                            ))}
                         </div>
                     )}
-                </div>
-            </div>
 
-            <div className='hidden md:flex w-full h-full min-h-0'>
-                {isDMView ? (
-                    <DMList
-                        channels={channels}
-                        onSelect={openChat}
-                        searchQuery={searchQuery}
-                        selectedChannel={selectedChannel}
-                        isMobile={false}
-                    />
-                ) : (
-                    <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
-                        {channels.map((channel) => (
-                            <Button
-                                key={channel.id}
-                                onClick={() => selectChannel(channel)}
-                                className={`block w-full text-left px-3 py-2 mb-1 rounded ${
-                                    selectedChannel?.id === channel.id
-                                        ? 'bg-blue-100 font-semibold text-blue-800'
-                                        : 'hover:bg-gray-200'
-                                }`}
-                            >
-                                {channel.name}
-                            </Button>
-                        ))}
+                    <div className='flex-1 flex flex-col'>
+                        <ChatWindow
+                            user={user}
+                            channel={selectedChannel}
+                            messages={messages}
+                            onSend={(text) => sendMessage(text)}
+                            onBack={() => {
+                                if (selectedChannel) leaveChannel(selectedChannel.id);
+                                setSelectedChannel(null);
+                            }}
+                            isMobile={false}
+                            onDelete={(m) => handleDeleteMessage(m.id)}
+                            allowDelete={true}
+                            onEdit={handleEditMessage}
+                            allowEdit={isDMView}
+                        />
                     </div>
-                )}
 
-                <div className='flex-1 flex flex-col'>
-                    <ChatWindow
-                        user={user}
-                        channel={selectedChannel}
-                        messages={messages}
-                        onSend={(text) => sendMessage(text)}
-                        onBack={() => {
-                            if (selectedChannel) leaveChannel(selectedChannel.id);
-                            setSelectedChannel(null);
+                    <ChannelDrawer
+                        open={drawerOpen}
+                        onClose={setDrawerOpen}
+                        channels={channels}
+                        onSelect={(c) => {
+                            if (c.type === 'dm') {
+                                const otherUser = (c as any).otherUser;
+                                if (otherUser) navigate(`/dms/${otherUser.id}`);
+                            }
+                            selectChannel(c);
+                            setShowChatOnMobile(true);
                         }}
-                        isMobile={false}
-                        onDelete={(m) => handleDeleteMessage(m.id)}
-                        allowDelete={true}
+                        isDMView={isDMView}
                     />
                 </div>
-
-                <ChannelDrawer
-                    open={drawerOpen}
-                    onClose={setDrawerOpen}
-                    channels={channels}
-                    onSelect={(c) => {
-                        if (c.type === 'dm') {
-                            const otherUser = (c as any).otherUser;
-                            if (otherUser) navigate(`/dms/${otherUser.id}`);
-                        }
-                        selectChannel(c);
-                        setShowChatOnMobile(true);
-                    }}
-                    isDMView={isDMView}
-                />
             </div>
-        </div>
+
+            <Modal
+                open={Boolean(editingMessage)}
+                onClose={closeEditModal}
+                title='Edit message'
+            >
+                <div className='space-y-4'>
+                    <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className='w-full min-h-[120px] border border-zinc-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white'
+                        placeholder='Update your message'
+                        maxLength={2000}
+                    />
+                    <div className='flex justify-end gap-2'>
+                        <Button
+                            type='button'
+                            variant='secondary'
+                            onClick={closeEditModal}
+                            disabled={isSavingEdit}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type='button'
+                            onClick={submitEditedMessage}
+                            disabled={
+                                isSavingEdit ||
+                                !editContent.trim() ||
+                                (editingMessage ? editContent.trim() === editingMessage.content : false)
+                            }
+                        >
+                            {isSavingEdit ? 'Saving...' : 'Save changes'}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+        </>
     );
 }

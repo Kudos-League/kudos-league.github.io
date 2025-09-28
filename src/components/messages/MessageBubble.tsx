@@ -2,7 +2,7 @@ import React from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import TextWithLinks from '../common/TextWithLinks';
 import UserCard from '../users/UserCard';
-import { ArrowUturnLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowUturnLeftIcon, TrashIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 interface Props {
     message: MessageDTO;
@@ -12,6 +12,8 @@ interface Props {
     onDelete?: (m: MessageDTO) => void;
     canDelete?: boolean;
     replyTo?: MessageDTO | null;
+    onEdit?: (m: MessageDTO) => void;
+    canEdit?: boolean;
 }
 
 const MessageBubble: React.FC<Props> = ({
@@ -20,14 +22,16 @@ const MessageBubble: React.FC<Props> = ({
     onReply,
     onDelete,
     canDelete = false,
-    replyTo
+    replyTo,
+    onEdit,
+    canEdit = false
 }) => {
     return (
         <div
             id={`msg-${message.id}`}
             className={`group relative flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}
         >
-            <div className={`max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
+            <div className={`max-w-full md:max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
                 {replyTo && (
                     <div
                         className={`${isOwn ? 'text-right' : 'text-left'} mb-1`}
@@ -94,7 +98,7 @@ const MessageBubble: React.FC<Props> = ({
 
                     <div
                         className={`absolute z-10 -top-3 ${
-                            isOwn ? 'left-2' : 'right-2'
+                            isOwn ? 'right-2' : 'left-2'
                         } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
                     >
                         <button
@@ -106,6 +110,17 @@ const MessageBubble: React.FC<Props> = ({
                         >
                             <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
+                        {canEdit && (
+                            <button
+                                type='button'
+                                title={message.deletedAt ? 'Message deleted' : 'Edit'}
+                                onClick={() => onEdit?.(message)}
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                            >
+                                <PencilSquareIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            </button>
+                        )}
                         {canDelete && (
                             <button
                                 type='button'

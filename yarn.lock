@@ -12668,12 +12668,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:^7.56.4":
-  version: 7.56.4
-  resolution: "react-hook-form@npm:7.56.4"
+"react-hook-form@npm:^7.63.0":
+  version: 7.63.0
+  resolution: "react-hook-form@npm:7.63.0"
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10/ebb4d447aae47fbbac380ddf4f9cca0c9fb51bf962099174cad3233a5a569135fdb7879152a119862e596f602a7c5179625c1fb2fdfaa01f7be45d16d796d99d
+  checksum: 10/df07de6fce42bbcd65ed100aaea7d0e907c555c2635c253517225c84f06eab0ebd278578ada4f479ad582c18a52898c4f1cabca327a12a74b8b7e6e54718edbe
   languageName: node
   linkType: hard
 
@@ -12928,7 +12928,7 @@ __metadata:
     react-big-calendar: "npm:^1.19.2"
     react-dom: "npm:^19.1.0"
     react-error-boundary: "npm:^6.0.0"
-    react-hook-form: "npm:^7.56.4"
+    react-hook-form: "npm:^7.63.0"
     react-icons: "npm:^5.5.0"
     react-redux: "npm:^9.2.0"
     react-router-dom: "npm:^7.6.0"
