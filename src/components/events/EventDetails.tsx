@@ -8,7 +8,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { EventDTO, LocationDTO, UserDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
-import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
@@ -424,14 +423,11 @@ export default function EventDetails({ event, setEvent }: Props) {
                             event.participants.map((p: any) => (
                                 <div
                                     key={p.id}
-                                    className='flex items-center gap-3 border p-2 rounded'
+                                    className='flex items-center gap-3 border p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'
                                 >
-                                    <img
-                                        src={getImagePath(p.avatar)}
-                                        alt={p.username}
-                                        className='w-10 h-10 rounded-full'
-                                    />
-                                    <span className='font-medium'>{p.username}</span>
+                                    <div className='flex-1'>
+                                        <UserCard user={p} large />
+                                    </div>
                                     {p.id === user?.id && (
                                         <Button
                                             variant='danger'
