@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '@/components/common/Button';
-import { disconnectProvider } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 
 type Provider = 'discord' | 'google';
@@ -31,7 +31,7 @@ export default function OAuthDisconnectButton({
         if (!token || pending) return;
         try {
             setPending(true);
-            await disconnectProvider(provider, token);
+            await apiMutate(`/users/connections/${provider}`, 'delete');
             if (provider === 'discord') updateUser({ discordID: undefined as any });
             if (provider === 'google') updateUser({ googleID: undefined as any });
             onSuccess?.();

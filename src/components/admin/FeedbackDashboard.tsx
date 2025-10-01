@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
-import {
-    deleteFeedback,
-    updateFeedback,
-    resolveFeedback
-} from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import Button from '../common/Button';
 import RewardKudosModal from './RewardKudosModal';
 import UserCard from '../users/UserCard';
@@ -15,12 +11,12 @@ type Props = {
 };
 
 export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
-    const { token } = useAuth();
+    useAuth();
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
 
     const handleDelete = async (id: number) => {
         try {
-            await deleteFeedback(id, token);
+            await apiMutate<void, void>(`/feedback/${id}`, 'delete');
             setFeedbacks((prev) => prev.filter((f) => f.id !== id));
         }
         catch (err) {
@@ -39,7 +35,9 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
         status: 'ignored' | 'resolved' | 'new'
     ) => {
         try {
-            await updateFeedback(id, { status }, token);
+            await apiMutate<void, { status: string }>(`/feedback/${id}`, 'put', {
+                status
+            });
             updateLocal(id, { status });
         }
         catch (err) {
@@ -49,8 +47,18 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
     };
 
     const resolveWithReward = async (id: number, rewardKudos: number) => {
-        await resolveFeedback(id, rewardKudos, token);
-        updateLocal(id, { status: 'resolved', rewardKudos });
+        try {
+            await apiMutate<void, { rewardKudos: number }>(
+                `/feedback/${id}/resolve`,
+                'put',
+                { rewardKudos }
+            );
+            updateLocal(id, { status: 'resolved', rewardKudos });
+        }
+        catch (err) {
+            console.error('Failed to resolve feedback:', err);
+            alert('Error resolving feedback');
+        }
     };
 
     return (

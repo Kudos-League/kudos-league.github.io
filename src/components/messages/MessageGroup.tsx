@@ -12,6 +12,8 @@ interface MessageGroupProps {
     onDelete?: (m: MessageDTO) => void;
     canDelete?: (m: MessageDTO) => boolean;
     findMessageById?: (id: number) => MessageDTO | undefined;
+    onEdit?: (m: MessageDTO) => void;
+    canEdit?: (m: MessageDTO) => boolean;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
@@ -22,7 +24,9 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     onReply,
     onDelete,
     canDelete,
-    findMessageById
+    findMessageById,
+    onEdit,
+    canEdit
 }) => {
     if (messages.length === 0) return null;
 
@@ -70,6 +74,8 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     onReply={onReply}
                     onDelete={onDelete}
                     canDelete={canDelete ? canDelete(msg) : false}
+                    onEdit={onEdit}
+                    canEdit={canEdit ? canEdit(msg) : false}
                     replyTo={
                         msg.replyToMessageID && findMessageById
                             ? (findMessageById(msg.replyToMessageID) ?? null)

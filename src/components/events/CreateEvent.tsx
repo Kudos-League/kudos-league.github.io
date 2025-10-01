@@ -11,16 +11,10 @@ export default function CreateEvent() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    // Create event mutation with onSuccess callback to invalidate cache
     const createEvent = useCreateEvent({
         onSuccess: () => {
-            // Invalidate and refetch events queries
             queryClient.invalidateQueries({ queryKey: ['events'] });
-            
-            // Optional: Also invalidate any related queries
             queryClient.invalidateQueries({ queryKey: ['user-events'] });
-            
-            // Navigate after cache invalidation
             navigate('/events');
         }
     });
@@ -157,7 +151,7 @@ export default function CreateEvent() {
         ) {
             const suggestedEndDate = new Date(
                 new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000
-            ); // 1 day later
+            );
             setEndDate(suggestedEndDate);
         }
 
@@ -197,11 +191,17 @@ export default function CreateEvent() {
         };
 
         try {
-            // The mutation will handle cache invalidation and navigation in onSuccess
             await createEvent.mutateAsync(payload);
         }
         catch (msgs: any) {
             setErrorMessages((msgs as string[]) ?? ['Failed to create event']);
+        }
+        try {
+            await queryClient.invalidateQueries({ queryKey: ['events'] });
+            await queryClient.invalidateQueries({ queryKey: ['user-events'] });
+        }
+        catch (e) {
+            // noop
         }
         navigate('/events');
     };

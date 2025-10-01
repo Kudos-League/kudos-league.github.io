@@ -135,6 +135,7 @@ const MessageList: React.FC<Props> = ({
         }
 
         try {
+            // Call delete on the API. mutateAsync may return void, so don't rely on response shape.
             await deleteMessageMutation.mutateAsync(messageId);
 
             const original = processedMessages.find((m) => m.id === messageId);
@@ -156,6 +157,7 @@ const MessageList: React.FC<Props> = ({
                 callback?.(enriched);
             }
 
+            // Also fire delete listener for any consumers expecting the event
             onMessageDelete?.(messageId);
         }
         catch (err) {
@@ -201,16 +203,14 @@ const MessageList: React.FC<Props> = ({
                         {!isEditing && (
                             <button
                                 type='button'
-                                title={msg.deletedAt ? 'Message deleted' : 'Reply'}
+                                title='Reply'
                                 onClick={() => {
-                                    if (msg.deletedAt) return;
                                     setReplyTo(msg);
                                     setTimeout(() => inputRef.current?.focus(), 0);
                                 }}
-                                disabled={Boolean(msg.deletedAt)}
-                                className={`p-1 rounded ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                             >
-                                <ArrowUturnLeftIcon className={`w-4 h-4 ${msg.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
                             </button>
                         )}
                         {(showEditButton || showDeleteButton) && !isEditing && (
@@ -218,18 +218,16 @@ const MessageList: React.FC<Props> = ({
                                 {showEditButton && (
                                     <Button
                                         onClick={() => handleEditStart(msg)}
-                                        className={`text-xs ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        disabled={Boolean(msg.deletedAt)}
+                                        className='text-xs'
                                     >
                                         Edit
                                     </Button>
                                 )}
                                 {showDeleteButton && (
                                     <Button
-                                        onClick={() => { if (!msg.deletedAt) handleDelete(msg.id); }}
+                                        onClick={() => handleDelete(msg.id)}
                                         variant='danger'
-                                        className={`text-xs ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        disabled={Boolean(msg.deletedAt)}
+                                        className='text-xs'
                                     >
                                         Delete
                                     </Button>

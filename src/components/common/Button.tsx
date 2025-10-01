@@ -33,7 +33,7 @@ const variantClasses: Record<Variant, string> = {
         'bg-green-600 text-white shadow-xs hover:bg-green-500 focus-visible:outline-green-600 dark:bg-green-500 dark:hover:bg-green-400',
     info: 'bg-sky-600 text-white shadow-xs hover:bg-sky-500 focus-visible:outline-sky-600 dark:bg-sky-500 dark:hover:bg-sky-400',
     icon: 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:outline-gray-400 dark:text-gray-300 dark:hover:bg-white/10' // 👈 new
+    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:outline-gray-400 dark:text-gray-300 dark:hover:bg-white/10'
 };
 
 const shapeClasses: Record<Shape, string> = {

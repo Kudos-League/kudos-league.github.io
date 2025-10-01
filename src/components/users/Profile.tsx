@@ -8,7 +8,7 @@ import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
-import { createDMChannel, reactivateUser } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
@@ -49,7 +49,11 @@ const Profile: React.FC<Props> = ({
     const handleStartDM = async () => {
         if (!currentUser?.id || !user?.id) return;
         try {
-            await createDMChannel(currentUser.id, user.id, token);
+            await apiMutate('/channels', 'post', {
+                name: `DM: User ${currentUser.id} & User ${user.id}`,
+                channelType: 'dm',
+                userIDs: [currentUser.id, user.id]
+            });
             navigate(`/dms/${user.id}`);
         }
         catch (err) {
@@ -75,7 +79,7 @@ const Profile: React.FC<Props> = ({
         if (!confirmReactivate) return;
         try {
             if (!token) throw new Error('Missing auth token');
-            const updated = await reactivateUser(user.id, token);
+            const updated = await apiMutate(`/users/${user.id}/reactivate`, 'patch') as UserDTO;
             setUser?.(updated);
             alert('User reactivated.');
         }

@@ -1,4 +1,4 @@
-import React, { Fragment, useMemo } from 'react';
+import React, { Fragment, useMemo, useRef, useState, useEffect } from 'react';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon, CheckIcon } from '@heroicons/react/20/solid';
 
@@ -13,13 +13,15 @@ type DropdownPickerProps = {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    onBlur?: () => void;
 };
 
 export default function DropdownPicker({
     options,
     value,
     onChange,
-    placeholder = 'Select an option'
+    placeholder = 'Select an option',
+    onBlur
 }: DropdownPickerProps) {
     const selected = useMemo(
         () => options.find((o) => o.value === value),
@@ -28,9 +30,51 @@ export default function DropdownPicker({
 
     const buttonLabel = selected?.label ?? placeholder;
 
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const didSelectRef = useRef(false);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        function onDocClick(e: MouseEvent) {
+            const el = containerRef.current;
+            if (!el) return;
+            if (e.target instanceof Node && !el.contains(e.target)) {
+                if (!didSelectRef.current) {
+                    onBlur && onBlur();
+                }
+                didSelectRef.current = false;
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', onDocClick);
+        return () => document.removeEventListener('mousedown', onDocClick);
+    }, [isOpen, onBlur]);
+
+    // also listen for focus leaving the container (covers keyboard/tab interactions)
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        function onFocusOut(e: FocusEvent) {
+            const related = e.relatedTarget as Node | null;
+            if (related && el.contains(related)) return;
+            if (!didSelectRef.current) {
+                onBlur && onBlur();
+            }
+            didSelectRef.current = false;
+            setIsOpen(false);
+        }
+        el.addEventListener('focusout', onFocusOut);
+        return () => el.removeEventListener('focusout', onFocusOut);
+    }, [onBlur]);
+
     return (
-        <Menu as='div' className='relative inline-block w-full'>
-            <MenuButton className='inline-flex w-full justify-between items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:ring-white/10 dark:hover:bg-gray-600'>
+        <Menu as='div' className='relative inline-block w-full' ref={containerRef}>
+            <MenuButton
+                onClick={() => setIsOpen(true)}
+                onBlur={() => onBlur && onBlur()}
+                className='inline-flex w-full justify-between items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:ring-white/10 dark:hover:bg-gray-600'
+            >
                 {buttonLabel}
                 <ChevronDownIcon
                     aria-hidden='true'
@@ -48,7 +92,11 @@ export default function DropdownPicker({
                             {({ active }) => (
                                 <button
                                     type='button'
-                                    onClick={() => onChange(opt.value)}
+                                    onClick={() => {
+                                        didSelectRef.current = true;
+                                        onChange(opt.value);
+                                        setIsOpen(false);
+                                    }}
                                     className={[
                                         'flex w-full items-center px-4 py-2 text-sm',
                                         active

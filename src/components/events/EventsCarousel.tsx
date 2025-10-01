@@ -2,12 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { X, MapPin, User, Edit3 } from 'lucide-react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/contexts/useAuth';
-import dayjs from 'dayjs';
 import EventCard from './EventCard';
 import Button from '../common/Button';
 import { useEvents } from '@/shared/api/queries/events';
 import type { EventDTO } from '@/shared/api/types';
-import Dropdown from '../common/Dropdown';
 
 interface LocationSetupModalProps {
     isOpen: boolean;
@@ -112,9 +110,7 @@ export default function EventsCarousel() {
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [locationFilter, setLocationFilter] = useState(false);
-    const [timeFilter, setTimeFilter] = useState<
-        'all' | 'today' | 'next7d' | 'nextmonth'
-    >('all');
+    const [timeFilter] = useState<'all' | 'today' | 'next7d' | 'nextmonth'>('all');
     const [showLocationModal, setShowLocationModal] = useState(false);
 
     // const TIME_FILTERS = [
@@ -128,7 +124,7 @@ export default function EventsCarousel() {
     const serverFilters = useMemo(
         () => ({
             filter: 'all' as const,
-            ...(canQueryLocal ? { location: user!.location!.name } : {})
+            ...(canQueryLocal && user?.location?.name ? { location: user.location.name } : {})
         }),
         [canQueryLocal, user?.location?.name]
     );
@@ -204,7 +200,14 @@ export default function EventsCarousel() {
 
             <div className='flex items-center justify-between mb-4'>
                 <Button
-                    onClick={() => setLocationFilter((prev) => !prev)}
+                    onClick={() => {
+                        if (!locationFilter && !user?.location?.name) {
+                            setShowLocationModal(true);
+                            setLocationFilter(false);
+                            return;
+                        }
+                        setLocationFilter((prev) => !prev);
+                    }}
                     className={`px-4 py-1 rounded transition-colors ${
                         locationFilter
                             ? 'bg-green-600 text-white hover:bg-green-700'

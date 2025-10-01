@@ -3,21 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import Tippy from '@tippyjs/react';
 import { XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 
-import {
-    getUserDetails,
-    updateHandshake,
-    createRewardOffer,
-    deleteHandshake,
-    createDMChannel,
-    getMessages
-} from '@/shared/api/actions';
-import type { HandshakeDTO, UserDTO, MessageDTO } from '@/shared/api/types';
-import type { CreateRewardOfferDTO } from '@/shared/api/types';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
+import { useCompleteHandshake, useDeleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
+import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
+import { getHandshakeStage } from '@/shared/handshakeUtils';
 
 interface Props {
     handshake: HandshakeDTO;
@@ -34,7 +28,7 @@ const HandshakeCard: React.FC<Props> = ({
     onDelete
 }) => {
     const navigate = useNavigate();
-    const { token } = useAuth();
+    useAuth();
 
     const isSender = handshake.senderID === userID;
     const [status, setStatus] = useState(handshake.status);
@@ -54,33 +48,18 @@ const HandshakeCard: React.FC<Props> = ({
     const showBodyInImageBox =
         imgError || !handshake.post.images?.length || !imageSrc;
 
-    // ─── who is receiving the item? ──────────────────────────────────────────────
-    const canAccept = status === 'new' && userID === handshake.post.senderID;
-    const itemReceiverID =
-        handshake.post.type === 'gift'
-            ? handshake.senderID // a gift post: requester is handshake.sender
-            : handshake.post.senderID; // a request post: OP is the receiver
-
-    const gifterID =
-        handshake.post.type === 'gift'
-            ? handshake.post.senderID // giver = post owner
-            : handshake.senderID; // giver = handshake sender
-    const userIsItemReceiver = userID === itemReceiverID;
-
-    // Check if current user is a participant in this handshake
-    const isParticipant =
-        userID === handshake.senderID || userID === handshake.post.senderID;
-
-    // Determine the other user in the conversation
-    const otherUserID =
-        userID === handshake.senderID
-            ? handshake.post.senderID
-            : handshake.senderID;
+    // Prefer a precomputed stage (attached by PostDetails) to avoid mismatches
+    const stage = (handshake as any)._stage ?? getHandshakeStage(handshake, userID);
+    const canAccept = stage.canAccept;
+    const gifterID = stage.gifterID;
+    const userIsItemReceiver = stage.userIsItemReceiver;
+    const isParticipant = stage.isParticipant;
+    const otherUserID = stage.otherUserID;
 
     useEffect(() => {
         const fetchSender = async () => {
             try {
-                const sender = await getUserDetails(handshake.senderID, token);
+                const sender = await apiGet<UserDTO>(`/users/${handshake.senderID}`);
                 setSenderUser(sender);
             }
             catch (err) {
@@ -89,7 +68,7 @@ const HandshakeCard: React.FC<Props> = ({
             }
         };
         fetchSender();
-    }, [handshake, token]);
+    }, [handshake]);
 
     // Fetch last message if handshake is accepted and user is a participant
     useEffect(() => {
@@ -105,31 +84,24 @@ const HandshakeCard: React.FC<Props> = ({
 
             setLoadingMessage(true);
             try {
-                // Create or get DM channel between the two users
-                const channel = await createDMChannel(
-                    userID,
-                    otherUserID,
-                    token
-                );
-                console.log('DM Channel:', channel);
+                const channel = await apiMutate<ChannelDTO, any>('/channels', 'post', {
+                    name: `DM: User ${userID} & User ${otherUserID}`,
+                    channelType: 'dm',
+                    userIDs: [userID, otherUserID]
+                });
 
-                const messages = await getMessages(channel.id, token);
-                console.log('All messages:', messages);
+                const messages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
 
-                // Get the last message from the other user
                 const otherUserMessages = messages.filter(
                     (msg: MessageDTO) => msg.authorID === otherUserID
                 );
-                console.log('Other user messages:', otherUserMessages);
 
                 const lastMsg = otherUserMessages[otherUserMessages.length - 1];
-                console.log('Last message from other user:', lastMsg);
 
                 setLastMessage(lastMsg || null);
             }
             catch (err) {
                 console.error('Error fetching last message:', err);
-                // Don't show error to user, just silently fail
             }
             finally {
                 setLoadingMessage(false);
@@ -137,7 +109,7 @@ const HandshakeCard: React.FC<Props> = ({
         };
 
         fetchLastMessage();
-    }, [status, userID, otherUserID, token, isParticipant]);
+    }, [status, userID, otherUserID, isParticipant]);
 
     const handleAccept = async (): Promise<boolean> => {
         setError(null);
@@ -145,7 +117,7 @@ const HandshakeCard: React.FC<Props> = ({
 
         setProcessing(true);
         try {
-            await updateHandshake(handshake.id, { status: 'accepted' }, token);
+            await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'accepted' });
             setStatus('accepted');
             setIsChatOpen(true);
             return true;
@@ -168,15 +140,15 @@ const HandshakeCard: React.FC<Props> = ({
 
         setSubmitting(true);
         try {
-            const dto: CreateRewardOfferDTO = {
+            const dto: any = {
                 postID: handshake.postID,
                 amount: Number(kudosValue),
                 currency: 'kudos',
                 kudos: Number(kudosValue),
                 receiverID: gifterID
             };
-            await createRewardOffer(dto, token);
-            await updateHandshake(handshake.id, { status: 'completed' }, token);
+            await createOfferMutation.mutateAsync(dto);
+            await completeHandshakeMutation.mutateAsync();
             setStatus('completed');
             setKudosValue('');
         }
@@ -196,19 +168,11 @@ const HandshakeCard: React.FC<Props> = ({
         return content;
     };
 
-    const getTimeAgo = (date: Date) => {
-        const now = new Date();
-        const diffMs = now.getTime() - new Date(date).getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return new Date(date).toLocaleDateString();
-    };
+    // time-ago helper intentionally removed (unused)
+    
+    const createOfferMutation = useCreateOffer();
+    const deleteHandshakeMutation = useDeleteHandshake();
+    const completeHandshakeMutation = useCompleteHandshake();
 
     return (
         <>
@@ -237,7 +201,7 @@ const HandshakeCard: React.FC<Props> = ({
                                   status.slice(1)}
                         </span>
 
-                        {isSender && status === 'new' && (
+                        {isSender && status === 'new' && !stage.postIsPast && (
                             <Tippy content='Rescind Offer'>
                                 <Button
                                     variant='danger'
@@ -250,10 +214,7 @@ const HandshakeCard: React.FC<Props> = ({
                                             return;
 
                                         try {
-                                            await deleteHandshake(
-                                                handshake.id,
-                                                token
-                                            );
+                                            await deleteHandshakeMutation.mutateAsync();
                                             onDelete?.(handshake.id);
                                         }
                                         catch (err) {
@@ -363,7 +324,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {canAccept && (
+                    {canAccept && !stage.postIsPast && (
                         <Button
                             className={`
                                 relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
@@ -441,15 +402,11 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {((handshake.post.type === 'request' && handshake.post.senderID === userID) || (handshake.post.type === 'gift' && handshake.receiverID === userID)) && status === 'accepted' && (
+                {stage.canUndoAccept && status === 'accepted' && !stage.postIsPast && (
                     <Button
                         onClick={async () => {
                             try {
-                                await updateHandshake(
-                                    handshake.id,
-                                    { status: 'new' },
-                                    token
-                                );
+                                await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
                                 setStatus('new');
                             }
                             catch (err) {

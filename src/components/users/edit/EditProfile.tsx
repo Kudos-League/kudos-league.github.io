@@ -21,7 +21,7 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { deleteAccount as deleteAccountAPI } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
@@ -42,7 +42,7 @@ const EditProfile: React.FC<Props> = ({
     setTargetUser
 }) => {
     const auth = useAuth();
-    const { user, updateUser: updateUserCache, token } = auth;
+    const { user, updateUser: updateUserCache } = auth;
     const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
 
     const { setLocation } = useLocation();
@@ -384,7 +384,7 @@ const EditProfile: React.FC<Props> = ({
         if (!confirmed) return;
 
         try {
-            await deleteAccountAPI('me', token as any);
+            await apiMutate<void, void>(`/users/me`, 'delete');
         }
         catch (err) {
             console.error('Failed to deactivate account:', err);

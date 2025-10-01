@@ -163,7 +163,7 @@ export type HandshakeDTO = {
 export type ChannelDTO = {
     id: number;
     name: string;
-    type: string;
+    type: 'public' | 'dm' | 'group' | 'post' | 'community';
     createdAt: Date;
     updatedAt: Date;
     users?: any[]; // Array of users in the channel

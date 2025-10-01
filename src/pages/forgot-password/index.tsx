@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Auth from '@/components/login/Auth';
 import Button from '@/components/common/Button';
 import { Alert, TextInput } from '@/components/login/fields';
-import { requestPasswordReset } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
         e.preventDefault();
         setError(null);
         try {
-            await requestPasswordReset(email);
+            await apiMutate('/users/forgot-password', 'post', { email });
             setSubmitted(true);
         }
         catch (err: any) {

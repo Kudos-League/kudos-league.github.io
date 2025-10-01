@@ -1,10 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
 import { NotificationPayload, NotificationType } from '@/shared/api/types';
-import {
-    fetchNotifications,
-    markAllNotificationsRead
-} from '@/shared/api/actions';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 
 type Key = string;
 const keyOf = (n: NotificationPayload): Key => {
@@ -30,16 +27,18 @@ const dedupe = (
 
 export const loadNotifications = createAsyncThunk<
     NotificationPayload[],
-    { token: string; limit?: number }
->('notifications/load', async ({ token, limit = 50 }) => {
-    const list = await fetchNotifications(token, limit);
+    { limit?: number }
+>('notifications/load', async ({ limit = 50 } = {}) => {
+    const list = await apiGet<NotificationPayload[]>('/notifications', {
+        params: { limit }
+    });
     return list as NotificationPayload[];
 });
 
-export const markAllRead = createAsyncThunk<void, { token: string }>(
+export const markAllRead = createAsyncThunk<void>(
     'notifications/markAllRead',
-    async ({ token }) => {
-        await markAllNotificationsRead(token);
+    async () => {
+        await apiMutate('/notifications/mark-all-read', 'post');
     }
 );
 

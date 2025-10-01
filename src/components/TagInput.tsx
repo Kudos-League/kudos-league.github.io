@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import debounce from 'lodash/debounce';
-import { getTopTags } from '@/shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import Button from './common/Button';
 
@@ -26,12 +26,11 @@ const TagInput: React.FC<TagInputProps> = ({
     const [suggestedTags, setSuggestedTags] = useState<Tag[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const { token } = useAuth();
+    useAuth();
     const currentRequestRef = useRef<number>(0);
 
-    // Memoize the debounced function to prevent recreation on every render
     const fetchSuggestions = useCallback(
-        debounce(async (query: string, requestId: number) => {
+        debounce(async (query: string, requestID: number) => {
             if (!query || query.length < 2) {
                 setSuggestedTags([]);
                 setIsLoading(false);
@@ -39,73 +38,73 @@ const TagInput: React.FC<TagInputProps> = ({
             }
 
             try {
-                if (!token) {
-                    setIsLoading(false);
-                    return;
+                const response = await apiGet<any>('/tags/top', {
+                    params: { q: query }
+                });
+
+                let tags: Tag[] = [];
+                if (Array.isArray(response)) {
+                    tags = response;
+                }
+                else if (Array.isArray(response?.data)) {
+                    tags = response.data;
+                }
+                else {
+                    tags = [];
                 }
 
-                const response = await getTopTags(query, token);
-
-                // Check if this is still the latest request
-                if (requestId === currentRequestRef.current) {
-                    const filtered = response.data.filter(
-                        (tag: Tag) =>
-                            !selectedTags.some((sel) => sel.name === tag.name)
+                if (requestID === currentRequestRef.current) {
+                    const filtered = tags.filter((tag: Tag) =>
+                        !selectedTags.some((sel) => sel.name === tag.name)
                     );
                     setSuggestedTags(filtered);
                 }
             }
             catch (e) {
                 console.error('Failed to fetch tags:', e);
-                // Only update state if this is still the current request
-                if (requestId === currentRequestRef.current) {
+                if (requestID === currentRequestRef.current) {
                     setSuggestedTags([]);
                 }
             }
             finally {
-                if (requestId === currentRequestRef.current) {
+                if (requestID === currentRequestRef.current) {
                     setIsLoading(false);
                 }
             }
         }, 400),
-        [token, selectedTags] // Include dependencies that the function uses
+        [selectedTags]
     );
 
-    // Handle input changes and trigger suggestions
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
             setCurrentTagInput(value);
 
-            // Increment request ID for race condition handling
             currentRequestRef.current += 1;
-            const requestId = currentRequestRef.current;
+            const requestID = currentRequestRef.current;
 
             if (value && value.length >= 2) {
                 setIsLoading(true);
             }
 
-            fetchSuggestions(value, requestId);
+            fetchSuggestions(value, requestID);
         },
         [fetchSuggestions]
     );
 
-    // Use useRef to track if we should call onTagsChange to prevent infinite loops
     const lastTagsRef = useRef<Tag[]>(selectedTags);
     const onTagsChangeRef = useRef(onTagsChange);
     onTagsChangeRef.current = onTagsChange;
 
     useEffect(() => {
-        // Only call onTagsChange if tags actually changed
         if (
             JSON.stringify(selectedTags) !== JSON.stringify(lastTagsRef.current)
         ) {
             lastTagsRef.current = selectedTags;
             onTagsChangeRef.current(selectedTags);
         }
-    }, [selectedTags]); // Remove onTagsChange from deps to prevent infinite loop
+    }, [selectedTags]);
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             fetchSuggestions.cancel();
@@ -116,7 +115,6 @@ const TagInput: React.FC<TagInputProps> = ({
         const trimmedInput = currentTagInput.trim();
         if (!trimmedInput) return;
 
-        // Check if tag already exists
         if (
             selectedTags.some(
                 (tag) => tag.name.toLowerCase() === trimmedInput.toLowerCase()
@@ -136,7 +134,6 @@ const TagInput: React.FC<TagInputProps> = ({
         setCurrentTagInput('');
         setSuggestedTags([]);
 
-        // Use setTimeout to avoid cursor issues
         setTimeout(() => {
             inputRef.current?.focus();
         }, 0);
@@ -144,7 +141,6 @@ const TagInput: React.FC<TagInputProps> = ({
 
     const handleSelectSuggestion = useCallback(
         (tag: Tag) => {
-            // Check if tag already exists
             if (
                 selectedTags.some(
                     (selected) =>
@@ -158,7 +154,6 @@ const TagInput: React.FC<TagInputProps> = ({
             setCurrentTagInput('');
             setSuggestedTags([]);
 
-            // Use setTimeout to avoid cursor issues
             setTimeout(() => {
                 inputRef.current?.focus();
             }, 0);
@@ -181,7 +176,6 @@ const TagInput: React.FC<TagInputProps> = ({
             }
             else if (e.key === 'ArrowDown' && suggestedTags.length > 0) {
                 e.preventDefault();
-                // Could implement keyboard navigation here
             }
         },
         [handleAddTag, suggestedTags.length]

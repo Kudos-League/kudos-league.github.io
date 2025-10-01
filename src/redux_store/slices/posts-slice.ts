@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { getPosts, createPost } from 'shared/api/actions';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { PostDTO, CreatePostDTO } from 'shared/api/types';
 
 interface PostsState {
@@ -15,14 +15,14 @@ const initialState: PostsState = {
 };
 
 export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
-    const response = await getPosts({ includeSender: true, includeTags: true });
-    return response.data;
+    const response = await apiGet<PostDTO[]>('/posts', { params: { includeSender: true, includeTags: true } });
+    return response;
 });
 
 export const addNewPost = createAsyncThunk(
     'posts/addNewPost',
-    async ({ post, token }: { post: CreatePostDTO; token: string }) => {
-        return createPost(post, token);
+    async ({ post }: { post: CreatePostDTO }) => {
+        return apiMutate<PostDTO, CreatePostDTO>('/posts', 'post', post, { as: 'form' });
     }
 );
 

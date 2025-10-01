@@ -1,5 +1,3 @@
-// src/components/common/TextWithLinks.tsx
-
 import React from 'react';
 import { parseTextWithLinks, isSafeUrl } from '@/shared/linkUtils';
 
@@ -11,11 +9,6 @@ interface TextWithLinksProps {
     onClick?: (url: string) => void;
 }
 
-/**
- * Component that renders text with URLs converted to clickable links
- * Links prevent default behavior and stop propagation to avoid
- * accidentally triggering parent click handlers (like opening posts)
- */
 const TextWithLinks: React.FC<TextWithLinksProps> = ({
     children,
     className = '',
@@ -26,8 +19,6 @@ const TextWithLinks: React.FC<TextWithLinksProps> = ({
     const segments = parseTextWithLinks(children);
 
     const handleLinkClick = (e: React.MouseEvent, url: string) => {
-        // Always prevent default and stop propagation to avoid accidentally 
-        // triggering parent click handlers (like opening posts)
         e.preventDefault();
         e.stopPropagation();
 
@@ -36,13 +27,11 @@ const TextWithLinks: React.FC<TextWithLinksProps> = ({
             return;
         }
 
-        // Security check
         if (!isSafeUrl(url)) {
             console.warn('Blocked potentially unsafe URL:', url);
             return;
         }
 
-        // Open the link safely
         if (openInNewTab) {
             window.open(url, '_blank', 'noopener,noreferrer');
         }

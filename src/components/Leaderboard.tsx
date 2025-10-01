@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLeaderboard } from 'shared/api/actions';
+import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
@@ -21,7 +21,7 @@ const TIME_FILTERS = [
 ];
 
 export default function Leaderboard() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
@@ -35,14 +35,16 @@ export default function Leaderboard() {
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
 
     const loadLeaderboard = async () => {
-        if (!token) {
+        if (!user) {
             setError('Must be logged in.');
             return;
         }
         setLoading(true);
         setError(null);
         try {
-            const data = await fetchLeaderboard(token, useLocal, timeFilter);
+            const data = await apiGet<LeaderboardUser[]>('/leaderboard', {
+                params: { local: useLocal, time: timeFilter }
+            });
             setLeaderboard(data);
         }
         catch (err) {

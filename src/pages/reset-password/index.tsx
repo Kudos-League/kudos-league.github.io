@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Auth from '@/components/login/Auth';
 import Button from '@/components/common/Button';
 import { Alert, PasswordInput } from '@/components/login/fields';
-import { completePasswordReset } from '@/shared/api/actions';
+import { apiMutate } from '@/shared/api/apiClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -33,7 +33,10 @@ export default function ResetPasswordPage() {
             return;
         }
         try {
-            await completePasswordReset(token, password);
+            await apiMutate('/users/reset-password', 'post', {
+                token,
+                password
+            });
             setDone(true);
         }
         catch (err: any) {

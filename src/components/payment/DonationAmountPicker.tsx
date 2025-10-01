@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useController, useFormContext } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import Input from '@/components/forms/Input';
-// import Picker from "@/components/forms/DropdownPicker";
+import FormField from '@/components/forms/FormField';
 
 const predefinedAmounts = [
     { label: '$5', value: '500' },
@@ -15,55 +15,62 @@ type Props = {
 };
 
 export default function DonationAmountPicker({ onAmountChange }: Props) {
-    const form = useFormContext();
-    const { control } = form;
-
-    const { field } = useController({
-        name: 'donationAmount',
-        control,
-        defaultValue: ''
-    });
-
     const [customAmount, setCustomAmount] = useState('');
+    const form = useFormContext();
 
     const handlePickerChange = (value: string) => {
-        const amount = parseInt(value, 10);
+        const amount = parseInt(value, 10) || 0;
         onAmountChange(amount);
-        field.onChange(value);
+        form.setValue('donationAmount', value, { shouldValidate: true });
         setCustomAmount('');
     };
 
     const handleCustomAmountChange = (value: string) => {
         const numeric = parseInt(value, 10) || 0;
         setCustomAmount(value);
-        onAmountChange(numeric * 100);
-        field.onChange((numeric * 100).toString());
+        form.setValue('customDonationAmount', value, { shouldValidate: true });
+        const cents = numeric * 100;
+        onAmountChange(cents);
+        form.setValue('donationAmount', String(cents), { shouldValidate: true });
     };
 
     return (
         <div className='w-full max-w-xs space-y-3'>
-            <label className='block text-sm font-semibold'>
-                Select Donation Amount:
-            </label>
-            <Input
-                type='dropdown'
-                name='donationAmount'
-                label='Donation Amount'
-                form={form}
-                options={predefinedAmounts}
-                onValueChange={handlePickerChange}
-            />
-            <label className='block text-sm font-semibold'>
-                Or Enter Custom Amount:
-            </label>
-            <Input
-                name='customDonationAmount'
-                label=''
-                form={form}
-                value={customAmount}
-                placeholder='Enter amount in dollars'
-                onValueChange={handleCustomAmountChange}
-            />
+            <FormField name='donationAmount' label='Select Donation Amount:'>
+                <Input
+                    type='dropdown'
+                    name='donationAmount'
+                    label='Donation Amount'
+                    form={form}
+                    options={predefinedAmounts}
+                    onValueChange={handlePickerChange}
+                    registerOptions={{
+                        required: 'Select or enter a donation amount',
+                        validate: (v: string) => {
+                            const n = parseInt(v || '', 10) || 0;
+                            return n > 0 || 'Enter a positive donation amount';
+                        }
+                    }}
+                />
+            </FormField>
+            <FormField name='customDonationAmount' label='Or Enter Custom Amount:'>
+                <Input
+                    name='customDonationAmount'
+                    label=''
+                    form={form}
+                    value={customAmount}
+                    placeholder='Enter amount in dollars'
+                    onValueChange={handleCustomAmountChange}
+                    registerOptions={{
+                        validate: (v: string) => {
+                            if (!v) return true;
+                            const ok = /^\d+$/.test(v);
+                            return ok || 'Enter a valid dollar amount (numbers only)';
+                        }
+                    }}
+                    htmlInputType='number'
+                />
+            </FormField>
         </div>
     );
 }

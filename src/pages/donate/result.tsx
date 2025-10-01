@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getEndpointUrl } from 'shared/api/config';
+import { apiGet } from '@/shared/api/apiClient';
 import Spinner from '../../components/common/Spinner';
 
 export default function DonateResult() {
@@ -23,9 +23,7 @@ export default function DonateResult() {
 
         const fetchStatus = async () => {
             try {
-                const res = await fetch(`${getEndpointUrl()}/stripe/session-status?session_id=${encodeURIComponent(sessionId)}`);
-                if (!res.ok) throw new Error(`Status fetch failed: ${res.status}`);
-                const body = await res.json();
+                const body = await apiGet<any>('/stripe/session-status', { params: { session_id: sessionId } });
                 if (!mounted) return;
                 setStatus(body.status ?? 'unknown');
                 setMessage(body.message);

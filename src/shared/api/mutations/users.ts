@@ -30,6 +30,7 @@ export function useUpdateUser(userId?: number | string) {
         },
         onSuccess: (updated) => {
             qc.invalidateQueries({ queryKey: qkUsers.me });
+            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qkUsers.user(updated.id ?? 'me'), updated);
         }
     });

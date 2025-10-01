@@ -7,6 +7,10 @@ type DonationDTO = {
     interval?: string | null;
     kudos?: number | null;
     createdAt?: string | null;
+    kudosLogID?: number | null;
+    kudosLogDelta?: number | null;
+    kudosLogTotal?: number | null;
+    kudosLogCreatedAt?: string | null;
 };
 
 export const qk = {
