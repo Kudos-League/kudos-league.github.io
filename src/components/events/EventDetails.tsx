@@ -1,17 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { EventDTO, LocationDTO } from '@/shared/api/types';
+import { EventDTO, LocationDTO, UserDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
-import { apiMutate } from '@/shared/api/apiClient';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
+import UserCard from '../users/UserCard';
 
 type Props = {
     event: EventDTO;
@@ -55,17 +56,32 @@ export default function EventDetails({ event, setEvent }: Props) {
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [eventCreator, setEventCreator] = useState<UserDTO | null>(null);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    useEffect(() => {
+        const fetchSender = async () => {
+            try {
+                const sender = await apiGet<UserDTO>(`/users/${event.creatorID}`);
+                setEventCreator(sender);
+            }
+            catch (err) {
+                console.error('Error loading user info', err);
+                setError('Error loading user info');
+            }
+        };
+        fetchSender();
+    }, [event]);
+
     // Check if current user is the event creator
-    // Adjust this based on your actual EventDTO structure
     const isEventCreator = user?.id && (
         (event as any).creatorID === user.id || 
         (event as any).userId === user.id || 
         (event as any).authorId === user.id ||
         (event as any).ownerId === user.id ||
-        (event as any).createdBy === user.id
+        (event as any).createdBy === user.id ||
+        eventCreator?.id === user.id
     );
 
     const dateValidation = useMemo(() => {
@@ -378,6 +394,14 @@ export default function EventDetails({ event, setEvent }: Props) {
                             : 'Ongoing'}
                     </p>
                 </>
+            )}
+
+            {/* Event Creator */}
+            {!isEditing && (
+                <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700'>
+                    <h3 className='text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2'>Organized by</h3>
+                    <UserCard user={eventCreator} large />
+                </div>
             )}
 
             {/* Map (only show when not editing) */}

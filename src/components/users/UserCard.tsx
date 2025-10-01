@@ -91,7 +91,7 @@ const UserCard: React.FC<Props> = ({
     const navigate = useNavigate();
 
     const username = user?.username;
-    const displayName = user?.displayName || username || 'Anonymous';
+    const displayName = user?.displayName || username || 'Error fetching user';
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
