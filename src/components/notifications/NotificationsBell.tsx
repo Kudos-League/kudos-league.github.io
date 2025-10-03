@@ -3,6 +3,7 @@ import { NotificationPayload } from '@/shared/api/types';
 import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { routes } from '@/routes';
 
 export default function NotificationsBell() {
     const { state, markAllRead } = useNotifications();
@@ -39,6 +40,9 @@ export default function NotificationsBell() {
         }
         else if (n.type === 'past-gift') {
             navigate(`/post/${n.postID}`);
+        }
+        else if (n.type === 'bug-report' || n.type === 'site-feedback') {
+            navigate(routes.admin);
         }
         setOpen(false);
     };
@@ -109,6 +113,20 @@ export default function NotificationsBell() {
                                                 <div className='text-sm font-medium'>Past gift logged</div>
                                                 <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Open to view details
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'bug-report' ? (
+                                            <div>
+                                                <div className='text-sm font-medium'>New bug report</div>
+                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    Feedback #{'feedbackID' in n ? n.feedbackID : ''}
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'site-feedback' ? (
+                                            <div>
+                                                <div className='text-sm font-medium'>New site feedback</div>
+                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    Feedback #{'feedbackID' in n ? n.feedbackID : ''}
                                                 </div>
                                             </div>
                                         ) : (

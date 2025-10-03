@@ -39,6 +39,26 @@ export const getFilters = (isSelf: boolean) => {
 export const MAX_FILE_SIZE_MB = 5;
 export const MAX_FILE_COUNT = 5;
 
+export const SITE_FEEDBACK_CATEGORIES = [
+    'general',
+    'feature-request',
+    'praise',
+    'usability',
+    'other'
+] as const;
+
+export const BUG_REPORT_CATEGORIES = [
+    'posts',
+    'profiles',
+    'messaging',
+    'events',
+    'donations',
+    'leaderboard',
+    'other'
+] as const;
+
+export const FEEDBACK_BASE_REWARD = 5;
+
 export const LOCAL_FMT = "yyyy-MM-dd'T'HH:mm";
 
 export const isJwt = (tok: string) => tok.split('.').length === 3;

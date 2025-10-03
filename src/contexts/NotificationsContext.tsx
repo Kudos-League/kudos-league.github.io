@@ -14,7 +14,7 @@ import {
     markAllRead as markAllReadThunk
 } from 'redux_store/slices/notifications.slice';
 
-import { NotificationPayload } from '@/shared/api/types';
+import { NotificationPayload, NotificationType } from '@/shared/api/types';
 import { pushAlert } from '@/components/common/alertBus';
 import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
@@ -87,6 +87,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                         ? `Post #${(n as any).postID} auto-close (${new Date(when).toLocaleString()})`
                         : `Post #${(n as any).postID} auto-close`; 
                     pushAlert({ type: 'warning', message: msg });
+                }
+                else if (n.type === NotificationType.BUG_REPORT) {
+                    pushAlert({ type: 'info', message: 'New bug report submitted.' });
+                }
+                else if (n.type === NotificationType.SITE_FEEDBACK) {
+                    pushAlert({ type: 'info', message: 'New site feedback submitted.' });
                 }
             }
             catch {
