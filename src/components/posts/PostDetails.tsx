@@ -23,6 +23,7 @@ import {
 import type {
     ChannelDTO,
     CreateHandshakeDTO,
+    HandshakeDTO,
     PostDTO,
     LocationDTO,
     UpdatePostDTO
@@ -189,123 +190,100 @@ export default function PostDetails(props: Props) {
         startDMChat(postDetails.sender?.id || 0);
     };
 
-    const handleMessageSent = async () => {
-        if (!token || !postDetails) {
+    const createHandshakeForRecipient = async (
+        recipientId: number,
+        { closeChat = false }: { closeChat?: boolean } = {}
+    ) => {
+        if (!token || !postDetails || !user?.id) {
             console.error('Missing required data to create handshake:', {
                 token: !!token,
-                postDetails: !!postDetails
+                postDetails: !!postDetails,
+                user: !!user?.id
             });
-            return;
+            return false;
         }
 
+        console.log('Preparing handshake creation with:', {
+            postID: postDetails.id,
+            senderID: user.id,
+            recipientId,
+            type: postDetails.type
+        });
+
+        setCreatingHandshake(true);
+
+        try {
+            const handshakeData: CreateHandshakeDTO = {
+                postID: postDetails.id,
+                senderID: user.id,
+                receiverID: recipientId,
+                type: postDetails.type,
+                status: 'new'
+            };
+
+            console.log('Sending handshake data:', handshakeData);
+            const createdHandshake = await createHsMut.mutateAsync(handshakeData);
+
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+
+                const handshakeWithContext = {
+                    ...createdHandshake,
+                    post: prevDetails
+                } as HandshakeDTO;
+
+                if (!handshakeWithContext.sender && user) {
+                    handshakeWithContext.sender = user;
+                }
+
+                return {
+                    ...prevDetails,
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        handshakeWithContext
+                    ]
+                } as PostDTO;
+            });
+
+            alert(
+                'Handshake created successfully! You can now coordinate the details with the post owner.'
+            );
+
+            if (closeChat) {
+                setIsChatOpen(false);
+            }
+
+            fetchPostDetails?.(postDetails.id);
+            return true;
+        }
+        catch (error) {
+            console.error('Error creating handshake:', error);
+            return false;
+        }
+        finally {
+            setCreatingHandshake(false);
+            setPendingRecipientID(null);
+        }
+    };
+
+    const handleMessageSent = async () => {
         const recipientId = pendingRecipientID;
         if (!recipientId) {
             console.error('Could not find recipient ID');
             return;
         }
 
-        console.log('Creating handshake from message sent callback with:', {
-            postID: postDetails.id,
-            senderID: user?.id,
-            recipientId,
-            type: postDetails.type
-        });
-
-        setCreatingHandshake(true);
-
-        try {
-            const handshakeData: CreateHandshakeDTO = {
-                postID: postDetails.id,
-                senderID: user?.id || 0,
-                receiverID: recipientId.toString(),
-                type: postDetails.type,
-                status: 'new'
-            };
-
-            console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } =
-                await createHsMut.mutateAsync(handshakeData);
-
-            setPostDetails((prevDetails: PostDTO | undefined) => {
-                if (!prevDetails) return prevDetails as any;
-                return {
-                    ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
-                } as PostDTO;
-            });
-
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
-            setIsChatOpen(false);
-            setPendingRecipientID(null);
-            fetchPostDetails?.(postDetails.id);
-        }
-        catch (error) {
-            console.error('Error creating handshake:', error);
-        }
-        finally {
-            setCreatingHandshake(false);
-        }
+        await createHandshakeForRecipient(recipientId, { closeChat: true });
     };
 
     const handleChannelCreated = async (channel: ChannelDTO) => {
-        if (!token || !postDetails) {
-            console.error('Missing required data to create handshake:', {
-                token: !!token,
-                postDetails: !!postDetails
-            });
-            return;
-        }
-
         const recipientId = channel.users?.find((u) => u.id !== user?.id)?.id;
         if (!recipientId) {
             console.error('Could not find recipient ID in channel users');
             return;
         }
 
-        console.log('Creating handshake with:', {
-            postID: postDetails.id,
-            senderID: user?.id,
-            recipientId,
-            type: postDetails.type
-        });
-
-        setCreatingHandshake(true);
-
-        try {
-            const handshakeData: CreateHandshakeDTO = {
-                postID: postDetails.id,
-                senderID: user?.id || 0,
-                receiverID: recipientId.toString(),
-                type: postDetails.type,
-                status: 'new'
-            };
-
-            console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } =
-                await createHsMut.mutateAsync(handshakeData);
-
-            setPostDetails((prevDetails: PostDTO | undefined) => {
-                if (!prevDetails) return prevDetails as any;
-                return {
-                    ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
-                } as PostDTO;
-            });
-
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
-            setPendingRecipientID(null);
-            fetchPostDetails?.(postDetails.id);
-        }
-        catch (error) {
-            console.error('Error creating handshake:', error);
-        }
-        finally {
-            setCreatingHandshake(false);
-        }
+        await createHandshakeForRecipient(recipientId);
     };
 
     const handleMessageUpdate = (updatedMessage: any) => {
@@ -765,7 +743,7 @@ export default function PostDetails(props: Props) {
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
-                        (h) => h.sender?.id === user?.id
+                        (h) => Number(h.sender?.id ?? h.senderID) === user?.id
                     ) && (
                     <div className='mt-4 flex justify-center'>
                         <Button

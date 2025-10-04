@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Tippy from '@tippyjs/react';
 import { XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
@@ -15,7 +15,7 @@ import { getHandshakeStage } from '@/shared/handshakeUtils';
 
 interface Props {
     handshake: HandshakeDTO;
-    userID: number;
+    userID?: number;
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
     onDelete?: (id: number) => void;
@@ -30,7 +30,7 @@ const HandshakeCard: React.FC<Props> = ({
     const navigate = useNavigate();
     useAuth();
 
-    const isSender = handshake.senderID === userID;
+    const isSender = userID != null && handshake.senderID === userID;
     const [status, setStatus] = useState(handshake.status);
     const [processing, setProcessing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -48,8 +48,10 @@ const HandshakeCard: React.FC<Props> = ({
     const showBodyInImageBox =
         imgError || !handshake.post.images?.length || !imageSrc;
 
-    // Prefer a precomputed stage (attached by PostDetails) to avoid mismatches
-    const stage = (handshake as any)._stage ?? getHandshakeStage(handshake, userID);
+    const stage = useMemo(() => {
+        const handshakeForStage = { ...handshake, status } as typeof handshake;
+        return getHandshakeStage(handshakeForStage, userID);
+    }, [handshake, status, userID]);
     const canAccept = stage.canAccept;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
@@ -76,7 +78,9 @@ const HandshakeCard: React.FC<Props> = ({
             // Only fetch messages if user is a participant and handshake is accepted/completed
             if (
                 (status !== 'accepted' && status !== 'completed') ||
-                !isParticipant
+                !isParticipant ||
+                userID == null ||
+                otherUserID == null
             ) {
                 setLoadingMessage(false);
                 return;
