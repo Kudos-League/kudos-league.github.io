@@ -5,6 +5,7 @@ import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import Button from '@/components/common/Button';
+import { FeedbackDTO } from '@/shared/api/types';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
@@ -12,7 +13,7 @@ export default function AdminDashboard() {
     const [tab, setTab] = useState<'reports' | 'feedback' | 'analytics'>('reports');
 
     const [reports, setReports] = useState<any[]>([]);
-    const [feedbacks, setFeedbacks] = useState<any[]>([]);
+    const [feedbacks, setFeedbacks] = useState<FeedbackDTO[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export default function AdminDashboard() {
             try {
                 const [r, f] = await Promise.all([
                     apiGet<any>('/admin/reports'),
-                    apiGet<any>('/feedback')
+                    apiGet<FeedbackDTO[]>('/feedback')
                 ]);
                 setReports(r ?? []);
                 setFeedbacks(f ?? []);

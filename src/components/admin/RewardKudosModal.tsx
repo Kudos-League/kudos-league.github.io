@@ -7,6 +7,7 @@ type Props = {
     onSave: (kudos: number) => Promise<void>;
     current?: number | null;
     reportId: number;
+    baseReward?: number;
 };
 
 export default function RewardKudosModal({
@@ -14,7 +15,8 @@ export default function RewardKudosModal({
     onClose,
     onSave,
     current,
-    reportId
+    reportId,
+    baseReward = 0
 }: Props) {
     const [value, setValue] = useState<string>('');
     const [saving, setSaving] = useState(false);
@@ -74,7 +76,11 @@ export default function RewardKudosModal({
                                light:text-gray-600
                                dark:text-neutral-300'
                 >
-                    How many kudos should be granted when resolving this?
+                    How many <span className='font-semibold'>additional</span> kudos should be granted when resolving this?
+                    <br />
+                    <span className='text-xs text-gray-500 dark:text-gray-400'>
+                        Base reward: {baseReward}
+                    </span>
                 </p>
 
                 <div className='mt-4'>

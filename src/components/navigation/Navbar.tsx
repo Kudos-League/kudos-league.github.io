@@ -13,8 +13,6 @@ import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
-import FeedbackModal from '@/components/common/FeedbackModal';
-import { apiMutate } from '@/shared/api/apiClient';
 import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 type NavItem = {
@@ -30,6 +28,7 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
             { name: 'Create', to: routes.createPost },
             { name: 'Donate', to: routes.donate },
             { name: 'Leaderboard', to: routes.leaderboard },
+            { name: 'Feedback', to: routes.feedback },
             { name: 'Forum', to: routes.chat },
             { name: 'Events', to: routes.events },
             { name: 'About', to: routes.about },
@@ -244,16 +243,6 @@ export default function Navbar({
         [isLoggedIn, user]
     );
 
-    const [feedbackOpen, setFeedbackOpen] = useState(false);
-    const { user: authUser } = useAuth();
-
-    const handleSubmitFeedback = async (content: string) => {
-        const userID = authUser?.id ?? user?.id;
-        if (!userID) {
-            throw new Error('You need to be logged in to send feedback.');
-        }
-        await apiMutate('/feedback', 'post', { userID, content });
-    };
 
     return (
         <>
@@ -271,14 +260,13 @@ export default function Navbar({
                     {isLoggedIn ? (
                         <>
                             <NotificationsBell />
-                            <button
-                                type='button'
+                            <Link
+                                to={routes.feedback}
                                 aria-label='Feedback'
-                                onClick={() => setFeedbackOpen(true)}
                                 className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                             >
                                 <FlagIcon className='h-5 w-5' />
-                            </button>
+                            </Link>
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (
@@ -299,12 +287,6 @@ export default function Navbar({
                     )}
                 </div>
             </header>
-
-            <FeedbackModal
-                open={feedbackOpen}
-                onClose={() => setFeedbackOpen(false)}
-                onSubmit={handleSubmitFeedback}
-            />
         </>
     );
 }
