@@ -5,17 +5,18 @@ import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { EventDTO, LocationDTO } from '@/shared/api/types';
+import { EventDTO, LocationDTO, MessageDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
 import { apiMutate } from '@/shared/api/apiClient';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
+import MessageList from '@/components/posts/MessageList';
 
 type Props = {
     event: EventDTO;
-    setEvent: (event: EventDTO) => void;
+    setEvent: React.Dispatch<React.SetStateAction<EventDTO | null>>;
 };
 
 interface UpdateEventData {
@@ -57,6 +58,48 @@ export default function EventDetails({ event, setEvent }: Props) {
     const [error, setError] = useState<string | null>(null);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const handleMessageCreated = (message: MessageDTO) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                messages: [...(prev.messages || []), message]
+            };
+        });
+    };
+
+    const handleMessageUpdate = (updatedMessage: MessageDTO) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            const messages = (prev.messages || []).map((msg) =>
+                msg.id === updatedMessage.id ? { ...msg, ...updatedMessage } : msg
+            );
+            return {
+                ...prev,
+                messages
+            };
+        });
+    };
+
+    const handleMessageDelete = (deletedMessageId: number) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            const messages = (prev.messages || []).map((msg) =>
+                msg.id === deletedMessageId
+                    ? {
+                        ...msg,
+                        deletedAt: new Date().toISOString(),
+                        content: `[deleted]: ${msg.content}`
+                    }
+                    : msg
+            );
+            return {
+                ...prev,
+                messages
+            };
+        });
+    };
 
     // Check if current user is the event creator
     // Adjust this based on your actual EventDTO structure
@@ -390,6 +433,20 @@ export default function EventDetails({ event, setEvent }: Props) {
                     />
                 </div>
             )}
+
+            <div className='shadow p-4 rounded mb-6'>
+                <MessageList
+                    title='Discussion'
+                    messages={event.messages || []}
+                    callback={handleMessageCreated}
+                    eventID={event.id}
+                    showSendMessage={!!user}
+                    allowDelete={!!user}
+                    allowEdit={!!user}
+                    onMessageUpdate={handleMessageUpdate}
+                    onMessageDelete={handleMessageDelete}
+                />
+            </div>
 
             {/* Participants (only show when not editing) */}
             {!isEditing && (

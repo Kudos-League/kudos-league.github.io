@@ -99,6 +99,7 @@ export interface MessageDTO {
     id: number;
     authorID: number;
     postID?: number;
+    eventID?: number;
     channelID?: number;
     replyToMessageID?: number;
     handshakeID?: number;
@@ -187,6 +188,7 @@ export type EventDTO = {
     participants?: UserDTO[];
     location?: LocationDTO | null;
     participantCount?: number;
+    messages?: MessageDTO[];
 };
 
 export type CreateEventDTO = {

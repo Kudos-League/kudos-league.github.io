@@ -15,6 +15,7 @@ interface Props {
     onMessageUpdate?: (updatedMessage: MessageDTO) => void;
     onMessageDelete?: (deletedMessageId: number) => void;
     postID?: number;
+    eventID?: number;
     showSendMessage?: boolean;
     allowEdit?: boolean;
     allowDelete?: boolean;
@@ -27,13 +28,14 @@ const MessageList: React.FC<Props> = ({
     onMessageUpdate,
     onMessageDelete,
     postID,
+    eventID,
     showSendMessage,
     allowEdit = false,
     allowDelete = false
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
-    const sendMessageMutation = useSendMessage(postID as number | undefined);
+    const sendMessageMutation = useSendMessage((postID ?? eventID) as number | undefined);
     const updateMessageMutation = useUpdateMessage();
     const deleteMessageMutation = useDeleteMessage();
     const [showAllMessages, setShowAllMessages] = useState(false);
@@ -53,12 +55,13 @@ const MessageList: React.FC<Props> = ({
     }, [messages]);
 
     const handleSubmitMessage = async () => {
-        if (!messageContent.trim() || !user || !token || !postID) return;
+        if (!messageContent.trim() || !user || !token || (!postID && !eventID)) return;
 
         const newMessage: CreateMessageDTO = {
             content: messageContent,
             authorID: user.id,
-            postID,
+            ...(postID ? { postID } : {}),
+            ...(eventID ? { eventID } : {}),
             ...(replyTo?.id ? { replyToMessageID: replyTo.id } : {})
         };
 
