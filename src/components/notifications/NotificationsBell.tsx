@@ -1,7 +1,7 @@
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { NotificationPayload } from '@/shared/api/types';
 import { BellIcon } from '@heroicons/react/24/outline';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -9,8 +9,16 @@ export default function NotificationsBell() {
     const { state, markAllRead } = useNotifications();
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
-    const dropdownRef = useRef<HTMLDivElement>(null); // Add ref
-
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const hasLoggedMount = useRef(false);
+    if (!hasLoggedMount.current) {
+        hasLoggedMount.current = true;
+    }
+    const debug = useMemo(
+        () => (...args: unknown[]) => console.debug('[NotificationsBell]', ...args),
+        []
+    );
+    const { items, unread, loaded } = state;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -28,7 +36,23 @@ export default function NotificationsBell() {
         };
     }, [open]);
 
+    useEffect(() => {
+        if (!loaded) {
+            debug('notifications not loaded yet');
+            return;
+        }
+        debug('notifications updated', {
+            items: items.length,
+            unread
+        });
+    }, [debug, items, loaded, unread]);
+
     const go = (n: NotificationPayload) => {
+        debug('navigating from notification', {
+            type: n.type,
+            postID: 'postID' in n ? n.postID : undefined,
+            from: 'message' in n ? n.message?.author?.id : undefined
+        });
         if (n.type === 'direct-message') {
             navigate(`/dm/${n.message?.author?.id ?? ''}`);
         }
@@ -53,7 +77,11 @@ export default function NotificationsBell() {
                 <button
                     type='button'
                     aria-label='Notifications'
-                    onClick={() => setOpen((v) => !v)}
+                    onClick={() => setOpen((v) => {
+                        const next = !v;
+                        debug('toggle dropdown', { from: v, to: next, unread });
+                        return next;
+                    })}
                     className='relative flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >
                     <BellIcon className='h-5 w-5' aria-hidden='true' />
@@ -73,7 +101,11 @@ export default function NotificationsBell() {
                             <span className='text-sm font-semibold'>Notifications</span>
                             <button
                                 className='text-xs font-medium text-teal-600 hover:underline dark:text-teal-400'
-                                onClick={markAllRead}
+                                onClick={async () => {
+                                    debug('markAllRead clicked');
+                                    await markAllRead();
+                                    debug('markAllRead finished');
+                                }}
                             >
                                 Mark all read
                             </button>

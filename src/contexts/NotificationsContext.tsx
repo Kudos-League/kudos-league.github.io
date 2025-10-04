@@ -37,15 +37,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const joinedUserId = useRef<number | null>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
+    const debug = useMemo(() =>
+        (...args: unknown[]) => console.debug('[NotificationsContext]', ...args),
+    []);
 
     useEffect(() => {
         if (!token || !user?.id) return;
+        debug('loading notifications', { userID: user.id });
         dispatch(loadNotifications({ limit: 50 }) as any);
     }, [dispatch, token, user?.id]);
 
     useEffect(() => {
         if (!token) {
             if (socketRef.current && joinedUserId.current != null) {
+                debug('token missing, leaving previous socket room', {
+                    userID: joinedUserId.current
+                });
                 socketRef.current.emit('leaveUser', { userID: joinedUserId.current });
             }
             joinedUserId.current = null;
@@ -55,17 +62,59 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const sock = getSocket(token);
         socketRef.current = sock;
+        debug('socket obtained', { connected: sock.connected });
 
         const handleConnect = () => {
+            debug('socket connect event', {
+                connected: sock.connected,
+                id: sock.id,
+                currentRoom: joinedUserId.current,
+                userID: user?.id
+            });
             if (user?.id != null && joinedUserId.current !== user.id) {
-                if (joinedUserId.current != null)
+                if (joinedUserId.current != null) {
+                    debug('switching socket room', {
+                        leaveUserID: joinedUserId.current,
+                        joinUserID: user.id
+                    });
                     sock.emit('leaveUser', { userID: joinedUserId.current });
+                }
+                else {
+                    debug('joining socket room', { userID: user.id });
+                }
                 sock.emit('joinUser', { userID: user.id });
                 joinedUserId.current = user.id;
             }
         };
 
+        const handleDisconnect = (reason: string) => {
+            debug('socket disconnected', { reason, id: sock.id });
+        };
+
+        const handleConnectError = (err: Error) => {
+            debug('socket connect error', { message: err.message });
+        };
+
+        const handleReconnect = (attempt: number) => {
+            debug('socket reconnecting', { attempt });
+        };
+
+        const handleJoinedUser = (payload: unknown) => {
+            debug('received joinedUser ack', payload);
+        };
+
+        const handleAny = (event: string, payload: unknown) => {
+            if (event === 'pong' || event === 'ping') return;
+            debug('socket event received', { event, payload });
+        };
+
         const handleNotification = (n: NotificationPayload) => {
+            debug('received notification', {
+                id: (n as any).id,
+                type: n.type,
+                postID: 'postID' in n ? n.postID : undefined,
+                from: 'message' in n ? n.message?.author?.id : undefined
+            });
             dispatch(pushAction(n));
 
             try {
@@ -102,19 +151,36 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (!(sock as any).__notifListenersAttached) {
             sock.on('connect', handleConnect);
+            sock.on('disconnect', handleDisconnect);
+            sock.on('connect_error', handleConnectError);
+            sock.on('reconnect', handleReconnect);
+            sock.on('joinedUser', handleJoinedUser);
             sock.on(Events.NOTIFICATION_CREATE, handleNotification);
             sock.on('notification', handleNotification);
+            (sock as any).onAny?.(handleAny);
             (sock as any).__notifListenersAttached = true;
+            debug('attached socket listeners');
         }
         else if (sock.connected) {
+            debug('socket already connected, ensuring room membership');
             handleConnect();
         }
 
         return () => {
+            debug('tearing down socket listeners');
             sock.off('connect', handleConnect);
+            sock.off('disconnect', handleDisconnect);
+            sock.off('connect_error', handleConnectError);
+            sock.off('reconnect', handleReconnect);
+            sock.off('joinedUser', handleJoinedUser);
             sock.off(Events.NOTIFICATION_CREATE, handleNotification);
             sock.off('notification', handleNotification);
+            (sock as any).offAny?.(handleAny);
+            (sock as any).__notifListenersAttached = false;
             if (joinedUserId.current != null) {
+                debug('leaving socket room on cleanup', {
+                    userID: joinedUserId.current
+                });
                 sock.emit('leaveUser', { userID: joinedUserId.current });
                 joinedUserId.current = null;
             }
@@ -126,10 +192,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             state,
             push: (n) => dispatch(pushAction(n)),
             markAllRead: async () => {
+                debug('markAllRead triggered');
                 await dispatch(markAllReadThunk() as any);
+                debug('markAllRead completed');
             }
         }),
-        [dispatch, state, token]
+        [debug, dispatch, state, token]
     );
 
     return (
