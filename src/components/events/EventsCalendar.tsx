@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer, SlotInfo } from 'react-big-calendar';
 import {
@@ -38,6 +38,31 @@ export default function Events({ events }: Props) {
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    const recurringEventIds = useMemo(() => {
+        const groups = new Map<string, EventDTO[]>();
+
+        events.forEach((event) => {
+            const key = [
+                event.creatorID ?? 'unknown',
+                (event.title || '').trim().toLowerCase(),
+                (event.description || '').trim().toLowerCase()
+            ].join('|');
+
+            const list = groups.get(key) ?? [];
+            list.push(event);
+            groups.set(key, list);
+        });
+
+        const ids = new Set<number>();
+        groups.forEach((list) => {
+            if (list.length > 1) {
+                list.forEach((ev) => ids.add(ev.id));
+            }
+        });
+
+        return ids;
+    }, [events]);
+
     /* ---------- helpers ---------- */
     const findEventsOn = (d: Date) => {
         const dayStart = new Date(d);
@@ -67,25 +92,58 @@ export default function Events({ events }: Props) {
                 let endDate;
 
                 if (e.endTime) {
-                    // Normal event with end time
                     endDate = toZonedTime(new Date(e.endTime), tz);
                 }
                 else {
-                    // Infinite event - extend it for 1 year from start date
-                    // This makes it visible on the calendar as an ongoing event
                     endDate = addYears(startDate, 1);
                 }
 
+                const isRecurring = recurringEventIds.has(e.id);
+                const baseTitle = e.endTime ? e.title : `${e.title} (Ongoing)`;
+
                 return {
                     id: e.id,
-                    title: e.endTime ? e.title : `${e.title} (Ongoing)`, // Add indicator for infinite events
+                    title: baseTitle,
                     start: startDate,
                     end: endDate,
                     allDay: false,
-                    resource: e // keep original for later
+                    resource: {
+                        ...e,
+                        isRecurring
+                    }
                 };
             }),
-        [events, tz]
+        [events, tz, recurringEventIds]
+    );
+
+    const eventPropGetter = useCallback((calendarEvent: any) => {
+        if (calendarEvent?.resource?.isRecurring) {
+            return {
+                style: {
+                    borderLeft: '4px solid #2563eb',
+                    boxShadow: 'inset 0 0 0 1px rgba(37, 99, 235, 0.35)',
+                    backgroundImage:
+                        'repeating-linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.22) 6px, rgba(191,219,254,0.35) 6px, rgba(191,219,254,0.35) 12px)'
+                },
+                className: 'rbc-event-recurring'
+            };
+        }
+
+        return {};
+    }, []);
+
+    const calendarComponents = useMemo(
+        () => ({
+            event: ({ event }: { event: any }) => (
+                <div className='flex items-center gap-1 truncate'>
+                    {event?.resource?.isRecurring && (
+                        <span className='px-1.5 py-0.5 text-[10px] leading-3 font-semibold uppercase tracking-wide text-white bg-blue-600 rounded-sm'>↻</span>
+                    )}
+                    <span className='truncate'>{event.title}</span>
+                </div>
+            )
+        }),
+        []
     );
 
     /* ---------- handlers ---------- */
@@ -146,7 +204,11 @@ export default function Events({ events }: Props) {
                     ) : (
                         <ul className='space-y-3 list-none'>
                             {selectedDateEvents.map((ev) => (
-                                <EventCard key={ev.id} event={ev} />
+                                <EventCard
+                                    key={ev.id}
+                                    event={ev}
+                                    isRecurring={recurringEventIds.has(ev.id)}
+                                />
                             ))}
                         </ul>
                     )}
@@ -170,6 +232,8 @@ export default function Events({ events }: Props) {
                     onSelectSlot={handleDateClick}
                     selectable
                     popup /* enable "… more" pop-up */
+                    eventPropGetter={eventPropGetter}
+                    components={calendarComponents}
                     onShowMore={(evts: any[], date) => {
                         setCurrentDate(date);
                         setSelectedDateEvents(evts.map((e) => e.resource));

@@ -191,6 +191,11 @@ export type EventDTO = {
     messages?: MessageDTO[];
 };
 
+export type EventRecurrenceDTO = {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    occurrences?: number;
+};
+
 export type CreateEventDTO = {
     title: string;
     description: string;
@@ -200,6 +205,7 @@ export type CreateEventDTO = {
     endTime?: Date | null;
     content?: string;
     location: LocationDTO | null;
+    recurrence?: EventRecurrenceDTO;
 };
 
 export interface UpdateEventDTO {
