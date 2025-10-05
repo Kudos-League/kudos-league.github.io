@@ -687,8 +687,8 @@ export default function PostDetails(props: Props) {
                                 ? {
                                     ...prev,
                                     messages: [
-                                        ...(prev.messages || []),
-                                        response
+                                        response,
+                                        ...(prev.messages || [])
                                     ]
                                 }
                                 : prev

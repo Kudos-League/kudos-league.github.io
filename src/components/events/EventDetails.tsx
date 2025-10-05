@@ -73,7 +73,7 @@ export default function EventDetails({ event, setEvent }: Props) {
             if (!prev) return prev;
             return {
                 ...prev,
-                messages: [...(prev.messages || []), message]
+                messages: [message, ...(prev.messages || [])]
             };
         });
     };

@@ -47,11 +47,29 @@ const MessageList: React.FC<Props> = ({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Simple processing - just sort by ID
     const processedMessages = useMemo(() => {
         if (!messages || messages.length === 0) return [];
 
-        return [...messages].sort((a, b) => a.id - b.id);
+        const timestampOf = (value: MessageDTO['createdAt']) => {
+            if (!value) return null;
+            const date = value instanceof Date ? value : new Date(value);
+            const time = date.getTime();
+            return Number.isNaN(time) ? null : time;
+        };
+
+        return [...messages].sort((a, b) => {
+            const aTime = timestampOf(a.createdAt);
+            const bTime = timestampOf(b.createdAt);
+
+            if (aTime !== null && bTime !== null && aTime !== bTime) {
+                return bTime - aTime;
+            }
+
+            if (aTime !== null && bTime === null) return -1;
+            if (aTime === null && bTime !== null) return 1;
+
+            return b.id - a.id;
+        });
     }, [messages]);
 
     const handleSubmitMessage = async () => {
