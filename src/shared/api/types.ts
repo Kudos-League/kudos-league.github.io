@@ -380,3 +380,10 @@ export type NotificationPayload =
     | { type: typeof NotificationType.PAST_GIFT; postID: number }
     | { type: typeof NotificationType.BUG_REPORT; feedbackID: number }
     | { type: typeof NotificationType.SITE_FEEDBACK; feedbackID: number };
+
+export type NotificationRecord = NotificationPayload & {
+    id: number;
+    isRead: boolean;
+    isActedOn: boolean;
+    createdAt?: string;
+};

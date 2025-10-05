@@ -11,19 +11,21 @@ import type { RootState } from 'redux_store/store';
 import {
     pushOne as pushAction,
     loadNotifications,
-    markAllRead as markAllReadThunk
+    acknowledgeAll as acknowledgeAllThunk,
+    markNotificationActed
 } from 'redux_store/slices/notifications.slice';
 
-import { NotificationPayload, NotificationType } from '@/shared/api/types';
+import { NotificationRecord, NotificationType } from '@/shared/api/types';
 import { pushAlert } from '@/components/common/alertBus';
 import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
 
 type Ctx = {
-    state: { items: NotificationPayload[]; unread: number; loaded: boolean };
-    push: (n: NotificationPayload) => void;
-    markAllRead: () => Promise<void>;
+    state: { items: NotificationRecord[]; unread: number; loaded: boolean };
+    push: (n: NotificationRecord) => void;
+    acknowledgeAll: () => Promise<void>;
+    markActed: (id: number) => Promise<void>;
 };
 
 const NotificationsContext = createContext<Ctx | null>(null);
@@ -37,9 +39,15 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const joinedUserId = useRef<number | null>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
+    const autoActTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
     const debug = useMemo(() =>
         (...args: unknown[]) => console.debug('[NotificationsContext]', ...args),
     []);
+
+    useEffect(() => () => {
+        autoActTimers.current.forEach((timer) => clearTimeout(timer));
+        autoActTimers.current.clear();
+    }, []);
 
     useEffect(() => {
         if (!token || !user?.id) return;
@@ -108,39 +116,46 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             debug('socket event received', { event, payload });
         };
 
-        const handleNotification = (n: NotificationPayload) => {
+        const handleNotification = (incoming: NotificationRecord) => {
+            const normalized: NotificationRecord = {
+                ...incoming,
+                isRead: incoming.isRead ?? false,
+                isActedOn: incoming.isActedOn ?? false
+            };
             debug('received notification', {
-                id: (n as any).id,
-                type: n.type,
-                postID: 'postID' in n ? n.postID : undefined,
-                from: 'message' in n ? n.message?.author?.id : undefined
+                id: (normalized as any).id,
+                type: normalized.type,
+                postID: 'postID' in normalized ? normalized.postID : undefined,
+                from: 'message' in normalized ? normalized.message?.author?.id : undefined,
+                isRead: normalized.isRead,
+                isActedOn: normalized.isActedOn
             });
-            dispatch(pushAction(n));
+            dispatch(pushAction(normalized));
 
             try {
-                if (n.type === 'direct-message') {
-                    const author = n.message?.author?.username || 'Someone';
-                    const text = n.message?.content || '';
+                if (normalized.type === 'direct-message') {
+                    const author = normalized.message?.author?.username || 'Someone';
+                    const text = normalized.message?.content || '';
                     pushAlert({ type: 'info', message: `New DM from ${author}: ${text}` });
                 }
-                else if (n.type === 'post-reply') {
-                    const text = n.message?.content || '';
+                else if (normalized.type === 'post-reply') {
+                    const text = normalized.message?.content || '';
                     pushAlert({ type: 'info', message: `New reply on your post: ${text}` });
                 }
-                else if (n.type === 'past-gift') {
+                else if (normalized.type === 'past-gift') {
                     pushAlert({ type: 'info', message: `Past gift logged on your profile.` });
                 }
-                else if (n.type === 'post-auto-close') {
-                    const when = (n as any).closedAt || (n as any).closeAt;
+                else if (normalized.type === 'post-auto-close') {
+                    const when = (normalized as any).closedAt || (normalized as any).closeAt;
                     const msg = when
-                        ? `Post #${(n as any).postID} auto-close (${new Date(when).toLocaleString()})`
-                        : `Post #${(n as any).postID} auto-close`; 
+                        ? `Post #${(normalized as any).postID} auto-close (${new Date(when).toLocaleString()})`
+                        : `Post #${(normalized as any).postID} auto-close`;
                     pushAlert({ type: 'warning', message: msg });
                 }
-                else if (n.type === NotificationType.BUG_REPORT) {
+                else if (normalized.type === NotificationType.BUG_REPORT) {
                     pushAlert({ type: 'info', message: 'New bug report submitted.' });
                 }
-                else if (n.type === NotificationType.SITE_FEEDBACK) {
+                else if (normalized.type === NotificationType.SITE_FEEDBACK) {
                     pushAlert({ type: 'info', message: 'New site feedback submitted.' });
                 }
             }
@@ -187,17 +202,60 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         };
     }, [dispatch, token, user?.id]);
 
+    useEffect(() => {
+        const timers = autoActTimers.current;
+        const eligible = state.items.filter((item) => item.isRead && !item.isActedOn);
+        const eligibleIds = new Set(eligible.map((item) => item.id));
+
+        for (const [id, timer] of Array.from(timers.entries())) {
+            if (!eligibleIds.has(id)) {
+                clearTimeout(timer);
+                timers.delete(id);
+                debug('cleared auto-act timer', { id });
+            }
+        }
+
+        eligible.forEach((item) => {
+            if (!timers.has(item.id)) {
+                debug('scheduling auto-act timer', { id: item.id });
+                const timer = setTimeout(() => {
+                    debug('auto-acting notification', { id: item.id });
+                    dispatch(markNotificationActed(item.id) as any)
+                        .catch((err: unknown) => {
+                            console.error('Failed to auto-act notification', err);
+                        })
+                        .finally(() => {
+                            autoActTimers.current.delete(item.id);
+                        });
+                }, 3 * 60 * 1000);
+                timers.set(item.id, timer);
+            }
+        });
+    }, [dispatch, debug, state.items]);
+
     const value = useMemo<Ctx>(
         () => ({
             state,
-            push: (n) => dispatch(pushAction(n)),
-            markAllRead: async () => {
-                debug('markAllRead triggered');
-                await dispatch(markAllReadThunk() as any);
-                debug('markAllRead completed');
+            push: (n) =>
+                dispatch(
+                    pushAction({
+                        ...n,
+                        isRead: n.isRead ?? false,
+                        isActedOn: n.isActedOn ?? false
+                    })
+                ),
+            acknowledgeAll: async () => {
+                debug('acknowledgeAll triggered');
+                await dispatch(acknowledgeAllThunk() as any);
+                debug('acknowledgeAll completed');
+            },
+            markActed: async (id) => {
+                debug('markActed triggered', { id });
+                await dispatch(markNotificationActed(id) as any);
+                debug('markActed completed', { id });
             }
         }),
-        [debug, dispatch, state, token]
+        [debug, dispatch, state]
     );
 
     return (

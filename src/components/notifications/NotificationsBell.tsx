@@ -1,12 +1,12 @@
 import { useNotifications } from '@/contexts/NotificationsContext';
-import { NotificationPayload } from '@/shared/api/types';
+import { NotificationRecord } from '@/shared/api/types';
 import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
 export default function NotificationsBell() {
-    const { state, markAllRead } = useNotifications();
+    const { state, acknowledgeAll, markActed } = useNotifications();
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -47,12 +47,26 @@ export default function NotificationsBell() {
         });
     }, [debug, items, loaded, unread]);
 
-    const go = (n: NotificationPayload) => {
+    useEffect(() => {
+        if (!open || unread === 0) return;
+        debug('auto acknowledging new notifications while open', { unread });
+        acknowledgeAll().catch((err) => {
+            console.error('Failed to acknowledge notifications while open', err);
+        });
+    }, [acknowledgeAll, debug, open, unread]);
+
+    const go = (n: NotificationRecord) => {
         debug('navigating from notification', {
             type: n.type,
             postID: 'postID' in n ? n.postID : undefined,
-            from: 'message' in n ? n.message?.author?.id : undefined
+            from: 'message' in n ? n.message?.author?.id : undefined,
+            id: n.id
         });
+        if (!n.isActedOn) {
+            markActed(n.id).catch((err) => {
+                console.error('Failed to mark notification acted', err);
+            });
+        }
         if (n.type === 'direct-message') {
             navigate(`/dm/${n.message?.author?.id ?? ''}`);
         }
@@ -77,11 +91,19 @@ export default function NotificationsBell() {
                 <button
                     type='button'
                     aria-label='Notifications'
-                    onClick={() => setOpen((v) => {
-                        const next = !v;
-                        debug('toggle dropdown', { from: v, to: next, unread });
-                        return next;
-                    })}
+                    onClick={() =>
+                        setOpen((prev) => {
+                            const next = !prev;
+                            debug('toggle dropdown', { from: prev, to: next, unread });
+                            if (!prev && next && unread > 0) {
+                                debug('acknowledging notifications on open', { pending: unread });
+                                acknowledgeAll().catch((err) => {
+                                    console.error('Failed to acknowledge notifications', err);
+                                });
+                            }
+                            return next;
+                        })
+                    }
                     className='relative flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >
                     <BellIcon className='h-5 w-5' aria-hidden='true' />
@@ -99,33 +121,35 @@ export default function NotificationsBell() {
                     <div className='absolute right-0 mt-2 w-80 max-h-96 overflow-auto rounded-lg border border-zinc-200 bg-white text-zinc-800 shadow-xl dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200'>
                         <div className='flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-white/10'>
                             <span className='text-sm font-semibold'>Notifications</span>
-                            <button
-                                className='text-xs font-medium text-teal-600 hover:underline dark:text-teal-400'
-                                onClick={async () => {
-                                    debug('markAllRead clicked');
-                                    await markAllRead();
-                                    debug('markAllRead finished');
-                                }}
-                            >
-                                Mark all read
-                            </button>
+                            {unread > 0 && (
+                                <span className='text-xs font-medium text-teal-600 dark:text-teal-400'>
+                                    {unread} new
+                                </span>
+                            )}
                         </div>
                         <ul>
                             {!state.loaded ? (
                                 <li className='p-3 text-sm text-zinc-600 dark:text-zinc-400'>
-                                    Loading…
+								Loading…
                                 </li>
-                            ) : state.items.length === 0 ? (
+                            ) : items.length === 0 ? (
                                 <li className='p-3 text-sm text-zinc-600 dark:text-zinc-400'>
-                                    No notifications yet
+								No notifications yet
                                 </li>
                             ) : (
-                                state.items.map((n, i) => (
+                                items.map((n) => (
                                     <li
-                                        key={i}
-                                        className='cursor-pointer p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
+                                        key={n.id}
+                                        className={`relative cursor-pointer p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
+                                            n.isRead ? 'opacity-90' : 'bg-teal-50/60 dark:bg-teal-900/30'
+                                        }`}
                                         onClick={() => go(n)}
                                     >
+                                        {!n.isRead && (
+                                            <span className='absolute right-3 top-3 text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400'>
+											New
+                                            </span>
+                                        )}
                                         {n.type === 'direct-message' ? (
                                             <div>
                                                 <div className='text-sm font-medium'>New DM</div>
