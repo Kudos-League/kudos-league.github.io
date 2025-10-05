@@ -14,7 +14,7 @@ import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 
-type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'donations';
+type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
 
 type Props = {
     user: UserDTO;
@@ -38,12 +38,12 @@ const Profile: React.FC<Props> = ({
     const [editing, setEditing] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
-    
+
     // Define available filters - show handshakes only for own profile
     const availableFilters: FilterType[] = isSelf
-        ? ['all', 'posts', 'events', 'handshakes', 'donations']
+        ? ['all', 'posts', 'events', 'handshakes', 'kudos']
         : ['all', 'posts', 'events'];
-        
+
     const [filter, setFilter] = useState<FilterType>('all');
 
     const handleStartDM = async () => {
@@ -56,6 +56,7 @@ const Profile: React.FC<Props> = ({
             });
             navigate(`/dms/${user.id}`);
         }
+        // eslint-disable-next-line brace-style
         catch (err) {
             console.error('Failed to create or get DM channel', err);
             alert('Failed to start a direct message. Please try again.');
@@ -63,12 +64,12 @@ const Profile: React.FC<Props> = ({
     };
 
     const getFilterLabel = (filterType: FilterType): string => {
-        const labels = {
+        const labels: Record<FilterType, string> = {
             all: 'All',
-            posts: 'Posts', 
+            posts: 'Posts',
             events: 'Events',
             handshakes: 'Handshakes',
-            donations: 'Donations'
+            kudos: 'Kudos history'
         };
         return labels[filterType];
     };
@@ -79,15 +80,19 @@ const Profile: React.FC<Props> = ({
         if (!confirmReactivate) return;
         try {
             if (!token) throw new Error('Missing auth token');
-            const updated = await apiMutate(`/users/${user.id}/reactivate`, 'patch') as UserDTO;
+            const updated = (await apiMutate(
+                `/users/${user.id}/reactivate`,
+                'patch'
+            )) as UserDTO;
             setUser?.(updated);
             alert('User reactivated.');
         }
+        // eslint-disable-next-line brace-style
         catch (err) {
             console.error('Failed to reactivate user', err);
             alert('Failed to reactivate user.');
         }
-    }
+    };
 
     if (editing) {
         return (
@@ -101,20 +106,27 @@ const Profile: React.FC<Props> = ({
     }
 
     const renderFilteredContent = () => {
-        switch (filter) {
-        case 'donations':
+        const showEmptyState =
+            posts.length === 0 &&
+            events.length === 0 &&
+            (!isSelf || handshakes.length === 0);
+
+        if (filter === 'kudos') {
             return (
-                <React.Suspense fallback={<Spinner text='Loading donations...' />}>
-                    <Donations />
+                <React.Suspense
+                    fallback={<Spinner text='Loading kudos history...' />}
+                >
+                    <KudosHistory />
                 </React.Suspense>
             );
+        }
 
-        case 'handshakes':
+        if (filter === 'handshakes') {
             return (
                 <div className='grid gap-4'>
                     {handshakes.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
-                                No handshakes available.
+                            No handshakes available.
                         </p>
                     ) : (
                         <Handshakes
@@ -129,13 +141,14 @@ const Profile: React.FC<Props> = ({
                     )}
                 </div>
             );
-                
-        case 'events':
+        }
+
+        if (filter === 'events') {
             return (
                 <div className='grid gap-4 list-none'>
                     {events.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
-                                No events available.
+                            No events available.
                         </p>
                     ) : (
                         events.map((event) => (
@@ -144,97 +157,90 @@ const Profile: React.FC<Props> = ({
                     )}
                 </div>
             );
-                
-        case 'posts':
-            return (
-                <PostList
-                    posts={posts}
-                    showHandshakeShortcut
-                />
-            );
-                
-        case 'all':
-        default:
-            // Show all content types combined
-            return (
-                <div className='space-y-8'>
-                    {/* Posts Section */}
-                    {posts.length > 0 && (
-                        <div>
-                            <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                                    Posts ({posts.length})
-                            </h3>
-                            <PostList
-                                posts={posts.slice(0, 3)} // Show first 3
-                                showHandshakeShortcut
-                            />
-                            {posts.length > 3 && (
-                                <div className='mt-4 text-center'>
-                                    <Button
-                                        onClick={() => setFilter('posts')}
-                                        variant='secondary'
-                                        className='text-sm'
-                                    >
-                                            View all {posts.length} posts
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                        
-                    {/* Events Section */}
-                    {events.length > 0 && (
-                        <div>
-                            <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                                    Events ({events.length})
-                            </h3>
-                            <div className='grid gap-4 list-none'>
-                                {events.slice(0, 2).map((event) => (
-                                    <EventCard key={event.id} event={event} />
-                                ))}
-                            </div>
-                            {events.length > 2 && (
-                                <div className='mt-4 text-center'>
-                                    <Button
-                                        onClick={() => setFilter('events')}
-                                        variant='secondary'
-                                        className='text-sm'
-                                    >
-                                            View all {events.length} events
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                        
-                    {/* Handshakes Section - Only for own profile */}
-                    {isSelf && handshakes.length > 0 && (
-                        <div>
-                            <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                                    Handshakes ({handshakes.length})
-                            </h3>
-                            <Handshakes
-                                handshakes={handshakes.slice(0, 2)} // Show first 2
-                                currentUserId={user.id}
-                                showAll={false}
-                                onShowAll={() => setFilter('handshakes')}
-                                showPostDetails
-                            />
-                        </div>
-                    )}
-                        
-                    {/* Empty state for 'All' */}
-                    {posts.length === 0 && events.length === 0 && (!isSelf || handshakes.length === 0) && (
-                        <p className='text-center text-gray-500 dark:text-gray-400'>
-                                No content available.
-                        </p>
-                    )}
-                </div>
-            );
         }
+
+        if (filter === 'posts') {
+            return <PostList posts={posts} showHandshakeShortcut />;
+        }
+
+        return (
+            <div className='space-y-8'>
+                {/* Posts Section */}
+                {posts.length > 0 && (
+                    <div>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
+                            Posts ({posts.length})
+                        </h3>
+                        <PostList
+                            posts={posts.slice(0, 3)}
+                            showHandshakeShortcut
+                        />
+                        {posts.length > 3 && (
+                            <div className='mt-4 text-center'>
+                                <Button
+                                    onClick={() => setFilter('posts')}
+                                    variant='secondary'
+                                    className='text-sm'
+                                >
+                                    View all {posts.length} posts
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Events Section */}
+                {events.length > 0 && (
+                    <div>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
+                            Events ({events.length})
+                        </h3>
+                        <div className='grid gap-4 list-none'>
+                            {events.slice(0, 2).map((event) => (
+                                <EventCard key={event.id} event={event} />
+                            ))}
+                        </div>
+                        {events.length > 2 && (
+                            <div className='mt-4 text-center'>
+                                <Button
+                                    onClick={() => setFilter('events')}
+                                    variant='secondary'
+                                    className='text-sm'
+                                >
+                                    View all {events.length} events
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Handshakes Section - Only for own profile */}
+                {isSelf && handshakes.length > 0 && (
+                    <div>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
+                            Handshakes ({handshakes.length})
+                        </h3>
+                        <Handshakes
+                            handshakes={handshakes.slice(0, 2)}
+                            currentUserId={user.id}
+                            showAll={false}
+                            onShowAll={() => setFilter('handshakes')}
+                            showPostDetails
+                        />
+                    </div>
+                )}
+
+                {/* Empty state for 'All' */}
+                {showEmptyState && (
+                    <p className='text-center text-gray-500 dark:text-gray-400'>
+                        No content available.
+                    </p>
+                )}
+            </div>
+        );
     };
 
-    const Donations = React.lazy(() => import('./Donations'));
+    const KudosHistory = React.lazy(() => import('./KudosHistory'));
 
     return (
         <div className='max-w-5xl mx-auto'>
@@ -249,7 +255,10 @@ const Profile: React.FC<Props> = ({
 
                 {!isSelf && (
                     <div className='flex justify-center'>
-                        <Button onClick={() => setShowPastGiftModal(true)} className='!bg-teal-600 !text-white'>
+                        <Button
+                            onClick={() => setShowPastGiftModal(true)}
+                            className='!bg-teal-600 !text-white'
+                        >
                             Log Past Gift
                         </Button>
                     </div>
@@ -272,7 +281,7 @@ const Profile: React.FC<Props> = ({
                 {/* Divider under header */}
                 <div className='border-t border-gray-200 dark:border-white/10' />
 
-                {/* Profession */ }
+                {/* Profession */}
                 {user.settings?.profession && (
                     <div className='flex justify-center'>
                         <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
@@ -313,7 +322,11 @@ const Profile: React.FC<Props> = ({
                 {/* Filtered Content */}
                 {renderFilteredContent()}
 
-                <ReportPastGiftModal open={showPastGiftModal} onClose={() => setShowPastGiftModal(false)} receiverID={user.id} />
+                <ReportPastGiftModal
+                    open={showPastGiftModal}
+                    onClose={() => setShowPastGiftModal(false)}
+                    receiverID={user.id}
+                />
             </div>
         </div>
     );
