@@ -1,17 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { endOfDay, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { EventDTO, LocationDTO, MessageDTO } from '@/shared/api/types';
+import { EventDTO, LocationDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
 import MessageList from '@/components/posts/MessageList';
+import UserCard from '../users/UserCard';
 
 type Props = {
     event: EventDTO;
@@ -351,7 +352,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                                         })}
                                         variant='secondary'
                                     >
-                                        Add End Time
+                                    Add End Time
                                     </Button>
                                     <div className='text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded p-2'>
                                         Without a custom end time, this event will end on {format(autoEditEndTime, 'PPP p')}.
