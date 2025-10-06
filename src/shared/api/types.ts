@@ -99,6 +99,7 @@ export interface MessageDTO {
     id: number;
     authorID: number;
     postID?: number;
+    eventID?: number;
     channelID?: number;
     replyToMessageID?: number;
     handshakeID?: number;
@@ -141,7 +142,7 @@ export type RewardOfferDTO = {
 export type CreateHandshakeDTO = {
     postID: number;
     senderID: number;
-    receiverID: string;
+    receiverID: number;
     type: string;
     status: string;
 };
@@ -187,6 +188,12 @@ export type EventDTO = {
     participants?: UserDTO[];
     location?: LocationDTO | null;
     participantCount?: number;
+    messages?: MessageDTO[];
+};
+
+export type EventRecurrenceDTO = {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    occurrences?: number;
 };
 
 export type CreateEventDTO = {
@@ -198,6 +205,7 @@ export type CreateEventDTO = {
     endTime?: Date | null;
     content?: string;
     location: LocationDTO | null;
+    recurrence?: EventRecurrenceDTO;
 };
 
 export interface UpdateEventDTO {
@@ -321,11 +329,33 @@ export interface UserDTO {
     deactivatedAt?: Date | null;
 }
 
+export type FeedbackKind = 'site-feedback' | 'bug-report';
+export type FeedbackStatus = 'new' | 'archived' | 'resolved';
+
+export interface FeedbackDTO {
+    id: number;
+    userID: number;
+    user?: UserDTO;
+    title: string;
+    description: string;
+    type: FeedbackKind;
+    category: string;
+    tags: string[] | null;
+    attachments: string[] | null;
+    status: FeedbackStatus;
+    rewardKudos?: number | null;
+    baseRewardKudos: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
     POST_REPLY: 'post-reply',
     POST_AUTO_CLOSE: 'post-auto-close',
-    PAST_GIFT: 'past-gift'
+    PAST_GIFT: 'past-gift',
+    BUG_REPORT: 'bug-report',
+    SITE_FEEDBACK: 'site-feedback'
 } as const;
 
 export type NotificationTypeKeys =
@@ -347,4 +377,13 @@ export type NotificationPayload =
     | DirectMessageNotification
     | PostReplyNotification
     | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
-    | { type: typeof NotificationType.PAST_GIFT; postID: number };
+    | { type: typeof NotificationType.PAST_GIFT; postID: number }
+    | { type: typeof NotificationType.BUG_REPORT; feedbackID: number }
+    | { type: typeof NotificationType.SITE_FEEDBACK; feedbackID: number };
+
+export type NotificationRecord = NotificationPayload & {
+    id: number;
+    isRead: boolean;
+    isActedOn: boolean;
+    createdAt?: string;
+};

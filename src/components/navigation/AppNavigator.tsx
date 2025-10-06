@@ -21,6 +21,7 @@ const ResetPassword = lazy(() => import('@/pages/reset-password'));
 const EventsPage = lazy(() => import('@/pages/events'));
 const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
+const FeedbackPage = lazy(() => import('@/pages/feedback'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
@@ -122,6 +123,14 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <Leaderboard />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.feedback}
+                        element={
+                            <RequireAuth>
+                                <FeedbackPage />
                             </RequireAuth>
                         }
                     />

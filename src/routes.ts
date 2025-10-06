@@ -49,6 +49,7 @@ export const routes = {
     chat: '/chat' as const,
     dms: '/dms' as const,
     leaderboard: '/leaderboard' as const,
+    feedback: '/feedback' as const,
     admin: '/admin' as const,
     login: '/login' as const,
     signUp: '/sign-up' as const,

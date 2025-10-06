@@ -15,6 +15,7 @@ interface Props {
     onMessageUpdate?: (updatedMessage: MessageDTO) => void;
     onMessageDelete?: (deletedMessageId: number) => void;
     postID?: number;
+    eventID?: number;
     showSendMessage?: boolean;
     allowEdit?: boolean;
     allowDelete?: boolean;
@@ -27,13 +28,14 @@ const MessageList: React.FC<Props> = ({
     onMessageUpdate,
     onMessageDelete,
     postID,
+    eventID,
     showSendMessage,
     allowEdit = false,
     allowDelete = false
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
-    const sendMessageMutation = useSendMessage(postID as number | undefined);
+    const sendMessageMutation = useSendMessage((postID ?? eventID) as number | undefined);
     const updateMessageMutation = useUpdateMessage();
     const deleteMessageMutation = useDeleteMessage();
     const [showAllMessages, setShowAllMessages] = useState(false);
@@ -45,20 +47,39 @@ const MessageList: React.FC<Props> = ({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Simple processing - just sort by ID
     const processedMessages = useMemo(() => {
         if (!messages || messages.length === 0) return [];
 
-        return [...messages].sort((a, b) => a.id - b.id);
+        const timestampOf = (value: MessageDTO['createdAt']) => {
+            if (!value) return null;
+            const date = value instanceof Date ? value : new Date(value);
+            const time = date.getTime();
+            return Number.isNaN(time) ? null : time;
+        };
+
+        return [...messages].sort((a, b) => {
+            const aTime = timestampOf(a.createdAt);
+            const bTime = timestampOf(b.createdAt);
+
+            if (aTime !== null && bTime !== null && aTime !== bTime) {
+                return bTime - aTime;
+            }
+
+            if (aTime !== null && bTime === null) return -1;
+            if (aTime === null && bTime !== null) return 1;
+
+            return b.id - a.id;
+        });
     }, [messages]);
 
     const handleSubmitMessage = async () => {
-        if (!messageContent.trim() || !user || !token || !postID) return;
+        if (!messageContent.trim() || !user || !token || (!postID && !eventID)) return;
 
         const newMessage: CreateMessageDTO = {
             content: messageContent,
             authorID: user.id,
-            postID,
+            ...(postID ? { postID } : {}),
+            ...(eventID ? { eventID } : {}),
             ...(replyTo?.id ? { replyToMessageID: replyTo.id } : {})
         };
 
