@@ -58,6 +58,7 @@ interface Props {
     nameClassName?: string;
     subtitleClassName?: string;
     disableTooltip?: boolean;
+    showKudos?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -86,12 +87,14 @@ const UserCard: React.FC<Props> = ({
     centered = false,
     nameClassName = '',
     subtitleClassName = '',
-    disableTooltip = false
+    disableTooltip = false,
+    showKudos = true
 }) => {
     const navigate = useNavigate();
 
     const username = user?.username;
-    const displayName = user?.displayName || username || 'Error fetching user';
+    const displayName = user?.displayName || username || 'Anonymous';
+    const kudos = typeof user?.kudos === 'number' ? user.kudos : 0;
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
@@ -130,6 +133,12 @@ const UserCard: React.FC<Props> = ({
             </span>
         );
 
+        const kudosEl = showKudos ? (
+            <span className='text-xs text-gray-500 dark:text-gray-400 font-normal'>
+                {kudos} Kudos
+            </span>
+        ) : null;
+
         const wrapperClasses =
             centered && subtitle
                 ? 'group inline-flex flex-col items-center text-center gap-1'
@@ -157,6 +166,7 @@ const UserCard: React.FC<Props> = ({
                 }
             >
                 {nameEl}
+                {kudosEl}
                 {subtitle ? (
                     <div
                         className={[
@@ -191,7 +201,9 @@ const UserCard: React.FC<Props> = ({
         subtitle,
         centered,
         nameClassName,
-        subtitleClassName
+        subtitleClassName,
+        showKudos,
+        kudos
     ]);
 
     const tippyTrigger =
@@ -351,9 +363,7 @@ const UserCard: React.FC<Props> = ({
                                         <span className='opacity-70'>
                                             Kudos:
                                         </span>{' '}
-                                        {typeof user.kudos === 'number'
-                                            ? user.kudos
-                                            : 0}
+                                        {kudos}
                                     </div>
                                     <div className='truncate'>
                                         <span className='opacity-70'>
