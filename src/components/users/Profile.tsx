@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useReportUser } from '@/shared/api/mutations/users';
 
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 
@@ -38,6 +39,39 @@ const Profile: React.FC<Props> = ({
     const [editing, setEditing] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportNotes, setReportNotes] = useState('');
+    const reportMutation = useReportUser();
+    const [reportFiles, setReportFiles] = useState<File[]>([]);
+    const [reportServerError, setReportServerError] = useState<string | null>(null);
+
+    const validateReportFiles = (files?: File[]) => {
+        if (!files) return null;
+        const MAX_FILE_COUNT = 4;
+        const MAX_FILE_SIZE_MB = 10;
+        if (files.length > MAX_FILE_COUNT) return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find((f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+        if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
+        return null;
+    };
+
+    const handleReportImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+        const updated = [...reportFiles, ...Array.from(files)];
+        const fileError = validateReportFiles(updated);
+        if (fileError) return setReportServerError(fileError);
+        setReportFiles(updated);
+        setReportServerError(null);
+        e.target.value = '';
+    };
+
+    const removeReportImage = (idx: number) => {
+        setReportFiles((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const createImagePreview = (f: File) => URL.createObjectURL(f);
 
     // Define available filters - show handshakes only for own profile
     const availableFilters: FilterType[] = isSelf
@@ -255,12 +289,22 @@ const Profile: React.FC<Props> = ({
 
                 {!isSelf && (
                     <div className='flex justify-center'>
-                        <Button
-                            onClick={() => setShowPastGiftModal(true)}
-                            className='!bg-teal-600 !text-white'
-                        >
-                            Log Past Gift
-                        </Button>
+                        <div className='flex gap-3'>
+                            <Button
+                                onClick={() => setShowPastGiftModal(true)}
+                                className='!bg-teal-600 !text-white'
+                            >
+                                Log Past Gift
+                            </Button>
+
+                            <Button
+                                onClick={() => setShowReportModal(true)}
+                                className='!bg-red-600 !text-white'
+                                variant='danger'
+                            >
+                                Report
+                            </Button>
+                        </div>
                     </div>
                 )}
 
@@ -327,6 +371,92 @@ const Profile: React.FC<Props> = ({
                     onClose={() => setShowPastGiftModal(false)}
                     receiverID={user.id}
                 />
+
+                {showReportModal && (
+                    <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
+                        <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
+                            <h2 className='text-xl font-bold mb-2'>Report User</h2>
+                            <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
+                                Why are you reporting this user?
+                            </p>
+                            <input
+                                className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 mb-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                placeholder='Short reason (e.g. harassment)'
+                                value={reportReason}
+                                onChange={(e) => setReportReason(e.target.value)}
+                            />
+                            <textarea
+                                className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                rows={4}
+                                placeholder='Optional details...'
+                                value={reportNotes}
+                                onChange={(e) => setReportNotes(e.target.value)}
+                            />
+                            <label className='block text-sm font-semibold mb-2'>Attach Images (optional)</label>
+                            <input
+                                type='file'
+                                accept='image/*'
+                                multiple
+                                onChange={handleReportImageUpload}
+                                className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                                disabled={reportFiles.length >= 4}
+                            />
+                            {reportServerError && (
+                                <div className='text-xs text-red-600 mb-2'>{reportServerError}</div>
+                            )}
+                            {reportFiles.length > 0 && (
+                                <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4'>
+                                    {reportFiles.map((file, index) => (
+                                        <div key={index} className='relative group'>
+                                            <img
+                                                src={createImagePreview(file)}
+                                                alt={`Preview ${index + 1}`}
+                                                className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                            />
+                                            <Button
+                                                type='button'
+                                                shape='circle'
+                                                variant='danger'
+                                                onClick={() => removeReportImage(index)}
+                                                className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm'
+                                                title='Remove image'
+                                            >
+                                                ×
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <div className='flex justify-end gap-2'>
+                                <Button
+                                    onClick={() => setShowReportModal(false)}
+                                    variant='secondary'
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={async () => {
+                                        if (!user?.id) return;
+                                        try {
+                                            await reportMutation.mutateAsync({ id: user.id, reason: reportReason || 'Report', notes: reportNotes || undefined });
+                                            alert('Report submitted. Thank you.');
+                                            setShowReportModal(false);
+                                            setReportReason('');
+                                            setReportNotes('');
+                                        }
+                                        catch (err) {
+                                            console.error('Failed to submit report', err);
+                                            alert('Failed to submit report. Please try again.');
+                                        }
+                                    }}
+                                    variant='danger'
+                                >
+                                    Submit
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

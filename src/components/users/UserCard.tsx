@@ -1,14 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useAuth } from '@/contexts/useAuth';
 import Tippy from '@tippyjs/react/headless';
 import { useNavigate } from 'react-router-dom';
 import {
     ShieldCheckIcon,
-    ShieldExclamationIcon
+    ShieldExclamationIcon,
+    ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
 import AvatarComponent from '@/components/users/Avatar';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '@/components/common/Pill';
+import AdminReportModal from '@/components/admin/AdminReportModal';
 
 import type { UserDTO } from '@/shared/api/types';
 
@@ -58,6 +61,7 @@ interface Props {
     nameClassName?: string;
     subtitleClassName?: string;
     disableTooltip?: boolean;
+    onAdminReportOpen?: (userID: number) => void;
 }
 
 function fmtDate(d?: Date | string) {
@@ -87,8 +91,11 @@ const UserCard: React.FC<Props> = ({
     nameClassName = '',
     subtitleClassName = '',
     disableTooltip = false
+    , onAdminReportOpen
 }) => {
     const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+    const [adminReportOpen, setAdminReportOpen] = useState(false);
 
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
@@ -220,195 +227,228 @@ const UserCard: React.FC<Props> = ({
     }
 
     return (
-        <Tippy
-            placement='auto'
-            offset={[0, sideOffset]}
-            appendTo={() => document.body}
-            interactive={interactive}
-            delay={[hoverDelayOpenMs, hoverDelayCloseMs]}
-            trigger={tippyTrigger}
-            animation={false}
-            duration={0}
-            onMount={(inst) => {
-                const el = inst.popper.firstElementChild as HTMLElement | null;
-                if (!el) return;
-                el.removeAttribute('data-open');
-                requestAnimationFrame(() =>
-                    el.setAttribute('data-open', 'true')
-                );
-            }}
-            onHidden={(inst) => {
-                const el = inst.popper.firstElementChild as HTMLElement | null;
-                if (!el) return;
-                el.removeAttribute('data-open');
-                return new Promise<void>((resolve) => {
-                    const done = () => resolve();
-                    el.addEventListener('transitionend', done, { once: true });
-                    setTimeout(done, 250);
-                });
-            }}
-            render={(attrs) => (
-                <div
-                    {...attrs}
-                    tabIndex={-1}
-                    className={[
-                        'rounded-2xl shadow-2xl ring-1 ring-black/5',
-                        'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md',
-                        'p-3 w-[var(--card-w)] z-[1000] pointer-events-auto',
-                        'opacity-0 scale-[0.99] transition-all duration-150',
-                        "[data-placement^='top']:translate-y-2",
-                        "[data-placement^='bottom']:-translate-y-2",
-                        "data-[open='true']:opacity-100",
-                        "data-[open='true']:scale-100",
-                        "data-[open='true']:translate-y-0"
-                    ].join(' ')}
-                    style={
+        <>
+            <Tippy
+                placement='auto'
+                offset={[0, sideOffset]}
+                appendTo={() => document.body}
+                interactive={interactive}
+                delay={[hoverDelayOpenMs, hoverDelayCloseMs]}
+                trigger={tippyTrigger}
+                animation={false}
+                duration={0}
+                onMount={(inst) => {
+                    const el = inst.popper.firstElementChild as HTMLElement | null;
+                    if (!el) return;
+                    el.removeAttribute('data-open');
+                    requestAnimationFrame(() =>
+                        el.setAttribute('data-open', 'true')
+                    );
+                }}
+                onHidden={(inst) => {
+                    const el = inst.popper.firstElementChild as HTMLElement | null;
+                    if (!el) return;
+                    el.removeAttribute('data-open');
+                    return new Promise<void>((resolve) => {
+                        const done = () => resolve();
+                        el.addEventListener('transitionend', done, { once: true });
+                        setTimeout(done, 250);
+                    });
+                }}
+                render={(attrs) => (
+                    <div
+                        {...attrs}
+                        tabIndex={-1}
+                        className={[
+                            'rounded-2xl shadow-2xl ring-1 ring-black/5',
+                            'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md',
+                            'p-3 w-[var(--card-w)] z-[1000] pointer-events-auto',
+                            'opacity-0 scale-[0.99] transition-all duration-150',
+                            "[data-placement^='top']:translate-y-2",
+                            "[data-placement^='bottom']:-translate-y-2",
+                            "data-[open='true']:opacity-100",
+                            "data-[open='true']:scale-100",
+                            "data-[open='true']:translate-y-0"
+                        ].join(' ')}
+                        style={
                         {
                             ['--card-w' as any]: `${panelWidth}px`
                         } as React.CSSProperties
-                    }
-                    onClick ={(e) => e.stopPropagation()}
-                >
-                    {user ? (
-                        <div className='flex items-start gap-3'>
-                            <AvatarComponent
-                                username={displayName}
-                                avatar={
-                                    user.avatar
-                                        ? getImagePath(user.avatar)
-                                        : null
-                                }
-                                size={40}
-                            />
-                            <div className='min-w-0'>
-                                <div className='flex items-center gap-2'>
-                                    <button
-                                        onClick={() =>
-                                            user.id &&
-                                            navigate(`/user/${user.id}`)
-                                        }
-                                        className='text-sm font-bold hover:underline truncate'
-                                        title={username ?? 'View profile'}
-                                    >
-                                        {displayName}
-                                    </button>
+                        }
+                        onClick ={(e) => e.stopPropagation()}
+                    >
+                        {user ? (
+                            <div className='flex items-start gap-3'>
+                                <AvatarComponent
+                                    username={displayName}
+                                    avatar={
+                                        user.avatar
+                                            ? getImagePath(user.avatar)
+                                            : null
+                                    }
+                                    size={40}
+                                />
+                                <div className='min-w-0'>
+                                    <div className='flex items-center gap-2'>
+                                        <div className='flex items-center gap-2'>
+                                            <button
+                                                onClick={() =>
+                                                    user.id &&
+                                                navigate(`/user/${user.id}`)
+                                                }
+                                                className='text-sm font-bold hover:underline truncate'
+                                                title={username ?? 'View profile'}
+                                            >
+                                                {displayName}
+                                            </button>
 
-                                    {user.admin ? (
-                                        <Pill
-                                            tone='success'
-                                            size='sm'
-                                            leftIcon={
-                                                <ShieldCheckIcon className='h-4 w-4' />
-                                            }
-                                        >
-                                            Admin
-                                        </Pill>
-                                    ) : null}
-
-                                    {user.isEmailVerified ? (
-                                        <Pill
-                                            tone='info'
-                                            size='sm'
-                                            leftIcon={
-                                                <ShieldCheckIcon className='h-4 w-4' />
-                                            }
-                                        >
-                                            Verified
-                                        </Pill>
-                                    ) : (
-                                        <Pill
-                                            tone='danger'
-                                            size='sm'
-                                            leftIcon={
-                                                <ShieldExclamationIcon className='h-4 w-4' />
-                                            }
-                                        >
-                                            Not Verified
-                                        </Pill>
-                                    )}
-                                    <div className='ml-1 inline-flex items-center gap-1'>
-                                        {user.discordID ? (
-                                            <SocialBadgeIcon
-                                                src={DISCORD_ICON_SRC}
-                                                alt='Discord connected'
-                                                bg='#7289DA'
-                                                label='D'
-                                            />
-                                        ) : null}
-                                        {user.googleID ? (
-                                            <SocialBadgeIcon
-                                                src={GOOGLE_ICON_SRC}
-                                                alt='Google connected'
-                                                bg='#4285F4'
-                                                label='G'
-                                            />
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
-                                    <div className='truncate'>
-                                        <span className='opacity-70'>
-                                            Kudos:
-                                        </span>{' '}
-                                        {typeof user.kudos === 'number'
-                                            ? user.kudos
-                                            : 0}
-                                    </div>
-                                    <div className='truncate'>
-                                        <span className='opacity-70'>
-                                            Joined:
-                                        </span>{' '}
-                                        {fmtDate(user.createdAt) || '—'}
-                                    </div>
-                                    {user.email ? (
-                                        <div className='truncate col-span-2'>
-                                            <span className='opacity-70'>
-                                                Email:
-                                            </span>{' '}
-                                            {user.email}
+                                            {currentUser?.admin && (
+                                                <Tippy
+                                                    placement='top'
+                                                    delay={[100, 0]}
+                                                    render={(attrs) => (
+                                                        <div {...attrs} className='bg-black text-white text-xs rounded px-2 py-1'>Open admin report</div>
+                                                    )}
+                                                >
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            if (!user?.id) return;
+                                                            if (onAdminReportOpen) {
+                                                                onAdminReportOpen(user.id);
+                                                            }
+                                                            else {
+                                                                setAdminReportOpen(true);
+                                                            }
+                                                        }}
+                                                        title='Open admin report'
+                                                        className='ml-1 p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                                                    >
+                                                        <ExclamationTriangleIcon className='h-4 w-4 text-red-600' />
+                                                    </button>
+                                                </Tippy>
+                                            )}
                                         </div>
-                                    ) : null}
-                                </div>
 
-                                <div className='mt-3'>
-                                    <button
-                                        onClick={() =>
-                                            user.id &&
+                                        {user.admin ? (
+                                            <Pill
+                                                tone='success'
+                                                size='sm'
+                                                leftIcon={
+                                                    <ShieldCheckIcon className='h-4 w-4' />
+                                                }
+                                            >
+                                            Admin
+                                            </Pill>
+                                        ) : null}
+
+                                        {user.isEmailVerified ? (
+                                            <Pill
+                                                tone='info'
+                                                size='sm'
+                                                leftIcon={
+                                                    <ShieldCheckIcon className='h-4 w-4' />
+                                                }
+                                            >
+                                            Verified
+                                            </Pill>
+                                        ) : (
+                                            <Pill
+                                                tone='danger'
+                                                size='sm'
+                                                leftIcon={
+                                                    <ShieldExclamationIcon className='h-4 w-4' />
+                                                }
+                                            >
+                                            Not Verified
+                                            </Pill>
+                                        )}
+                                        <div className='ml-1 inline-flex items-center gap-1'>
+                                            {user.discordID ? (
+                                                <SocialBadgeIcon
+                                                    src={DISCORD_ICON_SRC}
+                                                    alt='Discord connected'
+                                                    bg='#7289DA'
+                                                    label='D'
+                                                />
+                                            ) : null}
+                                            {user.googleID ? (
+                                                <SocialBadgeIcon
+                                                    src={GOOGLE_ICON_SRC}
+                                                    alt='Google connected'
+                                                    bg='#4285F4'
+                                                    label='G'
+                                                />
+                                            ) : null}
+                                        </div>
+                                    </div>
+
+                                    <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
+                                        <div className='truncate'>
+                                            <span className='opacity-70'>
+                                            Kudos:
+                                            </span>{' '}
+                                            {typeof user.kudos === 'number'
+                                                ? user.kudos
+                                                : 0}
+                                        </div>
+                                        <div className='truncate'>
+                                            <span className='opacity-70'>
+                                            Joined:
+                                            </span>{' '}
+                                            {fmtDate(user.createdAt) || '—'}
+                                        </div>
+                                        {user.email ? (
+                                            <div className='truncate col-span-2'>
+                                                <span className='opacity-70'>
+                                                Email:
+                                                </span>{' '}
+                                                {user.email}
+                                            </div>
+                                        ) : null}
+                                    </div>
+
+                                    <div className='mt-3'>
+                                        <button
+                                            onClick={() =>
+                                                user.id &&
                                             navigate(`/user/${user.id}`)
-                                        }
-                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                            }
+                                            className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                             bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
                                             hover:opacity-90 active:opacity-80 transition'
-                                    >
+                                        >
                                         View Profile
-                                    </button>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className='flex items-center justify-center py-6'>
-                            <div className='h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin' />
-                            <span className='ml-2 text-xs text-neutral-600 dark:text-neutral-300'>
+                        ) : (
+                            <div className='flex items-center justify-center py-6'>
+                                <div className='h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin' />
+                                <span className='ml-2 text-xs text-neutral-600 dark:text-neutral-300'>
                                 Loading…
-                            </span>
-                        </div>
-                    )}
-                </div>
-            )}
-        >
-            <div
-                className={[
-                    centered && subtitle
-                        ? 'inline-flex w-full flex-col items-center text-center gap-2'
-                        : 'inline-flex items-center gap-2',
-                    'text-neutral-900 dark:text-neutral-100',
-                    className
-                ].join(' ')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
             >
-                {trigger}
-            </div>
-        </Tippy>
+                <div
+                    className={[
+                        centered && subtitle
+                            ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                            : 'inline-flex items-center gap-2',
+                        'text-neutral-900 dark:text-neutral-100',
+                        className
+                    ].join(' ')}
+                >
+                    {trigger}
+                </div>
+            </Tippy>
+            <AdminReportModal open={adminReportOpen} userID={user?.id ?? null} onClose={() => setAdminReportOpen(false)} />
+        </>
     );
 };
 

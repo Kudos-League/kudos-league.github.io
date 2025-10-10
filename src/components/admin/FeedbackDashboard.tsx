@@ -5,6 +5,7 @@ import RewardKudosModal from './RewardKudosModal';
 import UserCard from '../users/UserCard';
 import { FeedbackDTO, FeedbackStatus } from '@/shared/api/types';
 import { getImagePath } from '@/shared/api/config';
+import AdminReportModal from './AdminReportModal';
 
 type Props = {
     feedbacks: FeedbackDTO[];
@@ -13,6 +14,7 @@ type Props = {
 
 export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
+    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(null);
 
     const statusOptions: Array<{ value: FeedbackStatus; label: string }> = useMemo(
         () => [
@@ -104,7 +106,15 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                             <p className='text-sm light:text-gray-600 dark:text-neutral-300'>
                                             Submitted by{' '}
                                                 <span className='font-medium'>
-                                                    <UserCard user={fb.user} />
+                                                    <span
+                                                        role='button'
+                                                        tabIndex={0}
+                                                        onClick={() => fb.user?.id && setAdminReportOpenFor(fb.user.id)}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fb.user?.id && setAdminReportOpenFor(fb.user.id); } }}
+                                                        className='inline-block'
+                                                    >
+                                                        <UserCard user={fb.user} onAdminReportOpen={(id) => setAdminReportOpenFor(id)} />
+                                                    </span>
                                                 </span>
                                             </p>
                                             <div className='text-xs uppercase tracking-wide text-teal-600 dark:text-teal-400 font-semibold'>
@@ -221,6 +231,7 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                     })}
                 </div>
             )}
+            <AdminReportModal open={!!adminReportOpenFor} userID={adminReportOpenFor} onClose={() => setAdminReportOpenFor(null)} />
         </div>
     );
 }
