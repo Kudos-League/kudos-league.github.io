@@ -67,6 +67,7 @@ export type ProfileFormValues = {
         latitude: number;
         longitude: number;
     };
+    kudos?: number;
 };
 
 export interface Feat {

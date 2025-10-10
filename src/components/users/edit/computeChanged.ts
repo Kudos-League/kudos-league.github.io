@@ -13,6 +13,7 @@ type Baseline = Pick<
     | 'avatar'
     | 'avatarURL'
     | 'admin'
+    | 'kudos'
 >;
 
 const norm = (v: unknown) => (typeof v === 'string' ? v.trim() : v);
@@ -42,6 +43,11 @@ export default function computeChanged(
 
     if (typeof values.admin !== 'undefined' && values.admin !== baseline.admin) {
         changed.admin = !!values.admin;
+    }
+
+    // kudos
+    if (typeof values.kudos !== 'undefined' && values.kudos !== (baseline as any).kudos) {
+        changed.kudos = values.kudos;
     }
 
     // tags (compare as string[], emit string[])
