@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import ReportCard from './ReportCard';
 import { apiGet } from '@/shared/api/apiClient';
 
 type LoginAudit = { ipAddress: string; region?: string | null; country?: string | null; userAgent?: string | null; createdAt: string | Date };
@@ -10,7 +11,7 @@ type HandshakeView = { id: number; postID?: number; senderID: number; receiverID
 type Paged<T> = { data: T[]; nextCursor?: string | number; limit: number };
 
 export default function AdminReportModal({ open, onClose, userID }: { open: boolean; onClose: () => void; userID: number | null }) {
-    const [activeTab, setActiveTab] = useState<'login' | 'suspects' | 'handshakes'>('login');
+    const [activeTab, setActiveTab] = useState<'login' | 'suspects' | 'handshakes' | 'reports'>('login');
 
     const [loginAudits, setLoginAudits] = useState<LoginAudit[]>([]);
     const [loginNext, setLoginNext] = useState<string | number | undefined>(undefined);
@@ -28,6 +29,10 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
     const [handshakesError, setHandshakesError] = useState<string | null>(null);
 
     const limit = 5;
+    const [reports, setReports] = useState<any[]>([]);
+    const [reportsNext, setReportsNext] = useState<string | number | undefined>(undefined);
+    const [reportsLoading, setReportsLoading] = useState(false);
+    const [reportsError, setReportsError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open) return;
@@ -38,6 +43,7 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
             if (activeTab === 'login') loadMoreLogin(userID);
             if (activeTab === 'suspects') loadMoreSuspects(userID);
             if (activeTab === 'handshakes') loadMoreHandshakes(userID);
+            if (activeTab === 'reports') loadMoreReports(userID);
         }
         
     }, [open, userID]);
@@ -47,7 +53,8 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
         if (activeTab === 'login' && loginAudits.length === 0) loadMoreLogin(userID);
         if (activeTab === 'suspects' && suspects.length === 0) loadMoreSuspects(userID);
         if (activeTab === 'handshakes' && handshakes.length === 0) loadMoreHandshakes(userID);
-        
+        if (activeTab === 'reports' && reports.length === 0) loadMoreReports(userID);
+
     }, [activeTab, open, userID]);
 
     async function loadMoreLogin(id: number) {
@@ -92,6 +99,21 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
         finally { setHandshakesLoading(false); }
     }
 
+    async function loadMoreReports(id: number) {
+        setReportsLoading(true); setReportsError(null);
+        try {
+            const q = reportsNext ? `?limit=${limit}&cursor=${encodeURIComponent(String(reportsNext))}` : `?limit=${limit}`;
+            const res = await apiGet<Paged<any>>(`/admin/users/${id}/reports${q}`);
+            const opened = (res?.data ?? []).filter((r: any) => ['new', 'open'].includes(((r.status ?? '') as string).toLowerCase()));
+            if (opened.length) setReports((s) => [...s, ...opened]);
+            setReportsNext(res?.nextCursor);
+        }
+        catch (e) {
+            setReportsError('Failed to load reports');
+        }
+        finally { setReportsLoading(false); }
+    }
+
     return (
         <Modal open={open} onClose={onClose} title={`Admin report for ${userID ?? ''}`}>
             <div className='max-w-xl'>
@@ -99,6 +121,7 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
                     <Button variant={activeTab === 'login' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('login')} shape='pill'>Login audits</Button>
                     <Button variant={activeTab === 'suspects' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('suspects')} shape='pill'>Suspected linked users</Button>
                     <Button variant={activeTab === 'handshakes' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('handshakes')} shape='pill'>Shared handshakes</Button>
+                    <Button variant={activeTab === 'reports' ? 'secondary' : 'ghost'} onClick={() => setActiveTab('reports')} shape='pill'>Reports</Button>
                 </div>
 
                 {activeTab === 'login' && (
@@ -148,6 +171,27 @@ export default function AdminReportModal({ open, onClose, userID }: { open: bool
                         ) : (!handshakesLoading && <div className='text-sm text-gray-600'>No shared handshakes</div>)}
                         <div className='mt-2'>
                             {handshakesNext ? <Button variant='ghost' shape='default' className='text-sm' onClick={() => userID && loadMoreHandshakes(userID)} disabled={handshakesLoading}>{handshakesLoading ? 'Loading...' : 'Load more'}</Button> : null}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'reports' && (
+                    <div>
+                        {reportsLoading && reports.length === 0 && <div className='flex items-center gap-2'><div className='animate-spin rounded-full h-4 w-4 border-b-2 border-current' /> Loading...</div>}
+                        {reportsError && <div className='text-red-600'>{reportsError}</div>}
+                        {reports.length ? (
+                            <ul className='text-sm space-y-3'>
+                                {reports.map((r: any) => (
+                                    <li key={r.id}>
+                                        <ReportCard report={r}>
+                                            <Button variant='ghost' className='text-xs' onClick={() => { /* noop - individual actions handled in dashboard */ }}>View</Button>
+                                        </ReportCard>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (!reportsLoading && <div className='text-sm text-gray-600'>No open reports</div>)}
+                        <div className='mt-2'>
+                            {reportsNext ? <Button variant='ghost' shape='default' className='text-sm' onClick={() => userID && loadMoreReports(userID)} disabled={reportsLoading}>{reportsLoading ? 'Loading...' : 'Load more'}</Button> : null}
                         </div>
                     </div>
                 )}

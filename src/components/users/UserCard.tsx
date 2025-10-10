@@ -47,6 +47,7 @@ type TriggerVariant = 'name' | 'avatar-name';
 
 interface Props {
     user?: UserDTO;
+    reportsThisMonth?: number;
     large?: boolean;
     triggerVariant?: TriggerVariant;
     className?: string;
@@ -77,6 +78,7 @@ function fmtDate(d?: Date | string) {
 
 const UserCard: React.FC<Props> = ({
     user,
+    reportsThisMonth = 0,
     large = false,
     triggerVariant = 'avatar-name',
     className = '',
@@ -327,6 +329,20 @@ const UserCard: React.FC<Props> = ({
                                                     >
                                                         <ExclamationTriangleIcon className='h-4 w-4 text-red-600' />
                                                     </button>
+                                                </Tippy>
+                                            )}
+
+                                            {reportsThisMonth > 5 && (
+                                                <Tippy
+                                                    placement='top'
+                                                    delay={[100, 0]}
+                                                    render={(attrs) => (
+                                                        <div {...attrs} className='bg-black text-white text-xs rounded px-2 py-1'>User has several outstanding reports</div>
+                                                    )}
+                                                >
+                                                    <span className='ml-1 inline-block' title='User has several outstanding reports'>
+                                                        <span style={{ display: 'inline-block', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: '12px solid #ef4444' }} />
+                                                    </span>
                                                 </Tippy>
                                             )}
                                         </div>
