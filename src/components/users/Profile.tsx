@@ -10,7 +10,7 @@ import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
 import { apiMutate } from '@/shared/api/apiClient';
-import { getMyUserSettings, blockUser, unblockUser } from '@/shared/api/mutations/usersettings';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
@@ -50,8 +50,7 @@ const Profile: React.FC<Props> = ({
     const reportMutation = useReportUser();
     const [reportFiles, setReportFiles] = useState<File[]>([]);
     const [reportServerError, setReportServerError] = useState<string | null>(null);
-    const [blockedUsers, setBlockedUsers] = useState<number[] | null>(null);
-    const [blockingLoading, setBlockingLoading] = useState(false);
+    const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
 
     const validateReportFiles = (files?: File[]) => {
         if (!files) return null;
@@ -135,28 +134,7 @@ const Profile: React.FC<Props> = ({
         }
     };
 
-    React.useEffect(() => {
-        let mounted = true;
-        if (!currentUser) {
-            setBlockedUsers(null);
-            return;
-        }
-
-        getMyUserSettings()
-            .then((res: any) => {
-                if (!mounted) return;
-                const list = res?.blockedUsers ?? [];
-                setBlockedUsers(Array.isArray(list) ? list : []);
-            })
-            .catch(() => {
-                if (!mounted) return;
-                setBlockedUsers([]);
-            });
-
-        return () => {
-            mounted = false;
-        };
-    }, [currentUser]);
+    // blockedUsers and loading come from the hook; hook implements fetching and optimistic updates
 
     if (editing) {
         return (
@@ -334,21 +312,16 @@ const Profile: React.FC<Props> = ({
                             >
                                 Report
                             </Button>
-                            {currentUser && currentUser.id !== user.id && blockedUsers !== null && (
-                                blockedUsers.includes(user.id) ? (
+                            {currentUser && currentUser.id !== user.id && (
+                                (blockedUsers ?? []).includes(user.id) ? (
                                     <Button
                                         onClick={async () => {
                                             if (blockingLoading) return;
-                                            setBlockingLoading(true);
-                                            setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
                                             try {
-                                                await unblockUser(user.id);
+                                                await unblock(user.id);
                                             }
                                             catch (err) {
-                                                setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
-                                            }
-                                            finally {
-                                                setBlockingLoading(false);
+                                                // noop
                                             }
                                         }}
                                         variant='secondary'
@@ -359,16 +332,11 @@ const Profile: React.FC<Props> = ({
                                     <Button
                                         onClick={async () => {
                                             if (blockingLoading) return;
-                                            setBlockingLoading(true);
-                                            setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
                                             try {
-                                                await blockUser(user.id);
+                                                await block(user.id);
                                             }
                                             catch (err) {
-                                                setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
-                                            }
-                                            finally {
-                                                setBlockingLoading(false);
+                                                // noop - hook will rollback/refresh
                                             }
                                         }}
                                         className='!bg-red-600 !text-white'

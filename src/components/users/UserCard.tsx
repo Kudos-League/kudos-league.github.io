@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Tippy from '@tippyjs/react/headless';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,7 +13,6 @@ import AvatarComponent from '@/components/users/Avatar';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '@/components/common/Pill';
 import AdminReportModal from '@/components/admin/AdminReportModal';
-import { getMyUserSettings, blockUser, unblockUser } from '@/shared/api/mutations/usersettings';
 
 import type { UserDTO } from '@/shared/api/types';
 
@@ -99,8 +99,7 @@ const UserCard: React.FC<Props> = ({
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     const [adminReportOpen, setAdminReportOpen] = useState(false);
-    const [blockedUsers, setBlockedUsers] = useState<number[] | null>(null);
-    const [blockingLoading, setBlockingLoading] = useState(false);
+    const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
 
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
@@ -206,28 +205,7 @@ const UserCard: React.FC<Props> = ({
         subtitleClassName
     ]);
 
-    useEffect(() => {
-        let mounted = true;
-        if (!currentUser) {
-            setBlockedUsers(null);
-            return;
-        }
-
-        getMyUserSettings()
-            .then((res: any) => {
-                if (!mounted) return;
-                const list = res?.blockedUsers ?? [];
-                setBlockedUsers(Array.isArray(list) ? list : []);
-            })
-            .catch(() => {
-                if (!mounted) return;
-                setBlockedUsers([]);
-            });
-
-        return () => {
-            mounted = false;
-        };
-    }, [currentUser]);
+    // useBlockedUsers handles fetching and state
 
     const tippyTrigger =
         triggerMode === 'hover'
@@ -465,54 +443,42 @@ const UserCard: React.FC<Props> = ({
                                         </button>
                                         {currentUser && user?.id && currentUser.id !== user.id && (
                                             <div className='inline-block ml-2'>
-                                                {blockedUsers !== null ? (
-                                                    blockedUsers.includes(user.id) ? (
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (blockingLoading) return;
-                                                                setBlockingLoading(true);
-                                                                setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
-                                                                try {
-                                                                    await unblockUser(user.id);
-                                                                }
-                                                                catch (err) {
-                                                                    setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
-                                                                }
-                                                                finally {
-                                                                    setBlockingLoading(false);
-                                                                }
-                                                            }}
-                                                            className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
-                                                            bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700
-                                                            hover:opacity-90 active:opacity-80 transition'
-                                                        >
-                                                            Unblock
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (blockingLoading) return;
-                                                                setBlockingLoading(true);
-                                                                setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
-                                                                try {
-                                                                    await blockUser(user.id);
-                                                                }
-                                                                catch (err) {
-                                                                    setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
-                                                                }
-                                                                finally {
-                                                                    setBlockingLoading(false);
-                                                                }
-                                                            }}
-                                                            className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
-                                                            bg-red-600 text-white hover:opacity-90 active:opacity-80 transition'
-                                                        >
-                                                            Block
-                                                        </button>
-                                                    )
-                                                ) : null}
+                                                {(blockedUsers ?? []).includes(user.id) ? (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (blockingLoading) return;
+                                                            try {
+                                                                await unblock(user.id);
+                                                            }
+                                                            catch (err) {
+                                                                // noop - hook will refresh/rollback as needed
+                                                            }
+                                                        }}
+                                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                                        bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700
+                                                        hover:opacity-90 active:opacity-80 transition'
+                                                    >
+                                                        Unblock
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (blockingLoading) return;
+                                                            try {
+                                                                await block(user.id);
+                                                            }
+                                                            catch (err) {
+                                                                // noop
+                                                            }
+                                                        }}
+                                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                                        bg-red-600 text-white hover:opacity-90 active:opacity-80 transition'
+                                                    >
+                                                        Block
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
