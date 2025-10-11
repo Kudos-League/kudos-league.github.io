@@ -356,7 +356,8 @@ export const NotificationType = {
     POST_AUTO_CLOSE: 'post-auto-close',
     PAST_GIFT: 'past-gift',
     BUG_REPORT: 'bug-report',
-    SITE_FEEDBACK: 'site-feedback'
+    SITE_FEEDBACK: 'site-feedback',
+    USER_BANNED: 'user-banned'
 } as const;
 
 export type NotificationTypeKeys =

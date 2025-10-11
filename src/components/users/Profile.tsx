@@ -40,6 +40,10 @@ const Profile: React.FC<Props> = ({
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [banEndDate, setBanEndDate] = useState<string>('');
+    const [banIndefinite, setBanIndefinite] = useState<boolean>(false);
+    const [banServerError, setBanServerError] = useState<string | null>(null);
     const [reportReason, setReportReason] = useState('');
     const [reportNotes, setReportNotes] = useState('');
     const reportMutation = useReportUser();
@@ -304,6 +308,45 @@ const Profile: React.FC<Props> = ({
                             >
                                 Report
                             </Button>
+                            {currentUser?.admin && (
+                                <>
+                                    {!(user as any).banEndDate ? (
+                                        <Button
+                                            onClick={() => setShowBanModal(true)}
+                                            className='!bg-red-700 !text-white'
+                                            variant='danger'
+                                        >
+                                            Ban
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            onClick={async () => {
+                                                if (!token) return alert('Missing auth token');
+                                                const confirmUnban = window.confirm('Unban this user?');
+                                                if (!confirmUnban) return;
+                                                try {
+                                                    await apiMutate(`/admin/users/${user.id}/unban`, 'post');
+                                                    if (setUser) {
+                                                        setUser({ ...(user as any), banEndDate: null } as any);
+                                                    }
+                                                    else {
+                                                        console.warn('Unbanned user; setUser not provided so local UI may need refresh');
+                                                    }
+                                                    alert('User unbanned.');
+                                                }
+                                                catch (err: any) {
+                                                    console.error('Failed to unban user', err);
+                                                    alert(err?.message || 'Failed to unban user.');
+                                                }
+                                            }}
+                                            className='!bg-green-600 !text-white'
+                                            variant='primary'
+                                        >
+                                            Unban
+                                        </Button>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
@@ -452,6 +495,84 @@ const Profile: React.FC<Props> = ({
                                     variant='danger'
                                 >
                                     Submit
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {showBanModal && (
+                    <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
+                        <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
+                            <h2 className='text-xl font-bold mb-2'>Ban User</h2>
+                            <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
+                                Provide an optional end date/time for the ban, or mark it as indefinite.
+                            </p>
+
+                            <label className='block text-sm font-medium mb-1'>End date (optional)</label>
+                            <input
+                                type='datetime-local'
+                                value={banEndDate}
+                                onChange={(e) => setBanEndDate(e.target.value)}
+                                disabled={banIndefinite}
+                                className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 mb-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                            />
+
+                            <label className='flex items-center gap-2 mb-3'>
+                                <input
+                                    type='checkbox'
+                                    checked={banIndefinite}
+                                    onChange={(e) => setBanIndefinite(e.target.checked)}
+                                />
+                                <span className='text-sm'>Indefinite ban</span>
+                            </label>
+
+                            {banServerError && (
+                                <div className='text-xs text-red-600 mb-2'>{banServerError}</div>
+                            )}
+
+                            <div className='flex justify-end gap-2'>
+                                <Button
+                                    onClick={() => {
+                                        setShowBanModal(false);
+                                        setBanEndDate('');
+                                        setBanIndefinite(false);
+                                        setBanServerError(null);
+                                    }}
+                                    variant='secondary'
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={async () => {
+                                        if (!currentUser?.admin || !user?.id) return;
+                                        const confirmBan = window.confirm('Ban this user? This will immediately prevent them from logging in while the ban is active.');
+                                        if (!confirmBan) return;
+                                        try {
+                                            const payload: Record<string, unknown> = {};
+                                            if (banIndefinite) payload.indefinite = true;
+                                            else if (banEndDate) payload.banEndDate = new Date(banEndDate).toISOString();
+                                            await apiMutate(`/admin/users/${user.id}/ban`, 'post', payload);
+                                            const endDate = banIndefinite ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString() : (banEndDate ? new Date(banEndDate).toISOString() : null);
+                                            if (setUser) {
+                                                setUser({ ...(user as any), banEndDate: endDate } as any);
+                                            }
+                                            else {
+                                                console.warn('User banned; setUser not provided so local UI may need refresh');
+                                            }
+                                            alert('User banned.');
+                                            setShowBanModal(false);
+                                            setBanEndDate('');
+                                            setBanIndefinite(false);
+                                        }
+                                        catch (err: any) {
+                                            console.error('Failed to ban user', err);
+                                            setBanServerError(err?.message || 'Failed to ban user.');
+                                        }
+                                    }}
+                                    variant='danger'
+                                >
+                                    Confirm Ban
                                 </Button>
                             </div>
                         </div>
