@@ -10,6 +10,7 @@ import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
 import { apiMutate } from '@/shared/api/apiClient';
+import { getMyUserSettings, blockUser, unblockUser } from '@/shared/api/mutations/usersettings';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
@@ -49,6 +50,8 @@ const Profile: React.FC<Props> = ({
     const reportMutation = useReportUser();
     const [reportFiles, setReportFiles] = useState<File[]>([]);
     const [reportServerError, setReportServerError] = useState<string | null>(null);
+    const [blockedUsers, setBlockedUsers] = useState<number[] | null>(null);
+    const [blockingLoading, setBlockingLoading] = useState(false);
 
     const validateReportFiles = (files?: File[]) => {
         if (!files) return null;
@@ -131,6 +134,29 @@ const Profile: React.FC<Props> = ({
             alert('Failed to reactivate user.');
         }
     };
+
+    React.useEffect(() => {
+        let mounted = true;
+        if (!currentUser) {
+            setBlockedUsers(null);
+            return;
+        }
+
+        getMyUserSettings()
+            .then((res: any) => {
+                if (!mounted) return;
+                const list = res?.blockedUsers ?? [];
+                setBlockedUsers(Array.isArray(list) ? list : []);
+            })
+            .catch(() => {
+                if (!mounted) return;
+                setBlockedUsers([]);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, [currentUser]);
 
     if (editing) {
         return (
@@ -308,6 +334,49 @@ const Profile: React.FC<Props> = ({
                             >
                                 Report
                             </Button>
+                            {currentUser && currentUser.id !== user.id && blockedUsers !== null && (
+                                blockedUsers.includes(user.id) ? (
+                                    <Button
+                                        onClick={async () => {
+                                            if (blockingLoading) return;
+                                            setBlockingLoading(true);
+                                            setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
+                                            try {
+                                                await unblockUser(user.id);
+                                            }
+                                            catch (err) {
+                                                setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
+                                            }
+                                            finally {
+                                                setBlockingLoading(false);
+                                            }
+                                        }}
+                                        variant='secondary'
+                                    >
+                                        Unblock
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={async () => {
+                                            if (blockingLoading) return;
+                                            setBlockingLoading(true);
+                                            setBlockedUsers((prev) => (prev ? [...prev, user.id] : [user.id]));
+                                            try {
+                                                await blockUser(user.id);
+                                            }
+                                            catch (err) {
+                                                setBlockedUsers((prev) => (prev ? prev.filter((id) => id !== user.id) : []));
+                                            }
+                                            finally {
+                                                setBlockingLoading(false);
+                                            }
+                                        }}
+                                        className='!bg-red-600 !text-white'
+                                    >
+                                        Block
+                                    </Button>
+                                )
+                            )}
                             {currentUser?.admin && (
                                 <>
                                     {!(user as any).banEndDate ? (
