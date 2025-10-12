@@ -152,7 +152,7 @@ const HandshakeCard: React.FC<Props> = ({
                 receiverID: gifterID
             };
             await createOfferMutation.mutateAsync(dto);
-            await completeHandshakeMutation.mutateAsync();
+            await completeHandshakeMutation.mutateAsync(handshake.id);
             setStatus('completed');
             setKudosValue('');
         }
@@ -218,7 +218,7 @@ const HandshakeCard: React.FC<Props> = ({
                                             return;
 
                                         try {
-                                            await deleteHandshakeMutation.mutateAsync();
+                                            await deleteHandshakeMutation.mutateAsync(handshake.id);
                                             onDelete?.(handshake.id);
                                         }
                                         catch (err) {
