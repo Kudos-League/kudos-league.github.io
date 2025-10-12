@@ -2,7 +2,7 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { NotificationRecord } from '@/shared/api/types';
 import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
 export default function NotificationsBell() {
@@ -121,11 +121,20 @@ export default function NotificationsBell() {
                     <div className='absolute right-0 mt-2 w-80 max-h-96 overflow-auto rounded-lg border border-zinc-200 bg-white text-zinc-800 shadow-xl dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200'>
                         <div className='flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-white/10'>
                             <span className='text-sm font-semibold'>Notifications</span>
-                            {unread > 0 && (
-                                <span className='text-xs font-medium text-teal-600 dark:text-teal-400'>
-                                    {unread} new
-                                </span>
-                            )}
+                            <div className='flex items-center gap-3'>
+                                {unread > 0 && (
+                                    <span className='text-xs font-medium text-teal-600 dark:text-teal-400'>
+                                        {unread} new
+                                    </span>
+                                )}
+                                <Link
+                                    to={routes.notifications}
+                                    onClick={() => setOpen(false)}
+                                    className='text-xs font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300'
+                                >
+                                    View all
+                                </Link>
+                            </div>
                         </div>
                         <ul>
                             {!state.loaded ? (

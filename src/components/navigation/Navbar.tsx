@@ -39,6 +39,7 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
     }
     else {
         base.push(
+            { name: 'Donate', to: routes.donate },
             { name: 'About', to: routes.about },
             { name: 'Login', to: routes.login },
             { name: 'Register', to: routes.signUp }

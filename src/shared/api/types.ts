@@ -67,6 +67,7 @@ export type ProfileFormValues = {
         latitude: number;
         longitude: number;
     };
+    kudos?: number;
 };
 
 export interface Feat {
@@ -158,6 +159,9 @@ export type HandshakeDTO = {
     status: string;
     createdAt: Date;
     updatedAt: Date;
+    noShowReported?: boolean | null;
+    cancelledByUserID?: number | null;
+    cancelledAt?: string | null;
     post: PostDTO;
 };
 
@@ -317,6 +321,7 @@ export interface UserDTO {
     avatar?: string | null;
     admin: boolean;
     kudos: number;
+    invitedByUserID?: number | null;
     isEmailVerified?: boolean;
     password?: string | null;
     locationID: number | null;
@@ -327,6 +332,24 @@ export interface UserDTO {
     createdAt: Date;
     updatedAt: Date;
     deactivatedAt?: Date | null;
+}
+
+export interface UserInviteDTO {
+    id: number;
+    createdByUserID: number;
+    targetEmail?: string | null;
+    usedByUserID?: number | null;
+    usedAt?: string | null;
+    revoked: boolean;
+    inviteUrl?: string | null;
+    usedBy?: UserDTO | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UserInviteListResponse {
+    invites: UserInviteDTO[];
+    nextCursor: number | null;
 }
 
 export type FeedbackKind = 'site-feedback' | 'bug-report';
@@ -355,7 +378,8 @@ export const NotificationType = {
     POST_AUTO_CLOSE: 'post-auto-close',
     PAST_GIFT: 'past-gift',
     BUG_REPORT: 'bug-report',
-    SITE_FEEDBACK: 'site-feedback'
+    SITE_FEEDBACK: 'site-feedback',
+    USER_BANNED: 'user-banned'
 } as const;
 
 export type NotificationTypeKeys =
@@ -386,4 +410,9 @@ export type NotificationRecord = NotificationPayload & {
     isRead: boolean;
     isActedOn: boolean;
     createdAt?: string;
+};
+
+export type NotificationsHistoryResponse = {
+    items: NotificationRecord[];
+    nextCursor?: number;
 };

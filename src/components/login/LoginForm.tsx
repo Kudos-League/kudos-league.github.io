@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { TinyHelpLink } from './fields';
+import { Alert, TinyHelpLink } from './fields';
+import { routes } from '@/routes';
 import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
 import Form from '@/components/forms/Form';
@@ -12,7 +13,7 @@ import FormField from '@/components/forms/FormField';
 
 type LoginFormProps = {
     onSuccess?: () => void;
-    onError?: (errorMessage: string) => void;
+    onError?: (errorMessage: React.ReactNode) => void;
     initialError?: string;
 };
 
@@ -74,36 +75,98 @@ export default function LoginForm({
 }: LoginFormProps) {
     const { login, token, logout } = useAuth();
     const methods = useForm<FormValues>({ mode: 'onBlur' });
-    const [errorMessage, setErrorMessage] = useState<string | null>(initialError ?? null);
+    const [errorMessage, setErrorMessage] = useState<React.ReactNode | null>(initialError ?? null);
     const navigate = useNavigate();
 
-    const getErrorMessage = (error: any): string => {
-        const status = error?.response?.status;
-        const responseMessage = error?.response?.data?.message;
-        const responseError = error?.response?.data?.error;
+    const getErrorMessage = (error: any): React.ReactNode => {
+        const resp = error?.response ?? error;
+        let body: any = resp?.data ?? resp?.body ?? resp;
+
+        if (!body && Array.isArray(resp) && resp.length > 0) {
+            const first = resp[0];
+            if (typeof first === 'string') body = { message: first };
+            else if (first && typeof first === 'object') body = first;
+        }
+        const status = resp?.status ?? resp?.statusCode ?? error?.status;
+
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            }
+            catch {
+                // leave as string
+            }
+        }
+
+        let arrayResponseMessage: string[] | null = null;
+        if (Array.isArray(body)) {
+            if (body.length === 1) {
+                const first = body[0];
+                if (typeof first === 'string') body = { message: first };
+                else if (first && typeof first === 'object') body = first;
+                else body = { message: String(first) };
+            }
+            else if (body.length > 1) {
+                arrayResponseMessage = body.map((it: any) => (typeof it === 'string' ? it : (it?.message ?? it?.error ?? String(it))));
+            }
+        }
+
+        if ((body == null || typeof body !== 'object') && typeof error?.message === 'string') {
+            try {
+                const parsed = JSON.parse(error.message);
+                if (parsed && typeof parsed === 'object') body = parsed;
+            }
+            catch {
+                // ignore
+            }
+        }
+
+        const responseMessageRaw =
+            body?.message ?? body?.error ?? body?.msg ?? (typeof error?.message === 'string' ? error.message : undefined);
+        const responseMessage = arrayResponseMessage ?? responseMessageRaw;
+        const banEnd = body?.banEndDate ?? body?.ban_end_date ?? body?.ban_end ?? error?.banEndDate ?? null;
+
+        const formatBan = (d: any) => {
+            try {
+                return new Date(d).toLocaleString();
+            }
+            catch {
+                return null;
+            }
+        };
 
         switch (status) {
         case 400:
             return 'Invalid username or password format. Please check your credentials.';
         case 401:
             return 'Invalid username or password. Please try again.';
-        case 403:
-            if (
-                responseMessage?.toLowerCase().includes('email') ||
-                    responseMessage?.toLowerCase().includes('verify') ||
-                    responseMessage?.toLowerCase().includes('verification') ||
-                    responseMessage?.toLowerCase().includes('unverified')
-            ) {
-                return 'Please verify your email address before logging in. Check your inbox for a verification link.';
+        case 403: {
+            if (Array.isArray(responseMessage)) {
+                const when = banEnd ? formatBan(banEnd) : null;
+                return (
+                    <div>
+                        <p>{when ? `This account is banned (until ${when}):` : 'This account is banned:'}</p>
+                        <ul>
+                            {responseMessage.map((m, i) => (
+                                <li key={i}>{m}</li>
+                            ))}
+                        </ul>
+                    </div>
+                );
             }
-            if (
-                responseMessage?.toLowerCase().includes('disabled') ||
-                    responseMessage?.toLowerCase().includes('suspended') ||
-                    responseMessage?.toLowerCase().includes('banned')
-            ) {
-                return 'Your account has been restricted. Contact support for assistance.';
+
+            if (responseMessage && typeof responseMessage === 'string') {
+                const when = banEnd ? formatBan(banEnd) : null;
+                return when ? `${responseMessage} (until ${when})` : responseMessage;
             }
-            return 'Your account needs verification. Please check your email for a verification link, or contact support if you need help.';
+
+            if (banEnd) {
+                const when = formatBan(banEnd);
+                return when ? `This account is banned until ${when}.` : 'This account is banned.';
+            }
+
+            return 'Your account has been restricted. Contact support for assistance.';
+        }
         case 409:
             return 'You already have an account with that username or email. Please Log In.';
         case 429:
@@ -112,21 +175,18 @@ export default function LoginForm({
             return 'Server error occurred. Please try again in a few moments.';
         case 503:
             return 'Service temporarily unavailable. Please try again later.';
-        default:
-            if (!error?.response)
-                return 'Unable to connect to server. Please check your internet connection.';
-            if (responseMessage && typeof responseMessage === 'string') {
-                if (
-                    responseMessage.toLowerCase().includes('email') ||
-                        responseMessage.toLowerCase().includes('verify')
-                ) {
-                    return `Email verification required: ${responseMessage}`;
-                }
-                return responseMessage;
+        default: {
+            if (!error?.response && typeof error?.message === 'string') {
+                const msg = error.message;
+                if (msg && msg.length > 0) return msg;
             }
-            if (responseError && typeof responseError === 'string')
-                return responseError;
+
+            if (responseMessage && typeof responseMessage === 'string') return responseMessage;
+
+            if (!error?.response) return 'Unable to connect to server. Please check your internet connection.';
+
             return error?.message || 'Login failed. Please try again.';
+        }
         }
     };
 
@@ -156,7 +216,12 @@ export default function LoginForm({
 
     return (
         <Auth title='Sign in to your account'>
-            <Form methods={methods} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
+            <Form
+                methods={methods}
+                onSubmit={onSubmit}
+                className='space-y-6'
+                serverError={typeof errorMessage === 'string' ? errorMessage : undefined}
+            >
                 <div>
                     <div className='col-span-2'>
                         <FormField name='username'>
@@ -206,11 +271,14 @@ export default function LoginForm({
 
                 <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
                     Don&apos;t have an account?{' '}
-                    <TinyHelpLink onClick={() => navigate('/sign-up')}>
+                    <TinyHelpLink onClick={() => navigate(routes.signUp)}>
                         Sign Up
                     </TinyHelpLink>
                 </p>
             </Form>
+            {typeof errorMessage !== 'string' && errorMessage && (
+                <div className='mt-4 text-sm text-red-600'>{errorMessage}</div>
+            )}
         </Auth>
     );
 }

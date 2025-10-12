@@ -8,6 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import { AuthProvider, useAuth } from '@/contexts/useAuth';
+import { BlockedUsersProvider } from '@/contexts/useBlockedUsers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
@@ -46,9 +47,11 @@ export default function App() {
                         <NotificationsProvider>
                             <ThemeProvider>
                                 <WebSocketProvider>
-                                    <AppCore />
-                                    <AlertHost />
-                                    <ConnectingOverlay />
+                                    <BlockedUsersProvider>
+                                        <AppCore />
+                                        <AlertHost />
+                                        <ConnectingOverlay />
+                                    </BlockedUsersProvider>
                                 </WebSocketProvider>
                             </ThemeProvider>
                         </NotificationsProvider>

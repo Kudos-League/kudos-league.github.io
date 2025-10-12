@@ -25,7 +25,8 @@ type AuthContextType = {
     register: (
         username: string,
         email: string,
-        password: string
+        password: string,
+        inviteToken: string
     ) => Promise<any>;
     updateUser: (updated: Partial<UserDTO>) => void;
 };
@@ -59,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     });
 
-    const registerMutation = useMutation<any, any, { username: string; email: string; password: string }>({
+    const registerMutation = useMutation<any, any, { username: string; email: string; password: string; inviteToken: string }>({
         mutationFn: (payload) => apiMutate('/users/register', 'post', payload)
     });
 
@@ -135,19 +136,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(true);
             try {
                 const url = new URL(window.location.href);
-                const tok = url.searchParams.get('token');
-                const path = url.pathname;
+                const tokenFromQuery = url.searchParams.get('token');
+                const pathName = url.pathname;
 
                 const isPasswordFlow =
-                    path === '/reset-password' || path === '/forgot-password';
+                    pathName === '/reset-password' || pathName === '/forgot-password';
 
-                if (tok && !isPasswordFlow) {
-                    window.history.replaceState({}, '', path);
-                    await loginHandler({ token: tok });
+                if (tokenFromQuery && !isPasswordFlow) {
+                    try {
+                        await loginHandler({ token: tokenFromQuery });
+                        url.searchParams.delete('token');
+                        const remainingSearch = url.searchParams.toString();
+                        const nextUrl = remainingSearch ? `${pathName}?${remainingSearch}` : pathName;
+                        window.history.replaceState({}, '', nextUrl);
+                    }
+                    catch (err) {
+                        console.error('Token login failed:', err);
+                    }
                 }
 
                 const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                if (stored && !tok) {
+                if (stored) {
                     const cached = JSON.parse(stored) as AuthState;
                     if (cached.token) {
                         setAuthState(cached);
@@ -190,10 +199,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signUpHandler = async (
         username: string,
         email: string,
-        password: string
+        password: string,
+        inviteToken: string
     ) => {
+        if (!inviteToken) {
+            throw new Error('Invite token is required.');
+        }
         try {
-            const res = await registerMutation.mutateAsync({ username, email, password });
+            const res = await registerMutation.mutateAsync({ username, email, password, inviteToken });
 
             if (res?.token) {
                 return loginHandler({ username, password });

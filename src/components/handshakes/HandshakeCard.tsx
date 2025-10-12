@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Tippy from '@tippyjs/react';
-import { XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
-import { useCompleteHandshake, useDeleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
+import { useCompleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
 import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
@@ -30,9 +29,9 @@ const HandshakeCard: React.FC<Props> = ({
     const navigate = useNavigate();
     useAuth();
 
-    const isSender = userID != null && handshake.senderID === userID;
     const [status, setStatus] = useState(handshake.status);
     const [processing, setProcessing] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [kudosValue, setKudosValue] = useState('');
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -53,6 +52,7 @@ const HandshakeCard: React.FC<Props> = ({
         return getHandshakeStage(handshakeForStage, userID);
     }, [handshake, status, userID]);
     const canAccept = stage.canAccept;
+    const canCancel = stage.canCancel;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
@@ -136,6 +136,41 @@ const HandshakeCard: React.FC<Props> = ({
         }
     };
 
+    const handleCancelHandshake = async () => {
+        if (cancelling || status === 'cancelled') return;
+
+        const confirmed = window.confirm('Are you sure you want to cancel this handshake?');
+        if (!confirmed) return;
+
+        const payload: Record<string, any> = { status: 'cancelled' };
+        const createdAt = new Date(handshake.createdAt);
+        const createdTime = createdAt.getTime();
+        const isValidTimestamp = !Number.isNaN(createdTime);
+        const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+        const shouldAskNoShow = isValidTimestamp && Date.now() - createdTime >= twentyFourHoursMs;
+
+        if (shouldAskNoShow) {
+            const noShow = window.confirm('Did the other party fail to show up? Select OK for Yes, Cancel for No.');
+            payload.noShowReported = noShow;
+        }
+
+        setCancelling(true);
+        setError(null);
+        try {
+            await apiMutate(`/handshakes/${handshake.id}`, 'patch', payload);
+            setStatus('cancelled');
+            setIsChatOpen(false);
+            onDelete?.(handshake.id);
+        }
+        catch (err) {
+            console.error('Failed to cancel handshake', err);
+            setError('Failed to cancel handshake.');
+        }
+        finally {
+            setCancelling(false);
+        }
+    };
+
     const handleKudosSubmit = async () => {
         if (!kudosValue || isNaN(Number(kudosValue))) {
             setError('Enter a valid kudos number.');
@@ -175,7 +210,6 @@ const HandshakeCard: React.FC<Props> = ({
     // time-ago helper intentionally removed (unused)
     
     const createOfferMutation = useCreateOffer();
-    const deleteHandshakeMutation = useDeleteHandshake();
     const completeHandshakeMutation = useCompleteHandshake();
 
     return (
@@ -196,7 +230,9 @@ const HandshakeCard: React.FC<Props> = ({
                                     ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
                                     : status === 'accepted'
                                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                        : 'bg-gradient-to-r from-green-500 to-green-600'
+                                        : status === 'completed'
+                                            ? 'bg-gradient-to-r from-green-500 to-green-600'
+                                            : 'bg-gradient-to-r from-gray-400 to-gray-500'
                             }`}
                         >
                             {status === 'new'
@@ -205,36 +241,15 @@ const HandshakeCard: React.FC<Props> = ({
                                   status.slice(1)}
                         </span>
 
-                        {isSender && status === 'new' && !stage.postIsPast && (
-                            <Tippy content='Rescind Offer'>
-                                <Button
-                                    variant='danger'
-                                    onClick={async () => {
-                                        if (
-                                            !confirm(
-                                                'Are you sure you want to rescind this handshake?'
-                                            )
-                                        )
-                                            return;
-
-                                        try {
-                                            await deleteHandshakeMutation.mutateAsync(handshake.id);
-                                            onDelete?.(handshake.id);
-                                        }
-                                        catch (err) {
-                                            console.error(
-                                                'Failed to delete handshake',
-                                                err
-                                            );
-                                            setError(
-                                                'Failed to delete handshake'
-                                            );
-                                        }
-                                    }}
-                                >
-                                    <XMarkIcon className='w-5 h-5' />
-                                </Button>
-                            </Tippy>
+                        {canCancel && !stage.postIsPast && (
+                            <Button
+                                variant='danger'
+                                onClick={handleCancelHandshake}
+                                disabled={cancelling}
+                                className='text-xs px-3 py-2'
+                            >
+                                {cancelling ? 'Cancelling…' : 'Cancel'}
+                            </Button>
                         )}
                     </div>
                 </div>

@@ -35,7 +35,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
     const dispatch = useDispatch();
     const state = useSelector((s: RootState) => s.notifications);
-    const { user, token } = useAuth();
+    const { user, token, logout } = useAuth();
 
     const joinedUserId = useRef<number | null>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -116,7 +116,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             debug('socket event received', { event, payload });
         };
 
-        const handleNotification = (incoming: NotificationRecord) => {
+        const handleNotification = async (incoming: NotificationRecord) => {
             const normalized: NotificationRecord = {
                 ...incoming,
                 isRead: incoming.isRead ?? false,
@@ -157,6 +157,31 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 }
                 else if (normalized.type === NotificationType.SITE_FEEDBACK) {
                     pushAlert({ type: 'info', message: 'New site feedback submitted.' });
+                }
+                else if ((normalized as any).type === NotificationType.USER_BANNED || (normalized as any).type === 'user-banned') {
+                    const banEnd = (normalized as any).banEndDate || (normalized as any).payload?.banEndDate;
+                    const until = banEnd ? ` until ${new Date(banEnd).toLocaleString()}` : '';
+                    pushAlert({ type: 'danger', message: `Your account has been banned${until}. You will be logged out.` });
+
+                    try {
+                        if (typeof logout === 'function') {
+                            await logout();
+                        }
+                    }
+                    catch (err) {
+                        console.error('Error logging out after ban notification', err);
+                    }
+
+                    try {
+                        const url = new URL(window.location.href);
+                        url.pathname = '/login';
+                        url.searchParams.set('banned', '1');
+                        if (banEnd) url.searchParams.set('banEndDate', String(banEnd));
+                        window.location.href = url.toString();
+                    }
+                    catch (err) {
+                        window.location.href = '/login?banned=1' + (banEnd ? `&banEndDate=${encodeURIComponent(String(banEnd))}` : '');
+                    }
                 }
             }
             catch {
