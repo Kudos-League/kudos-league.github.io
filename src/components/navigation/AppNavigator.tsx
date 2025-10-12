@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import Layout from './Layout';
 import Spinner from '../common/Spinner';
@@ -26,6 +26,12 @@ const FeedbackPage = lazy(() => import('@/pages/feedback'));
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
 const Chat = lazy(() => import('@/components/messages/Chat'));
+
+const LegacySignUpRedirect = () => {
+    const location = useLocation();
+
+    return <Navigate to={`${routes.signUp}${location.search}`} replace />;
+};
 
 function AppNavigator() {
     return (
@@ -163,6 +169,7 @@ function AppNavigator() {
                             </PublicOnly>
                         }
                     />
+                    <Route path='/sign-up' element={<LegacySignUpRedirect />} />
                     <Route
                         path={routes.forgotPassword}
                         element={

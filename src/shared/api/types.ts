@@ -318,6 +318,7 @@ export interface UserDTO {
     avatar?: string | null;
     admin: boolean;
     kudos: number;
+    invitedByUserID?: number | null;
     isEmailVerified?: boolean;
     password?: string | null;
     locationID: number | null;
@@ -328,6 +329,24 @@ export interface UserDTO {
     createdAt: Date;
     updatedAt: Date;
     deactivatedAt?: Date | null;
+}
+
+export interface UserInviteDTO {
+    id: number;
+    createdByUserID: number;
+    targetEmail?: string | null;
+    usedByUserID?: number | null;
+    usedAt?: string | null;
+    revoked: boolean;
+    inviteUrl?: string | null;
+    usedBy?: UserDTO | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UserInviteListResponse {
+    invites: UserInviteDTO[];
+    nextCursor: number | null;
 }
 
 export type FeedbackKind = 'site-feedback' | 'bug-report';

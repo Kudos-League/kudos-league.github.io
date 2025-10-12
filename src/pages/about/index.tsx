@@ -206,7 +206,7 @@ const About = () => {
                 </h2>
                 <div className='space-x-4'>
                     <a 
-                        href='/sign-up' 
+                        href='/signup' 
                         className='inline-block bg-white text-emerald-600 px-6 py-2 rounded-lg font-bold hover:bg-emerald-50 transition-colors'
                     >
                         Join Now

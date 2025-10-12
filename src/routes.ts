@@ -52,7 +52,7 @@ export const routes = {
     feedback: '/feedback' as const,
     admin: '/admin' as const,
     login: '/login' as const,
-    signUp: '/sign-up' as const,
+    signUp: '/signup' as const,
     forgotPassword: '/forgot-password' as const,
     resetPassword: '/reset-password' as const,
 

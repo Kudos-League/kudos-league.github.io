@@ -25,6 +25,8 @@ type Props<T extends FieldValues> = {
     onValueChange?: (value: string | File[]) => void;
     valueTransformer?: (value: string) => any;
     htmlInputType?: string;
+    noMargin?: boolean;
+    showLabel?: boolean;
 };
 
 export default function Input<T extends FieldValues>({
@@ -42,6 +44,8 @@ export default function Input<T extends FieldValues>({
     onValueChange,
     valueTransformer,
     htmlInputType,
+    noMargin = false,
+    showLabel = true,
     ...props
 }: Props<T>) {
     const defaultValue: PathValue<T, Path<T>> = type === 'dropdown'
@@ -79,7 +83,7 @@ export default function Input<T extends FieldValues>({
 
     if (type === 'dropdown') {
         return (
-            <div className='my-2'>
+            <div className={noMargin ? undefined : 'my-2'}>
                 <label className='block mb-1 text-sm font-medium'>
                     {label}
                 </label>
@@ -97,8 +101,10 @@ export default function Input<T extends FieldValues>({
         );
     }
 
+    const containerClass = noMargin ? undefined : 'my-2';
+
     return (
-        <div className='my-2'>
+        <div className={containerClass}>
             <label htmlFor={name} className='block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200'>
                 {label}
             </label>

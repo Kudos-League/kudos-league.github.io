@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { TinyHelpLink } from './fields';
+import { Alert, TinyHelpLink } from './fields';
+import { routes } from '@/routes';
 import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
 import Form from '@/components/forms/Form';
@@ -270,7 +271,7 @@ export default function LoginForm({
 
                 <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
                     Don&apos;t have an account?{' '}
-                    <TinyHelpLink onClick={() => navigate('/sign-up')}>
+                    <TinyHelpLink onClick={() => navigate(routes.signUp)}>
                         Sign Up
                     </TinyHelpLink>
                 </p>

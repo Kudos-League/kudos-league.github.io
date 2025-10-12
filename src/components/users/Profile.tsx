@@ -15,6 +15,7 @@ import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
+import InviteManager from './InviteManager';
 
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
 
@@ -294,6 +295,10 @@ const Profile: React.FC<Props> = ({
                     onEditProfile={() => setEditing(true)}
                     onStartDM={handleStartDM}
                 />
+
+                {isSelf && currentUser?.admin && (
+                    <InviteManager />
+                )}
 
                 {!isSelf && (
                     <div className='flex justify-center'>
