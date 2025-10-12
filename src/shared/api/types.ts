@@ -159,6 +159,9 @@ export type HandshakeDTO = {
     status: string;
     createdAt: Date;
     updatedAt: Date;
+    noShowReported?: boolean | null;
+    cancelledByUserID?: number | null;
+    cancelledAt?: string | null;
     post: PostDTO;
 };
 
