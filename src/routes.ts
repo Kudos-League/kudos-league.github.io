@@ -50,6 +50,7 @@ export const routes = {
     dms: '/dms' as const,
     leaderboard: '/leaderboard' as const,
     feedback: '/feedback' as const,
+    notifications: '/notifications' as const,
     admin: '/admin' as const,
     login: '/login' as const,
     signUp: '/signup' as const,

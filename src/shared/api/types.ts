@@ -408,3 +408,8 @@ export type NotificationRecord = NotificationPayload & {
     isActedOn: boolean;
     createdAt?: string;
 };
+
+export type NotificationsHistoryResponse = {
+    items: NotificationRecord[];
+    nextCursor?: number;
+};
