@@ -12,6 +12,7 @@ import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
+import { apiMutate } from '@/shared/api/apiClient';
 import {
     useUpdatePost,
     useLikePost,
@@ -91,6 +92,7 @@ export default function PostDetails(props: Props) {
     const [selectedChannel] = useState<ChannelDTO | null>(null);
     const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
     const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
+    const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -221,7 +223,6 @@ export default function PostDetails(props: Props) {
 
     const handleCloseChatModal = (open: boolean) => {
         setIsChatOpen(open);
-        // Reset flag when closing chat without sending
         if (!open && isHandshakeAlreadyCreated) {
             setIsHandshakeAlreadyCreated(false);
         }
@@ -487,6 +488,64 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const handleAcceptHighestKudos = async () => {
+        if (!postDetails || !user) return;
+        
+        const pendingHandshakes = (postDetails.handshakes || []).filter(
+            (h: any) => h.status === 'new'
+        );
+
+        if (pendingHandshakes.length === 0) {
+            alert('No pending handshakes to accept.');
+            return;
+        }
+
+        const highestKudosHandshake = pendingHandshakes.reduce((highest, current) => {
+            const currentSender = current.sender || { kudos: 0 };
+            const highestSender = highest.sender || { kudos: 0 };
+            return (currentSender.kudos || 0) > (highestSender.kudos || 0) ? current : highest;
+        });
+
+        if (!highestKudosHandshake) {
+            alert('Could not find handshake to accept.');
+            return;
+        }
+
+        const confirmMessage = `Accept handshake from ${highestKudosHandshake.sender?.username || 'user'} (${highestKudosHandshake.sender?.kudos || 0} Kudos)?`;
+        if (!confirm(confirmMessage)) return;
+
+        setAcceptingHighestKudos(true);
+
+        try {
+            await apiMutate(`/handshakes/${highestKudosHandshake.id}`, 'patch', { status: 'accepted' });
+            
+            setPostDetails((prev: PostDTO) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    handshakes: (prev.handshakes || []).map((h: any) =>
+                        h.id === highestKudosHandshake.id
+                            ? { ...h, status: 'accepted' }
+                            : h
+                    )
+                };
+            });
+
+            alert(`Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`);
+            
+            if (fetchPostDetails) {
+                fetchPostDetails(postDetails.id);
+            }
+        }
+        catch (err) {
+            console.error('Failed to accept handshake:', err);
+            alert('Failed to accept handshake. Please try again.');
+        }
+        finally {
+            setAcceptingHighestKudos(false);
+        }
+    };
+
     const canSeeExactLocation = (() => {
         if (!postDetails || !user?.id) return false;
         const isPostOwner = user.id === postDetails.sender?.id;
@@ -525,6 +584,12 @@ export default function PostDetails(props: Props) {
     }
 
     if (!postDetails) return null;
+
+    const isPostOwner = user?.id === postDetails.sender?.id;
+    const hasPendingHandshakes = (postDetails.handshakes || []).some(
+        (h: any) => h.status === 'new'
+    );
+    const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
     
     return (
         <div className='max-w-4xl mx-auto p-4'>
@@ -620,7 +685,6 @@ export default function PostDetails(props: Props) {
                 <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100'>
                     <h3 className='text-lg font-semibold'>Edit Post</h3>
 
-                    {/* Title */}
                     <div>
                         <label className='block text-sm font-medium mb-1'>
                             Title
@@ -638,7 +702,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Description */}
                     <div>
                         <label className='block text-sm font-medium mb-1'>
                             Description
@@ -657,7 +720,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Tags */}
                     <div>
                         <TagInput
                             initialTags={editData.tags}
@@ -665,7 +727,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Location */}
                     <div>
                         <label className='block text-sm font-medium mb-2'>
                             Location
@@ -701,7 +762,6 @@ export default function PostDetails(props: Props) {
                         </p>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className='flex gap-3 pt-4'>
                         <Button variant='success' onClick={handleSaveEdit}>
                             Save Changes
@@ -774,11 +834,33 @@ export default function PostDetails(props: Props) {
 
             {/* Handshakes */}
             <div className='shadow p-4 rounded mb-6'>
-                <h2 className='text-lg font-bold mb-2'>
-                    {postDetails.type === 'request'
-                        ? 'Offered By'
-                        : 'Requested By'}
-                </h2>
+                <div className='flex items-center justify-between mb-4'>
+                    <h2 className='text-lg font-bold'>
+                        {postDetails.type === 'request'
+                            ? 'Offered By'
+                            : 'Requested By'}
+                    </h2>
+                    
+                    {showAcceptHighestKudosButton && (
+                        <Button
+                            onClick={handleAcceptHighestKudos}
+                            disabled={acceptingHighestKudos}
+                            variant='success'
+                            className='flex items-center gap-2'
+                        >
+                            {acceptingHighestKudos ? (
+                                <>
+                                    <span className='animate-spin'>⏳</span>
+                                    Accepting...
+                                </>
+                            ) : (
+                                <>
+                                    ⭐ Accept Highest Kudos
+                                </>
+                            )}
+                        </Button>
+                    )}
+                </div>
 
                 <Handshakes
                     handshakes={sortHandshakesWithUserFirst(
@@ -808,7 +890,7 @@ export default function PostDetails(props: Props) {
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails={false}
                 />
-                {/* Create handshake button if not the sender */}
+
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
