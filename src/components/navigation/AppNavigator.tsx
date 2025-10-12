@@ -43,14 +43,7 @@ function AppNavigator() {
                     <Route path={routes.home} element={<Home />} />
                     <Route path={routes.result} element={<Result />} />
 
-                    <Route
-                        path={routes.donate}
-                        element={
-                            <RequireAuth>
-                                <DonatePage />
-                            </RequireAuth>
-                        }
-                    />
+                    <Route path={routes.donate} element={<DonatePage />} />
 
                     <Route
                         path='/post/:id'

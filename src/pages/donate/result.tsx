@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet } from '@/shared/api/apiClient';
 import Spinner from '../../components/common/Spinner';
+import { useAuth } from '@/contexts/useAuth';
+import { routes } from '@/routes';
 
 export default function DonateResult() {
     const [status, setStatus] = useState<'processing' | 'succeeded' | 'failed' | 'unknown'>('processing');
     const [message, setMessage] = useState<string | undefined>(undefined);
     const [donation, setDonation] = useState<{ amount?: number; interval?: string; kudos?: number } | null>(null);
     const [attempts, setAttempts] = useState(0);
+    const { isLoggedIn } = useAuth();
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -64,6 +68,17 @@ export default function DonateResult() {
                             <p>Amount: ${(donation.amount ?? 0) / 100}</p>
                             {donation.interval && <p>Recurring: {donation.interval}</p>}
                             {donation.kudos !== undefined && <p>Kudos awarded: {donation.kudos}</p>}
+                        </div>
+                    )}
+                    {!isLoggedIn && (
+                        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-100">
+                            <p>Kudos and donation history are only tracked for logged-in supporters.</p>
+                            <p className="mt-1">
+                                <Link to={routes.login} className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
+                                    Log in
+                                </Link>{' '}
+                                before your next donation to link your support to your account.
+                            </p>
                         </div>
                     )}
                 </div>
