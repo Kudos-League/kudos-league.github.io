@@ -267,7 +267,7 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmitt
                 />
 
                 <div className='space-y-2'>
-                    <label className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
+                    <label className='text-sm font-semibold text-gray-800 dark:text-gray-200 mr-1'>
                         Attach screenshots (optional)
                     </label>
                     <input
