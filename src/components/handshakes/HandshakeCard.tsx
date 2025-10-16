@@ -458,8 +458,8 @@ const HandshakeCard: React.FC<Props> = ({
                     recipientID={otherUserID}
                     initialMessage={
                         handshake.post.type === 'gift'
-                            ? "Hey I'd love to give you this, where can we meet?"
-                            : 'Hey thanks for offering this, where can we meet?'
+                            ? ""
+                            : ''
                     }
                 />
             )}
