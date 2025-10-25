@@ -84,7 +84,7 @@ const MessageBubble: React.FC<Props> = ({
                     }`}
                 >
                     {message.deletedAt ? (
-                        <div className='text-zinc-500 dark:text-teal-300 italic opacity-80'>
+                        <div className='text-gray-200 dark:text-teal-300 italic opacity-80'>
                             <span className='font-semibold mr-1'>[deleted]:</span>
                             <span className='whitespace-pre-wrap'>{message.content}</span>
                         </div>
