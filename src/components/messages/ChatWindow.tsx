@@ -109,7 +109,7 @@ const ChatWindow: React.FC<Props> = ({
     if (!channel) {
         return (
             <div className={`${
-                isMobile ? 'w-full' : 'w-2/3'
+                isMobile ? 'w-full' : 'w-full'
             } flex items-center justify-center text-gray-500 p-8`}>
                 <div className='text-center'>
                     <p className={isMobile ? 'text-lg' : 'text-base'}>
@@ -132,7 +132,7 @@ const ChatWindow: React.FC<Props> = ({
     const otherUser = channel.users?.find((u) => u.id !== user?.id);
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`${isMobile ? 'w-full' : 'w-2/3'} flex flex-col flex-1 min-h-0`}>
+        <div ref={containerRef} style={containerStyle} className={`${isMobile ? 'w-full' : 'w-full'} flex flex-col flex-1 min-h-0`}>
             {/* Header */}
             <div className={`flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
                 isMobile ? 'px-4 py-4' : 'px-4 py-3'
