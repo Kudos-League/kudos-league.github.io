@@ -184,9 +184,9 @@ const EditProfile: React.FC<Props> = ({
 
     const handleFileSelect = React.useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            const files = e.target.files;
-            if (files && files.length > 0) {
-                form.setValue('avatar', [files[0]], {
+            const file = e.target.files?.[0];
+            if (file) {
+                form.setValue('avatar', [file] as any, {
                     shouldDirty: true,
                     shouldValidate: true
                 });
@@ -194,7 +194,6 @@ const EditProfile: React.FC<Props> = ({
                     shouldDirty: true,
                     shouldValidate: true
                 });
-                setShowImageOptions(false);
             }
         },
         [form]
@@ -274,49 +273,36 @@ const EditProfile: React.FC<Props> = ({
                 ) {
                     (payload as any).avatar = a[0];
                 }
-                else if (typeof a === 'string' && a.trim()) {
-                    (payload as any).avatarURL = a.trim();
-                    delete (payload as any).avatar;
-                }
                 else {
                     delete (payload as any).avatar;
                 }
             }
 
-            const updatedUser = await updateUserMutation.mutateAsync(payload);
-
-            const submittedTags: string[] = form.getValues('tags') ?? [];
-
-            const normalizedUpdatedUser = {
-                ...updatedUser,
-                tags:
-                    updatedUser.tags && updatedUser.tags.length > 0
-                        ? updatedUser.tags
-                        : submittedTags.map((name, idx) => ({
-                            id: idx,
-                            name
-                        }))
-            };
-
-            if (user?.id === targetUser.id) {
-                updateUserCache({
-                    ...user,
-                    ...normalizedUpdatedUser,
-                    avatar: normalizedUpdatedUser.avatar ?? user.avatar
-                });
+            if ('avatarURL' in payload) {
+                const url = (payload as any).avatarURL;
+                if (typeof url !== 'string' || !url.trim()) {
+                    delete (payload as any).avatarURL;
+                }
             }
 
-            if (setTargetUser) {
-                setTargetUser?.({
-                    ...targetUser,
-                    ...normalizedUpdatedUser,
-                    avatar: normalizedUpdatedUser.avatar ?? targetUser.avatar
-                });
+            if ('tags' in payload) {
+                (payload as any).tags = (payload as any).tags || [];
+            }
+
+            const updatedUser = await updateUserMutation.mutateAsync(payload);
+
+            if (updatedUser?.id && updatedUser.id === auth.user?.id) {
+                updateUserCache(updatedUser);
+            }
+
+            if (updatedUser?.id && setTargetUser) {
+                setTargetUser(updatedUser);
             }
 
             if (
-                'avatar' in effectiveChanges ||
-                'avatarURL' in effectiveChanges
+                updatedUser?.id &&
+                updatedUser.id === targetUser.id &&
+                updatedUser.avatar !== previewUrl
             ) {
                 setPreviewUrl(
                     updatedUser.avatar ? bustCache(updatedUser.avatar) : null
@@ -404,7 +390,39 @@ const EditProfile: React.FC<Props> = ({
     return (
         <>
             <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg'>
-                <PageHeader onBack={onClose} />
+                {/* IMPROVED: Better header design with consistent styling */}
+                <div className='border-b border-gray-200 dark:border-gray-700 px-6 py-4'>
+                    <div className='flex items-center justify-between'>
+                        <div className='flex items-center gap-4'>
+                            <button
+                                onClick={onClose}
+                                className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors'
+                                aria-label='Close settings'
+                            >
+                                <svg className='w-6 h-6' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                                </svg>
+                            </button>
+                            <h1 className='text-2xl font-semibold text-gray-900 dark:text-white'>
+                                Account Settings
+                            </h1>
+                        </div>
+                    </div>
+                    
+                    {/* IMPROVED: Unsaved changes warning banner */}
+                    {canSave && (
+                        <div className='mt-3'>
+                            <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 flex items-center gap-2'>
+                                <svg className='w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
+                                </svg>
+                                <span className='text-sm font-medium text-amber-800 dark:text-amber-200'>
+                                    You have unsaved changes
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 <SettingsSection
                     title='Personal Information'
@@ -546,64 +564,72 @@ const EditProfile: React.FC<Props> = ({
                                 label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'
                             >
-                                {locationLabel && (
-                                    <div className='mb-2 text-sm text-gray-700 dark:text-gray-300'>
-                                        {locationLabel}
-                                    </div>
-                                )}
-                                <MapDisplay
-                                    regionID={targetUser.location?.regionID}
-                                    width={400}
-                                    height={300}
-                                    edit
-                                    exactLocation
-                                    shouldGetYourLocation
-                                    inlineBanner={false}
-                                    onLabelChange={(label) => setLocationLabel(label)}
-                                    onLocationChange={(data) => {
-                                        if (!data) {
-                                            setLocation(null);
-                                            form.setValue('location', null as any, {
-                                                shouldDirty: true,
-                                                shouldValidate: true
-                                            });
-                                            setTargetUser({
-                                                ...targetUser,
-                                                location: {
-                                                    ...targetUser.location,
-                                                    regionID: null
+                                {/* IMPROVED: Centered location display */}
+                                <div className='flex justify-center'>
+                                    <div className='w-full max-w-2xl'>
+                                        {locationLabel && (
+                                            <div className='mb-2 text-sm text-center text-gray-700 dark:text-gray-300'>
+                                                {locationLabel}
+                                            </div>
+                                        )}
+                                        <MapDisplay
+                                            regionID={targetUser.location?.regionID}
+                                            width={400}
+                                            height={300}
+                                            edit
+                                            exactLocation
+                                            shouldGetYourLocation
+                                            inlineBanner={false}
+                                            onLabelChange={(label) => setLocationLabel(label)}
+                                            onLocationChange={(data) => {
+                                                if (!data) {
+                                                    setLocation(null);
+                                                    form.setValue('location', null as any, {
+                                                        shouldDirty: true,
+                                                        shouldValidate: true
+                                                    });
+                                                    setTargetUser({
+                                                        ...targetUser,
+                                                        location: {
+                                                            ...targetUser.location,
+                                                            regionID: null
+                                                        }
+                                                    });
+                                                    return;
                                                 }
-                                            });
-                                            return;
-                                        }
-                                        if (!data.changed) return;
-                                        if (data.coordinates) {
-                                            setLocation(data.coordinates);
-                                            const next = {
-                                                ...data.coordinates,
-                                                name: data.name,
-                                                regionID: data.placeID
-                                            };
-                                            const prev =
-                                            form.getValues('location') || null;
-                                            const changed = !deepEqual(next, prev);
-                                            if (changed) {
-                                                form.setValue('location', next, {
-                                                    shouldDirty: true,
-                                                    shouldValidate: true
-                                                });
-                                            }
-                                        }
-                                    }}
-                                />
+                                                if (!data.changed) return;
+                                                if (data.coordinates) {
+                                                    setLocation(data.coordinates);
+                                                    const next = {
+                                                        ...data.coordinates,
+                                                        name: data.name,
+                                                        regionID: data.placeID
+                                                    };
+                                                    const prev =
+                                                    form.getValues('location') || null;
+                                                    const changed = !deepEqual(next, prev);
+                                                    if (changed) {
+                                                        form.setValue('location', next, {
+                                                            shouldDirty: true,
+                                                            shouldValidate: true
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </FormField>
                         )}
 
-                        <ActionsBar
-                            canSave={canSave}
-                            isSubmitting={updateUserMutation.isPending}
-                            onCancel={onClose}
-                        />
+                        {/* IMPROVED: More visible ActionsBar */}
+                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 -mx-6 px-6 pb-4 z-10'>
+                            <ActionsBar
+                                canSave={canSave}
+                                isSubmitting={updateUserMutation.isPending}
+                                onCancel={onClose}
+                            />
+                        </div>
 
                         <ErrorList errors={form.formState.errors as any} />
                     </form>
@@ -668,6 +694,7 @@ const EditProfile: React.FC<Props> = ({
                                     </OAuthConnectButton>
                                 )}
                             </div>
+
                         </div>
                     </SettingsSection>
                 )}
@@ -678,6 +705,7 @@ const EditProfile: React.FC<Props> = ({
                 >
                     <form className='space-y-6' onSubmit={handleChangePassword}>
                         <FormField label='Current password'>
+                            {/* IMPROVED: Better styled password input with visible borders */}
                             <input
                                 type='password'
                                 value={pwForm.current}
@@ -687,12 +715,13 @@ const EditProfile: React.FC<Props> = ({
                                         current: e.target.value
                                     }))
                                 }
-                                className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                             />
                         </FormField>
 
                         <div className='grid sm:grid-cols-2 gap-6'>
                             <FormField label='New password'>
+                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={pwForm.next}
@@ -702,10 +731,11 @@ const EditProfile: React.FC<Props> = ({
                                             next: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                    className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                                 />
                             </FormField>
                             <FormField label='Confirm password'>
+                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={pwForm.confirm}
@@ -715,7 +745,7 @@ const EditProfile: React.FC<Props> = ({
                                             confirm: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                    className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                                 />
                             </FormField>
                         </div>
@@ -734,13 +764,14 @@ const EditProfile: React.FC<Props> = ({
                             onSubmit={handleLogoutOtherSessions}
                         >
                             <FormField label='Your password'>
+                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={logoutPassword}
                                     onChange={(e) =>
                                         setLogoutPassword(e.target.value)
                                     }
-                                    className='mt-2 block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10'
+                                    className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                                 />
                             </FormField>
                             <Button type='submit'>Log out other sessions</Button>
