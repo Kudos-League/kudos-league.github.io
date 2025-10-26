@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiGet } from '@/shared/api/apiClient';
+import type { UserDTO } from '@/shared/api/types';
 
 export type KudosHistorySourceFilter =
     | 'all'
@@ -15,6 +16,7 @@ export type KudosHistoryDTO = {
     createdAt: string;
     source: 'donation' | 'feedback' | 'report' | 'reward-offer' | 'other';
     metadata?: Record<string, unknown> | null;
+    actor?: UserDTO | null;
 };
 
 export const qk = {
