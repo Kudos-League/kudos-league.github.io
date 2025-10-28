@@ -56,6 +56,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (payload.token && isJwt(payload.token)) {
                 return Promise.resolve({ token: payload.token, user: { username: '' } });
             }
+
+            if (payload.token) {
+                return apiMutate<LoginData, { token: string }>('/users/login', 'post', { token: payload.token });
+            }
+
             return apiMutate<LoginData, { username?: string; password?: string }>('/users/login', 'post', { username: payload.username, password: payload.password });
         }
     });
@@ -99,8 +104,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         }
         catch (error: any) {
-            const message = error?.message || error?.response?.data?.message;
-            setErrorMessage(typeof message === 'string' ? message : 'Login failed. Please try again.');
+            let message = 'Login failed. Please try again.';
+            if (Array.isArray(error) && error.length) message = String(error[0]);
+            else if (typeof error === 'string') message = error;
+            else if (error?.response?.data?.message) message = error.response.data.message;
+            else if (error?.message) message = error.message;
+
+            setErrorMessage(message);
             console.error('Login failed:', error);
             localStorage.removeItem(AUTH_STORAGE_KEY);
             setAuthState(null);
@@ -216,7 +226,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         }
         catch (error: any) {
-            const msg = error?.response?.data?.message || 'Sign-up failed.';
+            let msg = 'Sign-up failed.';
+            if (Array.isArray(error) && error.length) msg = String(error[0]);
+            else if (typeof error === 'string') msg = error;
+            else if (error?.response?.data?.message) msg = error.response.data.message;
+            else if (error?.message) msg = error.message;
+
             throw new Error(msg);
         }
     };
