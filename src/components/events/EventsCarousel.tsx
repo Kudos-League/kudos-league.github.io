@@ -6,6 +6,7 @@ import EventCard from './EventCard';
 import Button from '../common/Button';
 import { useEvents } from '@/shared/api/queries/events';
 import type { EventDTO } from '@/shared/api/types';
+import dayjs from 'dayjs';
 
 interface LocationSetupModalProps {
     isOpen: boolean;
@@ -133,45 +134,13 @@ export default function EventsCarousel() {
 
     const selectByTime = useMemo(() => {
         return (events: EventDTO[]) => {
-            // if (timeFilter === 'all') return events;
+            const now = dayjs();
 
-            // const now = dayjs();
-            // const startOfToday = now.startOf('day');
-            // const endOfToday = now.endOf('day');
-
-            // return events.filter((e) => {
-            //     const start = dayjs(e.startTime);
-            //     const end = dayjs(e.endTime ?? e.startTime);
-
-            //     if (timeFilter === 'today') {
-            //         return (
-            //             (start.isBefore(endOfToday) ||
-            //                 start.isSame(endOfToday)) &&
-            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
-            //         );
-            //     }
-
-            //     if (timeFilter === 'next7d') {
-            //         const endOfNext7 = now.add(7, 'day').endOf('day');
-            //         return (
-            //             (start.isBefore(endOfNext7) ||
-            //                 start.isSame(endOfNext7)) &&
-            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
-            //         );
-            //     }
-
-            //     if (timeFilter === 'nextmonth') {
-            //         const endOfNextMonth = now.add(1, 'month').endOf('day');
-            //         return (
-            //             (start.isBefore(endOfNextMonth) ||
-            //                 start.isSame(endOfNextMonth)) &&
-            //             (end.isAfter(startOfToday) || end.isSame(startOfToday))
-            //         );
-            //     }
-
-            //     return true;
-            // });
-            return events;
+            return events.filter((e) => {
+                const end = dayjs(e.endTime ?? dayjs(e.startTime).add(20, 'years'));
+                if (end.isBefore(now)) return false;
+                else return true;
+            });
         };
     }, [{/*timeFilter*/}]);
 

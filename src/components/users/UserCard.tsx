@@ -64,6 +64,7 @@ interface Props {
     subtitleClassName?: string;
     disableTooltip?: boolean;
     onAdminReportOpen?: (userID: number) => void;
+    showKudos?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -93,8 +94,9 @@ const UserCard: React.FC<Props> = ({
     centered = false,
     nameClassName = '',
     subtitleClassName = '',
-    disableTooltip = false
-    , onAdminReportOpen
+    disableTooltip = false,
+    onAdminReportOpen,
+    showKudos = true
 }) => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
@@ -103,6 +105,7 @@ const UserCard: React.FC<Props> = ({
 
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
+    const kudos = typeof user?.kudos === 'number' ? user.kudos : 0;
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
@@ -141,6 +144,12 @@ const UserCard: React.FC<Props> = ({
             </span>
         );
 
+        const kudosEl = showKudos ? (
+            <span className='text-xs text-gray-500 dark:text-gray-400 font-normal'>
+                {kudos} Kudos
+            </span>
+        ) : null;
+
         const wrapperClasses =
             centered && subtitle
                 ? 'group inline-flex flex-col items-center text-center gap-1'
@@ -168,6 +177,7 @@ const UserCard: React.FC<Props> = ({
                 }
             >
                 {nameEl}
+                {kudosEl}
                 {subtitle ? (
                     <div
                         className={[
@@ -202,7 +212,9 @@ const UserCard: React.FC<Props> = ({
         subtitle,
         centered,
         nameClassName,
-        subtitleClassName
+        subtitleClassName,
+        showKudos,
+        kudos
     ]);
 
     // useBlockedUsers handles fetching and state
@@ -300,7 +312,7 @@ const UserCard: React.FC<Props> = ({
                                             <button
                                                 onClick={() =>
                                                     user.id &&
-                                                navigate(`/user/${user.id}`)
+                                                    navigate(`/user/${user.id}`)
                                                 }
                                                 className='text-sm font-bold hover:underline truncate'
                                                 title={username ?? 'View profile'}
@@ -349,58 +361,46 @@ const UserCard: React.FC<Props> = ({
                                                     </span>
                                                 </Tippy>
                                             )}
-                                        </div>
 
-                                        {user.admin ? (
-                                            <Pill
-                                                tone='success'
-                                                size='sm'
-                                                leftIcon={
-                                                    <ShieldCheckIcon className='h-4 w-4' />
-                                                }
-                                            >
-                                            Admin
-                                            </Pill>
-                                        ) : null}
-
-                                        {user.isEmailVerified ? (
-                                            <Pill
-                                                tone='info'
-                                                size='sm'
-                                                leftIcon={
-                                                    <ShieldCheckIcon className='h-4 w-4' />
-                                                }
-                                            >
-                                            Verified
-                                            </Pill>
-                                        ) : (
-                                            <Pill
-                                                tone='danger'
-                                                size='sm'
-                                                leftIcon={
-                                                    <ShieldExclamationIcon className='h-4 w-4' />
-                                                }
-                                            >
-                                            Not Verified
-                                            </Pill>
-                                        )}
-                                        <div className='ml-1 inline-flex items-center gap-1'>
-                                            {user.discordID ? (
-                                                <SocialBadgeIcon
-                                                    src={DISCORD_ICON_SRC}
-                                                    alt='Discord connected'
-                                                    bg='#7289DA'
-                                                    label='D'
-                                                />
-                                            ) : null}
-                                            {user.googleID ? (
-                                                <SocialBadgeIcon
-                                                    src={GOOGLE_ICON_SRC}
-                                                    alt='Google connected'
-                                                    bg='#4285F4'
-                                                    label='G'
-                                                />
-                                            ) : null}
+                                            {user.isEmailVerified ? (
+                                                <Pill
+                                                    tone='info'
+                                                    size='sm'
+                                                    leftIcon={
+                                                        <ShieldCheckIcon className='h-4 w-4' />
+                                                    }
+                                                >
+                                                    Verified
+                                                </Pill>
+                                            ) : (
+                                                <Pill
+                                                    tone='danger'
+                                                    size='sm'
+                                                    leftIcon={
+                                                        <ShieldExclamationIcon className='h-4 w-4' />
+                                                    }
+                                                >
+                                                    Not Verified
+                                                </Pill>
+                                            )}
+                                            <div className='ml-1 inline-flex items-center gap-1'>
+                                                {user.discordID ? (
+                                                    <SocialBadgeIcon
+                                                        src={DISCORD_ICON_SRC}
+                                                        alt='Discord connected'
+                                                        bg='#7289DA'
+                                                        label='D'
+                                                    />
+                                                ) : null}
+                                                {user.googleID ? (
+                                                    <SocialBadgeIcon
+                                                        src={GOOGLE_ICON_SRC}
+                                                        alt='Google connected'
+                                                        bg='#4285F4'
+                                                        label='G'
+                                                    />
+                                                ) : null}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -433,13 +433,13 @@ const UserCard: React.FC<Props> = ({
                                         <button
                                             onClick={() =>
                                                 user.id &&
-                                            navigate(`/user/${user.id}`)
+                                                navigate(`/user/${user.id}`)
                                             }
                                             className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                             bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
                                             hover:opacity-90 active:opacity-80 transition'
                                         >
-                                        View Profile
+                                            View Profile
                                         </button>
                                         {currentUser && user?.id && currentUser.id !== user.id && (
                                             <div className='inline-block ml-2'>
