@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
@@ -11,7 +11,7 @@ import {
 import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
-import { ArrowUturnLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowUturnLeftIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useSendDirectMessage } from '@/shared/api/mutations/messages';
 import UserCard from '../users/UserCard';
 
@@ -53,7 +53,6 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
 
     // Handle null/invalid dates
     if (!messageDate) {
-        console.warn('Invalid or missing date in formatMessageTime:', date);
         return 'Unknown time';
     }
 
@@ -61,16 +60,6 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
     const diffInMilliseconds = now.getTime() - messageDate.getTime();
     const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
     const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    // Debug logging - remove this once you've confirmed it's working
-    console.log('Date formatting debug:', {
-        originalDate: date,
-        parsedDate: messageDate,
-        now: now,
-        diffInMinutes: diffInMinutes,
-        diffInHours: diffInHours
-    });
 
     // Less than 1 minute ago
     if (diffInMinutes < 1) {
@@ -102,6 +91,7 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
     }
 
     // Less than a week ago
+    const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) {
         const dayName = messageDate.toLocaleDateString([], {
             weekday: 'short'
@@ -187,17 +177,20 @@ export default function ChatModal({
     );
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const token = useAppSelector((s) => s.auth.token);
     const sendDirectInitial = useSendDirectMessage(recipientID ?? undefined);
 
     const channelID = selectedChannel?.id ?? null;
 
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
+    // Initial setup when modal opens
     useEffect(() => {
         if (isChatOpen) {
             if (recipientID !== 0) fetchExistingChannel(recipientID);
@@ -208,14 +201,17 @@ export default function ChatModal({
         }
     }, [isChatOpen]);
 
+    // Join/leave channel
     useEffect(() => {
         if (selectedChannel && selectedChannel.id !== -1) {
             joinChannel(selectedChannel.id);
             return () => leaveChannel(selectedChannel.id);
         }
 
-        return () => leaveChannel(channelID);
-    }, [selectedChannel]);
+        return () => {
+            if (channelID) leaveChannel(channelID);
+        };
+    }, [selectedChannel, channelID, joinChannel, leaveChannel]);
 
     const fetchExistingChannel = async (recipientId: number) => {
         if (!token) return;
@@ -255,27 +251,12 @@ export default function ChatModal({
         try {
             const msgs = await apiGet<MessageDTO[]>(`/channels/${channelId}/messages`);
 
-            // Debug: Log the raw messages from the API
-            console.log('Raw messages from API:', msgs);
-
-            // Process messages but preserve original timestamps
             const processedMessages: MessageDTO[] = msgs.map((msg) => {
-                // Get the best available timestamp
                 const timestamp = getMessageTimestamp(msg);
-
-                // Debug: Log each message's timestamp info
-                console.log('Processing message timestamps:', {
-                    createdAt: msg.createdAt,
-                    readAt: msg.readAt,
-                    updatedAt: msg.updatedAt,
-                    selectedTimestamp: timestamp
-                });
 
                 return {
                     ...msg,
-                    // Use the best available timestamp converted to Date
                     createdAt: (parseMessageDate(timestamp) as Date) || new Date(),
-                    // Ensure the author satisfies UserDTO shape for TypeScript by casting fallback
                     author: (msg.author ?? ({
                         id: 0,
                         username: 'Unknown',
@@ -285,12 +266,10 @@ export default function ChatModal({
                         locationID: null,
                         createdAt: new Date(),
                         updatedAt: new Date(),
-                        // minimal placeholders for optional fields
                     } as any)) as UserDTO
                 };
             });
 
-            console.log('Processed messages:', processedMessages);
             setMessages(processedMessages);
         }
         catch (err) {
@@ -310,7 +289,7 @@ export default function ChatModal({
             setLoading(true);
             const msg: CreateMessageDTO = {
                 content: messageInput,
-                ...(replyTo ? { replyToMessageID: replyTo.id } : {})
+                ...(replyTo?.id ? { replyToMessageID: replyTo.id } : {})
             };
             let response;
 
@@ -337,9 +316,6 @@ export default function ChatModal({
                 response = await apiMutate<MessageDTO, CreateMessageDTO>(`/users/${receiver.id}/dm`, 'post', msg);
             }
 
-            // Debug: Log the response from sending a message
-            console.log('Send message response:', response);
-
             const fullMessage: MessageDTO = {
                 ...response,
                 author: response.author ||
@@ -353,7 +329,6 @@ export default function ChatModal({
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
-                // IMPORTANT: Preserve the server's timestamp if available, fallback to current time for new messages
                 createdAt: (parseMessageDate(getMessageTimestamp(response)) as Date) || new Date()
             };
 
@@ -369,6 +344,54 @@ export default function ChatModal({
             setLoading(false);
         }
     };
+
+    const handleReplyClick = useCallback((msg: MessageDTO) => {
+        if (msg.deletedAt) return;
+        setReplyTo(msg);
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 0);
+    }, []);
+
+    const handleCancelReply = useCallback(() => {
+        setReplyTo(null);
+    }, []);
+
+    const handleDeleteMessage = useCallback(async (msg: MessageDTO) => {
+        if (!token || msg.deletedAt) return;
+        
+        try {
+            await apiMutate<void, void>(`/messages/${msg.id}`, 'delete');
+            
+            setMessages((prev) => {
+                const idx = prev.findIndex((x) => x.id === msg.id);
+                if (idx === -1) return prev;
+                
+                const original = prev[idx];
+                if (
+                    user &&
+                    (user.admin ||
+                        original.authorID === user.id ||
+                        original.author?.id === user.id)
+                ) {
+                    const updated = {
+                        ...original,
+                        deletedAt: new Date().toISOString(),
+                        content: `[deleted]: ${original.content}`
+                    } as MessageDTO;
+                    const copy = [...prev];
+                    copy[idx] = updated;
+                    return copy;
+                }
+                else {
+                    return prev.filter((x) => x.id !== msg.id);
+                }
+            });
+        }
+        catch (e) {
+            console.error('Failed to delete message', e);
+        }
+    }, [token, user, setMessages]);
 
     if (!isChatOpen) return null;
 
@@ -390,6 +413,7 @@ export default function ChatModal({
                             setIsChatOpen(false);
                             setMessages([]);
                             setSelectedChannel(null);
+                            setReplyTo(null);
                         }}
                     >
                         Close
@@ -423,7 +447,6 @@ export default function ChatModal({
                             return !msg.deletedAt || canSeeDeleted;
                         })
                         .map((msg, i) => {
-                            // Don't override the timestamp - use what we have
                             const safeMsg: MessageDTO = {
                                 ...msg,
                                 content: msg.content || '',
@@ -448,16 +471,15 @@ export default function ChatModal({
                                 previousMsg
                             );
 
-                            // Get the best available timestamp for display
                             const messageTimestamp =
                                 getMessageTimestamp(safeMsg);
 
-                            const canDelete = !!user && isOwn;
                             const repliedTo = safeMsg.replyToMessageID
                                 ? messages.find(
                                     (mm) => mm.id === safeMsg.replyToMessageID
                                 )
                                 : null;
+                            
                             return (
                                 <React.Fragment
                                     key={`${safeMsg.id || 'temp'}-${i}`}
@@ -465,16 +487,17 @@ export default function ChatModal({
                                     {/* Date Separator */}
                                     {showDateSeparator && (
                                         <div className='flex items-center justify-center my-4'>
-                                            <div className='flex-1 border-t border-gray-300'></div>
-                                            <span className='px-3 text-xs text-gray-500 bg-gray-50'>
+                                            <div className='flex-1 border-t border-gray-300 dark:border-zinc-600'></div>
+                                            <span className='px-3 text-xs text-gray-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800'>
                                                 {formatDateSeparator(
                                                     messageTimestamp
                                                 )}
                                             </span>
-                                            <div className='flex-1 border-t border-gray-300'></div>
+                                            <div className='flex-1 border-t border-gray-300 dark:border-zinc-600'></div>
                                         </div>
                                     )}
 
+                                    {/* Reply Preview */}
                                     {repliedTo && (
                                         <div
                                             className={`max-w-xs ${isOwn ? 'ml-auto' : ''} mb-1`}
@@ -511,7 +534,7 @@ export default function ChatModal({
                                                     isOwn
                                                         ? 'border-teal-300/70'
                                                         : 'border-zinc-400/60'
-                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
+                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60 transition-colors`}
                                                 title={`${
                                                     repliedTo.author
                                                         ?.username ?? 'Unknown'
@@ -530,6 +553,7 @@ export default function ChatModal({
                                         </div>
                                     )}
 
+                                    {/* Message Bubble */}
                                     <div
                                         id={`msg-${safeMsg.id}`}
                                         className={`group relative max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
@@ -543,85 +567,48 @@ export default function ChatModal({
                                                 ? `[deleted]: ${safeMsg.content}`
                                                 : safeMsg.content}
                                         </TextWithLinks>
+                                        
+                                        {/* Action buttons - Only show for own messages or reply for all */}
                                         <div
-                                            className={`absolute z-10 -top-3 ${
-                                                isOwn ? 'left-2' : 'right-2'
-                                            } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
+                                            className={`absolute z-[60] ${
+                                                isOwn ? '-left-20' : '-right-20'
+                                            } top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-zinc-800 rounded-lg px-2 py-1 shadow-lg border border-zinc-200 dark:border-zinc-700`}
+                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             <button
                                                 type='button'
-                                                title='Reply'
-                                                onClick={() =>
-                                                    setReplyTo(safeMsg)
-                                                }
-                                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                title={safeMsg.deletedAt ? 'Message deleted' : 'Reply'}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    handleReplyClick(safeMsg);
+                                                }}
+                                                disabled={Boolean(safeMsg.deletedAt)}
+                                                className={`p-1.5 rounded transition-colors ${
+                                                    safeMsg.deletedAt 
+                                                        ? 'opacity-50 cursor-not-allowed' 
+                                                        : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 active:bg-zinc-300 dark:active:bg-zinc-600'
+                                                }`}
                                             >
-                                                <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                <ArrowUturnLeftIcon className={`w-4 h-4 ${safeMsg.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                                             </button>
-                                            {canDelete && (
+                                            {isOwn && !safeMsg.deletedAt && (
                                                 <button
                                                     type='button'
                                                     title='Delete'
-                                                    onClick={async () => {
-                                                        if (!token) return;
-                                                        try {
-                                                            await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
-                                                        }
-                                                        catch (e) {
-                                                            console.error(
-                                                                'Failed to delete message',
-                                                                e
-                                                            );
-                                                            return;
-                                                        }
-                                                        setMessages((prev) => {
-                                                            const idx =
-                                                                prev.findIndex(
-                                                                    (x) =>
-                                                                        x.id ===
-                                                                        safeMsg.id
-                                                                );
-                                                            if (idx === -1)
-                                                                return prev;
-                                                            const original =
-                                                                prev[idx];
-                                                            if (
-                                                                user &&
-                                                                (user.admin ||
-                                                                    original.authorID ===
-                                                                        user.id ||
-                                                                    original
-                                                                        .author
-                                                                        ?.id ===
-                                                                        user.id)
-                                                            ) {
-                                                                const updated =
-                                                                    {
-                                                                        ...original,
-                                                                        content: `[deleted]: ${original.content}`
-                                                                    } as MessageDTO;
-                                                                const copy = [
-                                                                    ...prev
-                                                                ];
-                                                                copy[idx] =
-                                                                    updated;
-                                                                return copy;
-                                                            }
-                                                            else {
-                                                                return prev.filter(
-                                                                    (x) =>
-                                                                        x.id !==
-                                                                        safeMsg.id
-                                                                );
-                                                            }
-                                                        });
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleDeleteMessage(safeMsg);
                                                     }}
-                                                    className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                    className='p-1.5 rounded transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 active:bg-red-200 dark:active:bg-red-900/50'
                                                 >
-                                                    <TrashIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                    <TrashIcon className='w-4 h-4 text-red-600 dark:text-red-400' />
                                                 </button>
                                             )}
                                         </div>
+                                        
+                                        {/* Timestamp */}
                                         <div
                                             className={`text-xs text-right mt-2 ${
                                                 isOwn
@@ -646,33 +633,54 @@ export default function ChatModal({
                         })}
                 </div>
 
-                {/* Input */}
+                {/* Input Area */}
                 <div className='flex flex-col gap-2'>
+                    {/* Reply Preview in Input Area - Modern WhatsApp-style */}
                     {replyTo && (
-                        <div className='flex items-center justify-between text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded'>
-                            <span>
-                                Replying to: {replyTo.content.slice(0, 80)}
-                            </span>
+                        <div className='flex items-start gap-2 px-3 py-2 bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500 rounded-r-lg'>
+                            <div className='flex-1 min-w-0'>
+                                <div className='flex items-center gap-2 mb-1'>
+                                    <ArrowUturnLeftIcon className='w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0' />
+                                    <span className='text-xs font-semibold text-teal-700 dark:text-teal-300'>
+                                        {replyTo.author?.username || 'Unknown'}
+                                    </span>
+                                </div>
+                                <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
+                                    {replyTo.content}
+                                </p>
+                            </div>
                             <button
-                                className='text-blue-600 hover:underline'
-                                onClick={() => setReplyTo(null)}
+                                onClick={handleCancelReply}
+                                className='flex-shrink-0 p-1 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded transition-colors'
+                                title='Cancel reply (Esc)'
                             >
-                                Cancel
+                                <XMarkIcon className='w-4 h-4 text-zinc-500 dark:text-zinc-400' />
                             </button>
                         </div>
                     )}
-                    <div className='flex items-center gap-2'>
+                    
+                    <div className='flex items-end gap-2'>
                         <textarea
+                            ref={inputRef}
                             rows={2}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
-                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
-                            placeholder='Type your message...'
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    sendMessage();
+                                }
+                                else if (e.key === 'Escape') {
+                                    handleCancelReply();
+                                }
+                            }}
+                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors resize-none'
+                            placeholder='Type a message...'
                         />
                         <Button
                             disabled={!validateMessage(messageInput) || loading}
                             onClick={sendMessage}
-                            className={`px-4 py-2 rounded-lg text-white transition-colors ${
+                            className={`px-4 py-2 rounded-lg text-white transition-colors flex-shrink-0 ${
                                 validateMessage(messageInput) && !loading
                                     ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
                                     : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'

@@ -3,7 +3,6 @@ import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
-import Button from './common/Button';
 import { UserDTO } from '@/shared/api/types';
 
 type LeaderboardUser = {
@@ -69,23 +68,23 @@ export default function Leaderboard() {
             <div className='flex justify-between items-center mb-4 relative'>
                 {/* Time Filter Dropdown */}
                 <div className='relative'>
-                    <Button
+                    <button
                         onClick={() => setShowDropdown((v) => !v)}
-                        className='bg-gray-100 px-4 py-2 rounded-full flex items-center gap-2'
+                        className='bg-white border-2 border-gray-400 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:border-gray-500 hover:bg-gray-50 transition-colors shadow-sm'
                     >
-                        <span>{getLabel()}</span>
+                        <span className='font-medium'>{getLabel()}</span>
                         <span className='text-xs text-gray-500'>▼</span>
-                    </Button>
+                    </button>
 
                     {showDropdown && (
-                        <div className='absolute top-full mt-1 left-0 bg-white border shadow rounded w-40 z-10'>
+                        <div className='absolute top-full mt-1 left-0 bg-white border-2 border-gray-300 shadow-lg rounded-lg w-40 z-10 overflow-hidden'>
                             {TIME_FILTERS.map((filter) => (
-                                <Button
+                                <button
                                     key={filter.value}
-                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 ${
+                                    className={`block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
                                         timeFilter === filter.value
-                                            ? 'font-semibold text-blue-600'
-                                            : ''
+                                            ? 'bg-blue-50 font-semibold text-blue-700'
+                                            : 'text-gray-800'
                                     }`}
                                     onClick={() => {
                                         setTimeFilter(filter.value);
@@ -93,7 +92,7 @@ export default function Leaderboard() {
                                     }}
                                 >
                                     {filter.label}
-                                </Button>
+                                </button>
                             ))}
                         </div>
                     )}

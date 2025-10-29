@@ -80,11 +80,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         }
         catch (err: any) {
             setIsVerifying(false);
-            let msg = 'Sign-up failed';
-            if (err?.response?.data?.message) msg = err.response.data.message;
-            else if (err?.message) msg = err.message;
-            setError(msg);
-            onError?.(msg);
+            setError(err.toString());
+            onError?.(err.toString());
         }
     };
 

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventDTO } from '@/shared/api/types';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { getImagePath } from '@/shared/api/config';
+import { apiGet } from '@/shared/api/apiClient';
 
 type Props = {
     event: EventDTO;
@@ -13,8 +15,40 @@ export default function EventCard({ event, isRecurring = false }: Props) {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    const [creator, setCreator] = useState<UserDTO | null>(null);
+    const [loadingCreator, setLoadingCreator] = useState(false);
+
     const start = toZonedTime(new Date(event.startTime), tz);
     const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
+
+    // Get creator ID from various possible field names
+    const creatorId = (event as any).userId || 
+                     (event as any).creatorId || 
+                     (event as any).creatorID ||
+                     (event as any).authorId || 
+                     (event as any).ownerId ||
+                     (event as any).createdBy;
+
+    useEffect(() => {
+        const fetchCreator = async () => {
+            if (!creatorId) return;
+
+            setLoadingCreator(true);
+            try {
+                const fetchedUser = await apiGet<UserDTO>(`/users/${creatorId}`);
+                setCreator(fetchedUser);
+            }
+            catch (error) {
+                console.error('Failed to fetch event creator:', error);
+                setCreator(null);
+            }
+            finally {
+                setLoadingCreator(false);
+            }
+        };
+
+        fetchCreator();
+    }, [creatorId]);
 
     return (
         <li
@@ -33,7 +67,7 @@ export default function EventCard({ event, isRecurring = false }: Props) {
             </div>
 
             {event.description && (
-                <p className='text-gray-600 text-sm mb-1'>
+                <p className='text-gray-600 dark:text-gray-400 text-sm mb-1'>
                     {event.description}
                 </p>
             )}
@@ -70,6 +104,27 @@ export default function EventCard({ event, isRecurring = false }: Props) {
                     👥 {event.participantCount} participant
                     {event.participantCount !== 1 ? 's' : ''}
                 </p>
+            )}
+
+            {creatorId && (
+                <div className='mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 flex items-center justify-center gap-2'>
+                    {loadingCreator ? (
+                        <p className='text-xs text-gray-400 italic'>Loading creator...</p>
+                    ) : creator ? (
+                        <>
+                            {creator.avatar && (
+                                <img
+                                    src={getImagePath(creator.avatar)}
+                                    alt={creator.username}
+                                    className='w-6 h-6 rounded-full object-cover'
+                                />
+                            )}
+                            <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                Created by <span className='font-semibold'>{creator.username}</span>
+                            </p>
+                        </>
+                    ) : null}
+                </div>
             )}
         </li>
     );

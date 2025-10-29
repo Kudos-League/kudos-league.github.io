@@ -7,6 +7,7 @@ import {
     type KudosHistorySourceFilter
 } from '@/shared/api/queries/kudosHistory';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
+import UserCard from './UserCard';
 
 const FILTER_OPTIONS: Array<{
     value: KudosHistorySourceFilter;
@@ -26,6 +27,8 @@ const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
     'reward-offer': 'Reward offer',
     other: 'Kudos update'
 };
+
+
 
 function formatCurrencyFromCents(value?: unknown) {
     const cents = typeof value === 'number' ? value : Number(value ?? NaN);
@@ -211,6 +214,18 @@ export default function KudosHistoryList() {
                                         Log #{item.id}
                                     </span>
                                 </div>
+                                {item.actor && (
+                                    <div className='flex items-center gap-2 text-xs text-gray-500'>
+                                        <span>Updated by:</span>
+                                        <UserCard
+                                            user={item.actor}
+                                            triggerVariant="name"
+                                            className="text-xs"
+                                            panelWidth={280}
+                                            disableTooltip={false}
+                                        />
+                                    </div>
+                                )}
                                 <div className='flex items-center justify-between'>
                                     <div className='text-lg font-semibold tracking-tight'>
                                         Kudos {deltaLabel}

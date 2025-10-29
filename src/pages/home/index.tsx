@@ -36,14 +36,13 @@ export default function Feed() {
         <div className='max-w-4xl mx-auto space-y-4'>
             <EventsCarousel />
 
-            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b pb-4'>
-                <h1 className='text-xl font-bold'>Welcome to Kudos League!</h1>
+            <div className='flex flex-col sm:flex-row sm:items-center gap-4 border-b pb-4'>
                 <Button
                     onClick={() => navigate('/create-post')}
                     variant='secondary'
-                    className='whitespace-nowrap self-start sm:self-auto'
+                    className='whitespace-nowrap self-start sm:self-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:-translate-y-0.5'
                 >
-                    + Gift / Request
+    + Gift / Request
                 </Button>
             </div>
 
@@ -147,23 +146,35 @@ export default function Feed() {
                 <Button
                     onClick={() => setActiveTab('all')}
                     variant='secondary'
-                    className='text-sm'
+                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                        activeTab === 'all' 
+                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
                 >
-                    All
+        All
                 </Button>
                 <Button
                     onClick={() => setActiveTab('gifts')}
                     variant='secondary'
-                    className='text-sm'
+                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                        activeTab === 'gifts' 
+                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
                 >
-                    Gifts
+        Gifts
                 </Button>
                 <Button
                     onClick={() => setActiveTab('requests')}
                     variant='secondary'
-                    className='text-sm'
+                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                        activeTab === 'requests' 
+                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
                 >
-                    Requests
+        Requests
                 </Button>
             </div>
 
