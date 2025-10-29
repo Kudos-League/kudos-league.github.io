@@ -17,7 +17,7 @@ interface Props {
     onDelete?: (m: MessageDTO) => void;
     allowDelete?: boolean;
     allowEdit?: boolean;
-    onEdit?: (id: number, content: string) => void;
+    onEdit?: (message: MessageDTO) => void;
 }
 
 const ChatWindow: React.FC<Props> = ({
@@ -28,7 +28,9 @@ const ChatWindow: React.FC<Props> = ({
     onBack,
     isMobile = false,
     onDelete,
-    allowDelete
+    allowDelete = false,
+    allowEdit = false,
+    onEdit
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
@@ -185,6 +187,8 @@ const ChatWindow: React.FC<Props> = ({
                                 onDelete={onDelete}
                                 onReply={handleReply}
                                 canDelete={allowDelete ? (m) => !!user && user.id === m.authorID : undefined}
+                                onEdit={onEdit}
+                                canEdit={allowEdit ? (m) => !!user && user.id === m.authorID && !m.deletedAt : undefined}
                                 findMessageById={findMessageById}
                             />
                         </SlideInOnScroll>

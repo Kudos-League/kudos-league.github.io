@@ -28,7 +28,8 @@ export default function PostsInfinite({
         isError,
         fetchNextPage,
         hasNextPage,
-        isFetchingNextPage
+        isFetchingNextPage,
+        error
     } = usePostsInfiniteQuery(filters);
 
     const flat = React.useMemo(
@@ -89,7 +90,10 @@ export default function PostsInfinite({
     }, [fetchNextPage, hasNextPage, isFetchingNextPage, visible.length]);
 
     if (isLoading) return <Spinner />;
-    if (isError) return <Alert type='danger' message='Failed to load posts.' />;
+    if (isError) {
+        console.error('Error loading posts infinite', error);
+        return <Alert type='danger' message='Failed to load posts.' />;
+    }
 
     return (
         <>

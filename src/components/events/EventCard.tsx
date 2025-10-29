@@ -8,15 +8,10 @@ import { apiGet } from '@/shared/api/apiClient';
 
 type Props = {
     event: EventDTO;
+    isRecurring?: boolean;
 };
 
-interface UserDTO {
-    id: number;
-    username: string;
-    avatar?: string;
-}
-
-export default function EventCard({ event }: Props) {
+export default function EventCard({ event, isRecurring = false }: Props) {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -60,9 +55,16 @@ export default function EventCard({ event }: Props) {
             onClick={() => navigate(`/event/${event.id}`)}
             className='p-3 rounded shadow hover:shadow-md cursor-pointer text-center border border-slate-300 bg-slate-100 hover:bg-slate-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors'
         >
-            <p className='font-bold text-lg text-gray-900 dark:text-gray-100'>
-                {event.title}
-            </p>
+            <div className='flex items-center justify-center gap-2 flex-wrap text-center mb-1'>
+                <p className='font-bold text-lg text-gray-900 dark:text-gray-100'>
+                    {event.title}
+                </p>
+                {isRecurring && (
+                    <span className='inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white'>
+                        ↻ Recurring
+                    </span>
+                )}
+            </div>
 
             {event.description && (
                 <p className='text-gray-600 dark:text-gray-400 text-sm mb-1'>

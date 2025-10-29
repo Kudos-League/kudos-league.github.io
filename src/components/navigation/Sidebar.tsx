@@ -2,6 +2,7 @@
 
 import React, { Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { routes } from '@/routes';
 import {
     Dialog,
     DialogBackdrop,
@@ -66,9 +67,9 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
     }
     else {
         base.push(
-            { name: 'About', to: '/about', icon: InformationCircleIcon },
-            { name: 'Login', to: '/login', icon: ArrowRightOnRectangleIcon },
-            { name: 'Register', to: '/sign-up', icon: UserPlusIcon }
+            { name: 'About', to: routes.about, icon: InformationCircleIcon },
+            { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
+            { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
         );
     }
 

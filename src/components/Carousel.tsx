@@ -25,33 +25,31 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     }, [total, idx]);
 
     const goRight = useCallback(() => {
+        if (total === 0) return;
         setIdx((i) => (i + 1) % total);
     }, [total]);
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            goRight();
-        }, interval);
-
-        return () => clearInterval(timer);
-    }, [interval, total]);
-
-    if (total === 0) return null;
-
     const goLeft = useCallback(() => {
+        if (total === 0) return;
         setIdx((i) => (i - 1 + total) % total);
     }, [total]);
 
-    const onImgError = useCallback(
-        (origIndex: number) => {
-            setFailed((prev) => {
-                const next = new Set(prev);
-                next.add(origIndex);
-                return next;
-            });
-        },
-        [setFailed]
-    );
+    const onImgError = useCallback((origIndex: number) => {
+        setFailed((prev) => {
+            const next = new Set(prev);
+            next.add(origIndex);
+            return next;
+        });
+    }, []);
+
+    useEffect(() => {
+        if (total <= 1) return undefined;
+
+        const timer = setInterval(goRight, interval);
+        return () => clearInterval(timer);
+    }, [goRight, interval, total]);
+
+    if (total === 0) return null;
 
     const trackStyle = {
         width: `${total * 100}%`,

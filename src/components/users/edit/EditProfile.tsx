@@ -44,6 +44,7 @@ const EditProfile: React.FC<Props> = ({
     const auth = useAuth();
     const { user, updateUser: updateUserCache } = auth;
     const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
+    const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
 
     const { setLocation } = useLocation();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -78,7 +79,8 @@ const EditProfile: React.FC<Props> = ({
             about: user.settings?.about || '',
             profession: user.settings?.profession || '',
             avatarURL: '',
-            admin: targetUser?.admin ?? false
+            admin: targetUser?.admin ?? false,
+            kudos: targetUser?.kudos ?? 0
         }),
         [user.id, targetUser?.id, targetUser?.admin]
     );
@@ -104,7 +106,8 @@ const EditProfile: React.FC<Props> = ({
                 profession: u.settings?.profession || '',
                 tags: (u.tags || []).map((t: any) => t.name),
                 location: u.location || undefined,
-                admin: u.admin ?? false
+                admin: u.admin ?? false,
+                kudos: (u as any).kudos ?? 0
             },
             { keepDirty: false, keepTouched: false }
         );
@@ -134,6 +137,10 @@ const EditProfile: React.FC<Props> = ({
     useEffect(() => {
         form.reset(defaults, { keepDirty: false, keepTouched: false });
     }, [user?.id]);
+
+    useEffect(() => {
+        baselineRef.current = defaults as any;
+    }, [defaults]);
 
     useEffect(() => {
         if (!toastMessage) return;
@@ -320,7 +327,8 @@ const EditProfile: React.FC<Props> = ({
                 about: updatedUser.settings?.about || '',
                 profession: updatedUser.settings?.profession || '',
                 avatarURL: '',
-                admin: updatedUser.admin ?? false
+                admin: updatedUser.admin ?? false,
+                kudos: (updatedUser as any).kudos ?? (defaults as any).kudos ?? 0
             } as any;
 
             setToastType('success');
@@ -434,7 +442,7 @@ const EditProfile: React.FC<Props> = ({
                             previewUrl={previewUrl}
                             targetUser={targetUser}
                         />
-                        {!isAdminEditingOther && (
+                        {canEditProfile && (
                             <div className='relative'>
                                 <Button
                                     variant='secondary'
@@ -480,6 +488,25 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
+                        {auth.user?.admin && (
+                            <FormField label='Kudos' help={"Set the user's kudos balance (admin only)"}>
+                                <label className='inline-flex items-center gap-2'>
+                                    <input
+                                        type='number'
+                                        min={0}
+                                        value={String(form.watch('kudos') ?? '')}
+                                        onChange={(e) => {
+                                            const v = e.target.value === '' ? undefined : Number(e.target.value);
+                                            form.setValue('kudos', v, { shouldDirty: true, shouldValidate: true });
+                                        }}
+                                        className='border rounded px-2 py-1'
+                                        data-testid='kudos-input'
+                                    />
+                                    <span className='text-sm text-gray-700 dark:text-gray-200'>Adjust kudos for this user</span>
+                                </label>
+                            </FormField>
+                        )}
+
                         <FormField label='Email'>
                             <Input
                                 disabled
@@ -498,7 +525,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.username}
-                                disabled={isAdminEditingOther}
+                                disabled={!canEditProfile}
                             />
                         </FormField>
 
@@ -508,7 +535,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder={user.displayName}
-                                disabled={isAdminEditingOther}
+                                disabled={!canEditProfile}
                             />
                         </FormField>
 
@@ -519,7 +546,7 @@ const EditProfile: React.FC<Props> = ({
                                 form={form}
                                 label=''
                                 placeholder='e.g., Software Engineer'
-                                disabled={isAdminEditingOther}
+                                disabled={!canEditProfile}
                             />
                         </FormField>
 
@@ -534,11 +561,11 @@ const EditProfile: React.FC<Props> = ({
                                 label=''
                                 placeholder='Write a short bio...'
                                 multiline
-                                disabled={isAdminEditingOther}
+                                disabled={!canEditProfile}
                             />
                         </FormField>
 
-                        {!isAdminEditingOther && (
+                        {canEditProfile && (
                             <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
                                 <TagInput
                                     initialTags={tags}
@@ -559,7 +586,7 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {!isAdminEditingOther && (
+                        {canEditProfile && (
                             <FormField
                                 label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'

@@ -7,17 +7,20 @@ type Props = {
     helper?: string;
     children?: React.ReactNode;
     className?: string;
+    noMargin?: boolean;
 };
 
-export default function FormField({ name, label, helper, children, className }: Props) {
+export default function FormField({ name, label, helper, children, className, noMargin = false }: Props) {
     const { formState } = useFormContext();
     const error = (formState.errors as any)[name];
     const errorMessage = error?.message ?? (error?.type === 'required' ? 'This field is required' : undefined);
 
+    const containerClasses = [className, noMargin ? null : 'mb-3'].filter(Boolean).join(' ') || undefined;
+
     return (
-        <div className={`${className ?? ''} mb-3`}> 
+        <div className={containerClasses}>
             {label && (
-                <label className='block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-200'>
+                <label htmlFor={name} className='block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-200'>
                     {label}
                 </label>
             )}

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import Layout from './Layout';
 import Spinner from '../common/Spinner';
@@ -21,10 +21,18 @@ const ResetPassword = lazy(() => import('@/pages/reset-password'));
 const EventsPage = lazy(() => import('@/pages/events'));
 const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
+const FeedbackPage = lazy(() => import('@/pages/feedback'));
+const NotificationsPage = lazy(() => import('@/pages/notifications'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
 const Chat = lazy(() => import('@/components/messages/Chat'));
+
+const LegacySignUpRedirect = () => {
+    const location = useLocation();
+
+    return <Navigate to={`${routes.signUp}${location.search}`} replace />;
+};
 
 function AppNavigator() {
     return (
@@ -35,14 +43,7 @@ function AppNavigator() {
                     <Route path={routes.home} element={<Home />} />
                     <Route path={routes.result} element={<Result />} />
 
-                    <Route
-                        path={routes.donate}
-                        element={
-                            <RequireAuth>
-                                <DonatePage />
-                            </RequireAuth>
-                        }
-                    />
+                    <Route path={routes.donate} element={<DonatePage />} />
 
                     <Route
                         path='/post/:id'
@@ -126,6 +127,22 @@ function AppNavigator() {
                         }
                     />
                     <Route
+                        path={routes.feedback}
+                        element={
+                            <RequireAuth>
+                                <FeedbackPage />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.notifications}
+                        element={
+                            <RequireAuth>
+                                <NotificationsPage />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
                         path={routes.admin}
                         element={
                             <RequireAuth
@@ -154,6 +171,7 @@ function AppNavigator() {
                             </PublicOnly>
                         }
                     />
+                    <Route path='/sign-up' element={<LegacySignUpRedirect />} />
                     <Route
                         path={routes.forgotPassword}
                         element={

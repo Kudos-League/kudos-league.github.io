@@ -1,21 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import { endOfDay, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { EventDTO, LocationDTO } from '@/shared/api/types';
+import { EventDTO, LocationDTO, MessageDTO } from '@/shared/api/types';
 import { useJoinEvent } from '@/shared/api/mutations/events';
 import { apiMutate } from '@/shared/api/apiClient';
 import { getImagePath } from '@/shared/api/config';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
+import MessageList from '@/components/posts/MessageList';
 
 type Props = {
     event: EventDTO;
-    setEvent: (event: EventDTO) => void;
+    setEvent: React.Dispatch<React.SetStateAction<EventDTO | null>>;
 };
 
 interface UpdateEventData {
@@ -57,6 +58,57 @@ export default function EventDetails({ event, setEvent }: Props) {
     const [error, setError] = useState<string | null>(null);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const eventStartDate = useMemo(() => new Date(event.startTime), [event.startTime]);
+    const eventEndDate = useMemo(() => (event.endTime ? new Date(event.endTime) : null), [event.endTime]);
+    const eventAutoEndTime = useMemo(() => endOfDay(eventStartDate), [eventStartDate]);
+    const eventUsesAutoEnd = useMemo(() => {
+        if (!eventEndDate) return true;
+        return Math.abs(eventEndDate.getTime() - eventAutoEndTime.getTime()) < 60000;
+    }, [eventEndDate, eventAutoEndTime]);
+
+    const autoEditEndTime = useMemo(() => endOfDay(editData.startTime), [editData.startTime]);
+
+    const handleMessageCreated = (message: MessageDTO) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                messages: [message, ...(prev.messages || [])]
+            };
+        });
+    };
+
+    const handleMessageUpdate = (updatedMessage: MessageDTO) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            const messages = (prev.messages || []).map((msg) =>
+                msg.id === updatedMessage.id ? { ...msg, ...updatedMessage } : msg
+            );
+            return {
+                ...prev,
+                messages
+            };
+        });
+    };
+
+    const handleMessageDelete = (deletedMessageId: number) => {
+        setEvent((prev) => {
+            if (!prev) return prev;
+            const messages = (prev.messages || []).map((msg) =>
+                msg.id === deletedMessageId
+                    ? {
+                        ...msg,
+                        deletedAt: new Date().toISOString(),
+                        content: `[deleted]: ${msg.content}`
+                    }
+                    : msg
+            );
+            return {
+                ...prev,
+                messages
+            };
+        });
+    };
 
     // Check if current user is the event creator
     // Adjust this based on your actual EventDTO structure
@@ -90,19 +142,23 @@ export default function EventDetails({ event, setEvent }: Props) {
                 errors.push('End time must be after start time');
             }
         }
+        else {
+            warnings.push(`No custom end time selected — event will end on ${format(autoEditEndTime, 'PPP p')}`);
+        }
 
         const isValid = errors.length === 0;
         const canSubmit = isValid && editData.title.trim() && editData.description.trim();
 
         return { errors, warnings, isValid, canSubmit };
-    }, [editData.startTime, editData.endTime, editData.title, editData.description]);
+    }, [editData.startTime, editData.endTime, editData.title, editData.description, autoEditEndTime]);
 
     const handleStartEdit = () => {
+        const existingEnd = eventEndDate ? new Date(eventEndDate) : null;
         setEditData({
             title: event.title,
             description: event.description,
             startTime: new Date(event.startTime),
-            endTime: event.endTime ? new Date(event.endTime) : null,
+            endTime: eventUsesAutoEnd ? null : existingEnd,
             global: event.location?.global || false,
             location: event.location || null
         });
@@ -121,7 +177,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                 title: editData.title.trim(),
                 description: editData.description.trim(),
                 startTime: editData.startTime,
-                endTime: editData.endTime
+                endTime: editData.endTime ?? endOfDay(editData.startTime)
             };
 
             if (editData.global) {
@@ -269,19 +325,24 @@ export default function EventDetails({ event, setEvent }: Props) {
                                         variant='secondary'
                                         className='text-sm'
                                     >
-                                        Remove End Time
+                                        Remove End Time (Use End of Day)
                                     </Button>
                                 </div>
                             ) : (
-                                <Button
-                                    onClick={() => setEditData({ 
-                                        ...editData, 
-                                        endTime: new Date(editData.startTime.getTime() + 2 * 60 * 60 * 1000)
-                                    })}
-                                    variant='secondary'
-                                >
-                                    Add End Time
-                                </Button>
+                                <div className='space-y-2'>
+                                    <Button
+                                        onClick={() => setEditData({ 
+                                            ...editData, 
+                                            endTime: new Date(editData.startTime.getTime() + 2 * 60 * 60 * 1000)
+                                        })}
+                                        variant='secondary'
+                                    >
+                                        Add End Time
+                                    </Button>
+                                    <div className='text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded p-2'>
+                                        Without a custom end time, this event will end on {format(autoEditEndTime, 'PPP p')}.
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -373,9 +434,9 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <p className='text-sm text-gray-500 italic'>
                         {format(toZonedTime(new Date(event.startTime), tz), 'PPP p')}
                         {' – '}
-                        {event.endTime
-                            ? format(toZonedTime(new Date(event.endTime), tz), 'PPP p')
-                            : 'Ongoing'}
+                        {eventUsesAutoEnd
+                            ? `Auto end on ${format(toZonedTime(eventAutoEndTime, tz), 'PPP p')}`
+                            : format(toZonedTime(new Date(event.endTime as any), tz), 'PPP p')}
                     </p>
                 </>
             )}
@@ -390,6 +451,20 @@ export default function EventDetails({ event, setEvent }: Props) {
                     />
                 </div>
             )}
+
+            <div className='shadow p-4 rounded mb-6'>
+                <MessageList
+                    title='Discussion'
+                    messages={event.messages || []}
+                    callback={handleMessageCreated}
+                    eventID={event.id}
+                    showSendMessage={!!user}
+                    allowDelete={!!user}
+                    allowEdit={!!user}
+                    onMessageUpdate={handleMessageUpdate}
+                    onMessageDelete={handleMessageDelete}
+                />
+            </div>
 
             {/* Participants (only show when not editing) */}
             {!isEditing && (

@@ -12,10 +12,15 @@ export function useCreateChannel() {
     });
 }
 
-export function useAcceptHandshake(handshakeId?: number) {
+export function useAcceptHandshake() {
     const qc = useQueryClient();
-    return useMutation<any, any, void>({
-        mutationFn: () => apiMutate(`/handshakes/${handshakeId}`, 'patch', { status: 'accepted' }),
+    return useMutation<any, any, number>({
+        mutationFn: (handshakeID) => {
+            if (typeof handshakeID !== 'number') {
+                throw new Error('handshakeID is required');
+            }
+            return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'accepted' });
+        },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
@@ -23,10 +28,15 @@ export function useAcceptHandshake(handshakeId?: number) {
     });
 }
 
-export function useCompleteHandshake(handshakeId?: number) {
+export function useCompleteHandshake() {
     const qc = useQueryClient();
-    return useMutation<any, any, void>({
-        mutationFn: () => apiMutate(`/handshakes/${handshakeId}`, 'patch', { status: 'completed' }),
+    return useMutation<any, any, number>({
+        mutationFn: (handshakeID) => {
+            if (typeof handshakeID !== 'number') {
+                throw new Error('handshakeID is required');
+            }
+            return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'completed' });
+        },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
@@ -34,10 +44,15 @@ export function useCompleteHandshake(handshakeId?: number) {
     });
 }
 
-export function useDeleteHandshake(handshakeId?: number) {
+export function useDeleteHandshake() {
     const qc = useQueryClient();
-    return useMutation<void, any, void>({
-        mutationFn: () => apiMutate(`/handshakes/${handshakeId}`, 'delete'),
+    return useMutation<void, any, number>({
+        mutationFn: (handshakeID) => {
+            if (typeof handshakeID !== 'number') {
+                throw new Error('handshakeID is required');
+            }
+            return apiMutate(`/handshakes/${handshakeID}`, 'delete');
+        },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
