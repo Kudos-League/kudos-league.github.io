@@ -16,6 +16,7 @@ import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteForm from './InviteForm';
+import InviteManager from './InviteManager';
 
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
 
