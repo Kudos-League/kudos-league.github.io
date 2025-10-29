@@ -19,7 +19,7 @@ const LocationSetupModal: React.FC<LocationSetupModalProps> = ({
     if (!isOpen) return null;
     return (
         <div className='fixed inset-0 flex items-center justify-center z-50 p-4'>
-            <div className='rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all'>
+            <div className='rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all bg-white'>
                 <div className='flex items-center justify-between p-6'>
                     <div className='flex items-center gap-3'>
                         <div className='bg-blue-100 p-2 rounded-lg'>
