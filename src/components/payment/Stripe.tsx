@@ -90,8 +90,12 @@ export default function StripeWeb() {
     };
 
     return (
-        <Form methods={formMethods} onSubmit={onSubmit} className="flex flex-col items-center justify-center min-h-screen gap-6 px-4 pb-40" serverError={error}>
+        <Form methods={formMethods} onSubmit={onSubmit} className="flex flex-col items-center justify-center gap-6 px-4 py-8 mt-20" serverError={error}>
             <h1 className="text-2xl font-semibold">Support Us with a Donation</h1>
+
+            <p className="text-center text-gray-600 max-w-md -mt-2">
+                Your donation helps us continue our mission. Every contribution makes a difference.
+            </p>
 
             <DonationAmountPicker onAmountChange={(amt) => formMethods.setValue('donationAmount', String(amt), { shouldValidate: true })} />
 
@@ -114,6 +118,12 @@ export default function StripeWeb() {
                 <button type="submit" className="w-full" disabled={!stripeReady || creating}>
                     <Button disabled={!stripeReady || creating}>{creating ? 'Processing…' : 'Donate'}</Button>
                 </button>
+            </div>
+
+            <div className="flex gap-3 text-xs text-gray-500 items-center mt-2">
+                <span>🔒 Secure payment</span>
+                <span>•</span>
+                <span>Powered by Stripe</span>
             </div>
         </Form>
     );
