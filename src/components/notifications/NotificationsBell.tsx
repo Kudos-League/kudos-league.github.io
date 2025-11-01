@@ -75,28 +75,50 @@ export default function NotificationsBell() {
     }, [acknowledgeAll, debug, open, unread]);
 
     const go = (n: NotificationRecord) => {
+        // Extract postID from various possible locations
+        const postID = ('postID' in n ? n.postID : null) 
+            || (n as any)?.post?.id;
+
         debug('navigating from notification', {
             type: n.type,
-            postID: 'postID' in n ? n.postID : undefined,
+            postID: postID,
             from: 'message' in n ? n.message?.author?.id : undefined,
-            id: n.id
+            id: n.id,
+            fullNotification: n
         });
+
         if (!n.isActedOn) {
             markActed(n.id).catch((err) => {
                 console.error('Failed to mark notification acted', err);
             });
         }
+
         if (n.type === 'direct-message') {
             navigate(`/dms/${n.message?.author?.id ?? ''}`);
         }
         else if (n.type === 'post-reply') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for post-reply notification', n);
+            }
         }
         else if (n.type === 'post-auto-close') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for post-auto-close notification', n);
+            }
         }
         else if (n.type === 'past-gift') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for past-gift notification', n);
+            }
         }
         else if (n.type === 'bug-report' || n.type === 'site-feedback') {
             navigate(routes.admin);
