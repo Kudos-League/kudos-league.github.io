@@ -87,7 +87,7 @@ export default function NotificationsBell() {
             });
         }
         if (n.type === 'direct-message') {
-            navigate(`/dm/${n.message?.author?.id ?? ''}`);
+            navigate(`/dms/${n.message?.author?.id ?? ''}`);
         }
         else if (n.type === 'post-reply') {
             navigate(`/post/${n.postID}`);
