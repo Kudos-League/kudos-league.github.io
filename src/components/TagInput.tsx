@@ -169,6 +169,7 @@ const TagInput: React.FC<TagInputProps> = ({
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 handleAddTag();
             }
             else if (e.key === 'Escape') {
@@ -196,6 +197,7 @@ const TagInput: React.FC<TagInputProps> = ({
                     autoComplete='off'
                 />
                 <Button
+                    type="button"
                     onClick={handleAddTag}
                     disabled={!currentTagInput.trim() || isLoading}
                 >

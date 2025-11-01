@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EventDTO } from '@/shared/api/types';
+import { EventDTO, UserDTO } from '@/shared/api/types';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { getImagePath } from '@/shared/api/config';

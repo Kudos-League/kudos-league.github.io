@@ -15,6 +15,7 @@ import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
+import InviteForm from './InviteForm';
 import InviteManager from './InviteManager';
 
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
@@ -392,7 +393,7 @@ const Profile: React.FC<Props> = ({
                         </div>
                     </div>
                 )}
-
+                <InviteForm />
                 {currentUser?.admin && !isSelf && user.deactivatedAt && (
                     <div className='flex justify-center'>
                         <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-md px-4 py-3 flex items-center gap-3'>
