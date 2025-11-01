@@ -20,6 +20,25 @@ export default function NotificationsBell() {
     );
     const { items, unread, loaded } = state;
 
+    const displayNotifications = useMemo(() => {
+        const unreadItems = items.filter(n => !n.isRead);
+        const readItems = items.filter(n => n.isRead);
+        
+        if (unreadItems.length > 10) {
+            // Show all unread notifications
+            return unreadItems;
+        }
+        else if (unreadItems.length > 0) {
+            // Show unread on top, then fill with read items up to 10 total
+            const remainingSlots = 10 - unreadItems.length;
+            return [...unreadItems, ...readItems.slice(0, remainingSlots)];
+        }
+        else {
+            // No unread, just show last 10
+            return items.slice(0, 10);
+        }
+    }, [items]);
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -146,7 +165,7 @@ export default function NotificationsBell() {
 								No notifications yet
                                 </li>
                             ) : (
-                                items.map((n) => (
+                                displayNotifications.map((n) => (
                                     <li
                                         key={n.id}
                                         className={`relative cursor-pointer p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
