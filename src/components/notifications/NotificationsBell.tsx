@@ -4,6 +4,7 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
+import UserCard from '../users/UserCard';
 
 export default function NotificationsBell() {
     const { state, acknowledgeAll, markActed } = useNotifications();
@@ -202,14 +203,18 @@ export default function NotificationsBell() {
                                         )}
                                         {n.type === 'direct-message' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>New DM</div>
+                                                <div className='text-sm font-medium mb-1'>
+                                                    New DM from <UserCard user={n.message?.author} triggerVariant='name' />
+                                                </div>
                                                 <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>
                                             </div>
                                         ) : n.type === 'post-reply' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>Reply to your post</div>
+                                                <div className='text-sm font-medium mb-1'>
+                                                    <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
+                                                </div>
                                                 <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>
