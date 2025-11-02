@@ -120,13 +120,48 @@ export default function InviteManager() {
 
             const response = await apiMutate<CreateInviteResponse, typeof payload>('/users/invites', 'post', payload);
             const inviteUrl = response.inviteUrl ?? response.invite.inviteUrl ?? null;
-            setInvites((prev) => [response.invite, ...prev]);
+
+            setInvites((prev) => {
+                const targetEmail = response.invite.targetEmail;
+                if (targetEmail) {
+                    const existingIndex = prev.findIndex(invite => invite.targetEmail === targetEmail);
+                    if (existingIndex !== -1) {
+                        const updated = [...prev];
+                        updated[existingIndex] = response.invite;
+                        return updated;
+                    }
+                }
+                return [response.invite, ...prev];
+            });
+            
             setSuccess({ inviteUrl, token: response.token });
             form.reset({ email: '' });
         }
         catch (err: any) {
-            const message = err?.response?.data?.message || err?.message || 'Failed to create invite.';
-            setError(message);
+            const statusCode = err?.response?.status;
+            let message: string;
+            
+            if (Array.isArray(err)) {
+                message = err[0] || 'Failed to create invite.';
+            }
+            else {
+                message = err?.response?.data?.message || err?.message || 'Failed to create invite.';
+            }
+            
+            if (statusCode === 409) {
+                if (message.includes('already been used')) {
+                    setError(`This email address has already used an invite and cannot receive another one. You can try a different email address or clear the email field to create a general shareable invite link instead.`);
+                }
+                else if (message.includes('already exists')) {
+                    setError(`A user account with this email address already exists. Try a different email address or clear the email field to create a general shareable invite link instead.`);
+                }
+                else {
+                    setError(message);
+                }
+            }
+            else {
+                setError(message);
+            }
         }
         finally {
             setCreating(false);
