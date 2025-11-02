@@ -26,7 +26,8 @@ type AuthContextType = {
         username: string,
         email: string,
         password: string,
-        inviteToken: string
+        inviteToken: string,
+        emailToken?: string
     ) => Promise<any>;
     updateUser: (updated: Partial<UserDTO>) => void;
 };
@@ -65,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     });
 
-    const registerMutation = useMutation<any, any, { username: string; email: string; password: string; inviteToken: string }>({
+    const registerMutation = useMutation<any, any, { username: string; email: string; password: string; inviteToken: string; emailToken?: string }>({
         mutationFn: (payload) => apiMutate('/users/register', 'post', payload)
     });
 
@@ -210,13 +211,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         username: string,
         email: string,
         password: string,
-        inviteToken: string
+        inviteToken: string,
+        emailToken?: string
     ) => {
         if (!inviteToken) {
             throw new Error('Invite token is required.');
         }
         try {
-            const res = await registerMutation.mutateAsync({ username, email, password, inviteToken });
+            const payload: any = { username, email, password, inviteToken };
+            if (emailToken) {
+                payload.emailToken = emailToken;
+            }
+            const res = await registerMutation.mutateAsync(payload);
 
             if (res?.token) {
                 return loginHandler({ username, password });

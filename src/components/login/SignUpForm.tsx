@@ -28,6 +28,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const inviteToken = (searchParams.get('invite') || '').trim();
+    const emailToken = (searchParams.get('emailToken') || '').trim();
 
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         setError(null);
         try {
             setIsVerifying(true);
-            const result = await registerUser(username, email, password, inviteToken);
+            const result = await registerUser(username, email, password, inviteToken, emailToken || undefined);
             setIsVerifying(false);
 
             if (typeof result === 'string') {
@@ -140,7 +141,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                 <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
                     or sign up with
                 </p>
-                <OAuthGroup inviteToken={inviteToken} />
+                <OAuthGroup inviteToken={inviteToken} emailToken={emailToken} />
 
                 <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
                     Already have an account?{' '}
