@@ -146,7 +146,16 @@ const MessageBubble: React.FC<Props> = ({
                                     [deleted message]
                                 </div>
                             ) : (
-                                <TextWithLinks>{message.content}</TextWithLinks>
+                                message.updatedAt != message.createdAt ? (
+                                    <>
+                                        <TextWithLinks className='italic opacity-90'>
+                                            {`[edited] `} 
+                                        </TextWithLinks>
+                                        <TextWithLinks>{message.content}</TextWithLinks>
+                                    </>
+                                ) : (
+                                    <TextWithLinks>{message.content}</TextWithLinks>
+                                )
                             )}
 
                             {/* Action buttons - only show when not editing */}
