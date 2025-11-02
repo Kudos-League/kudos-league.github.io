@@ -595,64 +595,81 @@ const EditProfile: React.FC<Props> = ({
                                 label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'
                             >
-                                {/* IMPROVED: Centered location display */}
-                                <div className='flex justify-center'>
-                                    <div className='w-full max-w-2xl'>
-                                        {locationLabel && (
-                                            <div className='mb-2 text-sm text-center text-gray-700 dark:text-gray-300'>
-                                                {locationLabel}
-                                            </div>
-                                        )}
-                                        <MapDisplay
-                                            regionID={targetUser.location?.regionID}
-                                            width={400}
-                                            height={300}
-                                            edit
-                                            exactLocation
-                                            shouldGetYourLocation
-                                            inlineBanner={false}
-                                            onLabelChange={(label) => setLocationLabel(label)}
-                                            onLocationChange={(data) => {
-                                                if (!data) {
-                                                    setLocation(null);
-                                                    form.setValue('location', null as any, {
-                                                        shouldDirty: true,
-                                                        shouldValidate: true
-                                                    });
-                                                    setTargetUser({
-                                                        ...targetUser,
-                                                        location: {
-                                                            ...targetUser.location,
-                                                            regionID: null
-                                                        }
-                                                    });
-                                                    return;
-                                                }
-                                                if (!data.changed) return;
-                                                if (data.coordinates) {
-                                                    setLocation(data.coordinates);
-                                                    const next = {
-                                                        ...data.coordinates,
-                                                        name: data.name,
-                                                        regionID: data.placeID
-                                                    };
-                                                    const prev =
-                                                    form.getValues('location') || null;
-                                                    const changed = !deepEqual(next, prev);
-                                                    if (changed) {
-                                                        form.setValue('location', next, {
-                                                            shouldDirty: true,
-                                                            shouldValidate: true
-                                                        });
+                                {locationLabel && (
+                                    <div className='mb-2 flex items-center justify-between'>
+                                        <div className='text-sm text-gray-700 dark:text-gray-300'>
+                                            {locationLabel}
+                                        </div>
+                                        <Button
+                                            variant='ghost'
+                                            onClick={() => {
+                                                setLocation(null);
+                                                setLocationLabel('');
+                                                form.setValue('location', null as any, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                                setTargetUser({
+                                                    ...targetUser,
+                                                    location: {
+                                                        ...targetUser.location,
+                                                        regionID: null
                                                     }
-                                                    user.invitedByUserID
-                                                }
+                                                });
                                             }}
-                                        />
+                                            className='!text-red-600 hover:!text-red-700 !text-sm'
+                                        >
+                                            ✕ Remove location
+                                        </Button>
                                     </div>
-                                </div>
-                            </FormField>
-                        )}
+                                )}
+                                <MapDisplay
+                                    regionID={targetUser.location?.regionID}
+                                    width={400}
+                                    height={300}
+                                    edit
+                                    exactLocation
+                                    shouldGetYourLocation
+                                    inlineBanner={false}
+                                    onLabelChange={(label) => setLocationLabel(label)}
+                                    onLocationChange={(data) => {
+                                        if (!data) {
+                                            setLocation(null);
+                                            form.setValue('location', null as any, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            });
+                                            setTargetUser({
+                                                ...targetUser,
+                                                location: {
+                                                    ...targetUser.location,
+                                                    regionID: null
+                                                }
+                                            });
+                                            return;
+                                        }
+                                        if (!data.changed) return;
+                                        if (data.coordinates) {
+                                            setLocation(data.coordinates);
+                                            const next = {
+                                                ...data.coordinates,
+                                                name: data.name,
+                                                regionID: data.placeID
+                                            };
+                                            const prev =
+                                            form.getValues('location') || null;
+                                            const changed = !deepEqual(next, prev);
+                                            if (changed) {
+                                                form.setValue('location', next, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                            }
+                                        }
+                                    }}
+                                />
+                            </FormField>                        )
+                        }
 
                         {/* IMPROVED: More visible ActionsBar */}
                         <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 -mx-6 px-6 pb-4 z-10'>
