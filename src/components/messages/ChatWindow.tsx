@@ -5,20 +5,35 @@ import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
-import { ArrowLeftIcon, XMarkIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Props {
     user: UserDTO | null;
     channel: ChannelDTO | null;
     messages: MessageDTO[];
-    onSend: (text: string, replyToMessageID?: number) => void;
+    onSend: (text: string, replyToId?: number) => void;
     onBack: () => void;
     isMobile?: boolean;
     onDelete?: (m: MessageDTO) => void;
     allowDelete?: boolean;
     allowEdit?: boolean;
-    onEdit?: (message: MessageDTO) => void;
+    onEdit?: (id: number, content: string) => void;
 }
+
+// Helper function to sort messages chronologically
+const sortMessages = (messages: MessageDTO[]): MessageDTO[] => {
+    return [...messages].sort((a, b) => {
+        // Sort by createdAt timestamp
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        
+        if (timeA !== timeB) {
+            return timeA - timeB; // Chronological order (oldest to newest)
+        }
+        // Fallback to ID if timestamps are equal
+        return (a.id || 0) - (b.id || 0);
+    });
+};
 
 const ChatWindow: React.FC<Props> = ({
     user,
@@ -28,22 +43,34 @@ const ChatWindow: React.FC<Props> = ({
     onBack,
     isMobile = false,
     onDelete,
-    allowDelete = false,
-    allowEdit = false,
+    allowDelete,
+    allowEdit,
     onEdit
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
     const [headerHeight, setHeaderHeight] = useState<number>(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [containerHeight, setContainerHeight] = useState<number | null>(null);
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    
+    // Sort messages before grouping them
+    const sortedMessages = useMemo(() => sortMessages(messages), [messages]);
     const groupedMessages = useMemo(
-        () => groupMessagesByAuthor(messages),
-        [messages]
+        () => groupMessagesByAuthor(sortedMessages),
+        [sortedMessages]
     );
+
+    // Create a map for finding messages by ID (for replies)
+    const messageById = useMemo(() => {
+        const map = new Map<number, MessageDTO>();
+        sortedMessages.forEach(m => map.set(m.id, m));
+        return map;
+    }, [sortedMessages]);
 
     useEffect(() => {
         if (bottomRef.current) {
@@ -58,13 +85,6 @@ const ChatWindow: React.FC<Props> = ({
             }, 100);
         }
     }, [isMobile, channel]);
-
-    // Auto-focus input when reply is set
-    useEffect(() => {
-        if (replyTo && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [replyTo]);
 
     const containerStyle: React.CSSProperties = {
         display: 'flex',
@@ -85,28 +105,40 @@ const ChatWindow: React.FC<Props> = ({
             e.preventDefault();
             handleSend();
         }
-        else if (e.key === 'Escape') {
+        else if (e.key === 'Escape' && replyTo) {
+            e.preventDefault();
             setReplyTo(null);
         }
     };
 
-    const handleReply = (msg: MessageDTO) => {
-        if (msg.deletedAt) return;
-        setReplyTo(msg);
+    const handleReply = (message: MessageDTO) => {
+        setReplyTo(message);
+        setEditingMessageId(null); // Cancel any ongoing edit
+        setTimeout(() => inputRef.current?.focus(), 0);
     };
 
-    const handleCancelReply = () => {
-        setReplyTo(null);
+    const handleEditStart = (message: MessageDTO) => {
+        if (!allowEdit || !user || user.id !== message.authorID) return;
+        setEditingMessageId(message.id);
+        setEditContent(message.content);
+        setReplyTo(null); // Cancel any ongoing reply
     };
 
-    // Create a lookup map for finding messages by ID
-    const messageById = useMemo(() => {
-        const map = new Map<number, MessageDTO>();
-        messages.forEach(m => map.set(m.id, m));
-        return map;
-    }, [messages]);
+    const handleEditSave = (messageId: number) => {
+        if (!editContent.trim() || !onEdit) return;
+        onEdit(messageId, editContent.trim());
+        setEditingMessageId(null);
+        setEditContent('');
+    };
 
-    const findMessageById = (id: number) => messageById.get(id);
+    const handleEditCancel = () => {
+        setEditingMessageId(null);
+        setEditContent('');
+    };
+
+    const canEdit = (message: MessageDTO) => {
+        return allowEdit && user && user.id === message.authorID && !message.deletedAt;
+    };
 
     if (!channel) {
         return (
@@ -157,15 +189,6 @@ const ChatWindow: React.FC<Props> = ({
                         )}
                     </h2>
                 </div>
-                {!isMobile && (
-                    <Button
-                        onClick={onBack}
-                        className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800'
-                        variant='secondary'
-                    >
-                        <ArrowLeftIcon className='w-5 h-5' />
-                    </Button>
-                )}
             </div>
 
             {/* Message list */}
@@ -184,12 +207,17 @@ const ChatWindow: React.FC<Props> = ({
                             <MessageGroup
                                 messages={group}
                                 isOwn={!!user?.id && group[0].author?.id === user.id}
-                                onDelete={onDelete}
                                 onReply={handleReply}
+                                onDelete={onDelete}
                                 canDelete={allowDelete ? (m) => !!user && user.id === m.authorID : undefined}
-                                onEdit={onEdit}
-                                canEdit={allowEdit ? (m) => !!user && user.id === m.authorID && !m.deletedAt : undefined}
-                                findMessageById={findMessageById}
+                                findMessageById={(id) => messageById.get(id)}
+                                onEdit={allowEdit ? handleEditStart : undefined}
+                                editingMessageId={editingMessageId}
+                                editContent={editContent}
+                                onEditChange={setEditContent}
+                                onEditSave={handleEditSave}
+                                onEditCancel={handleEditCancel}
+                                canEdit={canEdit}
                             />
                         </SlideInOnScroll>
                     ))
@@ -198,29 +226,26 @@ const ChatWindow: React.FC<Props> = ({
             </div>
 
             {/* Message input */}
-            <div style={{ flexShrink: 0 }} className={`border-t bg-white dark:bg-zinc-900 flex flex-col ${
+            <div style={{ flexShrink: 0 }} className={`border-t bg-white dark:bg-zinc-900 ${
                 isMobile ? 'p-4' : 'p-4'
             }`}>
-                {/* Reply Preview - WhatsApp/Telegram style */}
+                {/* Reply preview */}
                 {replyTo && (
-                    <div className='flex items-start gap-2 px-3 py-2 mb-2 bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500 rounded-r-lg'>
+                    <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-teal-500'>
                         <div className='flex-1 min-w-0'>
-                            <div className='flex items-center gap-2 mb-1'>
-                                <ArrowUturnLeftIcon className='w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0' />
-                                <span className='text-xs font-semibold text-teal-700 dark:text-teal-300'>
-                                    {replyTo.author?.username || 'Unknown'}
-                                </span>
-                            </div>
+                            <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
+                                Replying to <UserCard triggerVariant='name' user={replyTo.author} />
+                            </p>
                             <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
                                 {replyTo.content}
                             </p>
                         </div>
                         <button
-                            onClick={handleCancelReply}
-                            className='flex-shrink-0 p-1 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded transition-colors'
+                            onClick={() => setReplyTo(null)}
+                            className='ml-3 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                             title='Cancel reply (Esc)'
                         >
-                            <XMarkIcon className='w-4 h-4 text-zinc-500 dark:text-zinc-400' />
+                            <XMarkIcon className='w-5 h-5 text-zinc-500 dark:text-zinc-400' />
                         </button>
                     </div>
                 )}
@@ -229,7 +254,7 @@ const ChatWindow: React.FC<Props> = ({
                     <input
                         ref={inputRef}
                         type='text'
-                        placeholder='Type a message...'
+                        placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyDown={handleKeyPress}
