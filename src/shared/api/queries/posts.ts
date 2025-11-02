@@ -48,6 +48,7 @@ export function usePostsInfiniteQuery(filters?: {
     limit?: number;
     query?: string;
     sort?: 'date' | 'tags' | 'location' | 'kudos';
+    order?: 'asc' | 'desc';
 }) {
     return useInfiniteQuery({
         queryKey: ['posts', 'infinite', filters],

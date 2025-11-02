@@ -14,7 +14,7 @@ export default function Feed() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
-        type: 'date',
+        type: 'kudos',
         order: 'desc'
     });
     const [filterOpen, setFilterOpen] = React.useState(false);
@@ -29,7 +29,7 @@ export default function Feed() {
     const apiParams = {
         includeSender: true,
         includeTags: true,
-        limit: 10
+        limit: 20
     } as const;
 
     return (
