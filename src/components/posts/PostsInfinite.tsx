@@ -30,7 +30,10 @@ export default function PostsInfinite({
         hasNextPage,
         isFetchingNextPage,
         error
-    } = usePostsInfiniteQuery(filters);
+    } = usePostsInfiniteQuery({ 
+        ...filters, 
+        sort: ordering.type === 'distance' ? 'date' : ordering.type 
+    });
 
     const flat = React.useMemo(
         () => data?.pages.flatMap((p) => p.data) ?? [],
@@ -48,19 +51,12 @@ export default function PostsInfinite({
                           (activeTab === 'gifts' ? 'gift' : 'request')
                 );
 
-        const cmp = {
-            date: (a: any, b: any) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            // TODO: replace with real distance sort
-            distance: () => Math.random() - 0.5,
-            kudos: (a: any, b: any) =>
-                (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0)
-        }[ordering.type];
+        if (ordering.type === 'distance') {
+            const cmp = () => Math.random() - 0.5; // TODO: replace with real distance sort
+            return [...filtered].sort(cmp);
+        }
 
-        return [...filtered].sort((a, b) =>
-            ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)
-        );
+        return filtered;
     }, [flat, activeTab, ordering]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
