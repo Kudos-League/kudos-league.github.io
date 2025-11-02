@@ -43,6 +43,7 @@ const EditProfile: React.FC<Props> = ({
 }) => {
     const auth = useAuth();
     const { user, updateUser: updateUserCache } = auth;
+    const wasInvited = !!targetUser.invitedByUserID;
     const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
     const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
 
@@ -509,14 +510,17 @@ const EditProfile: React.FC<Props> = ({
 
                         <FormField label='Email'>
                             <Input
-                                disabled
+                                disabled={wasInvited}
                                 name='email'
                                 form={form}
                                 label=''
-                                placeholder={
-                                    targetUser.email || 'Enter email address'
-                                }
+                                placeholder={targetUser.email || 'Enter email address'}
                             />
+                            {wasInvited && (
+                                <p className='text-xs text-gray-500 italic mt-2'>
+            Email cannot be changed for invited users
+                                </p>
+                            )}
                         </FormField>
 
                         <FormField label='Username'>
@@ -641,6 +645,7 @@ const EditProfile: React.FC<Props> = ({
                                                             shouldValidate: true
                                                         });
                                                     }
+                                                    user.invitedByUserID
                                                 }
                                             }}
                                         />
