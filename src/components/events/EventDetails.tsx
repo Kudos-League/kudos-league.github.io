@@ -100,7 +100,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     ? {
                         ...msg,
                         deletedAt: new Date().toISOString(),
-                        content: `[deleted]: ${msg.content}`
+                        content: `[deleted message]`
                     }
                     : msg
             );
