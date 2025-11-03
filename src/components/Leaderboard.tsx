@@ -137,7 +137,7 @@ export default function Leaderboard() {
                         className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
                         onClick={() => navigate(`/user/${entry.id}`)}
                     >
-                        <div className='flex min-w-0 gap-x-4'>
+                        <div className='flex min-w-0 gap-x-4 flex-1'>
                             <UserCard
                                 user={
                                     {
@@ -153,13 +153,15 @@ export default function Leaderboard() {
                             />
                         </div>
 
-                        <div className='hidden shrink-0 sm:flex sm:flex-col sm:items-end'>
-                            <p className='text-sm text-gray-900 dark:text-white'>
-                                {entry.totalKudos.toLocaleString()} Kudos
+                        <div className='flex shrink-0 flex-col items-end justify-center'>
+                            <p className='text-sm font-semibold text-gray-900 dark:text-white'>
+                                {entry.totalKudos.toLocaleString()}
+                            </p>
+                            <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                Kudos
                             </p>
                         </div>
-                    </li>
-                ))}
+                    </li>                ))}
             </ul>
         </div>
     );

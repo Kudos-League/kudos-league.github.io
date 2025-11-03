@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useAppSelector } from 'redux_store/hooks';
 import { useAuth } from '@/contexts/useAuth';
@@ -11,8 +11,8 @@ import {
 import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
-import { ArrowUturnLeftIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useSendDirectMessage } from '@/shared/api/mutations/messages';
+import { ArrowUturnLeftIcon, TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useSendDirectMessage, useUpdateMessage } from '@/shared/api/mutations/messages';
 import UserCard from '../users/UserCard';
 
 interface ChatModalProps {
@@ -30,28 +30,21 @@ const parseMessageDate = (
     date: string | Date | null | undefined
 ): Date | null => {
     if (!date) return null;
-
-    // If it's already a Date object, return it
     if (date instanceof Date) {
         return isNaN(date.getTime()) ? null : date;
     }
-
-    // Try to parse string dates
     const parsed = new Date(date);
     return isNaN(parsed.getTime()) ? null : parsed;
 };
 
 // Helper function to get the best available timestamp from a message
 const getMessageTimestamp = (msg: any): string | Date | null => {
-    // Prefer createdAt, but fall back to readAt or other timestamp fields
     return msg.createdAt || msg.readAt || msg.updatedAt || null;
 };
 
 // Helper function for better date formatting
 const formatMessageTime = (date: string | Date | null | undefined): string => {
     const messageDate = parseMessageDate(date);
-
-    // Handle null/invalid dates
     if (!messageDate) {
         return 'Unknown time';
     }
@@ -60,18 +53,14 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
     const diffInMilliseconds = now.getTime() - messageDate.getTime();
     const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
     const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
 
-    // Less than 1 minute ago
     if (diffInMinutes < 1) {
         return 'Just now';
     }
-
-    // Less than 1 hour ago
     if (diffInMinutes < 60) {
         return `${diffInMinutes}m ago`;
     }
-
-    // Less than 24 hours ago (same day)
     if (diffInHours < 24 && messageDate.getDate() === now.getDate()) {
         return messageDate.toLocaleTimeString([], {
             hour: '2-digit',
@@ -79,7 +68,6 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
         });
     }
 
-    // Yesterday
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     if (
@@ -90,8 +78,6 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
         return `Yesterday ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
-    // Less than a week ago
-    const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) {
         const dayName = messageDate.toLocaleDateString([], {
             weekday: 'short'
@@ -103,7 +89,6 @@ const formatMessageTime = (date: string | Date | null | undefined): string => {
         return `${dayName} ${time}`;
     }
 
-    // Older than a week
     return messageDate.toLocaleDateString([], {
         month: 'short',
         day: 'numeric',
@@ -122,7 +107,6 @@ const shouldShowDateSeparator = (
     const currentDate = parseMessageDate(getMessageTimestamp(currentMsg));
     const previousDate = parseMessageDate(getMessageTimestamp(previousMsg));
 
-    // If either message has no valid date, don't show separator
     if (!currentDate || !previousDate) return false;
 
     return (
@@ -137,7 +121,6 @@ const formatDateSeparator = (
     date: string | Date | null | undefined
 ): string => {
     const dateObj = parseMessageDate(date);
-
     if (!dateObj) return 'Unknown date';
 
     const now = new Date();
@@ -154,6 +137,19 @@ const formatDateSeparator = (
         weekday: 'long',
         month: 'long',
         day: 'numeric'
+    });
+};
+
+// Helper function to sort messages chronologically
+const sortMessagesByTime = (messages: MessageDTO[]): MessageDTO[] => {
+    return [...messages].sort((a, b) => {
+        const timeA = parseMessageDate(getMessageTimestamp(a))?.getTime() || 0;
+        const timeB = parseMessageDate(getMessageTimestamp(b))?.getTime() || 0;
+        
+        if (timeA !== timeB) {
+            return timeA - timeB;
+        }
+        return (a.id || 0) - (b.id || 0);
     });
 };
 
@@ -176,21 +172,21 @@ export default function ChatModal({
         initialSelected || null
     );
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLTextAreaElement>(null);
     const token = useAppSelector((s) => s.auth.token);
     const sendDirectInitial = useSendDirectMessage(recipientID ?? undefined);
+    const updateMessageMutation = useUpdateMessage();
 
     const channelID = selectedChannel?.id ?? null;
 
-    // Auto-scroll to bottom when messages change
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
-    // Initial setup when modal opens
     useEffect(() => {
         if (isChatOpen) {
             if (recipientID !== 0) fetchExistingChannel(recipientID);
@@ -201,17 +197,14 @@ export default function ChatModal({
         }
     }, [isChatOpen]);
 
-    // Join/leave channel
     useEffect(() => {
         if (selectedChannel && selectedChannel.id !== -1) {
             joinChannel(selectedChannel.id);
             return () => leaveChannel(selectedChannel.id);
         }
 
-        return () => {
-            if (channelID) leaveChannel(channelID);
-        };
-    }, [selectedChannel, channelID, joinChannel, leaveChannel]);
+        return () => leaveChannel(channelID);
+    }, [selectedChannel]);
 
     const fetchExistingChannel = async (recipientId: number) => {
         if (!token) return;
@@ -289,7 +282,7 @@ export default function ChatModal({
             setLoading(true);
             const msg: CreateMessageDTO = {
                 content: messageInput,
-                ...(replyTo?.id ? { replyToMessageID: replyTo.id } : {})
+                ...(replyTo ? { replyToMessageID: replyTo.id } : {})
             };
             let response;
 
@@ -345,55 +338,51 @@ export default function ChatModal({
         }
     };
 
-    const handleReplyClick = useCallback((msg: MessageDTO) => {
-        if (msg.deletedAt) return;
-        setReplyTo(msg);
-        setTimeout(() => {
-            inputRef.current?.focus();
-        }, 0);
-    }, []);
+    const handleEditStart = (message: MessageDTO) => {
+        if (!user || user.id !== message.authorID || message.deletedAt) return;
+        setEditingMessageId(message.id);
+        setEditContent(message.content);
+        setReplyTo(null); // Cancel any ongoing reply
+    };
 
-    const handleCancelReply = useCallback(() => {
-        setReplyTo(null);
-    }, []);
+    const handleEditSave = async (messageId: number) => {
+        if (!editContent.trim() || !token) return;
 
-    const handleDeleteMessage = useCallback(async (msg: MessageDTO) => {
-        if (!token || msg.deletedAt) return;
-        
+        const originalMessage = messages.find(m => m.id === messageId);
+        if (!originalMessage) return;
+
         try {
-            await apiMutate<void, void>(`/messages/${msg.id}`, 'delete');
-            
-            setMessages((prev) => {
-                const idx = prev.findIndex((x) => x.id === msg.id);
-                if (idx === -1) return prev;
-                
-                const original = prev[idx];
-                if (
-                    user &&
-                    (user.admin ||
-                        original.authorID === user.id ||
-                        original.author?.id === user.id)
-                ) {
-                    const updated = {
-                        ...original,
-                        deletedAt: new Date().toISOString(),
-                        content: `[deleted]: ${original.content}`
-                    } as MessageDTO;
-                    const copy = [...prev];
-                    copy[idx] = updated;
-                    return copy;
-                }
-                else {
-                    return prev.filter((x) => x.id !== msg.id);
-                }
+            const response = await updateMessageMutation.mutateAsync({
+                id: messageId,
+                content: editContent.trim()
             });
+
+            const updatedMessage: MessageDTO = {
+                ...response,
+                author: response.author || originalMessage.author
+            };
+
+            setMessages((prev) =>
+                prev.map((m) => (m.id === messageId ? updatedMessage : m))
+            );
+
+            setEditingMessageId(null);
+            setEditContent('');
         }
-        catch (e) {
-            console.error('Failed to delete message', e);
+        catch (err) {
+            console.error('Failed to edit message:', err);
+            alert('Failed to edit message. Please try again.');
         }
-    }, [token, user, setMessages]);
+    };
+
+    const handleEditCancel = () => {
+        setEditingMessageId(null);
+        setEditContent('');
+    };
 
     if (!isChatOpen) return null;
+
+    const sortedMessages = sortMessagesByTime(messages);
 
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
@@ -413,7 +402,6 @@ export default function ChatModal({
                             setIsChatOpen(false);
                             setMessages([]);
                             setSelectedChannel(null);
-                            setReplyTo(null);
                         }}
                     >
                         Close
@@ -430,12 +418,12 @@ export default function ChatModal({
                             Loading messages...
                         </p>
                     )}
-                    {!loading && messages.length === 0 && (
+                    {!loading && sortedMessages.length === 0 && (
                         <p className='text-center text-gray-400'>
                             No messages yet.
                         </p>
                     )}
-                    {messages
+                    {sortedMessages
                         .filter((msg) => {
                             if (!msg || typeof msg !== 'object') return false;
                             const isOwn =
@@ -444,6 +432,7 @@ export default function ChatModal({
                                     msg.author?.id === user.id);
                             const canSeeDeleted =
                                 !!user && (user.admin || isOwn);
+                            // Only show non-deleted messages, or deleted messages if user can see them
                             return !msg.deletedAt || canSeeDeleted;
                         })
                         .map((msg, i) => {
@@ -465,7 +454,7 @@ export default function ChatModal({
                             const isOwn =
                                 (safeMsg.author?.id ?? safeMsg.authorID) ===
                                 user?.id;
-                            const previousMsg = i > 0 ? messages[i - 1] : null;
+                            const previousMsg = i > 0 ? sortedMessages[i - 1] : null;
                             const showDateSeparator = shouldShowDateSeparator(
                                 safeMsg,
                                 previousMsg
@@ -474,12 +463,14 @@ export default function ChatModal({
                             const messageTimestamp =
                                 getMessageTimestamp(safeMsg);
 
+                            const canDelete = !!user && isOwn;
+                            const canEdit = !!user && isOwn && !safeMsg.deletedAt;
+                            const isEditing = editingMessageId === safeMsg.id;
                             const repliedTo = safeMsg.replyToMessageID
-                                ? messages.find(
+                                ? sortedMessages.find(
                                     (mm) => mm.id === safeMsg.replyToMessageID
                                 )
                                 : null;
-                            
                             return (
                                 <React.Fragment
                                     key={`${safeMsg.id || 'temp'}-${i}`}
@@ -487,18 +478,17 @@ export default function ChatModal({
                                     {/* Date Separator */}
                                     {showDateSeparator && (
                                         <div className='flex items-center justify-center my-4'>
-                                            <div className='flex-1 border-t border-gray-300 dark:border-zinc-600'></div>
-                                            <span className='px-3 text-xs text-gray-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800'>
+                                            <div className='flex-1 border-t border-gray-300'></div>
+                                            <span className='px-3 text-xs text-gray-500 bg-gray-50'>
                                                 {formatDateSeparator(
                                                     messageTimestamp
                                                 )}
                                             </span>
-                                            <div className='flex-1 border-t border-gray-300 dark:border-zinc-600'></div>
+                                            <div className='flex-1 border-t border-gray-300'></div>
                                         </div>
                                     )}
 
-                                    {/* Reply Preview */}
-                                    {repliedTo && (
+                                    {repliedTo && !isEditing && (
                                         <div
                                             className={`max-w-xs ${isOwn ? 'ml-auto' : ''} mb-1`}
                                         >
@@ -534,7 +524,7 @@ export default function ChatModal({
                                                     isOwn
                                                         ? 'border-teal-300/70'
                                                         : 'border-zinc-400/60'
-                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60 transition-colors`}
+                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
                                                 title={`${
                                                     repliedTo.author
                                                         ?.username ?? 'Unknown'
@@ -553,134 +543,207 @@ export default function ChatModal({
                                         </div>
                                     )}
 
-                                    {/* Message Bubble */}
                                     <div
                                         id={`msg-${safeMsg.id}`}
-                                        className={`group relative max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu ${
+                                        className={`group relative max-w-xs px-4 py-3 rounded-xl text-sm shadow-sm transition-colors transform-gpu break-words overflow-wrap-anywhere ${
                                             isOwn
                                                 ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto rounded-br-none'
                                                 : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start rounded-bl-none'
                                         }`}
                                     >
-                                        <TextWithLinks>
-                                            {safeMsg.deletedAt
-                                                ? `[deleted]: ${safeMsg.content}`
-                                                : safeMsg.content}
-                                        </TextWithLinks>
-                                        
-                                        {/* Action buttons - Only show for own messages or reply for all */}
-                                        <div
-                                            className={`absolute z-[60] ${
-                                                isOwn ? '-left-20' : '-right-20'
-                                            } top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-zinc-800 rounded-lg px-2 py-1 shadow-lg border border-zinc-200 dark:border-zinc-700`}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <button
-                                                type='button'
-                                                title={safeMsg.deletedAt ? 'Message deleted' : 'Reply'}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    handleReplyClick(safeMsg);
-                                                }}
-                                                disabled={Boolean(safeMsg.deletedAt)}
-                                                className={`p-1.5 rounded transition-colors ${
-                                                    safeMsg.deletedAt 
-                                                        ? 'opacity-50 cursor-not-allowed' 
-                                                        : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 active:bg-zinc-300 dark:active:bg-zinc-600'
-                                                }`}
-                                            >
-                                                <ArrowUturnLeftIcon className={`w-4 h-4 ${safeMsg.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                                            </button>
-                                            {isOwn && !safeMsg.deletedAt && (
-                                                <button
-                                                    type='button'
-                                                    title='Delete'
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleDeleteMessage(safeMsg);
+                                        {isEditing ? (
+                                            // Edit mode
+                                            <div className='space-y-2'>
+                                                <textarea
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                                    rows={3}
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && e.ctrlKey) {
+                                                            e.preventDefault();
+                                                            handleEditSave(safeMsg.id);
+                                                        }
+                                                        else if (e.key === 'Escape') {
+                                                            e.preventDefault();
+                                                            handleEditCancel();
+                                                        }
                                                     }}
-                                                    className='p-1.5 rounded transition-colors hover:bg-red-100 dark:hover:bg-red-900/30 active:bg-red-200 dark:active:bg-red-900/50'
+                                                />
+                                                <div className='flex gap-2'>
+                                                    <Button
+                                                        onClick={() => handleEditSave(safeMsg.id)}
+                                                        disabled={!editContent.trim()}
+                                                        className='text-xs px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded'
+                                                    >
+                                                        Save
+                                                    </Button>
+                                                    <Button
+                                                        onClick={handleEditCancel}
+                                                        variant='secondary'
+                                                        className='text-xs px-3 py-1'
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                                <p className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                                    Press Ctrl+Enter to save, Esc to cancel
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            // View mode
+                                            <>
+                                                {safeMsg.deletedAt ? (
+                                                    <div className='text-zinc-300 dark:text-zinc-300 italic opacity-90'>
+                                                        [deleted message]
+                                                    </div>
+                                                ) : (
+                                                    <TextWithLinks>{safeMsg.content}</TextWithLinks>
+                                                )}
+                                                <div
+                                                    className={`absolute z-10 -top-3 ${
+                                                        isOwn ? 'left-2' : 'right-2'
+                                                    } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
                                                 >
-                                                    <TrashIcon className='w-4 h-4 text-red-600 dark:text-red-400' />
-                                                </button>
-                                            )}
-                                        </div>
-                                        
-                                        {/* Timestamp */}
-                                        <div
-                                            className={`text-xs text-right mt-2 ${
-                                                isOwn
-                                                    ? 'text-teal-200'
-                                                    : 'text-zinc-400 dark:text-zinc-500'
-                                            }`}
-                                            title={
-                                                messageTimestamp
-                                                    ? new Date(
+                                                    <button
+                                                        type='button'
+                                                        title='Reply'
+                                                        onClick={() =>
+                                                            setReplyTo(safeMsg)
+                                                        }
+                                                        className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                    >
+                                                        <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                    </button>
+                                                    {canEdit && (
+                                                        <button
+                                                            type='button'
+                                                            title='Edit'
+                                                            onClick={() => handleEditStart(safeMsg)}
+                                                            className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                        >
+                                                            <PencilIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                        </button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button
+                                                            type='button'
+                                                            title='Delete'
+                                                            onClick={async () => {
+                                                                if (!token) return;
+                                                                try {
+                                                                    await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
+                                                                }
+                                                                catch (e) {
+                                                                    console.error(
+                                                                        'Failed to delete message',
+                                                                        e
+                                                                    );
+                                                                    return;
+                                                                }
+                                                                setMessages((prev) => {
+                                                                    const idx =
+                                                                        prev.findIndex(
+                                                                            (x) =>
+                                                                                x.id ===
+                                                                                safeMsg.id
+                                                                        );
+                                                                    if (idx === -1)
+                                                                        return prev;
+                                                                    const original =
+                                                                        prev[idx];
+                                                                    if (
+                                                                        user &&
+                                                                        (user.admin ||
+                                                                            original.authorID ===
+                                                                                user.id ||
+                                                                            original
+                                                                                .author
+                                                                                ?.id ===
+                                                                                user.id)
+                                                                    ) {
+                                                                        const updated =
+                                                                            {
+                                                                                ...original,
+                                                                                content: '', // Clear content
+                                                                                deletedAt: new Date().toISOString()
+                                                                            } as MessageDTO;
+                                                                        const copy = [
+                                                                            ...prev
+                                                                        ];
+                                                                        copy[idx] =
+                                                                            updated;
+                                                                        return copy;
+                                                                    }
+                                                                    else {
+                                                                        return prev.filter(
+                                                                            (x) =>
+                                                                                x.id !==
+                                                                                safeMsg.id
+                                                                        );
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                                        >
+                                                            <TrashIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className={`text-xs text-right mt-2 ${
+                                                        isOwn
+                                                            ? 'text-teal-200'
+                                                            : 'text-zinc-400 dark:text-zinc-500'
+                                                    }`}
+                                                    title={
                                                         messageTimestamp
-                                                    ).toLocaleString()
-                                                    : 'No timestamp available'
-                                            }
-                                        >
-                                            {formatMessageTime(
-                                                messageTimestamp
-                                            )}
-                                        </div>
+                                                            ? new Date(
+                                                                messageTimestamp
+                                                            ).toLocaleString()
+                                                            : 'No timestamp available'
+                                                    }
+                                                >
+                                                    {formatMessageTime(
+                                                        messageTimestamp
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </React.Fragment>
                             );
                         })}
                 </div>
 
-                {/* Input Area */}
+                {/* Input */}
                 <div className='flex flex-col gap-2'>
-                    {/* Reply Preview in Input Area - Modern WhatsApp-style */}
                     {replyTo && (
-                        <div className='flex items-start gap-2 px-3 py-2 bg-teal-50 dark:bg-teal-900/20 border-l-4 border-teal-500 rounded-r-lg'>
-                            <div className='flex-1 min-w-0'>
-                                <div className='flex items-center gap-2 mb-1'>
-                                    <ArrowUturnLeftIcon className='w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0' />
-                                    <span className='text-xs font-semibold text-teal-700 dark:text-teal-300'>
-                                        {replyTo.author?.username || 'Unknown'}
-                                    </span>
-                                </div>
-                                <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
-                                    {replyTo.content}
-                                </p>
-                            </div>
+                        <div className='flex items-center justify-between text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded'>
+                            <span>
+                                Replying to: {replyTo.content.slice(0, 80)}
+                            </span>
                             <button
-                                onClick={handleCancelReply}
-                                className='flex-shrink-0 p-1 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded transition-colors'
-                                title='Cancel reply (Esc)'
+                                className='text-blue-600 hover:underline'
+                                onClick={() => setReplyTo(null)}
                             >
-                                <XMarkIcon className='w-4 h-4 text-zinc-500 dark:text-zinc-400' />
+                                Cancel
                             </button>
                         </div>
                     )}
-                    
-                    <div className='flex items-end gap-2'>
+                    <div className='flex items-center gap-2'>
                         <textarea
-                            ref={inputRef}
                             rows={2}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    sendMessage();
-                                }
-                                else if (e.key === 'Escape') {
-                                    handleCancelReply();
-                                }
-                            }}
-                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors resize-none'
-                            placeholder='Type a message...'
+                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
+                            placeholder='Type your message...'
                         />
                         <Button
                             disabled={!validateMessage(messageInput) || loading}
                             onClick={sendMessage}
-                            className={`px-4 py-2 rounded-lg text-white transition-colors flex-shrink-0 ${
+                            className={`px-4 py-2 rounded-lg text-white transition-colors ${
                                 validateMessage(messageInput) && !loading
                                     ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
                                     : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'

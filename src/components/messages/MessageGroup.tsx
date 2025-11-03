@@ -14,6 +14,11 @@ interface MessageGroupProps {
     findMessageById?: (id: number) => MessageDTO | undefined;
     onEdit?: (m: MessageDTO) => void;
     canEdit?: (m: MessageDTO) => boolean;
+    editingMessageId?: number | null;
+    editContent?: string;
+    onEditChange?: (content: string) => void;
+    onEditSave?: (messageId: number) => void;
+    onEditCancel?: () => void;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
@@ -26,7 +31,12 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     canDelete,
     findMessageById,
     onEdit,
-    canEdit
+    canEdit,
+    editingMessageId,
+    editContent,
+    onEditChange,
+    onEditSave,
+    onEditCancel
 }) => {
     if (messages.length === 0) return null;
 
@@ -40,7 +50,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         />
     );
 
-    // TODO: Why is createdAt null???
     const createdAt = messages[0].createdAt
         ? new Date(messages[0].createdAt)
         : messages[0].updatedAt
@@ -50,8 +59,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         createdAt && !isNaN(createdAt.getTime())
             ? createdAt.toLocaleString()
             : 'Unknown time';
-
-    // console.log('time', messages.map(m => m.createdAt), timestamp);
 
     return (
         <div className='mb-4'>
@@ -74,13 +81,18 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     onReply={onReply}
                     onDelete={onDelete}
                     canDelete={canDelete ? canDelete(msg) : false}
-                    onEdit={onEdit}
-                    canEdit={canEdit ? canEdit(msg) : false}
                     replyTo={
                         msg.replyToMessageID && findMessageById
                             ? (findMessageById(msg.replyToMessageID) ?? null)
                             : null
                     }
+                    onEdit={onEdit}
+                    canEdit={canEdit ? canEdit(msg) : false}
+                    isEditing={editingMessageId === msg.id}
+                    editContent={editContent}
+                    onEditChange={onEditChange}
+                    onEditSave={onEditSave}
+                    onEditCancel={onEditCancel}
                 />
             ))}
 

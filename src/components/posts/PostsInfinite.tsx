@@ -32,7 +32,8 @@ export default function PostsInfinite({
         error
     } = usePostsInfiniteQuery({ 
         ...filters, 
-        sort: ordering.type === 'distance' ? 'date' : ordering.type 
+        sort: ordering.type === 'distance' ? 'date' : ordering.type,
+        order: ordering.order
     });
 
     const flat = React.useMemo(

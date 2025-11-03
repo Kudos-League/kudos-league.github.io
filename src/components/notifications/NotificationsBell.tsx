@@ -4,6 +4,7 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
+import UserCard from '../users/UserCard';
 
 export default function NotificationsBell() {
     const { state, acknowledgeAll, markActed } = useNotifications();
@@ -19,6 +20,25 @@ export default function NotificationsBell() {
         []
     );
     const { items, unread, loaded } = state;
+
+    const displayNotifications = useMemo(() => {
+        const unreadItems = items.filter(n => !n.isRead);
+        const readItems = items.filter(n => n.isRead);
+        
+        if (unreadItems.length > 10) {
+            // Show all unread notifications
+            return unreadItems;
+        }
+        else if (unreadItems.length > 0) {
+            // Show unread on top, then fill with read items up to 10 total
+            const remainingSlots = 10 - unreadItems.length;
+            return [...unreadItems, ...readItems.slice(0, remainingSlots)];
+        }
+        else {
+            // No unread, just show last 10
+            return items.slice(0, 10);
+        }
+    }, [items]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -56,28 +76,50 @@ export default function NotificationsBell() {
     }, [acknowledgeAll, debug, open, unread]);
 
     const go = (n: NotificationRecord) => {
+        // Extract postID from various possible locations
+        const postID = ('postID' in n ? n.postID : null) 
+            || (n as any)?.post?.id;
+
         debug('navigating from notification', {
             type: n.type,
-            postID: 'postID' in n ? n.postID : undefined,
+            postID: postID,
             from: 'message' in n ? n.message?.author?.id : undefined,
-            id: n.id
+            id: n.id,
+            fullNotification: n
         });
+
         if (!n.isActedOn) {
             markActed(n.id).catch((err) => {
                 console.error('Failed to mark notification acted', err);
             });
         }
+
         if (n.type === 'direct-message') {
-            navigate(`/dm/${n.message?.author?.id ?? ''}`);
+            navigate(`/dms/${n.message?.author?.id ?? ''}`);
         }
         else if (n.type === 'post-reply') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for post-reply notification', n);
+            }
         }
         else if (n.type === 'post-auto-close') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for post-auto-close notification', n);
+            }
         }
         else if (n.type === 'past-gift') {
-            navigate(`/post/${n.postID}`);
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for past-gift notification', n);
+            }
         }
         else if (n.type === 'bug-report' || n.type === 'site-feedback') {
             navigate(routes.admin);
@@ -146,7 +188,7 @@ export default function NotificationsBell() {
 								No notifications yet
                                 </li>
                             ) : (
-                                items.map((n) => (
+                                displayNotifications.map((n) => (
                                     <li
                                         key={n.id}
                                         className={`relative cursor-pointer p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
@@ -161,14 +203,18 @@ export default function NotificationsBell() {
                                         )}
                                         {n.type === 'direct-message' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>New DM</div>
+                                                <div className='text-sm font-medium mb-1'>
+                                                    New DM from <UserCard user={n.message?.author} triggerVariant='name' />
+                                                </div>
                                                 <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>
                                             </div>
                                         ) : n.type === 'post-reply' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>Reply to your post</div>
+                                                <div className='text-sm font-medium mb-1'>
+                                                    <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
+                                                </div>
                                                 <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>

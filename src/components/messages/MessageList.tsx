@@ -198,20 +198,53 @@ const MessageList: React.FC<Props> = ({
                     {/* Action buttons */}
                     <div className='flex gap-1'>
                         {/* Reply */}
-                        {!isEditing && (
-                            <button
-                                type='button'
-                                title={msg.deletedAt ? 'Message deleted' : 'Reply'}
-                                onClick={() => {
-                                    if (msg.deletedAt) return;
-                                    setReplyTo(msg);
-                                    setTimeout(() => inputRef.current?.focus(), 0);
-                                }}
-                                disabled={Boolean(msg.deletedAt)}
-                                className={`p-1 rounded ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                            >
-                                <ArrowUturnLeftIcon className={`w-4 h-4 ${msg.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                            </button>
+                        {isEditing ? (
+                            <div className='space-y-2'>
+                                <textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                    rows={3}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && e.ctrlKey) {
+                                            e.preventDefault();
+                                            handleEditSave(msg.id);
+                                        }
+                                        else if (e.key === 'Escape') {
+                                            handleEditCancel();
+                                        }
+                                    }}
+                                />
+                                <div className='flex gap-2'>
+                                    <Button
+                                        onClick={() => handleEditSave(msg.id)}
+                                        disabled={!editContent.trim()}
+                                        className='text-xs'
+                                    >
+                Save
+                                    </Button>
+                                    <Button
+                                        onClick={handleEditCancel}
+                                        variant='secondary'
+                                        className='text-xs'
+                                    >
+                Cancel
+                                    </Button>
+                                </div>
+                                <p className='text-xs text-gray-500'>
+            Press Ctrl+Enter to save, Esc to cancel
+                                </p>
+                            </div>
+                        ) : (
+                            msg.deletedAt ? (
+                                <div className='text-zinc-400 dark:text-zinc-400 italic'>
+            [deleted message]
+                                </div>
+                            ) : (
+                                <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                                    {msg.content}
+                                </TextWithLinks>
+                            )
                         )}
                         {(showEditButton || showDeleteButton) && !isEditing && (
                             <>
