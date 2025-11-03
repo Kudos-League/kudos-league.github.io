@@ -33,7 +33,7 @@ export default function Feed() {
     } as const;
 
     return (
-        <div className='max-w-4xl mx-auto space-y-4'>
+        <div className='max-w-4xl mx-auto space-y-4 px-4'>            
             <EventsCarousel />
 
             <div className='flex flex-col sm:flex-row sm:items-center gap-4 border-b pb-4'>
