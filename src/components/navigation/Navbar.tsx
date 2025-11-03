@@ -301,13 +301,13 @@ export default function Navbar({
                         <div className='flex items-center gap-1.5'>
                             <Link
                                 to={routes.login}
-                                className='rounded-full bg-white/90 px-3 py-2 text-xs md:text-sm md:px-4 md:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                                className='rounded-full bg-white/90 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                             >
                                 Login
                             </Link>
                             <Link
                                 to={routes.signUp}
-                                className='rounded-full bg-teal-500 px-3 py-2 text-xs md:text-sm md:px-4 md:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
+                                className='rounded-full bg-teal-500 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
                             >
                                 Register
                             </Link>
