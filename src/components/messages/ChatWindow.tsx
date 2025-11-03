@@ -51,9 +51,6 @@ const ChatWindow: React.FC<Props> = ({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
-    const [headerHeight, setHeaderHeight] = useState<number>(0);
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const [containerHeight, setContainerHeight] = useState<number | null>(null);
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -85,13 +82,6 @@ const ChatWindow: React.FC<Props> = ({
             }, 100);
         }
     }, [isMobile, channel]);
-
-    const containerStyle: React.CSSProperties = {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        boxSizing: 'border-box'
-    };
 
     const handleSend = () => {
         if (!messageInput.trim()) return;
@@ -166,9 +156,9 @@ const ChatWindow: React.FC<Props> = ({
     const otherUser = channel.users?.find((u) => u.id !== user?.id);
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`${isMobile ? 'w-full' : 'w-full'} flex flex-col flex-1 min-h-0`}>
-            {/* Header */}
-            <div className={`flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
+        <div className='flex flex-col h-full w-full min-h-0'>
+            {/* Header - Fixed at top */}
+            <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
                 isMobile ? 'px-4 py-4' : 'px-4 py-3'
             }`}>
                 <div className='flex items-center gap-3'>
@@ -191,8 +181,8 @@ const ChatWindow: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* Message list */}
-            <div style={{ flex: 1, minHeight: 0 }} className={`overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
+            {/* Message list - Scrollable middle section */}
+            <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
                 isMobile ? 'p-3' : 'p-4'
             }`}>
                 {groupedMessages.length === 0 ? (
@@ -225,8 +215,8 @@ const ChatWindow: React.FC<Props> = ({
                 <div ref={bottomRef} />
             </div>
 
-            {/* Message input */}
-            <div style={{ flexShrink: 0 }} className={`border-t bg-white dark:bg-zinc-900 ${
+            {/* Message input - Fixed at bottom */}
+            <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
                 isMobile ? 'p-4' : 'p-4'
             }`}>
                 {/* Reply preview */}

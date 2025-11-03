@@ -274,13 +274,13 @@ export default function Chat({ channelType }: Props) {
     }, []);
 
     const pageContainerStyle: React.CSSProperties = pageHeaderHeight > 0
-        ? { height: `calc(100vh - ${pageHeaderHeight}px - 1px)`, boxSizing: 'border-box', overflow: 'hidden' }
+        ? { boxSizing: 'border-box', overflow: 'hidden', height: `100%` }
         : { minHeight: '60vh', boxSizing: 'border-box', overflow: 'hidden' };
 
     return (
-        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
+        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 '>
             <div className='md:hidden w-full h-full min-h-0'>
-                <div className='p-3 flex flex-col h-full min-h-0'>
+                <div className='flex flex-col h-full min-h-0'>
                     <div className='flex items-center justify-between mb-2'>
                     </div>
                     {!showChatOnMobile ? (
