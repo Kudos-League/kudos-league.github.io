@@ -436,6 +436,7 @@ export default function ChatModal({
                                     msg.author?.id === user.id);
                             const canSeeDeleted =
                                 !!user && (user.admin || isOwn);
+                            // Only show non-deleted messages, or deleted messages if user can see them
                             return !msg.deletedAt || canSeeDeleted;
                         })
                         .map((msg, i) => {
@@ -487,7 +488,7 @@ export default function ChatModal({
                                                     messageTimestamp
                                                 )}
                                             </span>
-                                            <div className='flex-1 border-t border-gray-300 dark:border-zinc-600'></div>
+                                            <div className='flex-1 border-t border-gray-300'></div>
                                         </div>
                                     )}
 
@@ -511,9 +512,17 @@ export default function ChatModal({
                                                 }}
                                                 className={`block w-full text-left px-2 py-1.5 rounded-t-lg border-l-4 ${
                                                     isOwn
-                                                        ? 'bg-teal-700/40 border-teal-300'
-                                                        : 'bg-gray-100 dark:bg-zinc-600 border-teal-500'
-                                                }`}
+                                                        ? 'text-zinc-600 dark:text-zinc-300'
+                                                        : 'text-zinc-700 dark:text-zinc-200'
+                                                } text-xs pl-2 pr-2 py-1 border-l-2 ${
+                                                    isOwn
+                                                        ? 'border-teal-300/70'
+                                                        : 'border-zinc-400/60'
+                                                } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
+                                                title={`${
+                                                    repliedTo.author
+                                                        ?.username ?? 'Unknown'
+                                                }: ${repliedTo.content}`}
                                             >
                                                 <div className={`text-xs font-semibold mb-0.5 ${
                                                     isOwn 
@@ -641,30 +650,52 @@ export default function ChatModal({
                                                                     await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
                                                                 }
                                                                 catch (e) {
-                                                                    console.error('Failed to delete message', e);
+                                                                    console.error(
+                                                                        'Failed to delete message',
+                                                                        e
+                                                                    );
                                                                     return;
                                                                 }
                                                                 setMessages((prev) => {
-                                                                    const idx = prev.findIndex((x) => x.id === safeMsg.id);
-                                                                    if (idx === -1) return prev;
-                                                                    const original = prev[idx];
+                                                                    const idx =
+                                                                        prev.findIndex(
+                                                                            (x) =>
+                                                                                x.id ===
+                                                                                safeMsg.id
+                                                                        );
+                                                                    if (idx === -1)
+                                                                        return prev;
+                                                                    const original =
+                                                                        prev[idx];
                                                                     if (
                                                                         user &&
                                                                         (user.admin ||
-                                                                            original.authorID === user.id ||
-                                                                            original.author?.id === user.id)
+                                                                            original.authorID ===
+                                                                                user.id ||
+                                                                            original
+                                                                                .author
+                                                                                ?.id ===
+                                                                                user.id)
                                                                     ) {
-                                                                        const updated = {
-                                                                            ...original,
-                                                                            content: '',
-                                                                            deletedAt: new Date().toISOString()
-                                                                        } as MessageDTO;
-                                                                        const copy = [...prev];
-                                                                        copy[idx] = updated;
+                                                                        const updated =
+                                                                            {
+                                                                                ...original,
+                                                                                content: '', // Clear content
+                                                                                deletedAt: new Date().toISOString()
+                                                                            } as MessageDTO;
+                                                                        const copy = [
+                                                                            ...prev
+                                                                        ];
+                                                                        copy[idx] =
+                                                                            updated;
                                                                         return copy;
                                                                     }
                                                                     else {
-                                                                        return prev.filter((x) => x.id !== safeMsg.id);
+                                                                        return prev.filter(
+                                                                            (x) =>
+                                                                                x.id !==
+                                                                                safeMsg.id
+                                                                        );
                                                                     }
                                                                 });
                                                             }}
@@ -682,11 +713,15 @@ export default function ChatModal({
                                                     }`}
                                                     title={
                                                         messageTimestamp
-                                                            ? new Date(messageTimestamp).toLocaleString()
+                                                            ? new Date(
+                                                                messageTimestamp
+                                                            ).toLocaleString()
                                                             : 'No timestamp available'
                                                     }
                                                 >
-                                                    {formatMessageTime(messageTimestamp)}
+                                                    {formatMessageTime(
+                                                        messageTimestamp
+                                                    )}
                                                 </div>
                                             </>
                                         )}

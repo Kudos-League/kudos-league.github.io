@@ -39,6 +39,16 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
 }) => {
     if (messages.length === 0) return null;
 
+    const author = messages[0].author;
+    const authorName =
+        isPublic && isOwn ? 'You' : author?.username || 'Anonymous';
+    const AuthorCard = (
+        <UserCard
+            triggerVariant='name'
+            user={{ ...author, username: authorName }}
+        />
+    );
+
     const createdAt = messages[0].createdAt
         ? new Date(messages[0].createdAt)
         : messages[0].updatedAt

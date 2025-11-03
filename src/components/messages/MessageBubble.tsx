@@ -178,24 +178,28 @@ const MessageBubble: React.FC<Props> = ({
                     ) : (
                         // View mode
                         <>
-                            {!message.deletedAt ? (
-                                <>
-                                    {isMessageEdited(message.createdAt, message.updatedAt) && (
-                                        <span className='italic opacity-80 text-xs mr-1'>[edited]</span>
-                                    )}
-                                    <TextWithLinks>{message.content}</TextWithLinks>
-                                </>
-                            ) : (
-                                <div className='text-zinc-500 dark:text-zinc-300 italic opacity-80'>
-        [deleted message]
+                            {message.deletedAt ? (
+                                <div className='text-zinc-300 dark:text-zinc-300 italic opacity-90'>
+                                    [deleted message]
                                 </div>
+                            ) : (
+                                message.updatedAt != message.createdAt ? (
+                                    <>
+                                        <TextWithLinks className='italic opacity-90'>
+                                            {`[edited] `} 
+                                        </TextWithLinks>
+                                        <TextWithLinks>{message.content}</TextWithLinks>
+                                    </>
+                                ) : (
+                                    <TextWithLinks>{message.content}</TextWithLinks>
+                                )
                             )}
 
                             {/* Action buttons - only show when not editing */}
                             <div
                                 className={`absolute z-10 -top-3 ${
                                     isOwn ? 'left-2' : 'right-2'
-                                } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/90 dark:bg-zinc-800/90 rounded px-1 py-0.5 shadow`}
+                                } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
                             >
                                 <button
                                     type='button'
@@ -204,7 +208,7 @@ const MessageBubble: React.FC<Props> = ({
                                     disabled={Boolean(message.deletedAt)}
                                     className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                                 >
-                                    <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                    <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                                 </button>
                                 {canEdit && (
                                     <button
@@ -214,7 +218,7 @@ const MessageBubble: React.FC<Props> = ({
                                         disabled={Boolean(message.deletedAt)}
                                         className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                                     >
-                                        <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                        <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                                     </button>
                                 )}
                                 {canDelete && (
@@ -225,7 +229,7 @@ const MessageBubble: React.FC<Props> = ({
                                         disabled={Boolean(message.deletedAt)}
                                         className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                                     >
-                                        <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                        <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                                     </button>
                                 )}
                             </div>
