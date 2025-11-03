@@ -183,7 +183,7 @@ export default function EventsCarousel() {
                             : 'bg-gray-300 hover:bg-gray-400'
                     }`}
                 >
-                    {locationFilter ? 'Local (On)' : 'Local (Off)'}
+                    {locationFilter ? 'Show just local events' : 'Show non local events'}
                 </Button>
 
                 {/* <div className='relative'>
