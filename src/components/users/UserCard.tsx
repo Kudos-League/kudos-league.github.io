@@ -102,6 +102,13 @@ const UserCard: React.FC<Props> = ({
     const { user: currentUser } = useAuth();
     const [adminReportOpen, setAdminReportOpen] = useState(false);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
+    
+    // Detect mobile devices
+    const isMobile = useMemo(() => {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+        ) || window.innerWidth < 768;
+    }, []);
 
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
@@ -228,7 +235,7 @@ const UserCard: React.FC<Props> = ({
                     ? 'focus'
                     : 'mouseenter focus';
 
-    if (disableTooltip) {
+    if (disableTooltip || isMobile) {
         return (
             <div
                 className={[
