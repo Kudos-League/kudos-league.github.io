@@ -21,6 +21,11 @@ interface Props {
     allowDelete?: boolean;
 }
 
+// Helper to get display name (prioritize displayName, fallback to name or username)
+const getDisplayName = (user: any) => {
+    return user?.displayName || user?.name || user?.username || 'Unknown';
+};
+
 const MessageList: React.FC<Props> = ({
     messages,
     title,
@@ -40,9 +45,7 @@ const MessageList: React.FC<Props> = ({
     const deleteMessageMutation = useDeleteMessage();
     const [showAllMessages, setShowAllMessages] = useState(false);
     const [messageContent, setMessageContent] = useState('');
-    const [editingMessageId, setEditingMessageId] = useState<number | null>(
-        null
-    );
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -85,12 +88,10 @@ const MessageList: React.FC<Props> = ({
 
         try {
             const response = await sendMessageMutation.mutateAsync(newMessage as any);
-            // Ensure author info is present locally to avoid "Anonymous" until refresh
             const enriched: MessageDTO = {
                 ...response,
                 author: response.author || user || undefined,
-                authorID:
-                    response.authorID ?? user.id ?? response.author?.id
+                authorID: response.authorID ?? user.id ?? response.author?.id
             } as MessageDTO;
             callback?.(enriched);
             setMessageContent('');
@@ -110,22 +111,20 @@ const MessageList: React.FC<Props> = ({
     const handleEditSave = async (messageId: number) => {
         if (!editContent.trim() || !token) return;
 
-        // Find the original message to preserve author data
-        const originalMessage = processedMessages.find(
-            (msg) => msg.id === messageId
-        );
+        const originalMessage = processedMessages.find((msg) => msg.id === messageId);
         if (!originalMessage) return;
 
         try {
-            const response = await updateMessageMutation.mutateAsync({ id: messageId, content: editContent });
+            const response = await updateMessageMutation.mutateAsync({ 
+                id: messageId, 
+                content: editContent 
+            });
 
-            // Merge the response with original author data to ensure we don't lose it
             const updatedMessage: MessageDTO = {
                 ...response,
-                author: response.author || originalMessage.author // Preserve original author if not in response
+                author: response.author || originalMessage.author
             };
 
-            // Use specific callback for updates, fallback to general callback
             if (onMessageUpdate) {
                 onMessageUpdate(updatedMessage);
             }
@@ -150,13 +149,11 @@ const MessageList: React.FC<Props> = ({
     const handleDelete = async (messageId: number) => {
         if (!token) return;
 
-        // Simple confirmation
         if (!window.confirm('Are you sure you want to delete this message?')) {
             return;
         }
 
         try {
-            // Call delete on the API. mutateAsync may return void, so don't rely on response shape.
             await deleteMessageMutation.mutateAsync(messageId);
 
             const original = processedMessages.find((m) => m.id === messageId);
@@ -178,7 +175,6 @@ const MessageList: React.FC<Props> = ({
                 callback?.(enriched);
             }
 
-            // Also fire delete listener for any consumers expecting the event
             onMessageDelete?.(messageId);
         }
         catch (err) {
@@ -201,7 +197,6 @@ const MessageList: React.FC<Props> = ({
         return map;
     }, [processedMessages]);
 
-    // Enhanced Message Component with edit/delete functionality
     const renderMessage = (msg: MessageDTO) => {
         const isEditing = editingMessageId === msg.id;
         const showEditButton = canEditMessage(msg);
@@ -214,13 +209,17 @@ const MessageList: React.FC<Props> = ({
                 className='border-b border-zinc-200 dark:border-zinc-700 py-3 last:border-b-0'
             >
                 <div className='mb-2 flex justify-between items-start'>
-                    <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                        <UserCard user={msg.author} />
-                    </span>
+                    <div>
+                        <span className='text-xs font-semibold text-teal-600 dark:text-teal-400 block mb-1'>
+                            {getDisplayName(msg.author)}
+                        </span>
+                        <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
+                            <UserCard user={msg.author} />
+                        </span>
+                    </div>
 
                     {/* Action buttons */}
                     <div className='flex gap-1'>
-                        {/* Reply */}
                         {!isEditing && (
                             <button
                                 type='button'
@@ -258,16 +257,14 @@ const MessageList: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Reply preview */}
+                {/* Reply preview - WhatsApp style */}
                 {msg.replyToMessageID && (
-                    <div className='mb-2'>
+                    <div className='mb-2 ml-1'>
                         <button
                             type='button'
                             onClick={() => {
                                 const tryScroll = () => {
-                                    const el = document.getElementById(
-                                        `msg-${msg.replyToMessageID}`
-                                    );
+                                    const el = document.getElementById(`msg-${msg.replyToMessageID}`);
                                     if (el) {
                                         el.scrollIntoView({
                                             behavior: 'smooth',
@@ -275,10 +272,7 @@ const MessageList: React.FC<Props> = ({
                                         });
                                         el.classList.add('ring-2', 'ring-teal-400');
                                         setTimeout(() => {
-                                            el.classList.remove(
-                                                'ring-2',
-                                                'ring-teal-400'
-                                            );
+                                            el.classList.remove('ring-2', 'ring-teal-400');
                                         }, 1200);
                                         return true;
                                     }
@@ -291,18 +285,14 @@ const MessageList: React.FC<Props> = ({
                                     }, 50);
                                 }
                             }}
-                            className='inline-flex items-center gap-2 max-w-full text-xs pl-2 pr-2 py-1 border-l-2 border-zinc-400/60 bg-zinc-100/80 dark:bg-zinc-800/60 rounded text-zinc-700 dark:text-zinc-200'
-                            title={`${byId.get(msg.replyToMessageID)?.author?.username ?? 'Unknown'}: ${byId.get(msg.replyToMessageID)?.content ?? ''}`}
+                            className='block w-full text-left px-2 py-1.5 rounded-lg border-l-4 border-teal-500 bg-gray-100 dark:bg-zinc-700'
                         >
-                            <span className='font-semibold inline-flex items-center gap-1 shrink-0'>
-                                <UserCard
-                                    triggerVariant='name'
-                                    user={byId.get(msg.replyToMessageID)?.author}
-                                />
-                            </span>
-                            <span className='opacity-90 truncate'>
+                            <div className='text-xs font-semibold mb-0.5 text-teal-600 dark:text-teal-400'>
+                                {getDisplayName(byId.get(msg.replyToMessageID)?.author)}
+                            </div>
+                            <div className='text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2'>
                                 {byId.get(msg.replyToMessageID)?.content ?? 'Original message'}
-                            </span>
+                            </div>
                         </button>
                     </div>
                 )}
@@ -378,17 +368,22 @@ const MessageList: React.FC<Props> = ({
             {showSendMessage && (
                 <div className='flex flex-col border-t pt-3 gap-2'>
                     {replyTo && (
-                        <div className='flex items-center justify-between text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded'>
-                            <span className='truncate'>
-                                Replying to: {replyTo.content.slice(0, 80)}
+                        <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-teal-500'>
+                            <div className='flex items-center justify-between mb-1'>
+                                <span className='text-xs font-semibold text-teal-600 dark:text-teal-400'>
+                                    Replying to {getDisplayName(replyTo.author)}
+                                </span>
+                                <button
+                                    className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
+                                    onClick={() => setReplyTo(null)}
+                                    title='Cancel reply (Esc)'
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <span className='text-xs text-zinc-600 dark:text-zinc-300 truncate'>
+                                {replyTo.content.slice(0, 100)}
                             </span>
-                            <button
-                                className='text-blue-600 hover:underline ml-2 shrink-0'
-                                onClick={() => setReplyTo(null)}
-                                title='Cancel reply (Esc)'
-                            >
-                                Cancel
-                            </button>
                         </div>
                     )}
                     <div className='flex items-center gap-2'>
