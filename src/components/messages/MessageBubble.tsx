@@ -72,9 +72,9 @@ const MessageBubble: React.FC<Props> = ({
     return (
         <div
             id={`msg-${message.id}`}
-            className={`group relative flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 overflow-hidden`}
+            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-6`}
         >
-            <div className={`max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
+            <div className={`max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}>
                 {/* Show sender name for non-own messages (WhatsApp style) */}
                 {!isOwn && showSenderName && (
                     <div className="text-xs font-semibold mb-1 ml-1 text-teal-600 dark:text-teal-400">
@@ -179,11 +179,11 @@ const MessageBubble: React.FC<Props> = ({
                         // View mode
                         <>
                             {message.deletedAt ? (
-                                <div className='text-zinc-300 dark:text-zinc-300 italic opacity-90'>
+                                <div className='text-white dark:text-zinc-300 italic opacity-90'>
                                     [deleted message]
                                 </div>
                             ) : (
-                                message.updatedAt != message.createdAt ? (
+                                isMessageEdited(message.createdAt, message.updatedAt) ? (
                                     <>
                                         <TextWithLinks className='italic opacity-90'>
                                             {`[edited] `} 
@@ -197,7 +197,7 @@ const MessageBubble: React.FC<Props> = ({
 
                             {/* Action buttons - only show when not editing */}
                             <div
-                                className={`absolute z-10 -top-3 ${
+                                className={`absolute z-20 -top-3 ${
                                     isOwn ? 'left-2' : 'right-2'
                                 } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
                             >

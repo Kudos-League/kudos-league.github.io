@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import MessageBubble from './MessageBubble';
+import UserCard from '../users/UserCard';
 
 interface MessageGroupProps {
     messages: MessageDTO[];
@@ -60,7 +61,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
             : 'Unknown time';
 
     return (
-        <div className='mb-4'>
+        <div className='mb-4 overflow-hidden'>
             {messages.map((msg, idx) => (
                 <MessageBubble
                     key={msg.id}
