@@ -301,13 +301,13 @@ export default function Navbar({
                     {isLoggedIn ? (
                         <>
                             <NotificationsBell />
-                            <Link
+                            {/* <Link
                                 to={routes.feedback}
                                 aria-label='Feedback'
                                 className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
                             >
                                 <FlagIcon className='h-5 w-5' />
-                            </Link>
+                            </Link> */}
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (
