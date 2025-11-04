@@ -60,10 +60,12 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
 
 function NavItemComponent({
     href,
-    children
+    children,
+    className
 }: {
     href: string;
     children: React.ReactNode;
+    className?: string;
 }) {
     const location = useLocation();
     const isActive =
@@ -72,38 +74,49 @@ function NavItemComponent({
             : location.pathname.startsWith(href);
 
     return (
-        <li>
-            <Link
-                to={href}
-                className={clsx(
-                    'relative block px-3 py-2 transition',
-                    isActive
-                        ? 'text-teal-500 dark:text-teal-400'
-                        : 'hover:text-teal-500 dark:hover:text-teal-400'
-                )}
-            >
-                {children}
-                {isActive && (
-                    <span className='absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0' />
-                )}
-            </Link>
-        </li>
+        <Link
+            to={href}
+            className={clsx(
+                'group relative flex flex-col items-center justify-center transition-all duration-150',
+                isActive
+                    ? 'text-teal-500 dark:text-teal-400'
+                    : 'hover:text-teal-500 dark:hover:text-teal-400',
+                className
+            )}
+        >
+            {children}
+        </Link>
     );
 }
+
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
         <nav className='hidden md:block'>
-            <ul className='flex rounded-full bg-white/90 px-3 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
+            <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
                 {items.map((item) => (
-                    <NavItemComponent key={item.name} href={item.to}>
-                        {item.name}
-                    </NavItemComponent>
+                    <li key={item.name}>
+                        <NavItemComponent
+                            href={item.to}
+                            className='flex flex-col items-center justify-center px-4 py-2 transition-all duration-150 hover:scale-105'
+                        >
+                            {item.icon && (
+                                <item.icon
+                                    className={clsx(
+                                        'h-5 w-5 mb-1 transition-colors duration-150',
+                                        'text-zinc-500 group-hover:text-teal-500 dark:text-zinc-400 dark:group-hover:text-teal-400'
+                                    )}
+                                />
+                            )}
+                            <span className='text-xs md:text-sm'>{item.name}</span>
+                        </NavItemComponent>
+                    </li>
                 ))}
             </ul>
         </nav>
     );
 }
+
 
 function MobileNavigation({ items }: { items: NavItem[] }) {
     const navigate = useNavigate();
