@@ -11,6 +11,7 @@ import { getEndpointUrl } from '@/shared/api/config';
 import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
+import ConfirmationModal from '../ConfirmationModal';
 
 interface Props {
     handshake: HandshakeDTO;
@@ -40,6 +41,8 @@ const HandshakeCard: React.FC<Props> = ({
     const [imgError, setImgError] = useState(false);
     const [lastMessage, setLastMessage] = useState<MessageDTO | null>(null);
     const [loadingMessage, setLoadingMessage] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showNoShowModal, setShowNoShowModal] = useState(false);
 
     const imageSrc = handshake.post.images?.[0]
         ? getEndpointUrl() + handshake.post.images[0]
@@ -134,12 +137,12 @@ const HandshakeCard: React.FC<Props> = ({
         }
     };
 
-    const handleCancelHandshake = async () => {
+    const handleCancelHandshake = () => {
         if (cancelling || status === 'cancelled') return;
+        setShowCancelModal(true);
+    };
 
-        const confirmed = window.confirm('Are you sure you want to cancel this handshake?');
-        if (!confirmed) return;
-
+    const handleCancelConfirmed = async () => {
         const payload: Record<string, any> = { status: 'cancelled' };
         const createdAt = new Date(handshake.createdAt);
         const createdTime = createdAt.getTime();
@@ -148,10 +151,22 @@ const HandshakeCard: React.FC<Props> = ({
         const shouldAskNoShow = isValidTimestamp && Date.now() - createdTime >= twentyFourHoursMs;
 
         if (shouldAskNoShow) {
-            const noShow = window.confirm('Did the other party fail to show up? Select OK for Yes, Cancel for No.');
-            payload.noShowReported = noShow;
+            setShowNoShowModal(true);
+            return;
         }
 
+        await performCancellation(payload);
+    };
+
+    const handleNoShowResponse = async (noShow: boolean) => {
+        const payload: Record<string, any> = { 
+            status: 'cancelled',
+            noShowReported: noShow
+        };
+        await performCancellation(payload);
+    };
+
+    const performCancellation = async (payload: Record<string, any>) => {
         setCancelling(true);
         setError(null);
         try {
@@ -443,6 +458,7 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
             </div>
 
+            {/* Chat Modal */}
             {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
@@ -455,6 +471,35 @@ const HandshakeCard: React.FC<Props> = ({
                     }
                 />
             )}
+
+            {/* Confirmation Modals */}
+            <ConfirmationModal
+                isOpen={showCancelModal}
+                onClose={() => setShowCancelModal(false)}
+                onConfirm={handleCancelConfirmed}
+                title="Cancel Handshake"
+                message="Are you sure you want to cancel this handshake? This action cannot be undone."
+                confirmText="Yes, Cancel"
+                cancelText="No, Keep It"
+                variant="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={showNoShowModal}
+                onClose={() => {
+                    setShowNoShowModal(false);
+                    handleNoShowResponse(false);
+                }}
+                onConfirm={() => {
+                    setShowNoShowModal(false);
+                    handleNoShowResponse(true);
+                }}
+                title="Report No-Show"
+                message="Did the other party fail to show up? This will be noted in the system."
+                confirmText="Yes, No-Show"
+                cancelText="No"
+                variant="warning"
+            />
         </>
     );
 };
