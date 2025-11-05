@@ -600,7 +600,10 @@ export default function ChatModal({
                                                 {/* Show sender name for non-own messages */}
                                                 {!isOwn && (
                                                     <div className="text-xs font-semibold mb-1 text-teal-600 dark:text-teal-400">
-                                                        {getDisplayName(safeMsg.author)}
+                                                        <UserCard
+                                                            triggerVariant='name'
+                                                            user={replyTo.author}
+                                                        />
                                                     </div>
                                                 )}
 

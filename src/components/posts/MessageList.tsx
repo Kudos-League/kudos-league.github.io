@@ -211,7 +211,10 @@ const MessageList: React.FC<Props> = ({
                 <div className='mb-2 flex justify-between items-start'>
                     <div>
                         <span className='text-xs font-semibold text-teal-600 dark:text-teal-400 block mb-1'>
-                            {getDisplayName(msg.author)}
+                            <UserCard
+                                triggerVariant='name'
+                                user={replyTo.author}
+                            />
                         </span>
                         <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
                             <UserCard user={msg.author} />
@@ -288,7 +291,10 @@ const MessageList: React.FC<Props> = ({
                             className='block w-full text-left px-2 py-1.5 rounded-lg border-l-4 border-teal-500 bg-gray-100 dark:bg-zinc-700'
                         >
                             <div className='text-xs font-semibold mb-0.5 text-teal-600 dark:text-teal-400'>
-                                {getDisplayName(byId.get(msg.replyToMessageID)?.author)}
+                                <UserCard
+                                    triggerVariant='name'
+                                    user={replyTo.author}
+                                />
                             </div>
                             <div className='text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2'>
                                 {byId.get(msg.replyToMessageID)?.content ?? 'Original message'}
