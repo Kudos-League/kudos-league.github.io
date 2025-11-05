@@ -80,7 +80,7 @@ const MessageBubble: React.FC<Props> = ({
                     <div className="text-xs font-semibold mb-1 ml-1 text-teal-600 dark:text-teal-400">
                         <UserCard
                             triggerVariant='name'
-                            user={replyTo.author}
+                            user={message.author}
                         />                    
 
                     </div>
