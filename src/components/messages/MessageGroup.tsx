@@ -61,18 +61,8 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
             : 'Unknown time';
 
     return (
-        <div className='mb-4'>
-            {(!isOwn || isPublic) && (
-                <div
-                    className={`text-sm font-semibold mb-1 text-zinc-500 dark:text-zinc-400 ${
-                        isOwn ? 'text-right mr-1' : 'text-left ml-1'
-                    }`}
-                >
-                    {AuthorCard}
-                </div>
-            )}
-
-            {messages.map((msg) => (
+        <div className='mb-4 overflow-hidden'>
+            {messages.map((msg, idx) => (
                 <MessageBubble
                     key={msg.id}
                     message={msg}
@@ -93,12 +83,13 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     onEditChange={onEditChange}
                     onEditSave={onEditSave}
                     onEditCancel={onEditCancel}
+                    showSenderName={!isOwn && idx === 0} // Show sender name only on first message in group (WhatsApp style)
                 />
             ))}
 
             <div
                 className={`text-xs text-zinc-400 dark:text-zinc-500 opacity-70 mt-1 ${
-                    isOwn ? 'text-right' : 'text-left'
+                    isOwn ? 'text-right mr-1' : 'text-left ml-1'
                 }`}
             >
                 {timestamp}

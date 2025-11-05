@@ -56,6 +56,20 @@ export default function NotificationsBell() {
         };
     }, [open]);
 
+    // Prevent body scroll when open on mobile
+    useEffect(() => {
+        if (open) {
+            document.body.style.overflow = 'hidden';
+        }
+        else {
+            document.body.style.overflow = '';
+        }
+        
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [open]);
+
     useEffect(() => {
         if (!loaded) {
             debug('notifications not loaded yet');
@@ -160,90 +174,100 @@ export default function NotificationsBell() {
                 </button>
 
                 {open && (
-                    <div className='absolute right-0 mt-2 w-80 max-h-96 overflow-auto rounded-lg border border-zinc-200 bg-white text-zinc-800 shadow-xl dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-200'>
-                        <div className='flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-white/10'>
-                            <span className='text-sm font-semibold'>Notifications</span>
-                            <div className='flex items-center gap-3'>
-                                {unread > 0 && (
-                                    <span className='text-xs font-medium text-teal-600 dark:text-teal-400'>
-                                        {unread} new
-                                    </span>
-                                )}
-                                <Link
-                                    to={routes.notifications}
-                                    onClick={() => setOpen(false)}
-                                    className='text-xs font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300'
-                                >
-                                    View all
-                                </Link>
-                            </div>
-                        </div>
-                        <ul>
+                    <div 
+                        className='
+                            fixed md:absolute 
+                            inset-x-0 md:inset-x-auto
+                            top-20 md:top-auto
+                            md:right-0 
+                            md:mt-2 
+                            w-full md:w-80 
+                            max-h-[calc(100vh-6rem)] md:max-h-96 
+                            overflow-auto 
+                            rounded-t-2xl md:rounded-lg 
+                            border md:border 
+                            border-zinc-200 
+                            bg-white 
+                            text-zinc-800 
+                            shadow-xl 
+                            dark:border-white/10 
+                            dark:bg-zinc-900 
+                            dark:text-zinc-200
+                            z-[70]
+                            flex flex-col
+                        '
+                    >
+                        <ul className='flex-1 overflow-auto'>
                             {!state.loaded ? (
-                                <li className='p-3 text-sm text-zinc-600 dark:text-zinc-400'>
-								Loading…
+                                <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
+                                    Loading…
                                 </li>
                             ) : items.length === 0 ? (
-                                <li className='p-3 text-sm text-zinc-600 dark:text-zinc-400'>
-								No notifications yet
+                                <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
+                                    No notifications yet
                                 </li>
                             ) : (
                                 displayNotifications.map((n) => (
                                     <li
                                         key={n.id}
-                                        className={`relative cursor-pointer p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
-                                            n.isRead ? 'opacity-90' : 'bg-teal-50/60 dark:bg-teal-900/30'
-                                        }`}
+                                        className={`
+                                            relative cursor-pointer 
+                                            p-4 md:p-3 
+                                            hover:bg-zinc-50 
+                                            dark:hover:bg-zinc-800/60 
+                                            active:bg-zinc-100 dark:active:bg-zinc-800
+                                            ${n.isRead ? 'opacity-90' : 'bg-teal-50/60 dark:bg-teal-900/30'}
+                                        `}
                                         onClick={() => go(n)}
                                     >
                                         {!n.isRead && (
-                                            <span className='absolute right-3 top-3 text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400'>
-											New
+                                            <span className='absolute right-4 md:right-3 top-4 md:top-3 text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400'>
+                                                New
                                             </span>
                                         )}
                                         {n.type === 'direct-message' ? (
                                             <div>
-                                                <div className='text-sm font-medium mb-1'>
+                                                <div className='text-sm md:text-sm font-medium mb-1.5 md:mb-1 pr-12'>
                                                     New DM from <UserCard user={n.message?.author} triggerVariant='name' />
                                                 </div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>
                                             </div>
                                         ) : n.type === 'post-reply' ? (
                                             <div>
-                                                <div className='text-sm font-medium mb-1'>
+                                                <div className='text-sm md:text-sm font-medium mb-1.5 md:mb-1 pr-12'>
                                                     <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
                                                 </div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
                                                 </div>
                                             </div>
                                         ) : n.type === 'past-gift' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>Past gift logged</div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='text-sm md:text-sm font-medium'>Past gift logged</div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Open to view details
                                                 </div>
                                             </div>
                                         ) : n.type === 'bug-report' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>New bug report</div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='text-sm md:text-sm font-medium'>New bug report</div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #{'feedbackID' in n ? n.feedbackID : ''}
                                                 </div>
                                             </div>
                                         ) : n.type === 'site-feedback' ? (
                                             <div>
-                                                <div className='text-sm font-medium'>New site feedback</div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='text-sm md:text-sm font-medium'>New site feedback</div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #{'feedbackID' in n ? n.feedbackID : ''}
                                                 </div>
                                             </div>
                                         ) : (
                                             <div>
-                                                <div className='text-sm font-medium'>Post auto-close</div>
-                                                <div className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                <div className='text-sm md:text-sm font-medium'>Post auto-close</div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {('closeAt' in n && n.closeAt
                                                         ? new Date(n.closeAt).toLocaleString()
                                                         : 'Due to inactivity') as any}
@@ -254,6 +278,15 @@ export default function NotificationsBell() {
                                 ))
                             )}
                         </ul>
+                        <div className='sticky bottom-0 border-t border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900 p-3'>
+                            <Link
+                                to={routes.notifications}
+                                onClick={() => setOpen(false)}
+                                className='block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-500 transition-colors'
+                            >
+                                View all notifications
+                            </Link>
+                        </div>
                     </div>
                 )}
             </div>

@@ -1,12 +1,21 @@
-import React, { Fragment, useState, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import {
-    Popover,
-    PopoverButton,
-    PopoverBackdrop,
-    PopoverPanel
-} from '@headlessui/react';
-import { ChevronDownIcon, XMarkIcon, FlagIcon } from '@heroicons/react/24/outline';
+import React, { useState, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+    XMarkIcon, 
+    FlagIcon, 
+    Bars3Icon,
+    HomeIcon,
+    ChatBubbleLeftRightIcon,
+    PlusCircleIcon,
+    HeartIcon,
+    TrophyIcon,
+    ChatBubbleBottomCenterTextIcon,
+    CalendarIcon,
+    InformationCircleIcon,
+    UserPlusIcon,
+    ArrowRightOnRectangleIcon,
+    ShieldCheckIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import clsx from 'clsx';
@@ -18,31 +27,32 @@ import NotificationsBell from '@/components/notifications/NotificationsBell';
 type NavItem = {
     name: string;
     to: string;
+    icon?: React.ComponentType<{ className?: string }>;
 };
 
 function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
-    const base: NavItem[] = [{ name: 'Main', to: routes.home }];
+    const base: NavItem[] = [{ name: 'Main', to: routes.home, icon: HomeIcon }];
     if (isLoggedIn) {
         base.push(
-            { name: 'DMs', to: routes.dms },
-            { name: 'Create', to: routes.createPost },
-            { name: 'Donate', to: routes.donate },
-            { name: 'Leaderboard', to: routes.leaderboard },
-            { name: 'Feedback', to: routes.feedback },
-            { name: 'Forum', to: routes.chat },
-            { name: 'Events', to: routes.events },
-            { name: 'About', to: routes.about },
+            { name: 'DMs', to: routes.dms, icon: ChatBubbleLeftRightIcon },
+            { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
+            { name: 'Donate', to: routes.donate, icon: HeartIcon },
+            { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
+            { name: 'Feedback', to: routes.feedback, icon: FlagIcon },
+            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
+            { name: 'Events', to: routes.events, icon: CalendarIcon },
+            { name: 'About', to: routes.about, icon: InformationCircleIcon },
         );
         if (isAdmin) {
-            base.push({ name: 'Admin', to: routes.admin });
+            base.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
         }
     }
     else {
         base.push(
-            { name: 'Donate', to: routes.donate },
-            { name: 'About', to: routes.about },
-            { name: 'Login', to: routes.login },
-            { name: 'Register', to: routes.signUp }
+            { name: 'Donate', to: routes.donate, icon: HeartIcon },
+            { name: 'About', to: routes.about, icon: InformationCircleIcon },
+            { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
+            { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
         );
     }
     return base;
@@ -50,10 +60,12 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
 
 function NavItemComponent({
     href,
-    children
+    children,
+    className
 }: {
     href: string;
     children: React.ReactNode;
+    className?: string;
 }) {
     const location = useLocation();
     const isActive =
@@ -62,80 +74,105 @@ function NavItemComponent({
             : location.pathname.startsWith(href);
 
     return (
-        <li>
-            <Link
-                to={href}
-                className={clsx(
-                    'relative block px-3 py-2 transition',
-                    isActive
-                        ? 'text-teal-500 dark:text-teal-400'
-                        : 'hover:text-teal-500 dark:hover:text-teal-400'
-                )}
-            >
-                {children}
-                {isActive && (
-                    <span className='absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0' />
-                )}
-            </Link>
-        </li>
+        <Link
+            to={href}
+            className={clsx(
+                'group relative flex flex-col items-center justify-center transition-all duration-150',
+                isActive
+                    ? 'text-teal-500 dark:text-teal-400'
+                    : 'hover:text-teal-500 dark:hover:text-teal-400',
+                className
+            )}
+        >
+            {children}
+        </Link>
     );
 }
+
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
         <nav className='hidden md:block'>
-            <ul className='flex rounded-full bg-white/90 px-3 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
+            <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
                 {items.map((item) => (
-                    <NavItemComponent key={item.name} href={item.to}>
-                        {item.name}
-                    </NavItemComponent>
+                    <li key={item.name}>
+                        <NavItemComponent
+                            href={item.to}
+                            className='flex flex-col items-center justify-center px-4 py-2 transition-all duration-150 hover:scale-105'
+                        >
+                            {item.icon && (
+                                <item.icon
+                                    className={clsx(
+                                        'h-5 w-5 mb-1 transition-colors duration-150',
+                                        'text-zinc-500 group-hover:text-teal-500 dark:text-zinc-400 dark:group-hover:text-teal-400'
+                                    )}
+                                />
+                            )}
+                            <span className='text-xs md:text-sm'>{item.name}</span>
+                        </NavItemComponent>
+                    </li>
                 ))}
             </ul>
         </nav>
     );
 }
 
+
 function MobileNavigation({ items }: { items: NavItem[] }) {
+    const navigate = useNavigate();
+    const [isOpen, setIsOpen] = useState(false);
+    
     return (
-        <Popover className='md:hidden'>
-            <PopoverButton className='group flex items-center rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'>
-                Menu
-                <ChevronDownIcon className='ml-3 h-3 w-3 stroke-zinc-500 group-hover:stroke-zinc-700 dark:group-hover:stroke-zinc-400' />
-            </PopoverButton>
-            <PopoverBackdrop
-                transition
-                className='fixed inset-0 z-50 bg-zinc-800/40 backdrop-blur-xs duration-150 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in dark:bg-black/80'
-            />
-            <PopoverPanel
-                focus
-                transition
-                className='fixed inset-x-4 top-8 z-50 origin-top rounded-3xl bg-white p-6 ring-1 ring-zinc-900/5 duration-150 data-closed:scale-95 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in dark:bg-zinc-900 dark:ring-zinc-800'
+        <div className='md:hidden'>
+            <button 
+                onClick={() => setIsOpen(true)}
+                aria-label='Open menu'
+                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
             >
-                <div className='flex flex-row-reverse items-center justify-between'>
-                    <PopoverButton aria-label='Close menu' className='-m-1 p-1'>
-                        <XMarkIcon className='h-6 w-6 text-zinc-500 dark:text-zinc-400' />
-                    </PopoverButton>
-                    <h2 className='text-sm font-medium text-zinc-600 dark:text-zinc-400'>
-                        Navigation
-                    </h2>
-                </div>
-                <nav className='mt-6'>
-                    <ul className='-my-2 divide-y divide-zinc-100 text-base text-zinc-800 dark:divide-zinc-100/5 dark:text-zinc-300'>
-                        {items.map((item) => (
-                            <li key={item.name}>
-                                <PopoverButton
-                                    as={Link}
-                                    to={item.to}
-                                    className='block py-2'
-                                >
-                                    {item.name}
-                                </PopoverButton>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
-            </PopoverPanel>
-        </Popover>
+                <Bars3Icon className='h-6 w-6' />
+            </button>
+            
+            {isOpen && (
+                <>
+                    <div className='fixed inset-0 z-[60] bg-black/50' onClick={() => setIsOpen(false)} />
+                    <div className='fixed inset-0 z-[70] h-full min-h-screen bg-white dark:bg-zinc-900 p-6 flex flex-col'>
+                        <div className='flex flex-row-reverse items-center justify-between mb-8'>
+                            <button 
+                                onClick={() => setIsOpen(false)}
+                                aria-label='Close menu' 
+                                className='p-2 -mr-2'
+                            >
+                                <XMarkIcon className='h-7 w-7 text-zinc-500 dark:text-zinc-400' />
+                            </button>
+                            <h2 className='text-lg font-semibold text-zinc-800 dark:text-zinc-200'>
+                                Menu
+                            </h2>
+                        </div>
+                        <nav className='flex-1 overflow-y-auto -mx-2'>
+                            <ul className='space-y-2'>
+                                {items.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <li key={item.name}>
+                                            <button
+                                                onClick={() => {
+                                                    setIsOpen(false);
+                                                    navigate(item.to);
+                                                }}
+                                                className='flex items-center gap-4 px-6 py-4 text-base font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors w-full text-left'
+                                            >
+                                                {Icon && <Icon className='h-6 w-6 text-teal-600 dark:text-teal-400 flex-shrink-0' />}
+                                                <span>{item.name}</span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </nav>
+                    </div>
+                </>
+            )}
+        </div>
     );
 }
 
@@ -147,7 +184,7 @@ function ThemeToggleButton() {
             type='button'
             aria-label={`Switch to ${other} theme`}
             onClick={toggleTheme}
-            className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 dark:hover:ring-white/20'
+            className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-300 dark:hover:bg-zinc-800'
         >
             <span className='block dark:hidden'>
                 <svg
@@ -190,12 +227,12 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
-                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 dark:ring-white/10 cursor-pointer hover:ring-zinc-800/10 dark:hover:ring-white/20 transition-all duration-200 hover:shadow-xl cursor-pointer'
+                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200'
             >
                 <Avatar
                     avatar={getImagePath(user?.avatar)}
                     username={user?.username}
-                    size={32}
+                    size={40}
                 />
             </button>
             {open && (
@@ -237,7 +274,8 @@ export default function Navbar({
     isLoggedIn,
     user,
     onLogout,
-    brand
+    brand,
+    onOpenSidebar
 }: NavbarProps) {
     const navItems = useMemo(
         () => useAppNav(isLoggedIn, user?.admin),
@@ -247,11 +285,13 @@ export default function Navbar({
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-4 bg-transparent px-4 py-4 backdrop-blur-md'>
-                <div className='flex items-center'>{brand || <></>}</div>
+            <header className='sticky top-0 z-50 flex justify-between items-center gap-2 bg-transparent px-4 py-4 backdrop-blur-md'>
+                <div className='flex items-center gap-2'>
+                    <MobileNavigation items={navItems} />
+                    {brand || <></>}
+                </div>
 
                 <div className='flex flex-1 justify-end md:justify-center'>
-                    <MobileNavigation items={navItems} />
                     <DesktopNavigation items={navItems} />
                 </div>
 
@@ -261,26 +301,26 @@ export default function Navbar({
                     {isLoggedIn ? (
                         <>
                             <NotificationsBell />
-                            <Link
+                            {/* <Link
                                 to={routes.feedback}
                                 aria-label='Feedback'
-                                className='flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
                             >
                                 <FlagIcon className='h-5 w-5' />
-                            </Link>
+                            </Link> */}
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (
-                        <div className='flex items-center gap-2'>
+                        <div className='flex items-center gap-1.5'>
                             <Link
                                 to={routes.login}
-                                className='rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                                className='rounded-full bg-white/90 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                             >
                                 Login
                             </Link>
                             <Link
                                 to={routes.signUp}
-                                className='rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
+                                className='rounded-full bg-teal-500 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
                             >
                                 Register
                             </Link>

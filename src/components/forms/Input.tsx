@@ -27,6 +27,7 @@ type Props<T extends FieldValues> = {
     htmlInputType?: string;
     noMargin?: boolean;
     showLabel?: boolean;
+    className?: string;
 };
 
 export default function Input<T extends FieldValues>({
@@ -46,6 +47,7 @@ export default function Input<T extends FieldValues>({
     htmlInputType,
     noMargin = false,
     showLabel = true,
+    className,
     ...props
 }: Props<T>) {
     const defaultValue: PathValue<T, Path<T>> = type === 'dropdown'
@@ -104,7 +106,7 @@ export default function Input<T extends FieldValues>({
     const containerClass = noMargin ? undefined : 'my-2';
 
     return (
-        <div className={containerClass}>
+        <div className={containerClass + (className ? ` ${className}` : '')}>
             <label htmlFor={name} className='block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200'>
                 {label}
             </label>

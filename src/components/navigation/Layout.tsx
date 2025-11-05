@@ -139,9 +139,9 @@ const Layout: React.FC = () => {
                     brand={
                         <Link
                             to={routes.home}
-                            className='text-lg font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer'
+                            className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col'
                         >
-                            Kudos League
+Kudos League
                         </Link>
                     }
                 />

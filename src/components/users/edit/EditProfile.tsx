@@ -398,7 +398,7 @@ const EditProfile: React.FC<Props> = ({
 
     return (
         <>
-            <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg'>
+            <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-x-hidden'>
                 {/* IMPROVED: Better header design with consistent styling */}
                 <div className='border-b border-gray-200 dark:border-gray-700 px-6 py-4'>
                     <div className='flex items-center justify-between'>
@@ -438,18 +438,19 @@ const EditProfile: React.FC<Props> = ({
                     description='Use a valid email and keep your profile fresh.'
                 >
                     {/* Avatar */}
-                    <div className='col-span-full flex items-center gap-6 mb-6'>
+                    <div className='col-span-full flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6'>
                         <PreviewAvatar
                             previewUrl={previewUrl}
                             targetUser={targetUser}
                         />
                         {canEditProfile && (
-                            <div className='relative'>
+                            <div className='relative w-full sm:w-auto'>
                                 <Button
                                     variant='secondary'
                                     onClick={() => setShowImageOptions((v) => !v)}
+                                    className="w-full sm:w-auto"
                                 >
-                                    Change avatar
+                Change avatar
                                 </Button>
                                 <AvatarMenu
                                     open={showImageOptions}
@@ -509,13 +510,16 @@ const EditProfile: React.FC<Props> = ({
                         )}
 
                         <FormField label='Email'>
-                            <Input
-                                disabled={wasInvited}
-                                name='email'
-                                form={form}
-                                label=''
-                                placeholder={targetUser.email || 'Enter email address'}
-                            />
+                            <div className="max-w-full overflow-hidden">
+                                <Input
+                                    disabled={wasInvited}
+                                    name='email'
+                                    form={form}
+                                    label=''
+                                    placeholder={targetUser.email || 'Enter email address'}
+                                    className="max-w-full"
+                                />
+                            </div>
                             {wasInvited && (
                                 <p className='text-xs text-gray-500 italic mt-2'>
             Email cannot be changed for invited users
@@ -524,80 +528,97 @@ const EditProfile: React.FC<Props> = ({
                         </FormField>
 
                         <FormField label='Username'>
-                            <Input
-                                name='username'
-                                form={form}
-                                label=''
-                                placeholder={user.username}
-                                disabled={!canEditProfile}
-                            />
+                            <div className="max-w-full overflow-hidden">
+                                <Input
+                                    name='username'
+                                    form={form}
+                                    label=''
+                                    placeholder={user.username}
+                                    disabled={!canEditProfile}
+                                    className="max-w-full"
+                                />
+                            </div>
                         </FormField>
 
                         <FormField label='Display Name'>
-                            <Input
-                                name='displayName'
-                                form={form}
-                                label=''
-                                placeholder={user.displayName}
-                                disabled={!canEditProfile}
-                            />
+                            <div className="max-w-full overflow-hidden">
+                                <Input
+                                    name='displayName'
+                                    form={form}
+                                    label=''
+                                    placeholder={user.displayName}
+                                    disabled={!canEditProfile}
+                                    className="max-w-full"
+                                />
+                            </div>
                         </FormField>
 
                         <FormField label='Profession' help='Share your current profession or role.'>
-                            <Input
-                                data-testid='profession'
-                                name='profession'
-                                form={form}
-                                label=''
-                                placeholder='e.g., Software Engineer'
-                                disabled={!canEditProfile}
-                            />
+                            <div className="max-w-full overflow-hidden">
+                                <Input
+                                    data-testid='profession'
+                                    name='profession'
+                                    form={form}
+                                    label=''
+                                    placeholder='e.g., Software Engineer'
+                                    disabled={!canEditProfile}
+                                    className="max-w-full"
+                                />
+                            </div>
                         </FormField>
 
                         <FormField
                             label='Description'
                             help='This will appear on your public profile.'
                         >
-                            <Input
-                                data-testid='about'
-                                name='about'
-                                form={form}
-                                label=''
-                                placeholder='Write a short bio...'
-                                multiline
-                                disabled={!canEditProfile}
-                            />
+                            <div className="max-w-full overflow-hidden">
+                                <Input
+                                    data-testid='about'
+                                    name='about'
+                                    form={form}
+                                    label=''
+                                    placeholder='Write a short bio...'
+                                    multiline
+                                    disabled={!canEditProfile}
+                                    className="max-w-full"
+                                />
+                            </div>
                         </FormField>
 
+                        {/* Fix for TagInput */}
                         {canEditProfile && (
                             <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
-                                <TagInput
-                                    initialTags={tags}
-                                    onTagsChange={(nextTags) => {
-                                        const next = nextTags.map((t) => t.name);
-                                        const prev = form.getValues('tags') || [];
-                                        if (
-                                            JSON.stringify(next) !==
-                                            JSON.stringify(prev)
-                                        ) {
-                                            form.setValue('tags', next, {
-                                                shouldDirty: true,
-                                                shouldValidate: true
-                                            });
-                                        }
-                                    }}
-                                />
+                                <div className="max-w-full overflow-hidden">
+                                    <TagInput
+                                        initialTags={tags}
+                                        onTagsChange={(nextTags) => {
+                                            const next = nextTags.map((t) => t.name);
+                                            const prev = form.getValues('tags') || [];
+                                            if (
+                                                JSON.stringify(next) !==
+                        JSON.stringify(prev)
+                                            ) {
+                                                form.setValue('tags', next, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                            }
+                                        }}
+                                        className="max-w-full"
+                                    />
+                                </div>
                             </FormField>
                         )}
 
+                        {/* Fix for Map - add right margin and make responsive */}
                         {canEditProfile && (
                             <FormField
                                 label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'
                             >
                                 {locationLabel && (
-                                    <div className='mb-2 flex items-center justify-between'>
-                                        <div className='text-sm text-gray-700 dark:text-gray-300'>
+                                    <div className='mb-2 flex items-center justify-between gap-2'>
+                                        <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
                                             {locationLabel}
                                         </div>
                                         <Button
@@ -617,62 +638,64 @@ const EditProfile: React.FC<Props> = ({
                                                     }
                                                 });
                                             }}
-                                            className='!text-red-600 hover:!text-red-700 !text-sm'
+                                            className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
                                         >
-                                            ✕ Remove location
+                    ✕ Remove
                                         </Button>
                                     </div>
                                 )}
-                                <MapDisplay
-                                    regionID={targetUser.location?.regionID}
-                                    width={400}
-                                    height={300}
-                                    edit
-                                    exactLocation
-                                    shouldGetYourLocation
-                                    inlineBanner={false}
-                                    onLabelChange={(label) => setLocationLabel(label)}
-                                    onLocationChange={(data) => {
-                                        if (!data) {
-                                            setLocation(null);
-                                            form.setValue('location', null as any, {
-                                                shouldDirty: true,
-                                                shouldValidate: true
-                                            });
-                                            setTargetUser({
-                                                ...targetUser,
-                                                location: {
-                                                    ...targetUser.location,
-                                                    regionID: null
-                                                }
-                                            });
-                                            return;
-                                        }
-                                        if (!data.changed) return;
-                                        if (data.coordinates) {
-                                            setLocation(data.coordinates);
-                                            const next = {
-                                                ...data.coordinates,
-                                                name: data.name,
-                                                regionID: data.placeID
-                                            };
-                                            const prev =
-                                            form.getValues('location') || null;
-                                            const changed = !deepEqual(next, prev);
-                                            if (changed) {
-                                                form.setValue('location', next, {
+                                <div className="max-w-full overflow-hidden pr-4">
+                                    <MapDisplay
+                                        regionID={targetUser.location?.regionID}
+                                        width='100%'
+                                        height={300}
+                                        edit
+                                        exactLocation
+                                        shouldGetYourLocation
+                                        inlineBanner={false}
+                                        onLabelChange={(label) => setLocationLabel(label)}
+                                        onLocationChange={(data) => {
+                                            if (!data) {
+                                                setLocation(null);
+                                                form.setValue('location', null as any, {
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
+                                                setTargetUser({
+                                                    ...targetUser,
+                                                    location: {
+                                                        ...targetUser.location,
+                                                        regionID: null
+                                                    }
+                                                });
+                                                return;
                                             }
-                                        }
-                                    }}
-                                />
-                            </FormField>                        )
-                        }
+                                            if (!data.changed) return;
+                                            if (data.coordinates) {
+                                                setLocation(data.coordinates);
+                                                const next = {
+                                                    ...data.coordinates,
+                                                    name: data.name,
+                                                    regionID: data.placeID
+                                                };
+                                                const prev =
+                        form.getValues('location') || null;
+                                                const changed = !deepEqual(next, prev);
+                                                if (changed) {
+                                                    form.setValue('location', next, {
+                                                        shouldDirty: true,
+                                                        shouldValidate: true
+                                                    });
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </FormField>
+                        )}                        
 
                         {/* IMPROVED: More visible ActionsBar */}
-                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 -mx-6 px-6 pb-4 z-10'>
+                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 px-6 sm:-mx-6 sm:px-6 pb-4 z-10'>
                             <ActionsBar
                                 canSave={canSave}
                                 isSubmitting={updateUserMutation.isPending}
@@ -768,20 +791,21 @@ const EditProfile: React.FC<Props> = ({
                             />
                         </FormField>
 
-                        <div className='grid sm:grid-cols-2 gap-6'>
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
+
                             <FormField label='New password'>
                                 {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
-                                    value={pwForm.next}
+                                    value={pwForm.current}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
                                             ...s,
-                                            next: e.target.value
+                                            current: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
-                                />
+                                    className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
+                                />                            
                             </FormField>
                             <FormField label='Confirm password'>
                                 {/* IMPROVED: Better styled password input with visible borders */}
