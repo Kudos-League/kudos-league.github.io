@@ -7,6 +7,7 @@ import RequireAuth from './RequireAuth';
 import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 import About from '@/pages/about';
+import GanttEventsCalendar from '../events/GanttEventsCalendar';
 
 const Home = lazy(() => import('@/pages/home'));
 const Result = lazy(() => import('@/pages/donate/result'));
@@ -42,6 +43,9 @@ function AppNavigator() {
                     <Route path={routes.about} element={<About/>} />
                     <Route path={routes.home} element={<Home />} />
                     <Route path={routes.result} element={<Result />} />
+                    <Route path={routes.ganttEvents} element={<GanttEventsCalendar />} />
+
+
 
                     <Route path={routes.donate} element={<DonatePage />} />
 
