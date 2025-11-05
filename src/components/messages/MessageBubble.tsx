@@ -115,7 +115,10 @@ const MessageBubble: React.FC<Props> = ({
                                     ? 'text-teal-200' 
                                     : 'text-teal-600 dark:text-teal-300'
                             }`}>
-                                {getDisplayName(replyTo.author)}
+                                <UserCard
+                                    triggerVariant='name'
+                                    user={replyTo.author}
+                                />
                             </div>
                             <div className={`text-xs line-clamp-2 ${
                                 isOwn 

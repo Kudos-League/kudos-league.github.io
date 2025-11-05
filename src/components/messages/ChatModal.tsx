@@ -529,7 +529,11 @@ export default function ChatModal({
                                                         ? 'text-teal-200' 
                                                         : 'text-teal-600 dark:text-teal-300'
                                                 }`}>
-                                                    {getDisplayName(repliedTo.author)}
+                                                    <UserCard
+                                                        triggerVariant='name'
+                                                        user={replyTo.author}
+                                                    />
+
                                                 </div>
                                                 <div className={`text-xs line-clamp-2 ${
                                                     isOwn 
