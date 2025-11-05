@@ -391,7 +391,9 @@ export default function EventDetails({ event, setEvent }: Props) {
                                             ...editData,
                                             location: {
                                                 regionID: data.placeID,
-                                                name: data.name
+                                                name: data.name,
+                                                latitude: data.coordinates.latitude,
+                                                longitude: data.coordinates.longitude
                                             } as LocationDTO
                                         });
                                     }

@@ -304,7 +304,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     if (data)
                         setLocation({
                             regionID: data.placeID,
-                            name: data.name
+                            name: data.name,
+                            latitude: data.coordinates.latitude,
+                            longitude: data.coordinates.longitude
                         });
                 }}
             />

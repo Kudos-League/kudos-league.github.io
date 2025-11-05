@@ -22,6 +22,8 @@ export type LocationDTO = {
     name?: string | null;
     regionID: string | null;
     global?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
 };
 
 export type PostDTO = {

@@ -210,12 +210,6 @@ const MessageList: React.FC<Props> = ({
             >
                 <div className='mb-2 flex justify-between items-start'>
                     <div>
-                        <span className='text-xs font-semibold text-teal-600 dark:text-teal-400 block mb-1'>
-                            <UserCard
-                                triggerVariant='name'
-                                user={replyTo.author}
-                            />
-                        </span>
                         <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
                             <UserCard user={msg.author} />
                         </span>
