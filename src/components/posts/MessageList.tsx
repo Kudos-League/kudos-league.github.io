@@ -355,6 +355,8 @@ const MessageList: React.FC<Props> = ({
         : processedMessages.slice(0, 3);
     const hasMoreMessages = processedMessages.length > 3;
 
+    console.log({ processedMessages, displayedMessages, showAllMessages });
+
     return (
         <div>
             {title && (
