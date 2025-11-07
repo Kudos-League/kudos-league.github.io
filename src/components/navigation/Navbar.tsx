@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
     XMarkIcon, 
     FlagIcon, 
     Bars3Icon,
@@ -22,6 +22,8 @@ import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
+import FeedbackModal from '@/components/common/FeedbackModal';
+import { apiMutate } from '@/shared/api/apiClient';
 import NotificationsBell from '@/components/notifications/NotificationsBell';
 
 type NavItem = {
@@ -74,21 +76,25 @@ function NavItemComponent({
             : location.pathname.startsWith(href);
 
     return (
-        <Link
-            to={href}
-            className={clsx(
-                'group relative flex flex-col items-center justify-center transition-all duration-150',
-                isActive
-                    ? 'text-teal-500 dark:text-teal-400'
-                    : 'hover:text-teal-500 dark:hover:text-teal-400',
-                className
-            )}
-        >
-            {children}
-        </Link>
+        <li>
+            <Link
+                to={href}
+                className={clsx(
+                    'group relative flex flex-col items-center justify-center transition-all duration-150',
+                    isActive
+                        ? 'text-teal-500 dark:text-teal-400'
+                        : 'hover:text-teal-500 dark:hover:text-teal-400',
+                    className
+                )}
+            >
+                {children}
+                {isActive && (
+                    <span className='absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0' />
+                )}
+            </Link>
+        </li>
     );
 }
-
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
@@ -116,7 +122,6 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
         </nav>
     );
 }
-
 
 function MobileNavigation({ items }: { items: NavItem[] }) {
     const navigate = useNavigate();
@@ -221,9 +226,10 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
+    const menuRef = useRef<HTMLDivElement>(null);
 
     return (
-        <div className='relative'>
+        <div className='relative' ref={menuRef}>
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
@@ -292,6 +298,7 @@ export default function Navbar({
                 </div>
 
                 <div className='flex flex-1 justify-end md:justify-center'>
+                    <MobileNavigation items={navItems} />
                     <DesktopNavigation items={navItems} />
                 </div>
 
@@ -301,13 +308,6 @@ export default function Navbar({
                     {isLoggedIn ? (
                         <>
                             <NotificationsBell />
-                            {/* <Link
-                                to={routes.feedback}
-                                aria-label='Feedback'
-                                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-                            >
-                                <FlagIcon className='h-5 w-5' />
-                            </Link> */}
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (
@@ -328,6 +328,7 @@ export default function Navbar({
                     )}
                 </div>
             </header>
+
         </>
     );
 }

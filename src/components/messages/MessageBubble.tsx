@@ -72,7 +72,7 @@ const MessageBubble: React.FC<Props> = ({
     return (
         <div
             id={`msg-${message.id}`}
-            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-6`}
+            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}
         >
             <div className={`max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}>
                 {/* Show sender name for non-own messages (WhatsApp style) */}

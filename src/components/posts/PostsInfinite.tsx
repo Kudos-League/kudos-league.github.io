@@ -28,13 +28,8 @@ export default function PostsInfinite({
         isError,
         fetchNextPage,
         hasNextPage,
-        isFetchingNextPage,
-        error
-    } = usePostsInfiniteQuery({ 
-        ...filters, 
-        sort: ordering.type === 'distance' ? 'date' : ordering.type,
-        order: ordering.order
-    });
+        isFetchingNextPage
+    } = usePostsInfiniteQuery(filters);
 
     const flat = React.useMemo(
         () => data?.pages.flatMap((p) => p.data) ?? [],
@@ -52,12 +47,19 @@ export default function PostsInfinite({
                           (activeTab === 'gifts' ? 'gift' : 'request')
                 );
 
-        if (ordering.type === 'distance') {
-            const cmp = () => Math.random() - 0.5; // TODO: replace with real distance sort
-            return [...filtered].sort(cmp);
-        }
+        const cmp = {
+            date: (a: any, b: any) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            // TODO: replace with real distance sort
+            distance: () => Math.random() - 0.5,
+            kudos: (a: any, b: any) =>
+                (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0)
+        }[ordering.type];
 
-        return filtered;
+        return [...filtered].sort((a, b) =>
+            ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)
+        );
     }, [flat, activeTab, ordering]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
@@ -65,8 +67,7 @@ export default function PostsInfinite({
     React.useEffect(() => {
         const el = sentinelRef.current;
         if (!el) return;
-
-        if (!hasNextPage) return;
+        if (!hasNextPage || isFetchingNextPage) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -84,25 +85,27 @@ export default function PostsInfinite({
 
         observer.observe(el);
         return () => observer.disconnect();
-    }, [fetchNextPage, hasNextPage, isFetchingNextPage, visible.length]);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     if (isLoading) return <Spinner />;
-    if (isError) {
-        console.error('Error loading posts infinite', error);
-        return <Alert type='danger' message='Failed to load posts.' />;
-    }
+    if (isError) return <Alert type='danger' message='Failed to load posts.' />;
 
     return (
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex justify-center'>
-                {isFetchingNextPage ? (
-                    <Spinner text='Loading more...' />
-                ) : hasNextPage ? (
-                    <div ref={sentinelRef} style={{ height: 1, width: 1 }} />
-                ) : (
-                    <div className='h-2' />
+                {isFetchingNextPage && <Spinner text='Loading more...' />}
+                {hasNextPage && (
+                    <div 
+                        ref={sentinelRef} 
+                        style={{ 
+                            height: 1, 
+                            width: 1,
+                            visibility: isFetchingNextPage ? 'hidden' : 'visible'
+                        }} 
+                    />
                 )}
+                {!hasNextPage && !isFetchingNextPage && <div className='h-2' />}
             </div>
         </>
     );

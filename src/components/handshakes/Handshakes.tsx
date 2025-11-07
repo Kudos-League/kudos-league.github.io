@@ -1,5 +1,5 @@
 import React from 'react';
-import { HandshakeDTO } from '@/shared/api/types';
+import { HandshakeDTO, UserDTO } from '@/shared/api/types';
 import HandshakeCard from './HandshakeCard';
 import Button from '../common/Button';
 
@@ -22,29 +22,42 @@ const Handshakes: React.FC<HandshakesProps> = ({
     showPostDetails,
     onHandshakeDeleted
 }) => {
-    const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
+    // Filter out cancelled handshakes
+    const activeHandshakes = handshakes.filter(
+        handshake => handshake.status !== 'cancelled'
+    );
+    
+    const visibleHandshakes = showAll ? activeHandshakes : activeHandshakes.slice(0, 2);
 
-    if (!handshakes.length) {
+    if (!activeHandshakes.length) {
         return <p className='text-sm text-gray-500'>Nothing yet!</p>;
     }
 
     return (
         <div className='space-y-4'>
-            {visibleHandshakes
-                .slice()
-                .reverse()
-                .map((handshake) => (
-                    <HandshakeCard
+            {visibleHandshakes.reverse().map((handshake) => (
+                handshake.post.isRequest ?
+                    // If it's request
+                    (<HandshakeCard
                         key={handshake.id}
                         handshake={handshake}
-                        userID={currentUserId}
+                        userID={handshake.post.senderID}
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
-                    />
-                ))}
+                    />) :
+                    // If it's gift
+                    (<HandshakeCard
+                        key={handshake.id}
+                        handshake={handshake}
+                        userID={handshake.post.senderID}
+                        onHandshakeCreated={onHandshakeCreated}
+                        showPostDetails={showPostDetails}
+                        onDelete={onHandshakeDeleted}
+                    />)
+            ))}
 
-            {handshakes.length > 2 && !showAll && (
+            {activeHandshakes.length > 2 && !showAll && (
                 <Button
                     onClick={onShowAll}
                     className='mt-2 text-sm hover:underline'

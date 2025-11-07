@@ -18,6 +18,7 @@ interface Props {
     allowDelete?: boolean;
     allowEdit?: boolean;
     onEdit?: (id: number, content: string) => void;
+    isLoading?: boolean;
 }
 
 // Helper function to sort messages chronologically
@@ -45,7 +46,8 @@ const ChatWindow: React.FC<Props> = ({
     onDelete,
     allowDelete,
     allowEdit,
-    onEdit
+    onEdit,
+    isLoading = false
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
@@ -185,7 +187,12 @@ const ChatWindow: React.FC<Props> = ({
             <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
                 isMobile ? 'p-3' : 'p-4'
             }`}>
-                {groupedMessages.length === 0 ? (
+                {isLoading ? (
+                    <div className='flex flex-col items-center justify-center h-full text-gray-500'>
+                        <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 dark:border-teal-400'></div>
+                        <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading messages...</p>
+                    </div>
+                ) : groupedMessages.length === 0 ? (
                     <div className='flex flex-col items-center justify-center h-full text-gray-500'>
                         <p className={isMobile ? 'text-base text-center' : 'text-sm'}>
                             No messages yet. Start the conversation!
@@ -248,7 +255,8 @@ const ChatWindow: React.FC<Props> = ({
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white ${
+                        disabled={isLoading}
+                        className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
                             isMobile 
                                 ? 'px-4 py-3 text-base' 
                                 : 'px-3 py-2'
@@ -256,7 +264,7 @@ const ChatWindow: React.FC<Props> = ({
                     />
                     <Button
                         onClick={handleSend}
-                        disabled={!messageInput.trim()}
+                        disabled={!messageInput.trim() || isLoading}
                         className={`bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${
                             isMobile 
                                 ? 'px-6 py-3 text-base font-medium' 

@@ -27,6 +27,8 @@ export default function Chat({ channelType }: Props) {
     const [searchQuery] = useState('');
     const [showChatOnMobile, setShowChatOnMobile] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [isLoadingChannels, setIsLoadingChannels] = useState(false);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
@@ -55,6 +57,8 @@ export default function Chat({ channelType }: Props) {
         setSelectedChannel(null);
         setMessages([]);
         setShowChatOnMobile(false);
+        setIsLoadingMessages(false);
+        setIsLoadingChannels(false);
     }, [resolvedIsDM]);
 
     useEffect(() => {
@@ -78,6 +82,7 @@ export default function Chat({ channelType }: Props) {
         }
 
         try {
+            setIsLoadingMessages(true);
             const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
             if (messagesData) setMessages(messagesData);
 
@@ -92,6 +97,7 @@ export default function Chat({ channelType }: Props) {
             console.error('Error selecting channel:', error);
         }
         finally {
+            setIsLoadingMessages(false);
             setPendingChannel(null);
         }
     };
@@ -100,6 +106,7 @@ export default function Chat({ channelType }: Props) {
         if (token && pendingChannel) {
             (async () => {
                 try {
+                    setIsLoadingMessages(true);
                     const channel = pendingChannel;
                     const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
                     if (messagesData) setMessages(messagesData);
@@ -115,6 +122,7 @@ export default function Chat({ channelType }: Props) {
                     console.error('Error processing pending channel selection:', err);
                 }
                 finally {
+                    setIsLoadingMessages(false);
                     setPendingChannel(null);
                 }
             })();
@@ -126,6 +134,7 @@ export default function Chat({ channelType }: Props) {
             if (!(user && token)) return;
 
             try {
+                setIsLoadingChannels(true);
                 const res = await apiGet<any>(`/users/${user.id}`, { params: { dmChannels: true } });
 
                 const formatted = res.dmChannels
@@ -156,14 +165,17 @@ export default function Chat({ channelType }: Props) {
                     const matchedChannel = channelsWithLastMessage.find((channel) => channel.users.some((u: any) => u.id === parsedId));
 
                     if (matchedChannel) {
-                        joinChannel(matchedChannel.id);
-                        setSelectedChannel(matchedChannel);
+                        // Use selectChannel to properly fetch messages and set loading states
+                        await selectChannel(matchedChannel);
                         setShowChatOnMobile(true);
                     }
                 }
             }
             catch (e) {
                 console.error('Failed to load DM channels', e);
+            }
+            finally {
+                setIsLoadingChannels(false);
             }
         };
 
@@ -291,6 +303,7 @@ export default function Chat({ channelType }: Props) {
                                 searchQuery={searchQuery}
                                 selectedChannel={selectedChannel}
                                 isMobile={true}
+                                isLoading={isLoadingChannels}
                             />
                         ) : (
                             <div className='p-3'>
@@ -320,6 +333,7 @@ export default function Chat({ channelType }: Props) {
                                 isMobile={true}
                                 allowEdit={true}
                                 onEdit={handleEditMessage}
+                                isLoading={isLoadingMessages}
                             />
                         </div>
                     )}
@@ -334,6 +348,7 @@ export default function Chat({ channelType }: Props) {
                         searchQuery={searchQuery}
                         selectedChannel={selectedChannel}
                         isMobile={false}
+                        isLoading={isLoadingChannels}
                     />
                 ) : (
                     <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
@@ -368,6 +383,7 @@ export default function Chat({ channelType }: Props) {
                         allowDelete={true}
                         allowEdit={true}
                         onEdit={handleEditMessage}
+                        isLoading={isLoadingMessages}
                     />
                 </div>
 
