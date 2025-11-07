@@ -522,7 +522,7 @@ const EditProfile: React.FC<Props> = ({
                                     onClick={() => setShowImageOptions((v) => !v)}
                                     className="w-full sm:w-auto"
                                 >
-                                    Change avatar
+                Change avatar
                                 </Button>
                                 <AvatarMenu
                                     open={showImageOptions}
@@ -657,6 +657,7 @@ const EditProfile: React.FC<Props> = ({
                             </div>
                         </FormField>
 
+                        {/* Fix for TagInput */}
                         {canEditProfile && (
                             <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
                                 <div className="max-w-full overflow-hidden">
@@ -681,6 +682,7 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
+                        {/* Fix for Map - add right margin and make responsive */}
                         {canEditProfile && (
                             <FormField
                                 label='Location'
@@ -731,15 +733,44 @@ const EditProfile: React.FC<Props> = ({
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-                                                if (setTargetUser) {
-                                                    setTargetUser({
-                                                        ...targetUser,
-                                                        location: {
-                                                            ...targetUser.location,
-                                                            regionID: null
-                                                        }
-                                                    });
-                                                }
+                                                setTargetUser({
+                                                    ...targetUser,
+                                                    location: {
+                                                        ...targetUser.location,
+                                                        regionID: null
+                                                    }
+                                                });
+                                            }}
+                                            className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                        >
+                    ✕ Remove
+                                        </Button>
+                                    </div>
+                                )}
+                                <div className="max-w-full overflow-hidden pr-4">
+                                    <MapDisplay
+                                        regionID={targetUser.location?.regionID}
+                                        width='100%'
+                                        height={300}
+                                        edit
+                                        exactLocation
+                                        shouldGetYourLocation
+                                        inlineBanner={false}
+                                        onLabelChange={(label) => setLocationLabel(label)}
+                                        onLocationChange={(data) => {
+                                            if (!data) {
+                                                setLocation(null);
+                                                form.setValue('location', null as any, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+                                                setTargetUser({
+                                                    ...targetUser,
+                                                    location: {
+                                                        ...targetUser.location,
+                                                        regionID: null
+                                                    }
+                                                });
                                                 return;
                                             }
                                             if (!data.changed) return;
@@ -766,8 +797,14 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}                        
 
-                        {/* Hidden placeholder to prevent layout shift when save bar appears */}
-                        <div className='h-20'></div>
+                        {/* IMPROVED: More visible ActionsBar */}
+                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 px-6 sm:-mx-6 sm:px-6 pb-4 z-10'>
+                            <ActionsBar
+                                canSave={canSave}
+                                isSubmitting={updateUserMutation.isPending}
+                                onCancel={onClose}
+                            />
+                        </div>
 
                         <ErrorList errors={form.formState.errors as any} />
                     </form>
@@ -859,11 +896,11 @@ const EditProfile: React.FC<Props> = ({
                             <FormField label='New password'>
                                 <input
                                     type='password'
-                                    value={pwForm.next}
+                                    value={pwForm.current}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
                                             ...s,
-                                            next: e.target.value
+                                            current: e.target.value
                                         }))
                                     }
                                     className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'

@@ -435,7 +435,9 @@ export default function PostDetails(props: Props) {
         if (data.coordinates) {
             const locationData: LocationDTO = {
                 name: data.name,
-                regionID: data.placeID
+                regionID: data.placeID,
+                latitude: data.coordinates.latitude,
+                longitude: data.coordinates.longitude
             };
             setEditData({ ...editData, location: locationData });
         }

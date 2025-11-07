@@ -96,6 +96,7 @@ function NavItemComponent({
     );
 }
 
+
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
         <nav className='hidden md:block'>
@@ -122,6 +123,7 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
         </nav>
     );
 }
+
 
 function MobileNavigation({ items }: { items: NavItem[] }) {
     const navigate = useNavigate();
@@ -298,7 +300,6 @@ export default function Navbar({
                 </div>
 
                 <div className='flex flex-1 justify-end md:justify-center'>
-                    <MobileNavigation items={navItems} />
                     <DesktopNavigation items={navItems} />
                 </div>
 
@@ -308,6 +309,13 @@ export default function Navbar({
                     {isLoggedIn ? (
                         <>
                             <NotificationsBell />
+                            {/* <Link
+                                to={routes.feedback}
+                                aria-label='Feedback'
+                                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                            >
+                                <FlagIcon className='h-5 w-5' />
+                            </Link> */}
                             <UserMenu onLogout={onLogout} />
                         </>
                     ) : (

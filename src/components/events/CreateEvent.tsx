@@ -328,7 +328,9 @@ export default function CreateEvent() {
                             onLocationChange={(data) =>
                                 setLocation({
                                     regionID: data.placeID,
-                                    name: data.name
+                                    name: data.name,
+                                    latitude: data?.coordinates.latitude,
+                                    longitude: data?.coordinates.longitude
                                 })
                             }
                             width='100%'
