@@ -740,13 +740,13 @@ const EditProfile: React.FC<Props> = ({
                                                         regionID: null
                                                     }
                                                 });
-                                            }}
-                                            className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
-                                        >
+                                            }
+                                        }
+                                        }
+                                    />
                     ✕ Remove
-                                        </Button>
-                                    </div>
-                                )}
+                                </div>
+                                
                                 <div className="max-w-full overflow-hidden pr-4">
                                     <MapDisplay
                                         regionID={targetUser.location?.regionID}
