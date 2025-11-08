@@ -744,55 +744,6 @@ const EditProfile: React.FC<Props> = ({
                                         }
                                         }
                                     />
-                    ✕ Remove
-                                </div>
-                                
-                                <div className="max-w-full overflow-hidden pr-4">
-                                    <MapDisplay
-                                        regionID={targetUser.location?.regionID}
-                                        width='100%'
-                                        height={300}
-                                        edit
-                                        exactLocation
-                                        shouldGetYourLocation
-                                        inlineBanner={false}
-                                        onLabelChange={(label) => setLocationLabel(label)}
-                                        onLocationChange={(data) => {
-                                            if (!data) {
-                                                setLocation(null);
-                                                form.setValue('location', null as any, {
-                                                    shouldDirty: true,
-                                                    shouldValidate: true
-                                                });
-                                                setTargetUser({
-                                                    ...targetUser,
-                                                    location: {
-                                                        ...targetUser.location,
-                                                        regionID: null
-                                                    }
-                                                });
-                                                return;
-                                            }
-                                            if (!data.changed) return;
-                                            if (data.coordinates) {
-                                                setLocation(data.coordinates);
-                                                const next = {
-                                                    ...data.coordinates,
-                                                    name: data.name,
-                                                    regionID: data.placeID
-                                                };
-                                                const prev =
-                                                    form.getValues('location') || null;
-                                                const changed = !deepEqual(next, prev);
-                                                if (changed) {
-                                                    form.setValue('location', next, {
-                                                        shouldDirty: true,
-                                                        shouldValidate: true
-                                                    });
-                                                }
-                                            }
-                                        }}
-                                    />
                                 </div>
                             </FormField>
                         )}                        
