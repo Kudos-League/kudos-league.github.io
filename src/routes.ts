@@ -43,6 +43,7 @@ export const routes = {
     about: '/about' as const,
     donate: '/donate' as const,
     result: '/donate/result' as const,
+    ganttEvents: '/events/gantt' as const,
     events: '/events' as const,
     createEvent: '/create-event' as const,
     createPost: '/create-post' as const,
