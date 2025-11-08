@@ -181,7 +181,8 @@ export default function EventsCarousel() {
                         locationFilter
                             ? 'bg-green-600 text-white hover:bg-green-700'
                             : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
+                    } ${
+                        !user?.location?.name ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     {locationFilter ? 'Show non local events' : 'Just show local events'}
                 </Button>

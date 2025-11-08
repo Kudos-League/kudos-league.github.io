@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
 
@@ -53,6 +53,31 @@ const Profile: React.FC<Props> = ({
     const [reportFiles, setReportFiles] = useState<File[]>([]);
     const [reportServerError, setReportServerError] = useState<string | null>(null);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
+
+    // Sort all arrays chronologically (latest first)
+    const sortedPosts = useMemo(() => {
+        return [...posts].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA;
+        });
+    }, [posts]);
+
+    const sortedEvents = useMemo(() => {
+        return [...events].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA;
+        });
+    }, [events]);
+
+    const sortedHandshakes = useMemo(() => {
+        return [...handshakes].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA;
+        });
+    }, [handshakes]);
 
     const validateReportFiles = (files?: File[]) => {
         if (!files) return null;
@@ -136,8 +161,6 @@ const Profile: React.FC<Props> = ({
         }
     };
 
-    // blockedUsers and loading come from the hook; hook implements fetching and optimistic updates
-
     if (editing) {
         return (
             <EditProfile
@@ -151,9 +174,9 @@ const Profile: React.FC<Props> = ({
 
     const renderFilteredContent = () => {
         const showEmptyState =
-            posts.length === 0 &&
-            events.length === 0 &&
-            (!isSelf || handshakes.length === 0);
+            sortedPosts.length === 0 &&
+            sortedEvents.length === 0 &&
+            (!isSelf || sortedHandshakes.length === 0);
 
         if (filter === 'kudos') {
             return (
@@ -168,13 +191,13 @@ const Profile: React.FC<Props> = ({
         if (filter === 'handshakes') {
             return (
                 <div className='grid gap-4'>
-                    {handshakes.length === 0 ? (
+                    {sortedHandshakes.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
                             No handshakes available.
                         </p>
                     ) : (
                         <Handshakes
-                            handshakes={handshakes}
+                            handshakes={sortedHandshakes}
                             currentUserId={user.id}
                             showAll
                             onShowAll={() => {
@@ -190,12 +213,12 @@ const Profile: React.FC<Props> = ({
         if (filter === 'events') {
             return (
                 <div className='grid gap-4 list-none'>
-                    {events.length === 0 ? (
+                    {sortedEvents.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
                             No events available.
                         </p>
                     ) : (
-                        events.map((event) => (
+                        sortedEvents.map((event) => (
                             <EventCard key={event.id} event={event} />
                         ))
                     )}
@@ -204,29 +227,29 @@ const Profile: React.FC<Props> = ({
         }
 
         if (filter === 'posts') {
-            return <PostList posts={posts} showHandshakeShortcut />;
+            return <PostList posts={sortedPosts} showHandshakeShortcut />;
         }
 
         return (
             <div className='space-y-8'>
                 {/* Posts Section */}
-                {posts.length > 0 && (
+                {sortedPosts.length > 0 && (
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Posts ({posts.length})
+                            Posts ({sortedPosts.length})
                         </h3>
                         <PostList
-                            posts={posts.slice(0, 3)}
+                            posts={sortedPosts.slice(0, 3)}
                             showHandshakeShortcut
                         />
-                        {posts.length > 3 && (
+                        {sortedPosts.length > 3 && (
                             <div className='mt-4 text-center'>
                                 <Button
                                     onClick={() => setFilter('posts')}
                                     variant='secondary'
                                     className='text-sm'
                                 >
-                                    View all {posts.length} posts
+                                    View all {sortedPosts.length} posts
                                 </Button>
                             </div>
                         )}
@@ -234,24 +257,24 @@ const Profile: React.FC<Props> = ({
                 )}
 
                 {/* Events Section */}
-                {events.length > 0 && (
+                {sortedEvents.length > 0 && (
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Events ({events.length})
+                            Events ({sortedEvents.length})
                         </h3>
                         <div className='grid gap-4 list-none'>
-                            {events.slice(0, 2).map((event) => (
+                            {sortedEvents.slice(0, 2).map((event) => (
                                 <EventCard key={event.id} event={event} />
                             ))}
                         </div>
-                        {events.length > 2 && (
+                        {sortedEvents.length > 2 && (
                             <div className='mt-4 text-center'>
                                 <Button
                                     onClick={() => setFilter('events')}
                                     variant='secondary'
                                     className='text-sm'
                                 >
-                                    View all {events.length} events
+                                    View all {sortedEvents.length} events
                                 </Button>
                             </div>
                         )}
@@ -259,13 +282,13 @@ const Profile: React.FC<Props> = ({
                 )}
 
                 {/* Handshakes Section - Only for own profile */}
-                {isSelf && handshakes.length > 0 && (
+                {isSelf && sortedHandshakes.length > 0 && (
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Handshakes ({handshakes.length})
+                            Handshakes ({sortedHandshakes.length})
                         </h3>
                         <Handshakes
-                            handshakes={handshakes.slice(0, 2)}
+                            handshakes={sortedHandshakes.slice(0, 2)}
                             currentUserId={user.id}
                             showAll={false}
                             onShowAll={() => setFilter('handshakes')}

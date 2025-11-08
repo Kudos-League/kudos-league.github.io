@@ -21,9 +21,30 @@ export default function NotificationsBell() {
     );
     const { items, unread, loaded } = state;
 
+    // Sort notifications by timestamp (most recent first)
+    const sortedItems = useMemo(() => {
+        return [...items].sort((a, b) => {
+            // Try different possible timestamp field names
+            const getTimestamp = (n: any) => {
+                const timestamp = n.createdAt || n.timestamp || n.created || n.date || n.updatedAt;
+                return timestamp ? new Date(timestamp).getTime() : 0;
+            };
+            
+            const timeA = getTimestamp(a);
+            const timeB = getTimestamp(b);
+            
+            // If no timestamps, sort by ID (higher ID = more recent)
+            if (!timeA && !timeB) {
+                return (b.id || 0) - (a.id || 0);
+            }
+            
+            return timeB - timeA; // Descending order (newest first)
+        });
+    }, [items]);
+
     const displayNotifications = useMemo(() => {
-        const unreadItems = items.filter(n => !n.isRead);
-        const readItems = items.filter(n => n.isRead);
+        const unreadItems = sortedItems.filter(n => !n.isRead);
+        const readItems = sortedItems.filter(n => n.isRead);
         
         if (unreadItems.length > 10) {
             // Show all unread notifications
@@ -35,10 +56,49 @@ export default function NotificationsBell() {
             return [...unreadItems, ...readItems.slice(0, remainingSlots)];
         }
         else {
-            // No unread, just show last 10
-            return items.slice(0, 10);
+            // No unread - show last 5-10 notifications (always show at least 5 if available)
+            const minToShow = Math.min(5, sortedItems.length);
+            const maxToShow = Math.min(10, sortedItems.length);
+            return sortedItems.slice(0, Math.max(minToShow, maxToShow));
         }
-    }, [items]);
+    }, [sortedItems]);
+
+    // Check if there are any recent notifications (within last week)
+    const hasRecentNotifications = useMemo(() => {
+        if (items.length === 0) return false;
+        
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        
+        return sortedItems.some(n => {
+            const timestamp = n.createdAt ||
+                            (n as any).created || (n as any).date
+            if (!timestamp) return false;
+            return new Date(timestamp) > oneWeekAgo;
+        });
+    }, [items.length, sortedItems]);
+
+    // Format relative time (e.g., "2m ago", "1h ago")
+    const formatTimeAgo = (notification: NotificationRecord) => {
+        // Try different possible timestamp field names
+        const timestamp = notification.createdAt || 
+                         (notification as any).created || (notification as any).date
+        
+        if (!timestamp) return '';
+        
+        const now = new Date();
+        const then = new Date(timestamp);
+        const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+        
+        if (seconds < 60) return 'Just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days}d ago`;
+        return then.toLocaleDateString();
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -206,6 +266,10 @@ export default function NotificationsBell() {
                                 <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
                                     No notifications yet
                                 </li>
+                            ) : !hasRecentNotifications ? (
+                                <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
+                                    No recent notifications
+                                </li>
                             ) : (
                                 displayNotifications.map((n) => (
                                     <li
@@ -227,8 +291,13 @@ export default function NotificationsBell() {
                                         )}
                                         {n.type === 'direct-message' ? (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium mb-1.5 md:mb-1 pr-12'>
-                                                    New DM from <UserCard user={n.message?.author} triggerVariant='name' />
+                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium pr-12'>
+                                                        New DM from <UserCard user={n.message?.author} triggerVariant='name' />
+                                                    </div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
                                                 </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
@@ -236,8 +305,13 @@ export default function NotificationsBell() {
                                             </div>
                                         ) : n.type === 'post-reply' ? (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium mb-1.5 md:mb-1 pr-12'>
-                                                    <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
+                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium pr-12'>
+                                                        <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
+                                                    </div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
                                                 </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     {n.message?.content}
@@ -245,32 +319,50 @@ export default function NotificationsBell() {
                                             </div>
                                         ) : n.type === 'past-gift' ? (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium'>Past gift logged</div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>Past gift logged</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Open to view details
                                                 </div>
                                             </div>
                                         ) : n.type === 'bug-report' ? (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium'>New bug report</div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>New bug report</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #{'feedbackID' in n ? n.feedbackID : ''}
                                                 </div>
                                             </div>
                                         ) : n.type === 'site-feedback' ? (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium'>New site feedback</div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>New site feedback</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #{'feedbackID' in n ? n.feedbackID : ''}
                                                 </div>
                                             </div>
                                         ) : (
                                             <div>
-                                                <div className='text-sm md:text-sm font-medium'>Post auto-close</div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>Post auto-close</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    {('closeAt' in n && n.closeAt
-                                                        ? new Date(n.closeAt).toLocaleString()
-                                                        : 'Due to inactivity') as any}
+                                                    Due to inactivity
                                                 </div>
                                             </div>
                                         )}

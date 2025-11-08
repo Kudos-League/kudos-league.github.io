@@ -11,6 +11,7 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { apiMutate } from '@/shared/api/apiClient';
 import {
@@ -67,6 +68,7 @@ export default function PostDetails(props: Props) {
     } = props;
 
     const { user, token } = useAuth();
+    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
 
     const updatePostMut = useUpdatePost();
     const likeMut = useLikePost();
@@ -570,6 +572,61 @@ export default function PostDetails(props: Props) {
     }
 
     if (error) {
+        const isBlockedUser = postDetails?.sender?.id && 
+            (blockedUsers ?? []).includes(postDetails.sender.id);
+        
+        if (isBlockedUser && postDetails?.sender) {
+            return (
+                <div className='text-center mt-20 max-w-md mx-auto px-4'>
+                    <div className='bg-gray-100 dark:bg-gray-800 rounded-lg p-6 border border-gray-300 dark:border-gray-700'>
+                        <div className='mb-4'>
+                            <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center'>
+                                <svg className='w-8 h-8 text-red-600 dark:text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' />
+                                </svg>
+                            </div>
+                            <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                                Post from Blocked User
+                            </h3>
+                            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                This post is from <span className='font-semibold'>{postDetails.sender.displayName || postDetails.sender.username}</span>, 
+                                whom you have blocked. You cannot view their content.
+                            </p>
+                        </div>
+                        
+                        <div className='flex flex-col gap-2'>
+                            <Button
+                                onClick={async () => {
+                                    if (blockingLoading || !postDetails.sender?.id) return;
+                                    try {
+                                        await unblock(postDetails.sender.id);
+                                        if (fetchPostDetails && postDetails?.id) {
+                                            setTimeout(() => fetchPostDetails(postDetails.id), 300);
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.error('Failed to unblock user:', err);
+                                    }
+                                }}
+                                disabled={blockingLoading}
+                                variant='primary'
+                                className='w-full justify-center'
+                            >
+                                {blockingLoading ? 'Unblocking...' : 'Unblock User'}
+                            </Button>
+                            <Button
+                                onClick={() => window.history.back()}
+                                variant='secondary'
+                                className='w-full justify-center'
+                            >
+                                Go Back
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
@@ -893,10 +950,11 @@ export default function PostDetails(props: Props) {
                     showPostDetails={false}
                 />
 
+
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
-                        (h) => h.sender?.id === user?.id
+                        (h) => h.sender?.id === user?.id && h.status !== 'cancelled'
                     ) && (
                     <div className='mt-4 flex justify-center'>
                         <Button

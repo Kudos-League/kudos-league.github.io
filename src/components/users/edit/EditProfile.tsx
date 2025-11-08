@@ -47,7 +47,7 @@ const EditProfile: React.FC<Props> = ({
     const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
     const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
 
-    const { setLocation } = useLocation();
+    const { setLocation, location: browserLocation, errorMsg: locationError } = useLocation();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showImageOptions, setShowImageOptions] = useState(false);
@@ -238,6 +238,76 @@ const EditProfile: React.FC<Props> = ({
         setShowImageOptions(false);
     }, [form]);
 
+    const handleUseCurrentLocation = React.useCallback(async () => {
+        if (locationError) {
+            setToastType('error');
+            setToastMessage('Unable to get your location. Please enable location services.');
+            return;
+        }
+
+        if (!browserLocation) {
+            setToastType('error');
+            setToastMessage('Waiting for browser location... Please allow location access.');
+            return;
+        }
+
+        try {
+            const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
+            );
+            const data = await response.json();
+            
+            if (data.status !== 'OK' || !data.results?.[0]) {
+                throw new Error('Failed to geocode location');
+            }
+
+            const result = data.results[0];
+            const placeID = result.place_id;
+            const formatted = result.formatted_address || '';
+
+            const next = {
+                latitude: browserLocation.latitude,
+                longitude: browserLocation.longitude,
+                name: formatted,
+                regionID: placeID,
+                changed: true
+            };
+
+            setLocation(browserLocation);
+            form.setValue('location', next, {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+            setLocationLabel(formatted);
+            setToastType('success');
+            setToastMessage('Current location set successfully');
+        }
+        catch (err) {
+            console.error('Failed to set current location:', err);
+            setToastType('error');
+            setToastMessage('Failed to set current location');
+        }
+    }, [browserLocation, locationError, form, setLocation]);
+
+    const handleClearLocation = React.useCallback(() => {
+        setLocation(null);
+        setLocationLabel('');
+        form.setValue('location', null as any, {
+            shouldDirty: true,
+            shouldValidate: true
+        });
+        if (setTargetUser) {
+            setTargetUser({
+                ...targetUser,
+                location: {
+                    ...targetUser.location,
+                    regionID: null
+                }
+            });
+        }
+    }, [form, setLocation, setTargetUser, targetUser]);
+
     const handleFormSubmit = async () => {
         if (!(Object.keys(effectiveChanges).length > 0 || locationDirty)) {
             setToastType('error');
@@ -398,8 +468,24 @@ const EditProfile: React.FC<Props> = ({
 
     return (
         <>
+            <style>{`
+                @keyframes slide-up {
+                    from {
+                        transform: translateY(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                .animate-slide-up {
+                    animation: slide-up 0.3s ease-out;
+                }
+            `}</style>
+            
             <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-x-hidden'>
-                {/* IMPROVED: Better header design with consistent styling */}
+                {/* Header */}
                 <div className='border-b border-gray-200 dark:border-gray-700 px-6 py-4'>
                     <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-4'>
@@ -417,20 +503,6 @@ const EditProfile: React.FC<Props> = ({
                             </h1>
                         </div>
                     </div>
-                    
-                    {/* IMPROVED: Unsaved changes warning banner */}
-                    {canSave && (
-                        <div className='mt-3'>
-                            <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 flex items-center gap-2'>
-                                <svg className='w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
-                                </svg>
-                                <span className='text-sm font-medium text-amber-800 dark:text-amber-200'>
-                                    You have unsaved changes
-                                </span>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 <SettingsSection
@@ -522,7 +594,7 @@ const EditProfile: React.FC<Props> = ({
                             </div>
                             {wasInvited && (
                                 <p className='text-xs text-gray-500 italic mt-2'>
-            Email cannot be changed for invited users
+                                    Email cannot be changed for invited users
                                 </p>
                             )}
                         </FormField>
@@ -596,7 +668,7 @@ const EditProfile: React.FC<Props> = ({
                                             const prev = form.getValues('tags') || [];
                                             if (
                                                 JSON.stringify(next) !==
-                        JSON.stringify(prev)
+                                                JSON.stringify(prev)
                                             ) {
                                                 form.setValue('tags', next, {
                                                     shouldDirty: true,
@@ -622,10 +694,41 @@ const EditProfile: React.FC<Props> = ({
                                             {locationLabel}
                                         </div>
                                         <Button
+                                            type='button'
                                             variant='ghost'
-                                            onClick={() => {
+                                            onClick={handleClearLocation}
+                                            className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                        >
+                                            ✕ Remove
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Location action button */}
+                                <div className='mb-3'>
+                                    <Button
+                                        type='button'
+                                        variant='secondary'
+                                        onClick={handleUseCurrentLocation}
+                                        className='text-sm w-full sm:w-auto'
+                                    >
+                                        📍 Use My Current Location
+                                    </Button>
+                                </div>
+
+                                <div className="max-w-full overflow-hidden pr-4">
+                                    <MapDisplay
+                                        regionID={targetUser.location?.regionID}
+                                        width='100%'
+                                        height={300}
+                                        edit
+                                        exactLocation
+                                        shouldGetYourLocation
+                                        inlineBanner={false}
+                                        onLabelChange={(label) => setLocationLabel(label)}
+                                        onLocationChange={(data) => {
+                                            if (!data) {
                                                 setLocation(null);
-                                                setLocationLabel('');
                                                 form.setValue('location', null as any, {
                                                     shouldDirty: true,
                                                     shouldValidate: true
@@ -637,13 +740,13 @@ const EditProfile: React.FC<Props> = ({
                                                         regionID: null
                                                     }
                                                 });
-                                            }}
-                                            className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
-                                        >
+                                            }
+                                        }
+                                        }
+                                    />
                     ✕ Remove
-                                        </Button>
-                                    </div>
-                                )}
+                                </div>
+                                
                                 <div className="max-w-full overflow-hidden pr-4">
                                     <MapDisplay
                                         regionID={targetUser.location?.regionID}
@@ -679,7 +782,7 @@ const EditProfile: React.FC<Props> = ({
                                                     regionID: data.placeID
                                                 };
                                                 const prev =
-                        form.getValues('location') || null;
+                                                    form.getValues('location') || null;
                                                 const changed = !deepEqual(next, prev);
                                                 if (changed) {
                                                     form.setValue('location', next, {
@@ -735,7 +838,7 @@ const EditProfile: React.FC<Props> = ({
                                     />
                                 ) : (
                                     <OAuthConnectButton provider='discord'>
-                                    Connect
+                                        Connect
                                     </OAuthConnectButton>
                                 )}
                             </div>
@@ -762,11 +865,10 @@ const EditProfile: React.FC<Props> = ({
                                     />
                                 ) : (
                                     <OAuthConnectButton provider='google'>
-                                    Connect
+                                        Connect
                                     </OAuthConnectButton>
                                 )}
                             </div>
-
                         </div>
                     </SettingsSection>
                 )}
@@ -777,7 +879,6 @@ const EditProfile: React.FC<Props> = ({
                 >
                     <form className='space-y-6' onSubmit={handleChangePassword}>
                         <FormField label='Current password'>
-                            {/* IMPROVED: Better styled password input with visible borders */}
                             <input
                                 type='password'
                                 value={pwForm.current}
@@ -792,9 +893,7 @@ const EditProfile: React.FC<Props> = ({
                         </FormField>
 
                         <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
-
                             <FormField label='New password'>
-                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={pwForm.current}
@@ -808,7 +907,6 @@ const EditProfile: React.FC<Props> = ({
                                 />                            
                             </FormField>
                             <FormField label='Confirm password'>
-                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={pwForm.confirm}
@@ -837,7 +935,6 @@ const EditProfile: React.FC<Props> = ({
                             onSubmit={handleLogoutOtherSessions}
                         >
                             <FormField label='Your password'>
-                                {/* IMPROVED: Better styled password input with visible borders */}
                                 <input
                                     type='password'
                                     value={logoutPassword}
@@ -863,12 +960,79 @@ const EditProfile: React.FC<Props> = ({
                             onSubmit={handleDeleteAccount}
                         >
                             <Button type='submit' variant='danger'>
-                            Deactivate my account
+                                Deactivate my account
                             </Button>
                         </form>
                     </SettingsSection>
                 )}
             </div>
+
+            {/* FLOATING SAVE BAR - Slides up from bottom when there are unsaved changes */}
+            {canSave && (
+                <div className='fixed bottom-0 left-0 right-0 z-50 animate-slide-up'>
+                    <div className='bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-700 dark:to-indigo-800 shadow-2xl'>
+                        <div className='max-w-5xl mx-auto px-4 sm:px-6 py-4'>
+                            <div className='flex items-center justify-between gap-4'>
+                                {/* Left side - Change indicator */}
+                                <div className='flex items-center gap-3 text-white'>
+                                    <div className='hidden sm:flex items-center justify-center w-10 h-10 bg-white/20 rounded-full flex-shrink-0'>
+                                        <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z' />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div className='font-semibold text-sm sm:text-base'>
+                                            Unsaved Changes
+                                        </div>
+                                        <div className='text-xs sm:text-sm text-indigo-100'>
+                                            You have {Object.keys(effectiveChanges).length + (locationDirty ? 1 : 0)} unsaved {Object.keys(effectiveChanges).length + (locationDirty ? 1 : 0) === 1 ? 'change' : 'changes'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right side - Action buttons */}
+                                <div className='flex items-center gap-2 sm:gap-3'>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            if (window.confirm('Discard all unsaved changes?')) {
+                                                resetFromUser(targetUser);
+                                                setLocationLabel(targetUser?.location?.name || '');
+                                            }
+                                        }}
+                                        className='px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-colors'
+                                    >
+                                        Discard
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={handleFormSubmit}
+                                        disabled={updateUserMutation.isPending}
+                                        className='px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base font-semibold bg-white text-indigo-600 hover:bg-indigo-50 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
+                                    >
+                                        {updateUserMutation.isPending ? (
+                                            <>
+                                                <svg className='animate-spin h-4 w-4' fill='none' viewBox='0 0 24 24'>
+                                                    <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+                                                    <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+                                                </svg>
+                                                <span className='hidden sm:inline'>Saving...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                                </svg>
+                                                <span>Save Changes</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Global toast */}
             {toastMessage && (

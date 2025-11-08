@@ -14,7 +14,7 @@ export default function Feed() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
-        type: 'kudos',
+        type: 'date',
         order: 'desc'
     });
     const [filterOpen, setFilterOpen] = React.useState(false);
@@ -29,11 +29,11 @@ export default function Feed() {
     const apiParams = {
         includeSender: true,
         includeTags: true,
-        limit: 20
+        limit: 10
     } as const;
 
     return (
-        <div className='max-w-4xl mx-auto space-y-4 px-4'>            
+        <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6'>
             <EventsCarousel />
 
             <div className='flex flex-col sm:flex-row sm:items-center gap-4 border-b pb-4'>
@@ -42,7 +42,7 @@ export default function Feed() {
                     variant='secondary'
                     className='whitespace-nowrap self-start sm:self-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:-translate-y-0.5'
                 >
-    + Gift / Request
+                    + Gift / Request
                 </Button>
             </div>
 
@@ -152,7 +152,7 @@ export default function Feed() {
                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                     }`}
                 >
-        All
+                    All
                 </Button>
                 <Button
                     onClick={() => setActiveTab('gifts')}
@@ -163,7 +163,7 @@ export default function Feed() {
                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                     }`}
                 >
-        Gifts
+                    Gifts
                 </Button>
                 <Button
                     onClick={() => setActiveTab('requests')}
@@ -174,22 +174,24 @@ export default function Feed() {
                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                     }`}
                 >
-        Requests
+                    Requests
                 </Button>
             </div>
 
-            {searchingActive ? (
-                <PostsInfinite.StaticList
-                    posts={searchResults}
-                    loading={searching}
-                />
-            ) : (
-                <PostsInfinite
-                    filters={apiParams}
-                    activeTab={activeTab}
-                    ordering={typeOfOrdering}
-                />
-            )}
+            <div className='w-full overflow-x-hidden'>
+                {searchingActive ? (
+                    <PostsInfinite.StaticList
+                        posts={searchResults}
+                        loading={searching}
+                    />
+                ) : (
+                    <PostsInfinite
+                        filters={apiParams}
+                        activeTab={activeTab}
+                        ordering={typeOfOrdering}
+                    />
+                )}
+            </div>
         </div>
     );
 }

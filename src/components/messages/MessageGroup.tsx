@@ -61,7 +61,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
             : 'Unknown time';
 
     return (
-        <div className='mb-4 overflow-hidden'>
+        <div className='mb-1 overflow-hidden'>
             {messages.map((msg, idx) => (
                 <MessageBubble
                     key={msg.id}

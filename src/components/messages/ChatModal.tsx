@@ -415,7 +415,7 @@ export default function ChatModal({
                 {/* Messages */}
                 <div
                     ref={scrollRef}
-                    className='flex-1 overflow-y-auto space-y-3 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-4'
+                    className='flex-1 overflow-y-auto space-y-1 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-4'
                 >
                     {loading && (
                         <p className='text-center text-gray-400'>
