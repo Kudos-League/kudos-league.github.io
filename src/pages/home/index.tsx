@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
+import { useAuth } from '@/contexts/useAuth';
+import { MapPin, X } from 'lucide-react';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -12,6 +14,7 @@ type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
 
 export default function Feed() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
         type: 'date',
@@ -19,6 +22,7 @@ export default function Feed() {
     });
     const [filterOpen, setFilterOpen] = React.useState(false);
     const [searchText, setSearchText] = React.useState('');
+    const [showLocationWarning, setShowLocationWarning] = React.useState(false);
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
     const { data: searchResults = [], isFetching: searching } =
@@ -57,21 +61,27 @@ export default function Feed() {
 
                 <div className='flex flex-wrap items-center gap-2'>
                     <Button
-                        onClick={() =>
-                            setTypeOfOrdering({ type: 'date', order: 'desc' })
-                        }
+                        onClick={() => {
+                            setTypeOfOrdering({ type: 'date', order: 'desc' });
+                            setShowLocationWarning(false);
+                        }}
                         variant='secondary'
                         className='text-sm border'
                     >
                         Sort by date
                     </Button>
                     <Button
-                        onClick={() =>
+                        onClick={() => {
+                            if (!user?.location?.name) {
+                                setShowLocationWarning(true);
+                                return;
+                            }
                             setTypeOfOrdering({
                                 type: 'distance',
                                 order: 'asc'
-                            })
-                        }
+                            });
+                            setShowLocationWarning(false);
+                        }}
                         variant='secondary'
                         className='text-sm border'
                     >
@@ -87,54 +97,83 @@ export default function Feed() {
                 </div>
             </div>
 
+            {showLocationWarning && (
+                <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3'>
+                    <MapPin className='w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0' />
+                    <div className='flex-1'>
+                        <h4 className='font-semibold text-blue-900 mb-1'>Location Required</h4>
+                        <p className='text-sm text-blue-800'>
+                            To sort by distance, you need to set your location in your profile first.
+                            Go to your profile, click &quot;Edit&quot;, and add your location.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => setShowLocationWarning(false)}
+                        variant='secondary'
+                        className='flex-shrink-0'
+                    >
+                        <X className='w-4 h-4' />
+                    </Button>
+                </div>
+            )}
+
             {filterOpen && (
                 <div className='p-4 border rounded'>
                     <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2'>
                         <Button
                             className='text-sm'
                             variant='secondary'
-                            onClick={() =>
+                            onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'date',
                                     order: 'desc'
-                                })
-                            }
+                                });
+                                setShowLocationWarning(false);
+                            }}
                         >
                             Newest
                         </Button>
                         <Button
                             className='text-sm'
                             variant='secondary'
-                            onClick={() =>
+                            onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'date',
                                     order: 'asc'
-                                })
-                            }
+                                });
+                                setShowLocationWarning(false);
+                            }}
                         >
                             Oldest
                         </Button>
                         <Button
                             className='text-sm'
                             variant='secondary'
-                            onClick={() =>
+                            onClick={() => {
+                                if (!user?.location?.name) {
+                                    setShowLocationWarning(true);
+                                    setFilterOpen(false);
+                                    return;
+                                }
                                 setTypeOfOrdering({
                                     type: 'distance',
                                     order: 'asc'
-                                })
-                            }
+                                });
+                                setShowLocationWarning(false);
+                            }}
                         >
                             Closest
                         </Button>
                         <Button
                             className='text-sm'
                             variant='secondary'
-                            onClick={() =>
+                            onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'kudos',
                                     order: 'desc'
-                                })
-                            }
+                                });
+                                setShowLocationWarning(false);
+                            }}
                         >
                             Most Kudos
                         </Button>
