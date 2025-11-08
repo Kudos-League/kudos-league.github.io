@@ -204,9 +204,9 @@ const MessageBubble: React.FC<Props> = ({
 
                             {/* Action buttons - only show when not editing */}
                             <div
-                                className={`absolute z-20 -top-3 ${
-                                    isOwn ? 'left-2' : 'right-2'
-                                } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/80 dark:bg-zinc-800/80 rounded px-1 py-0.5 shadow`}
+                                className={`absolute z-50 bottom-1 ${
+                                    isOwn ? 'left-1' : 'right-1'
+                                } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-zinc-800 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600`}
                             >
                                 <button
                                     type='button'

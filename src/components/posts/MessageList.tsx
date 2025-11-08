@@ -340,6 +340,34 @@ const MessageList: React.FC<Props> = ({
                 </div>
             )}
 
+            <div className='flex items-center gap-2'>
+                <input
+                    type='text'
+                    placeholder='Type a message...'
+                    value={messageContent}
+                    onChange={(e) => setMessageContent(e.target.value)}
+                    ref={inputRef}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSubmitMessage();
+                        }
+                        else if (e.key === 'Escape') {
+                            setReplyTo(null);
+                        }
+                    }}
+                    className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                />
+                <Button
+                    onClick={handleSubmitMessage}
+                    disabled={!messageContent.trim()}
+                    className='w-10 h-10'
+                    shape='circle'
+                >
+                            ➤
+                </Button>
+            </div>
+
             <div className='max-h-72 mb-3'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2'>No comments yet</p>
@@ -369,33 +397,7 @@ const MessageList: React.FC<Props> = ({
                             </span>
                         </div>
                     )}
-                    <div className='flex items-center gap-2'>
-                        <input
-                            type='text'
-                            placeholder='Type a message...'
-                            value={messageContent}
-                            onChange={(e) => setMessageContent(e.target.value)}
-                            ref={inputRef}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleSubmitMessage();
-                                }
-                                else if (e.key === 'Escape') {
-                                    setReplyTo(null);
-                                }
-                            }}
-                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
-                        />
-                        <Button
-                            onClick={handleSubmitMessage}
-                            disabled={!messageContent.trim()}
-                            className='w-10 h-10'
-                            shape='circle'
-                        >
-                            ➤
-                        </Button>
-                    </div>
+
                 </div>
             )}
 
