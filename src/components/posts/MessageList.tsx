@@ -340,7 +340,7 @@ const MessageList: React.FC<Props> = ({
                 </div>
             )}
 
-            <div className='max-h-72 overflow-y-auto mb-3'>
+            <div className='max-h-72 mb-3'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2'>No comments yet</p>
                 )}

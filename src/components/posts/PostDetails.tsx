@@ -864,33 +864,6 @@ export default function PostDetails(props: Props) {
                 </div>
             )}
 
-            {/* Comments */}
-            <div className='shadow p-4 rounded mb-6'>
-                <MessageList
-                    title='Comments'
-                    messages={postDetails.messages || []}
-                    callback={(response) =>
-                        setPostDetails((prev: PostDTO) =>
-                            prev
-                                ? {
-                                    ...prev,
-                                    messages: [
-                                        ...(prev.messages || []),
-                                        response
-                                    ]
-                                }
-                                : prev
-                        )
-                    }
-                    postID={postDetails?.id}
-                    showSendMessage={!!user}
-                    allowDelete={!!user}
-                    allowEdit={!!user}
-                    onMessageUpdate={handleMessageUpdate}
-                    onMessageDelete={handleMessageDelete}
-                />
-            </div>
-
             {/* Handshakes */}
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
@@ -969,6 +942,34 @@ export default function PostDetails(props: Props) {
                         </Button>
                     </div>
                 )}
+            </div>
+
+
+            {/* Comments */}
+            <div className='shadow p-4 rounded mb-6'>
+                <MessageList
+                    title='Comments'
+                    messages={postDetails.messages || []}
+                    callback={(response) =>
+                        setPostDetails((prev: PostDTO) =>
+                            prev
+                                ? {
+                                    ...prev,
+                                    messages: [
+                                        ...(prev.messages || []),
+                                        response
+                                    ]
+                                }
+                                : prev
+                        )
+                    }
+                    postID={postDetails?.id}
+                    showSendMessage={!!user}
+                    allowDelete={!!user}
+                    allowEdit={!!user}
+                    onMessageUpdate={handleMessageUpdate}
+                    onMessageDelete={handleMessageDelete}
+                />
             </div>
 
             {/* Chat Modal */}
