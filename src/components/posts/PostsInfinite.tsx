@@ -22,6 +22,12 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
+    // Create a stable filters object instead of mutating the prop
+    const queryFilters = React.useMemo(
+        () => ({ ...filters, includeSender: true }),
+        [filters]
+    );
+
     const {
         data,
         isLoading,
@@ -29,13 +35,12 @@ export default function PostsInfinite({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = usePostsInfiniteQuery(filters);
+    } = usePostsInfiniteQuery(queryFilters);
 
     const flat = React.useMemo(
         () => data?.pages.flatMap((p) => p.data) ?? [],
         [data]
     );
-    filters.includeSender = true; //Ensure sender is always included
 
     const visible = React.useMemo(() => {
         const filtered =
