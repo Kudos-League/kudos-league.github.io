@@ -21,7 +21,7 @@ import {
     endOfDay
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Filter, X, MapPin, Users, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
@@ -30,10 +30,10 @@ import Button from '@/components/common/Button';
 interface EventDetailsModalProps {
     event: EventDTO | null;
     onClose: () => void;
-    onViewDay: (date: Date) => void;
+    onViewPeriod: (date: Date, unit: 'day' | 'week' | 'month') => void;
 }
 
-const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onViewDay }) => {
+const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onViewPeriod }) => {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -54,7 +54,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
     };
 
     return (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4'>
             <div className='bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
                 <div className='sticky top-0 bg-white border-b p-6'>
                     <div className='flex items-start justify-between'>
@@ -68,11 +68,6 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                                 ) : (
                                     <span className='px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded'>
                                         📍 Local Event
-                                    </span>
-                                )}
-                                {!event.endTime && (
-                                    <span className='px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded'>
-                                        ⏰ Ongoing
                                     </span>
                                 )}
                             </div>
@@ -184,13 +179,13 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                     <div className='flex gap-3 pt-4 border-t'>
                         <Button
                             onClick={() => {
-                                onViewDay(new Date(event.startTime));
+                                onViewPeriod(new Date(event.startTime), 'day');
                                 onClose();
                             }}
                             variant='secondary'
                             className='flex items-center gap-2'
                         >
-                            <CalendarIcon className='w-4 h-4' />
+                            <Calendar className='w-4 h-4' />
                             View Day
                         </Button>
                         <Button onClick={() => navigate(`/event/${event.id}`)} className='flex-1'>
@@ -203,46 +198,75 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
     );
 };
 
-interface EventPosition extends EventDTO {
-    left: number;
-    width: number;
-    isOngoing: boolean;
-}
-
 type TimeUnit = 'days' | 'weeks' | 'months';
 
 export default function GanttEventsCalendar() {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const [zoomLevel, setZoomLevel] = useState(1);
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('month');
     const [filterText, setFilterText] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
     const [viewDate, setViewDate] = useState<Date | null>(null);
-    const [selectedDateEvents, setSelectedDateEvents] = useState<EventDTO[] | null>(null);
+    const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | null>(null);
+    const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
     const [locationFilter, setLocationFilter] = useState(false);
-    const [periodOffset, setPeriodOffset] = useState(0); // 0 = current period, -1 = previous, 1 = next
+    const [periodOffset, setPeriodOffset] = useState(0);
+    const [visibleEventCount, setVisibleEventCount] = useState(10);
+    const [useCustomRange, setUseCustomRange] = useState(false);
+    const [customStartDate, setCustomStartDate] = useState('');
+    const [customEndDate, setCustomEndDate] = useState('');
+    const [useDuration, setUseDuration] = useState(false);
+    const [durationValue, setDurationValue] = useState(7);
+    const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
+    const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+    const [showingRangeEvents, setShowingRangeEvents] = useState(false);
 
-    // Fetch events from API
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
-    // Filter out past events
     const events = useMemo(() => {
         const now = new Date();
         return allEvents.filter((event) => {
             const eventEnd = event.endTime ? new Date(event.endTime) : null;
-            // Include ongoing events and future events
             return !eventEnd || eventEnd >= now;
         });
     }, [allEvents]);
 
-    // Calculate date range based on timeRange selection and periodOffset
     const dateRange = useMemo(() => {
+        // Use custom date range if enabled
+        if (useCustomRange && customStartDate) {
+            const start = startOfDay(new Date(customStartDate));
+            let end: Date;
+            
+            if (useDuration) {
+                // Calculate end date based on duration
+                switch (durationUnit) {
+                case 'days':
+                    end = endOfDay(addDays(start, durationValue - 1));
+                    break;
+                case 'weeks':
+                    end = endOfDay(addDays(start, durationValue * 7 - 1));
+                    break;
+                case 'months':
+                    end = endOfDay(addMonths(start, durationValue));
+                    break;
+                }
+            }
+            else if (customEndDate) {
+                end = endOfDay(new Date(customEndDate));
+            }
+            else {
+                // Default to one month if no end date specified
+                end = endOfMonth(start);
+            }
+            
+            return { start, end };
+        }
+        
+        // Use default time range selection
         const now = startOfDay(new Date());
         let start: Date, end: Date;
 
@@ -266,21 +290,18 @@ export default function GanttEventsCalendar() {
                 end = endOfMonth(now);
             }
             else {
-                // Find latest event
                 const eventDates = events.map((e) => 
                     e.endTime ? new Date(e.endTime) : addDays(new Date(e.startTime), 365)
                 );
                 end = new Date(Math.max(...eventDates.map((d) => d.getTime())));
-                // Add padding
                 end = addDays(end, 7);
             }
             break;
         }
 
         return { start, end };
-    }, [timeRange, periodOffset, events]);
+    }, [timeRange, periodOffset, events, useCustomRange, customStartDate, customEndDate, useDuration, durationValue, durationUnit]);
 
-    // Filter events
     const filteredEvents = useMemo(() => {
         return events.filter((event) => {
             if (filterText) {
@@ -300,56 +321,42 @@ export default function GanttEventsCalendar() {
         });
     }, [events, filterText, locationFilter]);
 
-    // Generate timeline units (days, weeks, or months) - temporarily as days first
-    const temporaryDaysUnits = useMemo(() => {
-        const units: Array<{ date: Date; label: string; sublabel?: string }> = [];
-        const totalDays = differenceInDays(dateRange.end, dateRange.start);
-        for (let i = 0; i <= totalDays; i++) {
-            const day = addDays(dateRange.start, i);
-            units.push({
-                date: day,
-                label: format(day, 'd'),
-                sublabel: format(day, 'EEE')
-            });
-        }
-        return units;
-    }, [dateRange]);
-
-    // Determine best time unit based on container width and date range
     const timeUnit: TimeUnit = useMemo(() => {
-        if (containerWidth === 0) return 'days'; // Default before measuring
+        if (containerWidth === 0) return 'days';
         
         const totalDays = differenceInDays(dateRange.end, dateRange.start) + 1;
-        const minPixelsPerDay = 40; // Minimum comfortable width for a day column
-        const minPixelsPerWeek = 60; // Minimum comfortable width for a week column
+        const minPixelsPerDay = 40;
+        const minPixelsPerWeek = 60;
         
-        // Try days first
         if (totalDays * minPixelsPerDay <= containerWidth) {
             return 'days';
         }
         
-        // Try weeks
         const totalWeeks = Math.ceil(totalDays / 7);
         if (totalWeeks * minPixelsPerWeek <= containerWidth) {
             return 'weeks';
         }
         
-        // Fall back to months
         return 'months';
     }, [containerWidth, dateRange]);
 
-    // Generate timeline units (days, weeks, or months) based on determined time unit
     const timelineUnits = useMemo(() => {
-        const units: Array<{ date: Date; label: string; sublabel?: string }> = [];
+        const units: Array<{ date: Date; label: string; sublabel?: string; showMonth?: boolean }> = [];
         
         if (timeUnit === 'days') {
             const totalDays = differenceInDays(dateRange.end, dateRange.start);
+            let lastMonth = '';
             for (let i = 0; i <= totalDays; i++) {
                 const day = addDays(dateRange.start, i);
+                const currentMonth = format(day, 'MMM');
+                const showMonth = currentMonth !== lastMonth;
+                lastMonth = currentMonth;
+                
                 units.push({
                     date: day,
                     label: format(day, 'd'),
-                    sublabel: format(day, 'EEE')
+                    sublabel: format(day, 'EEE').charAt(0),
+                    showMonth
                 });
             }
         }
@@ -358,8 +365,7 @@ export default function GanttEventsCalendar() {
             while (current <= dateRange.end) {
                 units.push({
                     date: current,
-                    label: format(current, 'MMM d'),
-                    sublabel: `Week ${format(current, 'w')}`
+                    label: format(current, 'd'),
                 });
                 current = addWeeks(current, 1);
             }
@@ -379,70 +385,116 @@ export default function GanttEventsCalendar() {
         return units;
     }, [dateRange, timeUnit]);
 
-    // Calculate pixel width per unit to fit container (no horizontal scrolling)
     const pixelsPerUnit = containerWidth > 0 && timelineUnits.length > 0 
         ? containerWidth / timelineUnits.length 
         : (timeUnit === 'days' ? 60 : timeUnit === 'weeks' ? 80 : 100);
-    
-    const totalWidth = containerWidth || timelineUnits.length * pixelsPerUnit;
 
-    // Calculate event positions
-    const eventPositions = useMemo(() => {
-        return filteredEvents.map((event) => {
-            const start = new Date(event.startTime);
-            const end = event.endTime ? new Date(event.endTime) : addDays(start, 365);
-
-            let startOffset: number, duration: number;
+    const todayPosition = useMemo(() => {
+        const now = startOfDay(new Date());
+        
+        if (now < dateRange.start || now > dateRange.end) {
+            return null;
+        }
+        
+        if (timeUnit === 'days') {
+            const dayIndex = timelineUnits.findIndex(u => isSameDay(u.date, now));
+            if (dayIndex < 0) return null;
+            return dayIndex * pixelsPerUnit;
+        }
+        else if (timeUnit === 'weeks') {
+            const weekIndex = timelineUnits.findIndex(u => {
+                const weekStart = startOfWeek(u.date, { weekStartsOn: 0 });
+                const weekEnd = endOfWeek(u.date, { weekStartsOn: 0 });
+                return now >= weekStart && now <= weekEnd;
+            });
+            if (weekIndex < 0) return null;
             
-            if (timeUnit === 'days') {
-                startOffset = differenceInDays(start, dateRange.start);
-                duration = differenceInDays(end, start) + 1;
-            }
-            else if (timeUnit === 'weeks') {
-                const startOfFirstWeek = startOfWeek(dateRange.start, { weekStartsOn: 0 });
-                startOffset = differenceInWeeks(start, startOfFirstWeek);
-                duration = differenceInWeeks(end, start) + 1;
-            }
-            else {
-                const startOfFirstMonth = startOfMonth(dateRange.start);
-                startOffset = differenceInMonths(start, startOfFirstMonth);
-                duration = differenceInMonths(end, start) + 1;
-            }
-
-            return {
-                ...event,
-                left: Math.max(0, startOffset * pixelsPerUnit),
-                width: Math.max(pixelsPerUnit * 0.8, duration * pixelsPerUnit),
-                isOngoing: !event.endTime
-            } as EventPosition;
-        });
-    }, [filteredEvents, dateRange.start, pixelsPerUnit, timeUnit]);
+            const weekStart = startOfWeek(timelineUnits[weekIndex].date, { weekStartsOn: 0 });
+            const daysIntoWeek = differenceInDays(now, weekStart);
+            const proportionIntoWeek = daysIntoWeek / 7;
+            
+            return weekIndex * pixelsPerUnit + proportionIntoWeek * pixelsPerUnit;
+        }
+        else {
+            const monthIndex = timelineUnits.findIndex(u => {
+                const monthStart = startOfMonth(u.date);
+                const monthEnd = endOfMonth(u.date);
+                return now >= monthStart && now <= monthEnd;
+            });
+            if (monthIndex < 0) return null;
+            
+            const monthStart = startOfMonth(timelineUnits[monthIndex].date);
+            const monthEnd = endOfMonth(timelineUnits[monthIndex].date);
+            const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+            const daysIntoMonth = differenceInDays(now, monthStart);
+            const proportionIntoMonth = daysIntoMonth / daysInMonth;
+            
+            return monthIndex * pixelsPerUnit + proportionIntoMonth * pixelsPerUnit;
+        }
+    }, [timelineUnits, pixelsPerUnit, timeUnit, dateRange]);
 
     const handleUnitClick = (date: Date) => {
-        // Always show the specific day view
         const clicked = startOfDay(date);
+        let periodStart: Date, periodEnd: Date, periodType: 'day' | 'week' | 'month';
         
-        const eventsOnDay = filteredEvents.filter((e) => {
-            const dayStart = startOfDay(clicked);
-            const dayEnd = endOfDay(clicked);
-            
+        if (timeUnit === 'days') {
+            periodStart = startOfDay(clicked);
+            periodEnd = endOfDay(clicked);
+            periodType = 'day';
+        }
+        else if (timeUnit === 'weeks') {
+            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+            periodType = 'week';
+        }
+        else {
+            periodStart = startOfMonth(clicked);
+            periodEnd = endOfMonth(clicked);
+            periodType = 'month';
+        }
+        
+        const eventsInPeriod = filteredEvents.filter((e) => {
             const start = new Date(e.startTime);
             const end = e.endTime ? new Date(e.endTime) : null;
             
             if (!end) {
-                return start <= dayEnd;
+                return start <= periodEnd;
             }
             
-            return start <= dayEnd && end >= dayStart;
-        });
+            return start <= periodEnd && end >= periodStart;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
         
-        setSelectedDateEvents(eventsOnDay);
+        setSelectedPeriodEvents(eventsInPeriod);
         setViewDate(clicked);
+        setViewPeriodType(periodType);
+        setShowingRangeEvents(false);
     };
 
     const handleBackToGantt = () => {
-        setSelectedDateEvents(null);
+        setSelectedPeriodEvents(null);
         setViewDate(null);
+        setViewPeriodType(null);
+        setShowingRangeEvents(false);
+    };
+
+    const handleShowRangeEvents = () => {
+        const { start, end } = dateRange;
+        
+        const eventsInRange = filteredEvents.filter((e) => {
+            const eventStart = new Date(e.startTime);
+            const eventEnd = e.endTime ? new Date(e.endTime) : null;
+            
+            if (!eventEnd) {
+                return eventStart <= end;
+            }
+            
+            return eventStart <= end && eventEnd >= start;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        
+        setSelectedPeriodEvents(eventsInRange);
+        setViewDate(start);
+        setViewPeriodType(useCustomRange ? 'day' : timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'day');
+        setShowingRangeEvents(true);
     };
 
     const handleNavigatePrevious = () => {
@@ -457,9 +509,70 @@ export default function GanttEventsCalendar() {
         setPeriodOffset(0);
     };
 
-    // Get the period label for navigation
+    const handleJumpToPeriod = (periodType: 'this-week' | 'next-week' | 'this-month' | 'next-month' | 'week-number', weekNumber?: number) => {
+        const now = new Date();
+        
+        if (periodType === 'this-week') {
+            const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+            const weekEnd = endOfWeek(now, { weekStartsOn: 0 });
+            setUseCustomRange(true);
+            setCustomStartDate(format(weekStart, 'yyyy-MM-dd'));
+            setCustomEndDate(format(weekEnd, 'yyyy-MM-dd'));
+            setUseDuration(false);
+        }
+        else if (periodType === 'next-week') {
+            const nextWeekStart = startOfWeek(addWeeks(now, 1), { weekStartsOn: 0 });
+            const nextWeekEnd = endOfWeek(addWeeks(now, 1), { weekStartsOn: 0 });
+            setUseCustomRange(true);
+            setCustomStartDate(format(nextWeekStart, 'yyyy-MM-dd'));
+            setCustomEndDate(format(nextWeekEnd, 'yyyy-MM-dd'));
+            setUseDuration(false);
+        }
+        else if (periodType === 'this-month') {
+            const monthStart = startOfMonth(now);
+            const monthEnd = endOfMonth(now);
+            setUseCustomRange(true);
+            setCustomStartDate(format(monthStart, 'yyyy-MM-dd'));
+            setCustomEndDate(format(monthEnd, 'yyyy-MM-dd'));
+            setUseDuration(false);
+        }
+        else if (periodType === 'next-month') {
+            const nextMonthStart = startOfMonth(addMonths(now, 1));
+            const nextMonthEnd = endOfMonth(addMonths(now, 1));
+            setUseCustomRange(true);
+            setCustomStartDate(format(nextMonthStart, 'yyyy-MM-dd'));
+            setCustomEndDate(format(nextMonthEnd, 'yyyy-MM-dd'));
+            setUseDuration(false);
+        }
+        else if (periodType === 'week-number' && weekNumber) {
+            // Calculate the start date of the given week number in current year
+            const yearStart = startOfYear(now);
+            const targetWeekStart = addWeeks(yearStart, weekNumber - 1);
+            const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
+            setUseCustomRange(true);
+            setCustomStartDate(format(startOfWeek(targetWeekStart, { weekStartsOn: 0 }), 'yyyy-MM-dd'));
+            setCustomEndDate(format(targetWeekEnd, 'yyyy-MM-dd'));
+            setUseDuration(false);
+        }
+        
+        setShowPeriodPicker(false);
+    };
+
     const getPeriodLabel = () => {
-        const { start, end } = dateRange;
+        if (useCustomRange && customStartDate) {
+            const start = new Date(customStartDate);
+            if (useDuration) {
+                return `${format(start, 'MMM d, yyyy')} (${durationValue} ${durationUnit})`;
+            }
+            else if (customEndDate) {
+                return `${format(start, 'MMM d, yyyy')} - ${format(new Date(customEndDate), 'MMM d, yyyy')}`;
+            }
+            else {
+                return format(start, 'MMM d, yyyy');
+            }
+        }
+        
+        const { start } = dateRange;
         switch (timeRange) {
         case 'week':
             return `Week of ${format(start, 'MMM d, yyyy')}`;
@@ -474,19 +587,38 @@ export default function GanttEventsCalendar() {
         }
     };
 
-    // Scroll to top on mount or when time range changes
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = 0;
+    const getViewPeriodLabel = () => {
+        if (!viewDate) return '';
+        
+        if (showingRangeEvents) {
+            const { start, end } = dateRange;
+            if (useCustomRange) {
+                return `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
+            }
+            return getPeriodLabel();
         }
-    }, [timeRange, timeUnit]);
+        
+        if (viewPeriodType === 'day') {
+            return format(viewDate, 'PPP');
+        }
+        else if (viewPeriodType === 'week') {
+            const weekStart = startOfWeek(viewDate, { weekStartsOn: 0 });
+            const weekEnd = endOfWeek(viewDate, { weekStartsOn: 0 });
+            return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+        }
+        else {
+            return format(viewDate, 'MMMM yyyy');
+        }
+    };
 
-    // Reset period offset when time range changes
+    useEffect(() => {
+        setVisibleEventCount(10);
+    }, [timeRange, timeUnit, filterText, locationFilter]);
+
     useEffect(() => {
         setPeriodOffset(0);
     }, [timeRange]);
 
-    // Measure container width
     useEffect(() => {
         const measureWidth = () => {
             if (containerRef.current) {
@@ -499,59 +631,75 @@ export default function GanttEventsCalendar() {
         return () => window.removeEventListener('resize', measureWidth);
     }, []);
 
-    // Show day view if we have selected date events
-    if (selectedDateEvents && viewDate) {
+    if (selectedPeriodEvents && viewDate) {
         return (
-            <div className='max-w-5xl mx-auto p-4'>
-                <div className='flex items-center gap-4 mb-4'>
-                    <Button onClick={handleBackToGantt} variant='secondary'>
-                        ← Back to Gantt View
+            <div className='max-w-5xl mx-auto p-3 sm:p-4'>
+                <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4'>
+                    <Button onClick={handleBackToGantt} variant='secondary' className='text-sm w-full sm:w-auto flex items-center justify-center gap-2'>
+                        <ChevronLeft className='w-4 h-4' />
+                        Back to Calendar
                     </Button>
-                    <h2 className='text-xl font-semibold'>Events on {format(viewDate, 'PPP')}</h2>
+                    <div className='flex-1'>
+                        <h2 className='text-base sm:text-xl font-semibold'>
+                            {showingRangeEvents ? 'Events during ' : `Events ${viewPeriodType === 'day' ? 'on' : 'during'} `}
+                            {getViewPeriodLabel()}
+                        </h2>
+                        <p className='text-xs sm:text-sm text-gray-600 mt-0.5'>
+                            {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                        </p>
+                    </div>
                 </div>
 
-                {selectedDateEvents.length === 0 ? (
-                    <p className='text-gray-500 italic'>No events on this date.</p>
+                {selectedPeriodEvents.length === 0 ? (
+                    <div className='flex items-center justify-center text-gray-500 py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300'>
+                        <div className='text-center'>
+                            <Calendar className='w-12 h-12 mx-auto mb-2 text-gray-400' />
+                            <p className='text-sm sm:text-base font-medium'>No events during this period</p>
+                            <p className='text-xs text-gray-400 mt-1'>Try selecting a different time range</p>
+                        </div>
+                    </div>
                 ) : (
-                    <ul className='space-y-3'>
-                        {selectedDateEvents.map((event) => (
+                    <ul className='space-y-2 sm:space-y-3'>
+                        {selectedPeriodEvents.map((event) => (
                             <li
                                 key={event.id}
                                 onClick={() => navigate(`/event/${event.id}`)}
-                                className='p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
+                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
                             >
-                                <div className='flex items-start justify-between mb-2'>
-                                    <p className='font-bold text-lg text-gray-900'>{event.title}</p>
+                                <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                    <p className='font-bold text-base sm:text-lg text-gray-900'>{event.title}</p>
                                     {event.location?.global ? (
-                                        <span className='px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded'>
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                             🌐 Global
                                         </span>
                                     ) : (
-                                        <span className='px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded'>
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                             📍 Local
                                         </span>
                                     )}
                                 </div>
                                 {event.description && (
-                                    <p className='text-gray-600 text-sm mb-2'>{event.description}</p>
+                                    <p className='text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
                                 )}
-                                <div className='space-y-1'>
-                                    <p className='text-sm text-gray-700 flex items-center gap-2'>
-                                        <Clock className='w-4 h-4' />
-                                        {format(toZonedTime(new Date(event.startTime), tz), 'h:mm a')} –{' '}
-                                        {event.endTime
-                                            ? format(toZonedTime(new Date(event.endTime), tz), 'h:mm a')
-                                            : 'Ongoing'}
+                                <div className='space-y-0.5 sm:space-y-1'>
+                                    <p className='text-xs sm:text-sm text-gray-700 flex items-center gap-1.5 sm:gap-2'>
+                                        <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                        <span className='truncate'>
+                                            {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                            {event.endTime
+                                                ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                : 'Ongoing'}
+                                        </span>
                                     </p>
                                     {event.location?.name && !event.location.global && (
-                                        <p className='text-sm text-gray-600 flex items-center gap-2'>
-                                            <MapPin className='w-4 h-4' />
+                                        <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                            <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.location.name}
                                         </p>
                                     )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                        <p className='text-sm text-blue-600 flex items-center gap-2'>
-                                            <Users className='w-4 h-4' />
+                                        <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
+                                            <Users className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
                                         </p>
                                     )}
@@ -566,9 +714,9 @@ export default function GanttEventsCalendar() {
 
     if (isLoading) {
         return (
-            <div className='max-w-full mx-auto p-4'>
+            <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-lg text-gray-600'>Loading events...</div>
+                    <div className='text-base sm:text-lg text-gray-600'>Loading events...</div>
                 </div>
             </div>
         );
@@ -576,65 +724,147 @@ export default function GanttEventsCalendar() {
 
     if (isError) {
         return (
-            <div className='max-w-full mx-auto p-4'>
+            <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-lg text-red-600'>Failed to load events</div>
+                    <div className='text-base sm:text-lg text-red-600'>Failed to load events</div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className='max-w-full mx-auto p-4' style={{ overflowX: 'hidden' }}>
-            {/* Header */}
-            <div className='mb-4'>
+        <div className='max-w-full mx-auto p-3 sm:p-4'>
+            <div className='mb-3 sm:mb-4'>
                 <div className='flex items-center justify-between mb-4'>
                     <div>
-                        <h1 className='text-2xl font-bold'>Events Gantt Calendar</h1>
-                        <p className='text-sm text-gray-600 mt-1'>
+                        <h1 className='text-xl sm:text-2xl font-bold'>Events Calendar</h1>
+                        <p className='text-xs sm:text-sm text-gray-600 mt-1'>
                             Viewing {timelineUnits.length} {timeUnit} • {filteredEvents.length} events
                         </p>
                     </div>
-                    <Button onClick={() => navigate('/create-event')}>+ Create Event</Button>
+                    <Button onClick={() => navigate('/create-event')} className='text-sm sm:text-base'>
+                        <span className='hidden sm:inline'>+ Create Event</span>
+                        <span className='sm:hidden'>+ New</span>
+                    </Button>
                 </div>
 
-                {/* Controls */}
-                <div className='flex flex-wrap items-center gap-3 mb-4'>
-                    {/* Time Range Buttons */}
+                <div className='flex flex-wrap items-center gap-2 sm:gap-3 mb-4'>
                     <div className='flex gap-2'>
                         {(['week', 'month', 'year', 'all'] as const).map((range) => (
                             <Button
                                 key={range}
                                 onClick={() => setTimeRange(range)}
                                 variant={timeRange === range ? 'primary' : 'secondary'}
-                                className='capitalize'
+                                className='capitalize text-xs sm:text-sm px-2 sm:px-4'
                             >
                                 {range === 'all' ? 'All Time' : `This ${range}`}
                             </Button>
                         ))}
                     </div>
 
-                    {/* Filter Toggle */}
+                    <Button
+                        onClick={() => setShowPeriodPicker(!showPeriodPicker)}
+                        variant='secondary'
+                        className='text-xs sm:text-sm'
+                    >
+                        <Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
+                        Jump to Period
+                    </Button>
+
                     <Button
                         onClick={() => setShowFilters(!showFilters)}
                         variant='secondary'
-                        className='ml-auto'
+                        className='ml-auto text-xs sm:text-sm'
                     >
-                        <Filter className='w-4 h-4 mr-2' />
+                        <Filter className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
                         Filters
-                        {(filterText || locationFilter) && (
-                            <span className='ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
+                        {(filterText || locationFilter || useCustomRange) && (
+                            <span className='ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
                                 Active
                             </span>
                         )}
                     </Button>
                 </div>
 
-                {/* Filter Input */}
+                {showPeriodPicker && (
+                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200'>
+                        <div className='flex items-center justify-between mb-3'>
+                            <h3 className='text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2'>
+                                <Calendar className='w-4 h-4' />
+                                Jump to Period
+                            </h3>
+                            <button
+                                onClick={() => setShowPeriodPicker(false)}
+                                className='text-gray-500 hover:text-gray-700'
+                            >
+                                <X className='w-4 h-4' />
+                            </button>
+                        </div>
+
+                        <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
+                            <button
+                                onClick={() => handleJumpToPeriod('this-week')}
+                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                            >
+                                This Week
+                            </button>
+                            <button
+                                onClick={() => handleJumpToPeriod('next-week')}
+                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                            >
+                                Next Week
+                            </button>
+                            <button
+                                onClick={() => handleJumpToPeriod('this-month')}
+                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                            >
+                                This Month
+                            </button>
+                            <button
+                                onClick={() => handleJumpToPeriod('next-month')}
+                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                            >
+                                Next Month
+                            </button>
+                        </div>
+
+                        <div className='mt-3 pt-3 border-t border-blue-200'>
+                            <label className='block text-xs sm:text-sm font-medium text-gray-700 mb-2'>
+                                Jump to Week Number
+                            </label>
+                            <div className='flex gap-2'>
+                                <input
+                                    type='number'
+                                    min='1'
+                                    max='53'
+                                    placeholder='Week #'
+                                    id='week-number-input'
+                                    className='flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                />
+                                <button
+                                    onClick={() => {
+                                        const input = document.getElementById('week-number-input') as HTMLInputElement;
+                                        const weekNum = parseInt(input.value);
+                                        if (weekNum >= 1 && weekNum <= 53) {
+                                            handleJumpToPeriod('week-number', weekNum);
+                                        }
+                                    }}
+                                    className='px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors'
+                                >
+                                    Go
+                                </button>
+                            </div>
+                            <p className='mt-1 text-[0.65rem] sm:text-xs text-gray-600'>
+                                Current week: {format(new Date(), 'w')} of {format(new Date(), 'yyyy')}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {showFilters && (
-                    <div className='mb-4 p-4 bg-gray-50 rounded-lg space-y-3'>
+                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-4'>
                         <div>
-                            <label className='block text-sm font-medium text-gray-700 mb-2'>
+                            <label className='block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2'>
                                 Search Events
                             </label>
                             <input
@@ -642,238 +872,507 @@ export default function GanttEventsCalendar() {
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)}
                                 placeholder='Filter by title, description, or location...'
-                                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                className='w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
                             />
                         </div>
 
-                        <div className='flex items-center gap-3'>
-                            <label className='flex items-center gap-2 cursor-pointer'>
+                        <div className='flex items-center gap-2 sm:gap-3'>
+                            <label className='flex items-center gap-1.5 sm:gap-2 cursor-pointer'>
                                 <input
                                     type='checkbox'
                                     checked={locationFilter}
                                     onChange={() => setLocationFilter(!locationFilter)}
-                                    className='w-4 h-4'
+                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
                                 />
-                                <span className='text-sm font-medium text-gray-700'>
+                                <span className='text-xs sm:text-sm font-medium text-gray-700'>
                                     Global events only
                                 </span>
                             </label>
                         </div>
 
-                        <p className='text-sm text-gray-600'>
+                        <div className='border-t pt-3 sm:pt-4'>
+                            <div className='flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3'>
+                                <input
+                                    type='checkbox'
+                                    id='customRange'
+                                    checked={useCustomRange}
+                                    onChange={(e) => {
+                                        setUseCustomRange(e.target.checked);
+                                        if (!e.target.checked) {
+                                            setCustomStartDate('');
+                                            setCustomEndDate('');
+                                        }
+                                    }}
+                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                />
+                                <label htmlFor='customRange' className='text-xs sm:text-sm font-medium text-gray-700'>
+                                    Custom Date Range
+                                </label>
+                            </div>
+
+                            {useCustomRange && (
+                                <div className='space-y-2 sm:space-y-3 ml-4 sm:ml-6'>
+                                    <div>
+                                        <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
+                                            Start Date
+                                        </label>
+                                        <input
+                                            type='date'
+                                            value={customStartDate}
+                                            onChange={(e) => setCustomStartDate(e.target.value)}
+                                            className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                        />
+                                    </div>
+
+                                    <div className='flex items-center gap-1.5 sm:gap-2'>
+                                        <input
+                                            type='radio'
+                                            id='useEndDate'
+                                            checked={!useDuration}
+                                            onChange={() => setUseDuration(false)}
+                                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                        />
+                                        <label htmlFor='useEndDate' className='text-xs sm:text-sm text-gray-700'>
+                                            Specify End Date
+                                        </label>
+                                    </div>
+
+                                    {!useDuration && (
+                                        <div className='ml-4 sm:ml-6'>
+                                            <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
+                                                End Date
+                                            </label>
+                                            <input
+                                                type='date'
+                                                value={customEndDate}
+                                                onChange={(e) => setCustomEndDate(e.target.value)}
+                                                min={customStartDate}
+                                                className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className='flex items-center gap-1.5 sm:gap-2'>
+                                        <input
+                                            type='radio'
+                                            id='useDuration'
+                                            checked={useDuration}
+                                            onChange={() => setUseDuration(true)}
+                                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                        />
+                                        <label htmlFor='useDuration' className='text-xs sm:text-sm text-gray-700'>
+                                            Specify Duration
+                                        </label>
+                                    </div>
+
+                                    {useDuration && (
+                                        <div className='ml-4 sm:ml-6 flex gap-2'>
+                                            <div className='flex-1'>
+                                                <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
+                                                    Duration
+                                                </label>
+                                                <input
+                                                    type='number'
+                                                    min='1'
+                                                    value={durationValue}
+                                                    onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                />
+                                            </div>
+                                            <div className='flex-1'>
+                                                <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
+                                                    Unit
+                                                </label>
+                                                <select
+                                                    value={durationUnit}
+                                                    onChange={(e) => setDurationUnit(e.target.value as 'days' | 'weeks' | 'months')}
+                                                    className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                >
+                                                    <option value='days'>Days</option>
+                                                    <option value='weeks'>Weeks</option>
+                                                    <option value='months'>Months</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {customStartDate && (
+                                        <div className='text-[0.65rem] sm:text-xs text-gray-600 bg-blue-50 p-2 rounded'>
+                                            <strong>Range:</strong> {format(new Date(customStartDate), 'MMM d, yyyy')} 
+                                            {' → '}
+                                            {useDuration ? (
+                                                format(
+                                                    durationUnit === 'days' 
+                                                        ? addDays(new Date(customStartDate), durationValue - 1)
+                                                        : durationUnit === 'weeks'
+                                                            ? addDays(new Date(customStartDate), durationValue * 7 - 1)
+                                                            : addMonths(new Date(customStartDate), durationValue),
+                                                    'MMM d, yyyy'
+                                                )
+                                            ) : customEndDate ? (
+                                                format(new Date(customEndDate), 'MMM d, yyyy')
+                                            ) : (
+                                                'Select end date'
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <p className='text-xs sm:text-sm text-gray-600 pt-2 sm:pt-3 border-t'>
                             Showing {filteredEvents.length} of {events.length} upcoming events
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* Gantt Chart */}
-            <div className='space-y-3'>
-                {/* Navigation Controls */}
-                {timeRange !== 'all' && (
-                    <div className='flex items-center justify-between bg-gray-50 p-3 rounded-lg border'>
-                        <Button
-                            onClick={handleNavigatePrevious}
-                            variant='secondary'
-                            className='flex items-center gap-2'
-                        >
-                            <ChevronLeft className='w-4 h-4' />
-                            Previous
-                        </Button>
-                        
-                        <div className='flex items-center gap-3'>
-                            <h3 className='text-lg font-semibold text-gray-900'>
+            <div className='space-y-2 sm:space-y-3'>
+                {/* Legend and Show Events Button */}
+                <div className='flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between'>
+                    <div className='flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm bg-gray-50 p-2 sm:p-3 rounded-lg border flex-1 hidden'>
+                        <div className='flex items-center gap-1.5 sm:gap-2'>
+                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-green-500 to-green-600'></div>
+                        </div>
+                        <div className='flex items-center gap-1.5 sm:gap-2'>
+                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-blue-500 to-blue-600'></div>
+                        </div>
+                        <div className='flex items-center gap-1.5 sm:gap-2 ml-auto'>
+                            <div className='w-0.5 h-3 sm:h-4 bg-red-500'></div>
+                        </div>
+                    </div>
+                    
+                    <Button
+                        onClick={handleShowRangeEvents}
+                        variant='primary'
+                        className='text-xs sm:text-sm whitespace-nowrap'
+                    >
+                        Show Events during selected time period
+                    </Button>
+                </div>
+
+                {/* Timeline Ruler - Sticky */}
+                <div className='sticky top-0 z-[100] bg-white shadow-md rounded-lg border'>
+                    {/* Navigation and Month/Year Header */}
+                    {(timeRange !== 'all' && !useCustomRange) && (
+                        <div className='flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 p-2 sm:p-3 border-b'>
+                            <button
+                                onClick={handleNavigatePrevious}
+                                className='p-1.5 sm:p-2 hover:bg-white rounded-lg transition-colors'
+                            >
+                                <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
+                            </button>
+                            
+                            <div className='flex items-center gap-2 sm:gap-3'>
+                                <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
+                                    {getPeriodLabel()}
+                                </h3>
+                                {periodOffset !== 0 && (
+                                    <button
+                                        onClick={handleNavigateToday}
+                                        className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+                                    >
+                                        Today
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <button
+                                onClick={handleNavigateNext}
+                                className='p-1.5 sm:p-2 hover:bg-white rounded-lg transition-colors'
+                            >
+                                <ChevronRight className='w-4 h-4 sm:w-5 sm:h-5' />
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Custom Range Header */}
+                    {useCustomRange && (
+                        <div className='flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 border-b'>
+                            <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
                                 {getPeriodLabel()}
                             </h3>
-                            {periodOffset !== 0 && (
-                                <Button
-                                    onClick={handleNavigateToday}
-                                    variant='secondary'
-                                    className='text-sm'
-                                >
-                                    Today
-                                </Button>
-                            )}
                         </div>
-                        
-                        <Button
-                            onClick={handleNavigateNext}
-                            variant='secondary'
-                            className='flex items-center gap-2'
-                        >
-                            Next
-                            <ChevronRight className='w-4 h-4' />
-                        </Button>
-                    </div>
-                )}
+                    )}
 
-                <div ref={containerRef} className='border rounded-lg bg-white shadow-sm overflow-hidden'>
-                    <div 
-                        ref={scrollContainerRef}
-                        className='overflow-y-auto'
-                        style={{ maxHeight: '600px' }}
-                    >
-                        <div style={{ width: '100%' }}>
-                            {/* Timeline Header */}
-                            <div className='sticky top-0 z-10 bg-white border-b shadow-sm'>
-                                <div style={{ height: '70px' }} className='relative flex'>
-                                    {timelineUnits.map((unit, index) => {
-                                        const isTodayUnit = isToday(unit.date);
-                                        return (
-                                            <div
-                                                key={index}
-                                                onClick={() => handleUnitClick(unit.date)}
-                                                className={`border-r cursor-pointer hover:bg-blue-50 transition-colors ${
-                                                    isTodayUnit ? 'bg-blue-100' : ''
-                                                }`}
-                                                style={{
-                                                    width: `${pixelsPerUnit}px`,
-                                                    minWidth: `${pixelsPerUnit}px`,
-                                                    padding: pixelsPerUnit < 50 ? '0.25rem' : '0.5rem'
-                                                }}
-                                            >
-                                                <div className='p-2 text-center h-full flex flex-col justify-center'>
+                    {/* Timeline Units */}
+                    <div ref={containerRef} className='relative bg-white'>
+                        {todayPosition !== null && todayPosition <= containerWidth && (
+                            <div
+                                className='absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none'
+                                style={{ 
+                                    left: `${Math.min(todayPosition, containerWidth - 2)}px`,
+                                    zIndex: 50
+                                }}
+                            />
+                        )}
+                        
+                        {/* Month header row - only for days view */}
+                        {timeUnit === 'days' && (
+                            <div className='flex border-b bg-gray-50'>
+                                {timelineUnits.map((unit, index) => {
+                                    if (!unit.showMonth) return null;
+                                    
+                                    // Calculate colspan - how many days in this month
+                                    let colspan = 1;
+                                    for (let i = index + 1; i < timelineUnits.length; i++) {
+                                        if (timelineUnits[i].showMonth) break;
+                                        colspan++;
+                                    }
+                                    
+                                    const availableWidth = pixelsPerUnit * colspan;
+                                    let monthText = '';
+                                    
+                                    if (availableWidth > 120) {
+                                        monthText = format(unit.date, 'MMMM yyyy');
+                                    }
+                                    else if (availableWidth > 60) {
+                                        monthText = format(unit.date, 'MMM yyyy');
+                                    }
+                                    else if (availableWidth > 40) {
+                                        monthText = format(unit.date, 'MMM');
+                                    }
+                                    else {
+                                        monthText = format(unit.date, 'MMM').charAt(0);
+                                    }
+                                    
+                                    return (
+                                        <div
+                                            key={`month-${index}`}
+                                            className='text-center py-1 text-[0.7rem] sm:text-xs font-semibold text-gray-700 border-r'
+                                            style={{
+                                                width: `${availableWidth}px`,
+                                                minWidth: `${availableWidth}px`
+                                            }}
+                                        >
+                                            {monthText}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        
+                        <div style={{ height: '60px', width: '100%' }} className='relative flex overflow-x-hidden'>
+                            {timelineUnits.map((unit, index) => {
+                                const now = startOfDay(new Date());
+                                let isTodayUnit = false;
+                                
+                                if (timeUnit === 'days') {
+                                    isTodayUnit = isSameDay(unit.date, now);
+                                }
+                                else if (timeUnit === 'weeks') {
+                                    const weekStart = startOfWeek(unit.date, { weekStartsOn: 0 });
+                                    const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
+                                    isTodayUnit = now >= weekStart && now <= weekEnd;
+                                }
+                                else {
+                                    const monthStart = startOfMonth(unit.date);
+                                    const monthEnd = endOfMonth(unit.date);
+                                    isTodayUnit = now >= monthStart && now <= monthEnd;
+                                }
+                                
+                                return (
+                                    <div
+                                        key={index}
+                                        onClick={() => handleUnitClick(unit.date)}
+                                        className={`border-r cursor-pointer hover:bg-blue-50 transition-colors ${
+                                            isTodayUnit ? 'bg-blue-100' : ''
+                                        }`}
+                                        style={{
+                                            width: `${pixelsPerUnit}px`,
+                                            minWidth: `${pixelsPerUnit}px`
+                                        }}
+                                    >
+                                        <div className='px-0.5 py-1.5 text-center h-full flex flex-col justify-center gap-0.5'>
+                                            {timeUnit === 'weeks' && (
+                                                <>
                                                     <div
-                                                        className={`text-xs font-medium uppercase tracking-wide truncate ${
-                                                            isTodayUnit ? 'text-blue-600' : 'text-gray-500'
+                                                        className={`text-[0.6rem] font-semibold uppercase tracking-wider ${
+                                                            isTodayUnit ? 'text-blue-700' : 'text-gray-600'
                                                         }`}
-                                                        style={{ fontSize: pixelsPerUnit < 50 ? '0.65rem' : undefined }}
                                                     >
                                                         {unit.sublabel}
                                                     </div>
                                                     <div
-                                                        className={`font-bold mt-1 truncate ${
+                                                        className={`text-xl sm:text-2xl font-bold leading-none ${
                                                             isTodayUnit ? 'text-blue-600' : 'text-gray-900'
                                                         }`}
-                                                        style={{ fontSize: pixelsPerUnit < 50 ? '0.9rem' : '1.125rem' }}
                                                     >
                                                         {unit.label}
                                                     </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                
-                                    {/* Today marker */}
-                                    {timelineUnits.findIndex(u => isToday(u.date)) >= 0 && (
-                                        <div
-                                            className='absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none'
-                                            style={{ left: `${timelineUnits.findIndex(u => isToday(u.date)) * pixelsPerUnit}px` }}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Events Area */}
-                            <div style={{ minHeight: '400px' }} className='relative bg-gray-50'>
-                                {/* Grid lines */}
-                                {timelineUnits.map((_, index) => (
-                                    <div
-                                        key={`grid-${index}`}
-                                        className='absolute top-0 bottom-0 w-px bg-gray-200'
-                                        style={{ left: `${index * pixelsPerUnit}px` }}
-                                    />
-                                ))}
-                            
-                                {/* Today line */}
-                                {timelineUnits.findIndex(u => isToday(u.date)) >= 0 && (
-                                    <div
-                                        className='absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 pointer-events-none'
-                                        style={{ left: `${timelineUnits.findIndex(u => isToday(u.date)) * pixelsPerUnit}px` }}
-                                    />
-                                )}
-                            
-                                {eventPositions.length === 0 ? (
-                                    <div className='absolute inset-0 flex items-center justify-center text-gray-500'>
-                                        <div className='text-center'>
-                                            <CalendarIcon className='w-12 h-12 mx-auto mb-2 text-gray-400' />
-                                            <p>No upcoming events to display</p>
+                                                    <div className='text-[0.55rem] text-gray-500 leading-tight mt-0.5'>
+                                                        {(() => {
+                                                            const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
+                                                            const startMonth = format(unit.date, 'MMM');
+                                                            const endMonth = format(weekEnd, 'MMM');
+                                                            
+                                                            if (pixelsPerUnit < 50) {
+                                                                return startMonth === endMonth ? startMonth.charAt(0) : `${startMonth.charAt(0)}-${endMonth.charAt(0)}`;
+                                                            }
+                                                            return startMonth === endMonth ? startMonth : `${startMonth}-${endMonth}`;
+                                                        })()}
+                                                    </div>
+                                                </>
+                                            )}
+                                            {timeUnit === 'days' && (
+                                                <>
+                                                    <div
+                                                        className={`text-[0.65rem] font-medium uppercase ${
+                                                            isTodayUnit ? 'text-blue-700' : 'text-gray-500'
+                                                        }`}
+                                                    >
+                                                        {unit.sublabel}
+                                                    </div>
+                                                    <div
+                                                        className={`text-xl sm:text-2xl font-bold leading-none ${
+                                                            isTodayUnit ? 'text-blue-600' : 'text-gray-900'
+                                                        }`}
+                                                    >
+                                                        {unit.label}
+                                                    </div>
+                                                </>
+                                            )}
+                                            {timeUnit === 'months' && (
+                                                <>
+                                                    <div
+                                                        className={`text-lg sm:text-xl font-bold leading-none ${
+                                                            isTodayUnit ? 'text-blue-600' : 'text-gray-900'
+                                                        }`}
+                                                    >
+                                                        {pixelsPerUnit < 60 ? unit.label.charAt(0) : unit.label}
+                                                    </div>
+                                                    {pixelsPerUnit >= 60 && (
+                                                        <div className='text-[0.6rem] font-semibold text-gray-600 mt-1'>
+                                                            {unit.sublabel}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-                                ) : (
-                                    eventPositions.map((event, index) => (
-                                        <div
-                                            key={event.id}
-                                            onClick={() => setSelectedEvent(event)}
-                                            className={`absolute rounded-lg shadow-md cursor-pointer transition-all hover:shadow-xl hover:z-20 ${
-                                                event.isOngoing
-                                                    ? 'bg-gradient-to-r from-purple-500 to-purple-600'
-                                                    : event.location?.global
-                                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                                        : 'bg-gradient-to-r from-green-500 to-green-600'
-                                            }`}
-                                            style={{
-                                                left: `${event.left}px`,
-                                                top: `${index * 90 + 10}px`,
-                                                width: `${event.width}px`,
-                                                height: '75px',
-                                                minWidth: timeUnit === 'days' ? '60px' : timeUnit === 'weeks' ? '80px' : '100px'
-                                            }}
-                                        >
-                                            <div className='p-3 h-full flex flex-col justify-between text-white overflow-hidden'>
-                                                <div>
-                                                    <div className='font-bold text-sm mb-1 truncate' title={event.title}>
-                                                        {event.title}
-                                                    </div>
-                                                    <div className='text-xs opacity-90 line-clamp-2'>
-                                                        {event.description}
-                                                    </div>
-                                                </div>
-                                                <div className='flex items-center justify-between text-xs opacity-90 pt-1 border-t border-white/20'>
-                                                    <span className='flex items-center gap-1 truncate'>
-                                                        {event.location?.global ? (
-                                                            <span>🌐 Online</span>
-                                                        ) : event.location?.name ? (
-                                                            <span className='truncate'>📍 {event.location.name}</span>
-                                                        ) : (
-                                                            <span>📍 TBD</span>
-                                                        )}
-                                                    </span>
-                                                    {event.participantCount > 0 && (
-                                                        <span className='flex items-center gap-1 ml-2'>
-                                                            <Users className='w-3 h-3' />
-                                                            {event.participantCount}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
-                <div className='mt-4 flex flex-wrap gap-4 text-sm'>
-                    <div className='flex items-center gap-2'>
-                        <div className='w-4 h-4 rounded bg-gradient-to-r from-green-500 to-green-600'></div>
-                        <span>Local Event</span>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        <div className='w-4 h-4 rounded bg-gradient-to-r from-blue-500 to-blue-600'></div>
-                        <span>Global Event</span>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                        <div className='w-4 h-4 rounded bg-gradient-to-r from-purple-500 to-purple-600'></div>
-                        <span>Ongoing Event</span>
-                    </div>
-                    <div className='flex items-center gap-2 ml-auto'>
-                        <div className='w-0.5 h-4 bg-red-500'></div>
-                        <span>Today</span>
-                    </div>
+
+                {/* Events List */}
+                <div className='p-2 sm:p-4 space-y-2 sm:space-y-3 bg-white border rounded-lg'>
+                    {filteredEvents.length === 0 ? (
+                        <div className='flex items-center justify-center text-gray-500 py-8 sm:py-12'>
+                            <div className='text-center'>
+                                <Calendar className='w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-gray-400' />
+                                <p className='text-sm sm:text-base'>No upcoming events to display</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {filteredEvents.slice(0, visibleEventCount).map((event) => {
+                                const start = toZonedTime(new Date(event.startTime), tz);
+                                const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
+                                
+                                return (
+                                    <div
+                                        key={event.id}
+                                        onClick={() => setSelectedEvent(event)}
+                                        className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
+                                    >
+                                        <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                            <p className='font-bold text-base sm:text-lg text-gray-900'>{event.title}</p>
+                                            {event.location?.global ? (
+                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                    🌐 Global
+                                                </span>
+                                            ) : (
+                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                    📍 Local
+                                                </span>
+                                            )}
+                                        </div>
+                                        {event.description && (
+                                            <p className='text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                        )}
+                                        <div className='space-y-0.5 sm:space-y-1'>
+                                            <p className='text-xs sm:text-sm text-gray-700 flex items-center gap-1.5 sm:gap-2'>
+                                                <Clock className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                                <span className='truncate'>
+                                                    {format(start, 'MMM d, yyyy • h:mm a')} –{' '}
+                                                    {end ? format(end, 'MMM d, yyyy • h:mm a') : 'Ongoing'}
+                                                </span>
+                                            </p>
+                                            {event.location?.name && !event.location.global && (
+                                                <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                                    <MapPin className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                                    <span className='truncate'>{event.location.name}</span>
+                                                </p>
+                                            )}
+                                            {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                                <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
+                                                    <Users className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                                    {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            
+                            {/* Load More Button */}
+                            {visibleEventCount < filteredEvents.length && (
+                                <div className='text-center pt-3 sm:pt-4'>
+                                    <Button
+                                        onClick={() => setVisibleEventCount(prev => Math.min(prev + 10, filteredEvents.length))}
+                                        variant='secondary'
+                                        className='text-xs sm:text-sm'
+                                    >
+                                        Show More ({filteredEvents.length - visibleEventCount} remaining)
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
-
-                {/* Event Details Modal */}
-                {selectedEvent && (
-                    <EventDetailsModal
-                        event={selectedEvent}
-                        onClose={() => setSelectedEvent(null)}
-                        onViewDay={handleUnitClick}
-                    />
-                )}
             </div>
-    );
-        </div>
 
+            {selectedEvent && (
+                <EventDetailsModal
+                    event={selectedEvent}
+                    onClose={() => setSelectedEvent(null)}
+                    onViewPeriod={(date, unit) => {
+                        setViewDate(date);
+                        setViewPeriodType(unit);
+                        setShowingRangeEvents(false);
+                        const clicked = startOfDay(date);
+                        let periodStart: Date, periodEnd: Date;
+                        
+                        if (unit === 'day') {
+                            periodStart = startOfDay(clicked);
+                            periodEnd = endOfDay(clicked);
+                        }
+                        else if (unit === 'week') {
+                            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+                            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+                        }
+                        else {
+                            periodStart = startOfMonth(clicked);
+                            periodEnd = endOfMonth(clicked);
+                        }
+                        
+                        const eventsInPeriod = filteredEvents.filter((e) => {
+                            const start = new Date(e.startTime);
+                            const end = e.endTime ? new Date(e.endTime) : null;
+                            
+                            if (!end) {
+                                return start <= periodEnd;
+                            }
+                            
+                            return start <= periodEnd && end >= periodStart;
+                        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                        
+                        setSelectedPeriodEvents(eventsInPeriod);
+                    }}
+                />
+            )}
+        </div>
     );
 }
