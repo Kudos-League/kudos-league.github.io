@@ -72,11 +72,13 @@ const Profile: React.FC<Props> = ({
     }, [events]);
 
     const sortedHandshakes = useMemo(() => {
-        return [...handshakes].sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA;
-        });
+        return [...handshakes]
+            .filter((h) => !h.cancelledAt)
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA;
+            });
     }, [handshakes]);
 
     const validateReportFiles = (files?: File[]) => {
