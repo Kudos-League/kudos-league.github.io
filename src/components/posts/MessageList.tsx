@@ -368,12 +368,27 @@ const MessageList: React.FC<Props> = ({
                 </Button>
             </div>
 
-            <div className='max-h-72 mb-3'>
+            <div className='max-h-72 overflow-y-auto mb-3 relative'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2'>No comments yet</p>
                 )}
 
-                {displayedMessages.map(renderMessage)}
+                <div className={showAllMessages && hasMoreMessages ? 'pb-12' : ''}>
+                    {displayedMessages.map(renderMessage)}
+                </div>
+
+                {/* Sticky "Show less" button inside scrollable container */}
+                {showAllMessages && hasMoreMessages && (
+                    <div className='sticky bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-zinc-200 dark:border-zinc-700 pt-2 pb-2'>
+                        <Button
+                            onClick={() => setShowAllMessages(false)}
+                            variant='secondary'
+                            className='w-full'
+                        >
+                Show less
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {showSendMessage && (
@@ -417,14 +432,6 @@ const MessageList: React.FC<Props> = ({
                 </div>
             )}
 
-            {showAllMessages && hasMoreMessages && (
-                <Button
-                    onClick={() => setShowAllMessages(false)}
-                    variant='secondary'
-                >
-                    Show less
-                </Button>
-            )}
         </div>
     );
 };
