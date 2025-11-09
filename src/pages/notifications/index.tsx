@@ -121,7 +121,7 @@ export default function NotificationsPage() {
         (notification: NotificationRecord) => {
             if (notification.type === NotificationType.DIRECT_MESSAGE) {
                 navigate(
-                    `/dm/${notification.message?.author?.id ?? ''}`
+                    `/dms/${notification.message?.author?.id ?? ''}`
                 );
             }
             else if (notification.type === NotificationType.POST_REPLY) {
