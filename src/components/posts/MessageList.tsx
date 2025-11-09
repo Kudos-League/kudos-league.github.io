@@ -267,7 +267,7 @@ const MessageList: React.FC<Props> = ({
                             <div className='text-xs font-semibold mb-0.5 text-teal-600 dark:text-teal-400'>
                                 <UserCard
                                     triggerVariant='name'
-                                    user={replyTo.author}
+                                    user={byId.get(msg.replyToMessageID)?.author}
                                 />
                             </div>
                             <div className='text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2'>
@@ -364,31 +364,32 @@ const MessageList: React.FC<Props> = ({
                     className='w-10 h-10'
                     shape='circle'
                 >
-                            ➤
+                    ➤
                 </Button>
             </div>
+
+            {/* Sticky button at the top */}
+            {hasMoreMessages && (
+                <div className='sticky top-0 z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
+                    <Button
+                        onClick={() => setShowAllMessages(!showAllMessages)}
+                        variant='secondary'
+                        className='w-full'
+                    >
+                        {showAllMessages 
+                            ? 'Show less' 
+                            : `Show all messages (${processedMessages.length - 3} more)`
+                        }
+                    </Button>
+                </div>
+            )}
 
             <div className='max-h-72 overflow-y-auto mb-3 relative'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2'>No comments yet</p>
                 )}
 
-                <div className={showAllMessages && hasMoreMessages ? 'pb-12' : ''}>
-                    {displayedMessages.map(renderMessage)}
-                </div>
-
-                {/* Sticky "Show less" button inside scrollable container */}
-                {showAllMessages && hasMoreMessages && (
-                    <div className='sticky bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-zinc-200 dark:border-zinc-700 pt-2 pb-2'>
-                        <Button
-                            onClick={() => setShowAllMessages(false)}
-                            variant='secondary'
-                            className='w-full'
-                        >
-                Show less
-                        </Button>
-                    </div>
-                )}
+                {displayedMessages.map(renderMessage)}
             </div>
 
             {showSendMessage && (
@@ -412,28 +413,10 @@ const MessageList: React.FC<Props> = ({
                             </span>
                         </div>
                     )}
-
                 </div>
             )}
-
-            {hasMoreMessages && !showAllMessages && (
-                <div className='flex justify-between items-center mt-3'>
-                    <Button
-                        onClick={() => setShowAllMessages(true)}
-                        variant='secondary'
-                    >
-                        Show more messages ({processedMessages.length - 3} more)
-                    </Button>
-
-                    <span className='text-xs text-gray-500'>
-                        {processedMessages.length} message
-                        {processedMessages.length !== 1 ? 's' : ''}
-                    </span>
-                </div>
-            )}
-
         </div>
     );
 };
 
-export default MessageList
+export default MessageList;
