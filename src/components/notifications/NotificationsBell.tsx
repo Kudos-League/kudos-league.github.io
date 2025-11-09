@@ -46,20 +46,19 @@ export default function NotificationsBell() {
         const unreadItems = sortedItems.filter(n => !n.isRead);
         const readItems = sortedItems.filter(n => n.isRead);
         
-        if (unreadItems.length > 10) {
-            // Show all unread notifications
+        if (unreadItems.length >= 10) {
+            // Show all unread notifications if 10 or more
             return unreadItems;
         }
         else if (unreadItems.length > 0) {
-            // Show unread on top, then fill with read items up to 10 total
-            const remainingSlots = 10 - unreadItems.length;
-            return [...unreadItems, ...readItems.slice(0, remainingSlots)];
+            // Show unread on top, then fill with read items to make at least 5 total
+            const totalNeeded = Math.max(5, unreadItems.length);
+            const readNeeded = totalNeeded - unreadItems.length;
+            return [...unreadItems, ...readItems.slice(0, readNeeded)];
         }
         else {
-            // No unread - show last 5-10 notifications (always show at least 5 if available)
-            const minToShow = Math.min(5, sortedItems.length);
-            const maxToShow = Math.min(10, sortedItems.length);
-            return sortedItems.slice(0, Math.max(minToShow, maxToShow));
+            // No unread - show 5 most recent notifications
+            return sortedItems.slice(0, 5);
         }
     }, [sortedItems]);
 
