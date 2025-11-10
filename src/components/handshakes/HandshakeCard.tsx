@@ -56,8 +56,8 @@ const HandshakeCard: React.FC<Props> = ({
         const handshakeForStage = { ...handshake, status } as typeof handshake;
         return getHandshakeStage(handshakeForStage, userID);
     }, [handshake, status, userID]);
-    const canAccept = stage.canAccept;
-    const canCancel = stage.canCancel && handshake.senderID !== currentUser?.id;
+    const canAccept = stage.canAccept && handshake.senderID !== currentUser?.id;
+    const canCancel = stage.canCancel;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
