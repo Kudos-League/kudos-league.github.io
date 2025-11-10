@@ -43,10 +43,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
 
     const postIsPast = !!handshake?.post?.isPast;
 
-    const canAccept = () => {
+    const canAccept = (() => {
         return status === 'new' && !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID !== currentUserId && handshake?.post?.type &&
         handshake?.post?.type === 'gift' ? postSenderID === currentUserId : receiverID === currentUserId
-    };
+    })();
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
     const canCancel =
         !postIsPast &&
@@ -60,10 +60,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return !canAccept() && postSenderID !== undefined && postSenderID === currentUserId;
+            return !canAccept && postSenderID !== undefined && postSenderID === currentUserId;
         }
         if (handshake.post.type === 'gift') {
-            return !canAccept() && status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
+            return !canAccept && status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
         }
         return false;
     })();
