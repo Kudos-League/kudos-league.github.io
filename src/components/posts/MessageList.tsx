@@ -324,10 +324,9 @@ const MessageList: React.FC<Props> = ({
         );
     };
 
-    // FIX: Show LAST 3 messages (newest) instead of FIRST 3 (oldest)
     const displayedMessages = showAllMessages
         ? processedMessages
-        : processedMessages.slice(-3); // Show last 3 messages (newest)
+        : processedMessages.slice(3); // Show first 3 messages (newest)
     const hasMoreMessages = processedMessages.length > 3;
 
     console.log({ processedMessages, displayedMessages, showAllMessages });
