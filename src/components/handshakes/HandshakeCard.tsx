@@ -58,6 +58,7 @@ const HandshakeCard: React.FC<Props> = ({
     }, [handshake, status, userID]);
     const canAccept = stage.canAccept && handshake.senderID !== currentUser?.id;
     const canCancel = stage.canCancel;
+    const canUndoAccept = stage.canUndoAccept && handshake.senderID !== currentUser?.id;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
@@ -428,7 +429,7 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
 
                 {/* Undo Accept Button */}
-                {stage.canUndoAccept && status === 'accepted' && !stage.postIsPast && (
+                {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
                     <Button
                         onClick={async () => {
                             try {
