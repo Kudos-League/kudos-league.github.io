@@ -774,7 +774,7 @@ export default function GanttEventsCalendar() {
                     <Button
                         onClick={() => setShowFilters(!showFilters)}
                         variant='secondary'
-                        className='ml-auto text-xs sm:text-sm bg-blue-600 text-white'
+                        className='ml-auto text-xs sm:text-sm'
                     >
                         <Filter className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
                         Filters
