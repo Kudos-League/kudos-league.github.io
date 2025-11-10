@@ -340,51 +340,7 @@ const MessageList: React.FC<Props> = ({
                 </div>
             )}
 
-            <div className='flex items-center gap-2'>
-                <input
-                    type='text'
-                    placeholder='Type a message...'
-                    value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    ref={inputRef}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSubmitMessage();
-                        }
-                        else if (e.key === 'Escape') {
-                            setReplyTo(null);
-                        }
-                    }}
-                    className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
-                />
-                <Button
-                    onClick={handleSubmitMessage}
-                    disabled={!messageContent.trim()}
-                    className='w-10 h-10'
-                    shape='circle'
-                >
-                    ➤
-                </Button>
-            </div>
-
-            {/* Sticky button at the top */}
-            {hasMoreMessages && (
-                <div className='sticky top-0 z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
-                    <Button
-                        onClick={() => setShowAllMessages(!showAllMessages)}
-                        variant='secondary'
-                        className='w-full'
-                    >
-                        {showAllMessages 
-                            ? 'Show less' 
-                            : `Show all messages (${processedMessages.length - 3} more)`
-                        }
-                    </Button>
-                </div>
-            )}
-
-            <div className='max-h-72 overflow-y-auto mb-3 relative'>
+            <div className='max-h-72 mb-3 relative'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2'>No comments yet</p>
                 )}
@@ -392,29 +348,76 @@ const MessageList: React.FC<Props> = ({
                 {displayedMessages.map(renderMessage)}
             </div>
 
-            {showSendMessage && (
-                <div className='flex flex-col border-t pt-3 gap-2'>
-                    {replyTo && (
-                        <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-teal-500'>
-                            <div className='flex items-center justify-between mb-1'>
-                                <span className='text-xs font-semibold text-teal-600 dark:text-teal-400'>
-                                    Replying to {getDisplayName(replyTo.author)}
-                                </span>
-                                <button
-                                    className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
-                                    onClick={() => setReplyTo(null)}
-                                    title='Cancel reply (Esc)'
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                            <span className='text-xs text-zinc-600 dark:text-zinc-300 truncate'>
-                                {replyTo.content.slice(0, 100)}
-                            </span>
-                        </div>
-                    )}
+
+            {/* Should be sticky at the bottom*/}
+            <div className='sticky bottom-0'>
+                <div className='flex items-center gap-2'>
+                    <input
+                        type='text'
+                        placeholder='Type a message...'
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                        ref={inputRef}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSubmitMessage();
+                            }
+                            else if (e.key === 'Escape') {
+                                setReplyTo(null);
+                            }
+                        }}
+                        className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    />
+                    <Button
+                        onClick={handleSubmitMessage}
+                        disabled={!messageContent.trim()}
+                        className='w-10 h-10'
+                        shape='circle'
+                    >
+                    ➤
+                    </Button>
                 </div>
-            )}
+
+                {hasMoreMessages && (
+                    <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
+                        <Button
+                            onClick={() => setShowAllMessages(!showAllMessages)}
+                            variant='secondary'
+                            className='w-full'
+                        >
+                            {showAllMessages 
+                                ? 'Show less' 
+                                : `Show all messages (${processedMessages.length - 3} more)`
+                            }
+                        </Button>
+                    </div>
+                )}
+
+                {showSendMessage && (
+                    <div className='flex flex-col border-t pt-3 gap-2'>
+                        {replyTo && (
+                            <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-teal-500'>
+                                <div className='flex items-center justify-between mb-1'>
+                                    <span className='text-xs font-semibold text-teal-600 dark:text-teal-400'>
+                                    Replying to {getDisplayName(replyTo.author)}
+                                    </span>
+                                    <button
+                                        className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
+                                        onClick={() => setReplyTo(null)}
+                                        title='Cancel reply (Esc)'
+                                    >
+                                    ✕
+                                    </button>
+                                </div>
+                                <span className='text-xs text-zinc-600 dark:text-zinc-300 truncate'>
+                                    {replyTo.content.slice(0, 100)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
