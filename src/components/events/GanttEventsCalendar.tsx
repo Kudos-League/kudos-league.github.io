@@ -774,9 +774,9 @@ export default function GanttEventsCalendar() {
                     <Button
                         onClick={() => setShowFilters(!showFilters)}
                         variant='secondary'
-                        className='ml-auto text-xs sm:text-sm'
+                        className='ml-auto text-xs sm:text-sm bg-blue-600 text-white'
                     >
-                        <Filter className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 bg-blue-800 text-white' />
+                        <Filter className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
                         Filters
                         {(filterText || locationFilter || useCustomRange) && (
                             <span className='ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
