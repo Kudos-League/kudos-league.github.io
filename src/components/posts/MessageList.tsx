@@ -349,7 +349,7 @@ const MessageList: React.FC<Props> = ({
 
 
                 {/* Should be sticky at the bottom*/}
-                <div className='sticky bottom-0'>
+                <div className='sticky bottom-0 bg-white dark:bg-gray-800 pt-2'>
                     {hasMoreMessages && (
                         <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
                             <Button
