@@ -49,11 +49,11 @@ const MessageList: React.FC<Props> = ({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Simple processing - just sort by ID
+    // Sorting messages by creation date (newest first)
     const processedMessages = useMemo(() => {
         if (!messages || messages.length === 0) return [];
 
-        return [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        return [...messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [messages]);
 
     const handleSubmitMessage = async () => {
