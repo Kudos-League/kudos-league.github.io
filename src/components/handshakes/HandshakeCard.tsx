@@ -350,7 +350,9 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
 
                 {/* Accept Button */}
-                console.log(`Can accept: ${canAccept}, Post sender is current user: ${userID === handshake.senderID}, post receiver is current user: ${userID === handshake.receiverID}`)
+                {canAccept && <div>Can accept is true</div>}
+                {userID === handshake.senderID && <div>User is sender</div>}
+                {userID === handshake.receiverID && <div>User is receiver</div>}
 
                 {canAccept && !stage.postIsPast && (
                     <Button
