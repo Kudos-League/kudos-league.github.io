@@ -946,7 +946,7 @@ export default function PostDetails(props: Props) {
 
 
             {/* Comments */}
-            <div className='shadow p-4 rounded mb-6'>
+            <div className='p-4 mb-6'>
                 <MessageList
                     title='Comments'
                     messages={postDetails.messages || []}
