@@ -351,6 +351,22 @@ const MessageList: React.FC<Props> = ({
 
             {/* Should be sticky at the bottom*/}
             <div className='sticky bottom-0'>
+
+                {hasMoreMessages && (
+                    <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
+                        <Button
+                            onClick={() => setShowAllMessages(!showAllMessages)}
+                            variant='secondary'
+                            className='w-full'
+                        >
+                            {showAllMessages 
+                                ? 'Show less' 
+                                : `Show all messages (${processedMessages.length - 3} more)`
+                            }
+                        </Button>
+                    </div>
+                )}
+
                 <div className='flex items-center gap-2'>
                     <input
                         type='text'
@@ -379,20 +395,6 @@ const MessageList: React.FC<Props> = ({
                     </Button>
                 </div>
 
-                {hasMoreMessages && (
-                    <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
-                        <Button
-                            onClick={() => setShowAllMessages(!showAllMessages)}
-                            variant='secondary'
-                            className='w-full'
-                        >
-                            {showAllMessages 
-                                ? 'Show less' 
-                                : `Show all messages (${processedMessages.length - 3} more)`
-                            }
-                        </Button>
-                    </div>
-                )}
 
                 {showSendMessage && (
                     <div className='flex flex-col border-t pt-3 gap-2'>
