@@ -450,7 +450,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
                     <div>
                         <p className="text-sm text-gray-600">
-                            Waiting for kudos assignment from the other user.
+                            Waiting for the user to receive the item so you can get kudos
                         </p>
                     </div>
                 )}
