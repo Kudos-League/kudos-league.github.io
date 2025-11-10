@@ -53,7 +53,7 @@ const MessageList: React.FC<Props> = ({
     const processedMessages = useMemo(() => {
         if (!messages || messages.length === 0) return [];
 
-        return [...messages].sort((a, b) => a.id - b.id);
+        return [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [messages]);
 
     const handleSubmitMessage = async () => {
