@@ -29,8 +29,7 @@ const HandshakeCard: React.FC<Props> = ({
     onDelete
 }) => {
     const navigate = useNavigate();
-    const {user} = useAuth();
-    const currentUser = user;
+    useAuth();
 
     const [status, setStatus] = useState(handshake.status);
     const [processing, setProcessing] = useState(false);

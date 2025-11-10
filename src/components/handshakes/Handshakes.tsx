@@ -41,7 +41,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     (<HandshakeCard
                         key={handshake.id}
                         handshake={handshake}
-                        userID={handshake.post.senderID}
+                        userID={currentUserId}
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
@@ -50,7 +50,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     (<HandshakeCard
                         key={handshake.id}
                         handshake={handshake}
-                        userID={handshake.post.senderID}
+                        userID={currentUserId}
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
