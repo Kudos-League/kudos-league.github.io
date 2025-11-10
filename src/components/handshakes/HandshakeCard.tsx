@@ -354,7 +354,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {userID === handshake.senderID && <div>User is sender</div>}
                 {userID === handshake.receiverID && <div>User is receiver</div>}
 
-                {canAccept && !stage.postIsPast && (
+                {canAccept && !stage.postIsPast && userID === handshake.receiverID && (
                     <Button
                         className={`
                             w-full sm:w-auto relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
