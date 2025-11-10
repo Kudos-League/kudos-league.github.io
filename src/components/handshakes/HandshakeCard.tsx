@@ -349,11 +349,6 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Accept Button */}
-                {canAccept && <div>Can accept is true</div>}
-                {userID === handshake.senderID && <div>User is sender</div>}
-                {userID === handshake.receiverID && <div>User is receiver</div>}
-
                 {canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new' && (
                     <Button
                         className={`
@@ -391,7 +386,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {canComplete && (
                     <div className="space-y-3 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                         <label className="block text-sm font-medium text-green-800">
-                            Assign Kudos to Complete
+                            When you receive the item assign Kudos to Complete
                         </label>
                         <div className="flex flex-col sm:flex-row gap-3">
                             <input
@@ -432,12 +427,6 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Undo Accept Button */}
-                {canUndoAccept ? (
-                    <div>Can undo accept is true</div>
-                ): (
-                    <div>User cannot undo accept</div>
-                )}
 
                 {canUndoAccept && !stage.postIsPast && (
                     <Button
