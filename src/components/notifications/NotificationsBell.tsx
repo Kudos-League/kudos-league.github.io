@@ -263,7 +263,7 @@ export default function NotificationsBell() {
                                 </li>
                             ) : items.length === 0 ? (
                                 <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
-                                    No notifications yet
+                                    No new notifications
                                 </li>
                             ) : !hasRecentNotifications ? (
                                 <li className='p-4 md:p-3 text-sm text-zinc-600 dark:text-zinc-400'>
