@@ -43,7 +43,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
 
     const postIsPast = !!handshake?.post?.isPast;
 
-    const canAccept = !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID !== currentUserId && handshake?.post?.type &&
+    const canAccept = status === 'new' && !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID !== currentUserId && handshake?.post?.type &&
         handshake?.post?.type === 'gift' ? postSenderID === currentUserId : receiverID === currentUserId;
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
     const canCancel =
