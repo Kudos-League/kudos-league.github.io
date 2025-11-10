@@ -12,6 +12,7 @@ import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
+import { current } from '@reduxjs/toolkit';
 
 interface Props {
     handshake: HandshakeDTO;
@@ -28,7 +29,8 @@ const HandshakeCard: React.FC<Props> = ({
     onDelete
 }) => {
     const navigate = useNavigate();
-    useAuth();
+    const {user} = useAuth();
+    const currentUser = user;
 
     const [status, setStatus] = useState(handshake.status);
     const [processing, setProcessing] = useState(false);
@@ -55,7 +57,7 @@ const HandshakeCard: React.FC<Props> = ({
         return getHandshakeStage(handshakeForStage, userID);
     }, [handshake, status, userID]);
     const canAccept = stage.canAccept;
-    const canCancel = stage.canCancel;
+    const canCancel = stage.canCancel && handshake.senderID !== currentUser?.id;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
