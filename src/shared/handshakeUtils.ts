@@ -58,10 +58,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && postSenderID === currentUserId;
+            return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
         }
         if (handshake.post.type === 'gift') {
-            return receiverID !== undefined && receiverID === currentUserId;
+            return status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
         }
         return false;
     })();
