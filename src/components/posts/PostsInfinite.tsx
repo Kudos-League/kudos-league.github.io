@@ -22,10 +22,15 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
-    // Create a stable filters object instead of mutating the prop
+    // Pass ordering to the API along with other filters
     const queryFilters = React.useMemo(
-        () => ({ ...filters, includeSender: true }),
-        [filters]
+        () => ({
+            ...filters,
+            includeSender: true,
+            orderBy: ordering.type,
+            orderDir: ordering.order
+        }),
+        [filters, ordering]
     );
 
     const {
@@ -42,44 +47,27 @@ export default function PostsInfinite({
         [data]
     );
 
+    // Only filter by type, let backend handle sorting
     const visible = React.useMemo(() => {
-        const filtered =
-            activeTab === 'all'
-                ? flat
-                : flat.filter(
-                    (p) =>
-                        p.type ===
-                          (activeTab === 'gifts' ? 'gift' : 'request')
-                );
-
-        const cmp = {
-            date: (a: any, b: any) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            // TODO: replace with real distance sort
-            distance: () => Math.random() - 0.5,
-            kudos: (a: any, b: any) =>
-                (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0)
-        }[ordering.type];
-
-        return [...filtered].sort((a, b) =>
-            ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)
+        if (activeTab === 'all') return flat;
+        
+        return flat.filter(
+            (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
         );
-    }, [flat, activeTab, ordering]);
+    }, [flat, activeTab]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {
         const el = sentinelRef.current;
-        if (!el) return;
-        if (!hasNextPage || isFetchingNextPage) return;
+        if (!el || !hasNextPage) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 const first = entries[0];
-                if (!first?.isIntersecting) return;
-                if (isFetchingNextPage) return;
-                fetchNextPage();
+                if (first?.isIntersecting && !isFetchingNextPage && hasNextPage) {
+                    fetchNextPage();
+                }
             },
             {
                 root: null,
@@ -105,8 +93,7 @@ export default function PostsInfinite({
                         ref={sentinelRef} 
                         style={{ 
                             height: 1, 
-                            width: 1,
-                            visibility: isFetchingNextPage ? 'hidden' : 'visible'
+                            width: 1
                         }} 
                     />
                 )}
