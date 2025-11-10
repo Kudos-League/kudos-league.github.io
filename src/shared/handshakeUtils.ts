@@ -69,10 +69,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (status !== 'accepted') return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return senderID !== undefined && senderID === currentUserId;
+            return senderID !== undefined && postSenderID !== currentUserId;
         }
         if (handshake.post.type === 'gift') {
-            return gifterID !== undefined && gifterID === currentUserId;
+            return gifterID !== undefined && receiverID !== currentUserId;
         }
         return false;
     })();
