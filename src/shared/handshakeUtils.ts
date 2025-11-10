@@ -9,6 +9,7 @@ export type HandshakeStage = {
     canAccept: boolean;
     canUndoAccept: boolean;
     canCancel: boolean;
+    canComplete: boolean;
     postIsPast: boolean;
     userIsItemReceiver: boolean;
     otherUserID?: number;
@@ -42,7 +43,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
 
     const postIsPast = !!handshake?.post?.isPast;
 
-    const canAccept = !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID === currentUserId;
+    const canAccept = !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID !== currentUserId;
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
     const canCancel =
         !postIsPast &&
@@ -56,13 +57,26 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && postSenderID === currentUserId;
+            return postSenderID !== undefined && postSenderID !== currentUserId;
         }
         if (handshake.post.type === 'gift') {
-            return receiverID !== undefined && receiverID === currentUserId;
+            return receiverID !== undefined && receiverID !== currentUserId;
         }
         return false;
     })();
+
+    const canComplete = (() => {
+        if (status !== 'accepted') return false;
+        if (!handshake?.post?.type || currentUserId === undefined) return false;
+        if (handshake.post.type === 'request') {
+            return senderID !== undefined && senderID === currentUserId;
+        }
+        if (handshake.post.type === 'gift') {
+            return gifterID !== undefined && gifterID === currentUserId;
+        }
+        return false;
+    })();
+
 
     let otherUserID: number | undefined;
     if (currentUserId !== undefined) {
@@ -83,6 +97,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         canCancel,
         postIsPast,
         userIsItemReceiver,
-        otherUserID
+        otherUserID,
+        canComplete
     };
 }

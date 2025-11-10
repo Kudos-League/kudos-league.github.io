@@ -56,9 +56,10 @@ const HandshakeCard: React.FC<Props> = ({
         const handshakeForStage = { ...handshake, status } as typeof handshake;
         return getHandshakeStage(handshakeForStage, userID);
     }, [handshake, status, userID]);
-    const canAccept = stage.canAccept && handshake.senderID !== currentUser?.id;
+    const canAccept = stage.canAccept;
     const canCancel = stage.canCancel;
-    const canUndoAccept = stage.canUndoAccept && handshake.senderID !== currentUser?.id;
+    const canUndoAccept = stage.canUndoAccept;
+    const canComplete = stage.canComplete;
     const gifterID = stage.gifterID;
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
@@ -384,7 +385,7 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
 
                 {/* Kudos Assignment */}
-                {status === 'accepted' && userIsItemReceiver && (
+                {canComplete && (
                     <div className="space-y-3 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                         <label className="block text-sm font-medium text-green-800">
                             Assign Kudos to Complete
