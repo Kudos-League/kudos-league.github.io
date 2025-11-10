@@ -449,6 +449,14 @@ const HandshakeCard: React.FC<Props> = ({
                     </Button>
                 )}
 
+                {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
+                    <div>
+                        <p className="text-sm text-gray-600">
+                            Waiting for kudos assignment from the other user.
+                        </p>
+                    </div>
+                )}
+
                 {/* Error Message */}
                 {error && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
