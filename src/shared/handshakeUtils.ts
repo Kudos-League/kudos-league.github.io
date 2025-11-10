@@ -61,7 +61,8 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
+            // return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
+            return false;
         }
         if (handshake.post.type === 'gift') {
             return status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
@@ -73,7 +74,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (status !== 'accepted') return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && postSenderID !== currentUserId;
+            return postSenderID !== undefined && receiverID === currentUserId;
         }
         if (handshake.post.type === 'gift') {
             return receiverID !== undefined && receiverID !== currentUserId;
