@@ -433,7 +433,13 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
 
                 {/* Undo Accept Button */}
-                {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
+                {canUndoAccept ? (
+                    <div>Can undo accept is true</div>
+                ): (
+                    <div>User cannot undo accept</div>
+                )}
+
+                {canUndoAccept && !stage.postIsPast && (
                     <Button
                         onClick={async () => {
                             try {
