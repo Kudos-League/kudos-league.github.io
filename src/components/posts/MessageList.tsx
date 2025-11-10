@@ -326,7 +326,7 @@ const MessageList: React.FC<Props> = ({
 
     const displayedMessages = showAllMessages
         ? processedMessages
-        : processedMessages.slice(3); // Show first 3 messages (newest)
+        : processedMessages.slice(0,3); // Show first 3 messages (newest)
     const hasMoreMessages = processedMessages.length > 3;
 
     console.log({ processedMessages, displayedMessages, showAllMessages });
