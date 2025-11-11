@@ -940,7 +940,9 @@ export default function PostDetails(props: Props) {
                                         : 'Gift This'}
                             </Button>
                         </div>
-                    )}
+                    )
+                }
+
             </div>
 
 
