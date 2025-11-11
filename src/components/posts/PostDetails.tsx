@@ -926,6 +926,7 @@ export default function PostDetails(props: Props) {
 
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
+                    postDetails.handshakes?.map((h: any) => h.senderID !== user?.id).every((h: any) => h.status === 'cancelled') &&
                     (
                         <div className='mt-4 flex justify-center'>
                             <Button
