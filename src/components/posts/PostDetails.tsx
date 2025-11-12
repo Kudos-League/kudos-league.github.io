@@ -925,6 +925,7 @@ export default function PostDetails(props: Props) {
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails={false}
+                    showSenderOrReceiver={'sender'}
                 />
 
 
