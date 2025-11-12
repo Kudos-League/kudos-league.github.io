@@ -114,6 +114,7 @@ export default function PostCard(props: Props) {
                         }}
                         userID={user?.id}
                         showPostDetails={false}
+                        showSenderOrReceiver='sender'
                     />
                 </div>
             )}

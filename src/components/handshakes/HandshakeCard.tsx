@@ -20,13 +20,15 @@ interface Props {
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
     onDelete?: (id: number) => void;
+    showSenderOrReceiver?: 'sender' | 'receiver';
 }
 
 const HandshakeCard: React.FC<Props> = ({
     handshake,
     userID,
     showPostDetails,
-    onDelete
+    onDelete,
+    showSenderOrReceiver = 'receiver'
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -247,7 +249,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {/* Header: User + Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div className="font-semibold flex-1 min-w-0">
-                        <UserCard user={receiverUser} large={!showPostDetails} />
+                        <UserCard user={showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails} />
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
