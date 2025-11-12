@@ -8,15 +8,16 @@ interface Props {
     onSelect: (channel: ChannelDTO) => void;
     selectedChannel: ChannelDTO | null;
     isMobile?: boolean;
+    isLoading?: boolean;
 }
 
 const DMList: React.FC<Props> = ({
     channels,
     searchQuery,
-    
     onSelect,
     selectedChannel,
-    isMobile = false
+    isMobile = false,
+    isLoading = false
 }) => {
     const filteredChannels = channels.filter((c) =>
         c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -69,63 +70,69 @@ const DMList: React.FC<Props> = ({
             </h2>
 
             <div className='overflow-y-auto flex-1 space-y-2'>
-                {filteredChannels.length === 0 && (
+                {isLoading ? (
+                    <div className='flex flex-col items-center justify-center h-32'>
+                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 dark:border-teal-400'></div>
+                        <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading conversations...</p>
+                    </div>
+                ) : filteredChannels.length === 0 ? (
                     <p className={`text-gray-500 ${isMobile ? 'text-center text-base' : 'text-sm'}`}>
                         {channels.length === 0
                             ? 'No conversations found.'
                             : 'No matches found.'}
                     </p>
-                )}
-                {filteredChannels.map((channel) => {
-                    const user = channel.otherUser;
-                    const isSelected = selectedChannel?.id === channel.id;
-                    const lastMessageText = formatLastMessage(
-                        channel.lastMessage
-                    );
-                    const timestamp = getMessageTimestamp(channel.lastMessage);
+                ) : (
+                    filteredChannels.map((channel) => {
+                        const user = channel.otherUser;
+                        const isSelected = selectedChannel?.id === channel.id;
+                        const lastMessageText = formatLastMessage(
+                            channel.lastMessage
+                        );
+                        const timestamp = getMessageTimestamp(channel.lastMessage);
 
-                    return (
-                        <div
-                            key={channel.id}
-                            onClick={() => onSelect(channel)}
-                            className={`flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                                isMobile 
-                                    ? 'p-4 active:bg-zinc-200 dark:active:bg-zinc-700' 
-                                    : 'p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                            } ${
-                                isSelected
-                                    ? 'bg-teal-100 dark:bg-teal-800 text-teal-900 dark:text-teal-100'
-                                    : ''
-                            }`}
-                        >
-                            <div className='flex-1 min-w-0'>
-                                <div className='flex justify-between items-baseline'>
-                                    <p className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
-                                        isMobile ? 'text-base' : 'text-sm'
-                                    }`}>
-                                        <UserCard user={user} />
-                                    </p>
-                                    {timestamp && (
-                                        <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
-                                            isMobile ? 'text-sm' : 'text-xs'
+                        return (
+                            <div
+                                key={channel.id}
+                                onClick={() => onSelect(channel)}
+                                className={`flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+                                    isMobile 
+                                        ? 'p-4 active:bg-zinc-200 dark:active:bg-zinc-700' 
+                                        : 'p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                                } ${
+                                    isSelected
+                                        ? 'bg-teal-100 dark:bg-teal-800 text-teal-900 dark:text-teal-100'
+                                        : ''
+                                }`}
+                            >
+                                <div className='flex-1 min-w-0'>
+                                    <div className='flex justify-between items-baseline'>
+                                        <p className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
+                                            isMobile ? 'text-base' : 'text-sm'
                                         }`}>
-                                            {timestamp}
-                                        </span>
-                                    )}
+                                            <UserCard user={user} />
+                                        </p>
+                                        {timestamp && (
+                                            <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
+                                                isMobile ? 'text-sm' : 'text-xs'
+                                            }`}>
+                                                {timestamp}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p
+                                        className={`truncate ${
+                                            channel.lastMessage?.content
+                                                ? 'text-zinc-600 dark:text-zinc-400'
+                                                : 'text-zinc-400 dark:text-zinc-500 italic'
+                                        } ${isMobile ? 'text-sm' : 'text-sm'}`}
+                                    >
+                                        {lastMessageText}
+                                    </p>
                                 </div>
-                                <p
-                                    className={`truncate ${
-                                        channel.lastMessage?.content
-                                            ? 'text-zinc-600 dark:text-zinc-400'
-                                            : 'text-zinc-400 dark:text-zinc-500 italic'
-                                    } ${isMobile ? 'text-sm' : 'text-sm'}`}
-                                >
-                                    {lastMessageText}
-                                </p>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                )}
             </div>
         </div>
     );

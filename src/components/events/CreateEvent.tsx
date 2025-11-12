@@ -6,10 +6,12 @@ import UniversalDatePicker from '@/components/DatePicker';
 import MapDisplay from '@/components/Map';
 import Button from '@/components/common/Button';
 import { useCreateEvent } from '@/shared/api/mutations/events';
+import { useAuth } from '@/contexts/useAuth';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { user } = useAuth();
 
     const createEvent = useCreateEvent({
         onSuccess: () => {
@@ -163,6 +165,15 @@ export default function CreateEvent() {
         setErrorMessages([]);
     };
 
+    const handleUseProfileLocation = () => {
+        if (user?.location) {
+            setLocation({
+                regionID: user.location.regionID || null,
+                name: user.location.name || null
+            });
+        }
+    };
+
     const onSubmit = async () => {
         setErrorMessages([]);
 
@@ -293,13 +304,33 @@ export default function CreateEvent() {
                         The &nbsp;<u>EXACT</u>&nbsp; event location will be
                         visible to all participants.
                     </p>
+                    {user?.location?.regionID && (
+                        <div className='mb-3'>
+                            <Button
+                                type='button'
+                                onClick={handleUseProfileLocation}
+                                variant='secondary'
+                                className='text-sm'
+                            >
+                                📍 Use My Profile Location
+                                {user.location.name && (
+                                    <span className='ml-1 opacity-75'>
+                                        ({user.location.name})
+                                    </span>
+                                )}
+                            </Button>
+                        </div>
+                    )}
                     <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
                         <MapDisplay
                             edit={true}
+                            regionID={location?.regionID}
                             onLocationChange={(data) =>
                                 setLocation({
                                     regionID: data.placeID,
-                                    name: data.name
+                                    name: data.name,
+                                    latitude: data?.coordinates.latitude,
+                                    longitude: data?.coordinates.longitude
                                 })
                             }
                             width='100%'

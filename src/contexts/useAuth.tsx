@@ -6,6 +6,7 @@ import { isJwt } from '@/shared/constants';
 import { setAuthToken } from '@/shared/api/httpClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiMutate, apiGet } from '@/shared/api/apiClient';
+import { clearAlerts } from '@/components/common/alertBus';
 
 const AUTH_STORAGE_KEY = 'web_auth_state';
 
@@ -24,7 +25,9 @@ type AuthContextType = {
     register: (
         username: string,
         email: string,
-        password: string
+        password: string,
+        inviteToken: string,
+        emailToken?: string
     ) => Promise<any>;
     updateUser: (updated: Partial<UserDTO>) => void;
 };
@@ -54,11 +57,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (payload.token && isJwt(payload.token)) {
                 return Promise.resolve({ token: payload.token, user: { username: '' } });
             }
+
+            if (payload.token) {
+                return apiMutate<LoginData, { token: string }>('/users/login', 'post', { token: payload.token });
+            }
+
             return apiMutate<LoginData, { username?: string; password?: string }>('/users/login', 'post', { username: payload.username, password: payload.password });
         }
     });
 
-    const registerMutation = useMutation<any, any, { username: string; email: string; password: string }>({
+    const registerMutation = useMutation<any, any, { username: string; email: string; password: string; inviteToken: string; emailToken?: string }>({
         mutationFn: (payload) => apiMutate('/users/register', 'post', payload)
     });
 
@@ -97,8 +105,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         }
         catch (error: any) {
-            const message = error?.message || error?.response?.data?.message;
-            setErrorMessage(typeof message === 'string' ? message : 'Login failed. Please try again.');
+            let message = 'Login failed. Please try again.';
+            if (Array.isArray(error) && error.length) message = String(error[0]);
+            else if (typeof error === 'string') message = error;
+            else if (error?.response?.data?.message) message = error.response.data.message;
+            else if (error?.message) message = error.message;
+
+            setErrorMessage(message);
             console.error('Login failed:', error);
             localStorage.removeItem(AUTH_STORAGE_KEY);
             setAuthState(null);
@@ -134,19 +147,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(true);
             try {
                 const url = new URL(window.location.href);
-                const tok = url.searchParams.get('token');
-                const path = url.pathname;
+                const tokenFromQuery = url.searchParams.get('token');
+                const pathName = url.pathname;
 
                 const isPasswordFlow =
-                    path === '/reset-password' || path === '/forgot-password';
+                    pathName === '/reset-password' || pathName === '/forgot-password';
 
-                if (tok && !isPasswordFlow) {
-                    window.history.replaceState({}, '', path);
-                    await loginHandler({ token: tok });
+                if (tokenFromQuery && !isPasswordFlow) {
+                    try {
+                        await loginHandler({ token: tokenFromQuery });
+                        url.searchParams.delete('token');
+                        const remainingSearch = url.searchParams.toString();
+                        const nextUrl = remainingSearch ? `${pathName}?${remainingSearch}` : pathName;
+                        window.history.replaceState({}, '', nextUrl);
+                    }
+                    catch (err) {
+                        console.error('Token login failed:', err);
+                    }
                 }
 
                 const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                if (stored && !tok) {
+                if (stored) {
                     const cached = JSON.parse(stored) as AuthState;
                     if (cached.token) {
                         setAuthState(cached);
@@ -183,15 +204,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserProfile(null);
         dispatch(updateAuth({} as any));
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        clearAlerts();
     };
 
     const signUpHandler = async (
         username: string,
         email: string,
-        password: string
+        password: string,
+        inviteToken: string,
+        emailToken?: string
     ) => {
+        if (!inviteToken) {
+            throw new Error('Invite token is required.');
+        }
         try {
-            const res = await registerMutation.mutateAsync({ username, email, password });
+            const payload: any = { username, email, password, inviteToken };
+            if (emailToken) {
+                payload.emailToken = emailToken;
+            }
+            const res = await registerMutation.mutateAsync(payload);
 
             if (res?.token) {
                 return loginHandler({ username, password });
@@ -201,7 +232,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         }
         catch (error: any) {
-            const msg = error?.response?.data?.message || 'Sign-up failed.';
+            let msg = 'Sign-up failed.';
+            if (Array.isArray(error) && error.length) msg = String(error[0]);
+            else if (typeof error === 'string') msg = error;
+            else if (error?.response?.data?.message) msg = error.response.data.message;
+            else if (error?.message) msg = error.message;
+
             throw new Error(msg);
         }
     };

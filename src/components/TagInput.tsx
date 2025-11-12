@@ -13,11 +13,13 @@ interface Tag {
 interface TagInputProps {
     onTagsChange: (tags: Tag[]) => void;
     initialTags?: string[];
+    className?: string;
 }
 
 const TagInput: React.FC<TagInputProps> = ({
     onTagsChange,
-    initialTags = []
+    initialTags = [],
+    className
 }) => {
     const [currentTagInput, setCurrentTagInput] = useState('');
     const [selectedTags, setSelectedTags] = useState<Tag[]>(() =>
@@ -169,6 +171,7 @@ const TagInput: React.FC<TagInputProps> = ({
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 handleAddTag();
             }
             else if (e.key === 'Escape') {
@@ -182,7 +185,7 @@ const TagInput: React.FC<TagInputProps> = ({
     );
 
     return (
-        <div className='w-full space-y-3'>
+        <div className={`w-full space-y-3 ${className ? className : ''}`}>
             <label className='text-sm font-semibold'>Tags</label>
             <div className='flex items-center gap-2'>
                 <input
@@ -196,6 +199,7 @@ const TagInput: React.FC<TagInputProps> = ({
                     autoComplete='off'
                 />
                 <Button
+                    type="button"
                     onClick={handleAddTag}
                     disabled={!currentTagInput.trim() || isLoading}
                 >

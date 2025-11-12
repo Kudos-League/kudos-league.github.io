@@ -22,9 +22,14 @@ const Handshakes: React.FC<HandshakesProps> = ({
     showPostDetails,
     onHandshakeDeleted
 }) => {
-    const visibleHandshakes = showAll ? handshakes : handshakes.slice(0, 2);
+    // Filter out cancelled handshakes
+    const activeHandshakes = handshakes.filter(
+        handshake => handshake.status !== 'cancelled'
+    );
+    
+    const visibleHandshakes = showAll ? activeHandshakes : activeHandshakes.slice(0, 2);
 
-    if (!handshakes.length) {
+    if (!activeHandshakes.length) {
         return <p className='text-sm text-gray-500'>Nothing yet!</p>;
     }
 
@@ -36,7 +41,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     (<HandshakeCard
                         key={handshake.id}
                         handshake={handshake}
-                        userID={handshake.post.senderID}
+                        userID={currentUserId}
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
@@ -45,14 +50,14 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     (<HandshakeCard
                         key={handshake.id}
                         handshake={handshake}
-                        userID={handshake.post.senderID}
+                        userID={currentUserId}
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
                     />)
             ))}
 
-            {handshakes.length > 2 && !showAll && (
+            {activeHandshakes.length > 2 && !showAll && (
                 <Button
                     onClick={onShowAll}
                     className='mt-2 text-sm hover:underline'

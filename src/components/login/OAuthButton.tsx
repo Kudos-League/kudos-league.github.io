@@ -9,11 +9,19 @@ const styles: Record<Provider, { bg: string; label: string; text: string }> = {
     google: { bg: '!bg-[#4285F4]', label: 'Login with Google', text: 'G' }
 };
 
-export default function OAuthButton({ provider }: { provider: Provider }) {
+export default function OAuthButton({ provider, inviteToken, emailToken }: { provider: Provider; inviteToken?: string; emailToken?: string }) {
     const { bg, label, text } = styles[provider];
 
     const handle = () => {
-        const url = `${getEndpointUrl()}/users/${provider}`;
+        const params = new URLSearchParams();
+        if (inviteToken && inviteToken.trim()) {
+            params.set('inviteToken', inviteToken.trim());
+        }
+        if (emailToken && emailToken.trim()) {
+            params.set('emailToken', emailToken.trim());
+        }
+        const query = params.toString();
+        const url = `${getEndpointUrl()}/users/${provider}${query ? `?${query}` : ''}`;
         window.location.href = url;
     };
 

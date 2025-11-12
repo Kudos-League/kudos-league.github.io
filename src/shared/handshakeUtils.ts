@@ -8,6 +8,8 @@ export type HandshakeStage = {
     isParticipant: boolean;
     canAccept: boolean;
     canUndoAccept: boolean;
+    canCancel: boolean;
+    canComplete: boolean;
     postIsPast: boolean;
     userIsItemReceiver: boolean;
     otherUserID?: number;
@@ -41,20 +43,45 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
 
     const postIsPast = !!handshake?.post?.isPast;
 
-    const canAccept = !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID === currentUserId;
+    const canAccept = (() => {
+        return !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && handshake?.post?.type &&
+        handshake?.post?.type === 'gift' ? postSenderID === currentUserId : receiverID === currentUserId
+    })();
+
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
+    const canCancel =
+        !postIsPast &&
+        status !== 'cancelled' &&
+        currentUserId !== undefined &&
+        ((senderID !== undefined && senderID === currentUserId) ||
+            (postSenderID !== undefined && postSenderID === currentUserId) ||
+            (receiverID !== undefined && receiverID === currentUserId));
 
     const canUndoAccept = (() => {
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && postSenderID === currentUserId;
+            // return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
+            return false;
         }
         if (handshake.post.type === 'gift') {
-            return receiverID !== undefined && receiverID === currentUserId;
+            return status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
         }
         return false;
     })();
+
+    const canComplete = (() => {
+        if (status !== 'accepted') return false;
+        if (!handshake?.post?.type || currentUserId === undefined) return false;
+        if (handshake.post.type === 'request') {
+            return postSenderID !== undefined && receiverID === currentUserId;
+        }
+        if (handshake.post.type === 'gift') {
+            return receiverID !== undefined && receiverID !== currentUserId;
+        }
+        return false;
+    })();
+
 
     let otherUserID: number | undefined;
     if (currentUserId !== undefined) {
@@ -72,8 +99,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         isParticipant,
         canAccept,
         canUndoAccept,
+        canCancel,
         postIsPast,
         userIsItemReceiver,
-        otherUserID
+        otherUserID,
+        canComplete
     };
 }

@@ -11,8 +11,9 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
-// import Alert from '@/components/common/Alert';
+import { apiMutate } from '@/shared/api/apiClient';
 import {
     useUpdatePost,
     useLikePost,
@@ -67,6 +68,7 @@ export default function PostDetails(props: Props) {
     } = props;
 
     const { user, token } = useAuth();
+    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
 
     const updatePostMut = useUpdatePost();
     const likeMut = useLikePost();
@@ -88,13 +90,11 @@ export default function PostDetails(props: Props) {
     const [showAllHandshakes, setShowAllHandshakes] = useState(false);
     const [creatingHandshake, setCreatingHandshake] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(
-        null
-    );
+    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(null);
     const [selectedChannel] = useState<ChannelDTO | null>(null);
-
-    // Add this helper function at the top of your PostDetails component,
-    // right after the imports and before the main component function:
+    const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
+    const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
+    const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -103,7 +103,6 @@ export default function PostDetails(props: Props) {
         if (!userId || !handshakes?.length) return handshakes || [];
 
         return [...handshakes].sort((a, b) => {
-            // Check if handshake belongs to current user (as sender or receiver)
             const aIsUser =
                 a.senderID === userId ||
                 a.receiverID === userId ||
@@ -113,11 +112,9 @@ export default function PostDetails(props: Props) {
                 b.receiverID === userId ||
                 b.recipientID === userId;
 
-            // User's handshakes first
             if (aIsUser && !bIsUser) return -1;
             if (!aIsUser && bIsUser) return 1;
 
-            // If both or neither are user's, sort by creation date (newest first)
             return (
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
@@ -175,7 +172,7 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    const handleSubmitHandshake = () => {
+    const handleSubmitHandshake = async () => {
         if (!token) {
             console.error('No token. Please register or log in.');
             return;
@@ -186,10 +183,60 @@ export default function PostDetails(props: Props) {
             return;
         }
 
-        startDMChat(postDetails.sender?.id || 0);
+        setCreatingHandshake(true);
+
+        try {
+            const handshakeData: CreateHandshakeDTO = {
+                postID: postDetails.id,
+                senderID: user?.id || 0,
+                receiverID: postDetails.sender?.id || 0,
+                type: postDetails.type,
+                status: 'new'
+            };
+
+            const newHandshake = await createHsMut.mutateAsync(handshakeData);
+
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+                return {
+                    ...prevDetails,
+                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                } as PostDTO;
+            });
+
+            setPendingRecipientID(postDetails.sender?.id || null);
+            setIsHandshakeAlreadyCreated(true);
+            setHandshakeSuccessModal(true);
+            fetchPostDetails?.(postDetails.id);
+        }
+        catch (error) {
+            console.error('Error creating handshake:', error);
+            alert('Failed to create handshake. Please try again.');
+        }
+        finally {
+            setCreatingHandshake(false);
+        }
+    };
+
+    const handleOpenChatFromSuccess = () => {
+        setHandshakeSuccessModal(false);
+        setIsChatOpen(true);
+    };
+
+    const handleCloseChatModal = (open: boolean) => {
+        setIsChatOpen(open);
+        if (!open && isHandshakeAlreadyCreated) {
+            setIsHandshakeAlreadyCreated(false);
+        }
     };
 
     const handleMessageSent = async () => {
+        if (isHandshakeAlreadyCreated) {
+            setIsChatOpen(false);
+            setIsHandshakeAlreadyCreated(false);
+            return;
+        }
+
         if (!token || !postDetails) {
             console.error('Missing required data to create handshake:', {
                 token: !!token,
@@ -217,14 +264,13 @@ export default function PostDetails(props: Props) {
             const handshakeData: CreateHandshakeDTO = {
                 postID: postDetails.id,
                 senderID: user?.id || 0,
-                receiverID: recipientId.toString(),
+                receiverID: recipientId,
                 type: postDetails.type,
                 status: 'new'
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } =
-                await createHsMut.mutateAsync(handshakeData);
+            const newHandshake = await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO | undefined) => {
                 if (!prevDetails) return prevDetails as any;
@@ -250,6 +296,11 @@ export default function PostDetails(props: Props) {
     };
 
     const handleChannelCreated = async (channel: ChannelDTO) => {
+        if (isHandshakeAlreadyCreated) {
+            setIsHandshakeAlreadyCreated(false);
+            return;
+        }
+
         if (!token || !postDetails) {
             console.error('Missing required data to create handshake:', {
                 token: !!token,
@@ -277,14 +328,13 @@ export default function PostDetails(props: Props) {
             const handshakeData: CreateHandshakeDTO = {
                 postID: postDetails.id,
                 senderID: user?.id || 0,
-                receiverID: recipientId.toString(),
+                receiverID: recipientId,
                 type: postDetails.type,
                 status: 'new'
             };
 
             console.log('Sending handshake data:', handshakeData);
-            const { data: newHandshake } =
-                await createHsMut.mutateAsync(handshakeData);
+            const newHandshake = await createHsMut.mutateAsync(handshakeData);
 
             setPostDetails((prevDetails: PostDTO | undefined) => {
                 if (!prevDetails) return prevDetails as any;
@@ -332,7 +382,7 @@ export default function PostDetails(props: Props) {
                     ? {
                         ...msg,
                         deletedAt: new Date().toISOString(),
-                        content: `[deleted]: ${msg.content}`
+                        content: `[deleted message]`
                     }
                     : msg
             );
@@ -385,7 +435,9 @@ export default function PostDetails(props: Props) {
         if (data.coordinates) {
             const locationData: LocationDTO = {
                 name: data.name,
-                regionID: data.placeID
+                regionID: data.placeID,
+                latitude: data.coordinates.latitude,
+                longitude: data.coordinates.longitude
             };
             setEditData({ ...editData, location: locationData });
         }
@@ -440,6 +492,64 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const handleAcceptHighestKudos = async () => {
+        if (!postDetails || !user) return;
+        
+        const pendingHandshakes = (postDetails.handshakes || []).filter(
+            (h: any) => h.status === 'new'
+        );
+
+        if (pendingHandshakes.length === 0) {
+            alert('No pending handshakes to accept.');
+            return;
+        }
+
+        const highestKudosHandshake = pendingHandshakes.reduce((highest, current) => {
+            const currentSender = current.sender || { kudos: 0 };
+            const highestSender = highest.sender || { kudos: 0 };
+            return (currentSender.kudos || 0) > (highestSender.kudos || 0) ? current : highest;
+        });
+
+        if (!highestKudosHandshake) {
+            alert('Could not find handshake to accept.');
+            return;
+        }
+
+        const confirmMessage = `Accept handshake from ${highestKudosHandshake.sender?.username || 'user'} (${highestKudosHandshake.sender?.kudos || 0} Kudos)?`;
+        if (!confirm(confirmMessage)) return;
+
+        setAcceptingHighestKudos(true);
+
+        try {
+            await apiMutate(`/handshakes/${highestKudosHandshake.id}`, 'patch', { status: 'accepted' });
+            
+            setPostDetails((prev: PostDTO) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    handshakes: (prev.handshakes || []).map((h: any) =>
+                        h.id === highestKudosHandshake.id
+                            ? { ...h, status: 'accepted' }
+                            : h
+                    )
+                };
+            });
+
+            alert(`Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`);
+            
+            if (fetchPostDetails) {
+                fetchPostDetails(postDetails.id);
+            }
+        }
+        catch (err) {
+            console.error('Failed to accept handshake:', err);
+            alert('Failed to accept handshake. Please try again.');
+        }
+        finally {
+            setAcceptingHighestKudos(false);
+        }
+    };
+
     const canSeeExactLocation = (() => {
         if (!postDetails || !user?.id) return false;
         const isPostOwner = user.id === postDetails.sender?.id;
@@ -462,6 +572,61 @@ export default function PostDetails(props: Props) {
     }
 
     if (error) {
+        const isBlockedUser = postDetails?.sender?.id && 
+            (blockedUsers ?? []).includes(postDetails.sender.id);
+        
+        if (isBlockedUser && postDetails?.sender) {
+            return (
+                <div className='text-center mt-20 max-w-md mx-auto px-4'>
+                    <div className='bg-gray-100 dark:bg-gray-800 rounded-lg p-6 border border-gray-300 dark:border-gray-700'>
+                        <div className='mb-4'>
+                            <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center'>
+                                <svg className='w-8 h-8 text-red-600 dark:text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' />
+                                </svg>
+                            </div>
+                            <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                                Post from Blocked User
+                            </h3>
+                            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                This post is from <span className='font-semibold'>{postDetails.sender.displayName || postDetails.sender.username}</span>, 
+                                whom you have blocked. You cannot view their content.
+                            </p>
+                        </div>
+                        
+                        <div className='flex flex-col gap-2'>
+                            <Button
+                                onClick={async () => {
+                                    if (blockingLoading || !postDetails.sender?.id) return;
+                                    try {
+                                        await unblock(postDetails.sender.id);
+                                        if (fetchPostDetails && postDetails?.id) {
+                                            setTimeout(() => fetchPostDetails(postDetails.id), 300);
+                                        }
+                                    }
+                                    catch (err) {
+                                        console.error('Failed to unblock user:', err);
+                                    }
+                                }}
+                                disabled={blockingLoading}
+                                variant='primary'
+                                className='w-full justify-center'
+                            >
+                                {blockingLoading ? 'Unblocking...' : 'Unblock User'}
+                            </Button>
+                            <Button
+                                onClick={() => window.history.back()}
+                                variant='secondary'
+                                className='w-full justify-center'
+                            >
+                                Go Back
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
@@ -478,6 +643,12 @@ export default function PostDetails(props: Props) {
     }
 
     if (!postDetails) return null;
+
+    const isPostOwner = user?.id === postDetails.sender?.id;
+    const hasPendingHandshakes = (postDetails.handshakes || []).some(
+        (h: any) => h.status === 'new'
+    );
+    const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
     
     return (
         <div className='max-w-4xl mx-auto p-4'>
@@ -573,7 +744,6 @@ export default function PostDetails(props: Props) {
                 <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100'>
                     <h3 className='text-lg font-semibold'>Edit Post</h3>
 
-                    {/* Title */}
                     <div>
                         <label className='block text-sm font-medium mb-1'>
                             Title
@@ -591,7 +761,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Description */}
                     <div>
                         <label className='block text-sm font-medium mb-1'>
                             Description
@@ -610,7 +779,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Tags */}
                     <div>
                         <TagInput
                             initialTags={editData.tags}
@@ -618,7 +786,6 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    {/* Location */}
                     <div>
                         <label className='block text-sm font-medium mb-2'>
                             Location
@@ -654,7 +821,6 @@ export default function PostDetails(props: Props) {
                         </p>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className='flex gap-3 pt-4'>
                         <Button variant='success' onClick={handleSaveEdit}>
                             Save Changes
@@ -698,40 +864,35 @@ export default function PostDetails(props: Props) {
                 </div>
             )}
 
-            {/* Comments */}
-            <div className='shadow p-4 rounded mb-6'>
-                <MessageList
-                    title='Comments'
-                    messages={postDetails.messages || []}
-                    callback={(response) =>
-                        setPostDetails((prev: PostDTO) =>
-                            prev
-                                ? {
-                                    ...prev,
-                                    messages: [
-                                        ...(prev.messages || []),
-                                        response
-                                    ]
-                                }
-                                : prev
-                        )
-                    }
-                    postID={postDetails?.id}
-                    showSendMessage={!!user}
-                    allowDelete={!!user}
-                    allowEdit={!!user}
-                    onMessageUpdate={handleMessageUpdate}
-                    onMessageDelete={handleMessageDelete}
-                />
-            </div>
-
             {/* Handshakes */}
             <div className='shadow p-4 rounded mb-6'>
-                <h2 className='text-lg font-bold mb-2'>
-                    {postDetails.type === 'request'
-                        ? 'Offered By'
-                        : 'Requested By'}
-                </h2>
+                <div className='flex items-center justify-between mb-4'>
+                    <h2 className='text-lg font-bold'>
+                        {postDetails.type === 'request'
+                            ? 'Offered By'
+                            : 'Requested By'}
+                    </h2>
+                    
+                    {showAcceptHighestKudosButton && (
+                        <Button
+                            onClick={handleAcceptHighestKudos}
+                            disabled={acceptingHighestKudos}
+                            variant='success'
+                            className='flex items-center gap-2'
+                        >
+                            {acceptingHighestKudos ? (
+                                <>
+                                    <span className='animate-spin'>⏳</span>
+                                    Accepting...
+                                </>
+                            ) : (
+                                <>
+                                    ⭐ Accept Highest Kudos
+                                </>
+                            )}
+                        </Button>
+                    )}
+                </div>
 
                 <Handshakes
                     handshakes={sortHandshakesWithUserFirst(
@@ -761,36 +922,66 @@ export default function PostDetails(props: Props) {
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails={false}
                 />
-                {/* Create handshake button if not the sender */}
+
+
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some(
-                        (h) => h.sender?.id === user?.id
-                    ) && (
-                    <div className='mt-4 flex justify-center'>
-                        <Button
-                            onClick={handleSubmitHandshake}
-                            disabled={creatingHandshake}
-                        >
-                            {creatingHandshake
-                                ? 'Creating...'
-                                : postDetails.type === 'gift'
-                                    ? 'Request This'
-                                    : 'Gift This'}
-                        </Button>
-                    </div>
-                )}
+                    postDetails.handshakes?.map((h: any) => h.senderID !== user?.id).every((h: any) => h.status === 'cancelled') &&
+                    (
+                        <div className='mt-4 flex justify-center'>
+                            <Button
+                                onClick={handleSubmitHandshake}
+                                disabled={creatingHandshake}
+                            >
+                                {creatingHandshake
+                                    ? 'Creating...'
+                                    : postDetails.type === 'gift'
+                                        ? 'Request This'
+                                        : 'Gift This'}
+                            </Button>
+                        </div>
+                    )
+                }
+
+            </div>
+
+
+            {/* Comments */}
+            <div className='p-4 mb-6'>
+                <MessageList
+                    title='Comments'
+                    messages={postDetails.messages || []}
+                    callback={(response) =>
+                        setPostDetails((prev: PostDTO) =>
+                            prev
+                                ? {
+                                    ...prev,
+                                    messages: [
+                                        ...(prev.messages || []),
+                                        response
+                                    ]
+                                }
+                                : prev
+                        )
+                    }
+                    postID={postDetails?.id}
+                    showSendMessage={!!user}
+                    allowDelete={!!user}
+                    allowEdit={!!user}
+                    onMessageUpdate={handleMessageUpdate}
+                    onMessageDelete={handleMessageDelete}
+                />
             </div>
 
             {/* Chat Modal */}
             {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
-                    setIsChatOpen={setIsChatOpen}
+                    setIsChatOpen={handleCloseChatModal}
                     recipientID={pendingRecipientID || 0}
                     selectedChannel={selectedChannel}
                     onChannelCreated={handleChannelCreated}
-                    initialMessage="Hello! I've created a handshake for your post. Let's coordinate the details."
+                    initialMessage=""
                     onMessageSent={handleMessageSent}
                 />
             )}
@@ -819,6 +1010,46 @@ export default function PostDetails(props: Props) {
                             </Button>
                             <Button onClick={handleReport} variant='danger'>
                                 Submit
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Handshake Success Modal */}
+            {handshakeSuccessModal && (
+                <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4'>
+                    <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
+                        <div className='text-center mb-4'>
+                            <div className='mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4'>
+                                <svg className='h-8 w-8 text-green-600 dark:text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                </svg>
+                            </div>
+                            <h2 className='text-2xl font-bold mb-3'>Handshake Created!</h2>
+                            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                Your handshake has been successfully created. The post owner has been notified.
+                            </p>
+                            <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
+                                <p className='text-xs text-blue-800 dark:text-blue-200'>
+                                    💡 You can message the post owner now to coordinate details, or do it later from your handshakes page.
+                                </p>
+                            </div>
+                        </div>
+                        <div className='flex flex-col gap-2'>
+                            <Button
+                                onClick={handleOpenChatFromSuccess}
+                                variant='primary'
+                                className='w-full justify-center'
+                            >
+                                💬 Message Post Owner
+                            </Button>
+                            <Button
+                                onClick={() => setHandshakeSuccessModal(false)}
+                                variant='secondary'
+                                className='w-full justify-center'
+                            >
+                                I&apos;ll Message Later
                             </Button>
                         </div>
                     </div>

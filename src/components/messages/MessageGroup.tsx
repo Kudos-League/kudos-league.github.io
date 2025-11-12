@@ -12,6 +12,13 @@ interface MessageGroupProps {
     onDelete?: (m: MessageDTO) => void;
     canDelete?: (m: MessageDTO) => boolean;
     findMessageById?: (id: number) => MessageDTO | undefined;
+    onEdit?: (m: MessageDTO) => void;
+    canEdit?: (m: MessageDTO) => boolean;
+    editingMessageId?: number | null;
+    editContent?: string;
+    onEditChange?: (content: string) => void;
+    onEditSave?: (messageId: number) => void;
+    onEditCancel?: () => void;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
@@ -22,7 +29,14 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     onReply,
     onDelete,
     canDelete,
-    findMessageById
+    findMessageById,
+    onEdit,
+    canEdit,
+    editingMessageId,
+    editContent,
+    onEditChange,
+    onEditSave,
+    onEditCancel
 }) => {
     if (messages.length === 0) return null;
 
@@ -36,7 +50,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         />
     );
 
-    // TODO: Why is createdAt null???
     const createdAt = messages[0].createdAt
         ? new Date(messages[0].createdAt)
         : messages[0].updatedAt
@@ -47,21 +60,9 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
             ? createdAt.toLocaleString()
             : 'Unknown time';
 
-    // console.log('time', messages.map(m => m.createdAt), timestamp);
-
     return (
-        <div className='mb-4'>
-            {(!isOwn || isPublic) && (
-                <div
-                    className={`text-sm font-semibold mb-1 text-zinc-500 dark:text-zinc-400 ${
-                        isOwn ? 'text-right mr-1' : 'text-left ml-1'
-                    }`}
-                >
-                    {AuthorCard}
-                </div>
-            )}
-
-            {messages.map((msg) => (
+        <div className='mb-1 overflow-hidden'>
+            {messages.map((msg, idx) => (
                 <MessageBubble
                     key={msg.id}
                     message={msg}
@@ -75,12 +76,20 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                             ? (findMessageById(msg.replyToMessageID) ?? null)
                             : null
                     }
+                    onEdit={onEdit}
+                    canEdit={canEdit ? canEdit(msg) : false}
+                    isEditing={editingMessageId === msg.id}
+                    editContent={editContent}
+                    onEditChange={onEditChange}
+                    onEditSave={onEditSave}
+                    onEditCancel={onEditCancel}
+                    showSenderName={!isOwn && idx === 0} // Show sender name only on first message in group (WhatsApp style)
                 />
             ))}
 
             <div
                 className={`text-xs text-zinc-400 dark:text-zinc-500 opacity-70 mt-1 ${
-                    isOwn ? 'text-right' : 'text-left'
+                    isOwn ? 'text-right mr-1' : 'text-left ml-1'
                 }`}
             >
                 {timestamp}

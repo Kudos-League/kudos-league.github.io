@@ -25,6 +25,9 @@ type Props<T extends FieldValues> = {
     onValueChange?: (value: string | File[]) => void;
     valueTransformer?: (value: string) => any;
     htmlInputType?: string;
+    noMargin?: boolean;
+    showLabel?: boolean;
+    className?: string;
 };
 
 export default function Input<T extends FieldValues>({
@@ -42,6 +45,9 @@ export default function Input<T extends FieldValues>({
     onValueChange,
     valueTransformer,
     htmlInputType,
+    noMargin = false,
+    showLabel = true,
+    className,
     ...props
 }: Props<T>) {
     const defaultValue: PathValue<T, Path<T>> = type === 'dropdown'
@@ -79,7 +85,7 @@ export default function Input<T extends FieldValues>({
 
     if (type === 'dropdown') {
         return (
-            <div className='my-2'>
+            <div className={noMargin ? undefined : 'my-2'}>
                 <label className='block mb-1 text-sm font-medium'>
                     {label}
                 </label>
@@ -97,9 +103,11 @@ export default function Input<T extends FieldValues>({
         );
     }
 
+    const containerClass = noMargin ? undefined : 'my-2';
+
     return (
-        <div className='my-2'>
-            <label htmlFor={name} className='block mb-1 text-sm font-medium'>
+        <div className={containerClass + (className ? ` ${className}` : '')}>
+            <label htmlFor={name} className='block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200'>
                 {label}
             </label>
             {multiline ? (
@@ -114,7 +122,7 @@ export default function Input<T extends FieldValues>({
                         onValueChange?.(transformed as string);
                     }}
                     onBlur={field.onBlur}
-                    className='w-full border rounded px-3 py-2'
+                    className='w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent'
                     placeholder={placeholder}
                     rows={4}
                 />
@@ -131,7 +139,7 @@ export default function Input<T extends FieldValues>({
                         onValueChange?.(transformed as string);
                     }}
                     onBlur={field.onBlur}
-                    className='w-full border rounded px-3 py-2'
+                    className='w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent'
                     placeholder={placeholder}
                     multiple={multipleFiles}
                 />

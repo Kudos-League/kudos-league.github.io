@@ -8,7 +8,7 @@ import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { usePublicChannels } from '@/shared/api/queries/messages';
-import { useDeleteMessage } from '@/shared/api/mutations/messages';
+import { useDeleteMessage, useUpdateMessage } from '@/shared/api/mutations/messages';
 import Button from '@/components/common/Button';
 
 type Props = {
@@ -27,11 +27,15 @@ export default function Chat({ channelType }: Props) {
     const [searchQuery] = useState('');
     const [showChatOnMobile, setShowChatOnMobile] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [isLoadingChannels, setIsLoadingChannels] = useState(false);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     const channelsQuery = usePublicChannels();
     const location = useLocation();
+    const deleteMessageMutation = useDeleteMessage();
+    const updateMessageMutation = useUpdateMessage();
 
     const routeIsDM = location.pathname.includes('/dms') || Boolean(targetUserID);
     const isDMFromProp = channelType === 'dm';
@@ -53,6 +57,8 @@ export default function Chat({ channelType }: Props) {
         setSelectedChannel(null);
         setMessages([]);
         setShowChatOnMobile(false);
+        setIsLoadingMessages(false);
+        setIsLoadingChannels(false);
     }, [resolvedIsDM]);
 
     useEffect(() => {
@@ -76,6 +82,7 @@ export default function Chat({ channelType }: Props) {
         }
 
         try {
+            setIsLoadingMessages(true);
             const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
             if (messagesData) setMessages(messagesData);
 
@@ -90,6 +97,7 @@ export default function Chat({ channelType }: Props) {
             console.error('Error selecting channel:', error);
         }
         finally {
+            setIsLoadingMessages(false);
             setPendingChannel(null);
         }
     };
@@ -98,6 +106,7 @@ export default function Chat({ channelType }: Props) {
         if (token && pendingChannel) {
             (async () => {
                 try {
+                    setIsLoadingMessages(true);
                     const channel = pendingChannel;
                     const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
                     if (messagesData) setMessages(messagesData);
@@ -113,6 +122,7 @@ export default function Chat({ channelType }: Props) {
                     console.error('Error processing pending channel selection:', err);
                 }
                 finally {
+                    setIsLoadingMessages(false);
                     setPendingChannel(null);
                 }
             })();
@@ -124,6 +134,7 @@ export default function Chat({ channelType }: Props) {
             if (!(user && token)) return;
 
             try {
+                setIsLoadingChannels(true);
                 const res = await apiGet<any>(`/users/${user.id}`, { params: { dmChannels: true } });
 
                 const formatted = res.dmChannels
@@ -154,14 +165,17 @@ export default function Chat({ channelType }: Props) {
                     const matchedChannel = channelsWithLastMessage.find((channel) => channel.users.some((u: any) => u.id === parsedId));
 
                     if (matchedChannel) {
-                        joinChannel(matchedChannel.id);
-                        setSelectedChannel(matchedChannel);
+                        // Use selectChannel to properly fetch messages and set loading states
+                        await selectChannel(matchedChannel);
                         setShowChatOnMobile(true);
                     }
                 }
             }
             catch (e) {
                 console.error('Failed to load DM channels', e);
+            }
+            finally {
+                setIsLoadingChannels(false);
             }
         };
 
@@ -182,19 +196,56 @@ export default function Chat({ channelType }: Props) {
         setShowChatOnMobile(true);
     };
 
-    const sendMessage = async (text?: string) => {
+    const sendMessage = async (text?: string, replyToId?: number) => {
         if (!text || !text.trim() || !selectedChannel) return;
         if (selectedChannel.type !== 'dm') {
-            await send({ channel: selectedChannel, content: text });
+            await send({ 
+                channel: selectedChannel, 
+                content: text,
+                ...(replyToId ? { replyToMessageID: replyToId } : {})
+            });
         }
         else {
             const receiver = selectedChannel.users.find((u: any) => u.id !== user?.id);
             if (!receiver) return;
-            await send({ receiverID: receiver.id, content: text });
+            await send({ 
+                receiverID: receiver.id, 
+                content: text,
+                ...(replyToId ? { replyToMessageID: replyToId } : {})
+            });
         }
     };
 
-    const deleteMessageMutation = useDeleteMessage();
+    const handleEditMessage = async (messageId: number, content: string) => {
+        if (!content.trim()) return;
+        
+        try {
+            // Find the original message to preserve data
+            const originalMessage = messages.find(m => m.id === messageId);
+            if (!originalMessage) return;
+
+            // Update via API
+            const response = await updateMessageMutation.mutateAsync({
+                id: messageId,
+                content: content.trim()
+            });
+
+            // Update local state with merged data (preserve author info)
+            const updatedMessage: MessageDTO = {
+                ...response,
+                author: response.author || originalMessage.author
+            };
+
+            setMessages((prev) =>
+                prev.map((m) => (m.id === messageId ? updatedMessage : m))
+            );
+        }
+        catch (err) {
+            console.error('Failed to edit message:', err);
+            alert('Failed to edit message. Please try again.');
+        }
+    };
+
     const handleDeleteMessage = async (messageId: number) => {
         try {
             await deleteMessageMutation.mutateAsync(messageId);
@@ -204,8 +255,10 @@ export default function Chat({ channelType }: Props) {
                 return;
             }
 
+            // Mark as deleted but don't expose content
             const enriched = {
                 ...original,
+                content: '', // Clear the content
                 deletedAt: new Date().toISOString()
             } as any;
 
@@ -233,24 +286,14 @@ export default function Chat({ channelType }: Props) {
     }, []);
 
     const pageContainerStyle: React.CSSProperties = pageHeaderHeight > 0
-        ? { height: `calc(100vh - ${pageHeaderHeight}px - 1px)`, boxSizing: 'border-box', overflow: 'hidden' }
+        ? { boxSizing: 'border-box', overflow: 'hidden', height: `100%` }
         : { minHeight: '60vh', boxSizing: 'border-box', overflow: 'hidden' };
 
     return (
-        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
+        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 '>
             <div className='md:hidden w-full h-full min-h-0'>
-                <div className='p-3 flex flex-col h-full min-h-0'>
+                <div className='flex flex-col h-full min-h-0'>
                     <div className='flex items-center justify-between mb-2'>
-                        <div className='text-sm font-semibold'>Messages</div>
-                        <button
-                            onClick={() => setDrawerOpen(true)}
-                            className='rounded-md bg-gray-950/5 p-2 text-sm font-semibold text-gray-900 hover:bg-gray-950/10 dark:bg-white/10 dark:text-white'
-                            aria-label='Open channels'
-                        >
-                            <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                                <path fillRule='evenodd' d='M3 5h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2zm0 4h14a1 1 0 010 2H3a1 1 0 110-2z' clipRule='evenodd' />
-                            </svg>
-                        </button>
                     </div>
                     {!showChatOnMobile ? (
                         isDMView ? (
@@ -260,6 +303,7 @@ export default function Chat({ channelType }: Props) {
                                 searchQuery={searchQuery}
                                 selectedChannel={selectedChannel}
                                 isMobile={true}
+                                isLoading={isLoadingChannels}
                             />
                         ) : (
                             <div className='p-3'>
@@ -287,6 +331,9 @@ export default function Chat({ channelType }: Props) {
                                 onSend={sendMessage}
                                 onBack={() => setShowChatOnMobile(false)}
                                 isMobile={true}
+                                allowEdit={true}
+                                onEdit={handleEditMessage}
+                                isLoading={isLoadingMessages}
                             />
                         </div>
                     )}
@@ -301,6 +348,7 @@ export default function Chat({ channelType }: Props) {
                         searchQuery={searchQuery}
                         selectedChannel={selectedChannel}
                         isMobile={false}
+                        isLoading={isLoadingChannels}
                     />
                 ) : (
                     <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
@@ -325,7 +373,7 @@ export default function Chat({ channelType }: Props) {
                         user={user}
                         channel={selectedChannel}
                         messages={messages}
-                        onSend={(text) => sendMessage(text)}
+                        onSend={(text, replyToId) => sendMessage(text, replyToId)}
                         onBack={() => {
                             if (selectedChannel) leaveChannel(selectedChannel.id);
                             setSelectedChannel(null);
@@ -333,6 +381,9 @@ export default function Chat({ channelType }: Props) {
                         isMobile={false}
                         onDelete={(m) => handleDeleteMessage(m.id)}
                         allowDelete={true}
+                        allowEdit={true}
+                        onEdit={handleEditMessage}
+                        isLoading={isLoadingMessages}
                     />
                 </div>
 

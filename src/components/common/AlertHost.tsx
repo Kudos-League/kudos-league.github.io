@@ -2,20 +2,29 @@
 
 import React, { useEffect, useState } from 'react';
 import Alert from '@/components/common/Alert';
-import { subscribeAlerts, type AlertMsg } from './alertBus';
+import { subscribeAlerts, subscribeAlertClears, type AlertMsg } from './alertBus';
 
 export default function AlertHost() {
     const [queue, setQueue] = useState<Array<AlertMsg & { id: number }>>([]);
 
     useEffect(() => {
         let id = 0;
-        return subscribeAlerts((msg) => {
+        const unsubscribeAlerts = subscribeAlerts((msg) => {
             const next = { ...msg, id: ++id };
             setQueue((q) => [...q, next]);
             setTimeout(() => {
                 setQueue((q) => q.filter((i) => i.id !== next.id));
             }, 4000);
         });
+        const unsubscribeClears = subscribeAlertClears(() => {
+            setQueue([]);
+            id = 0;
+        });
+
+        return () => {
+            unsubscribeAlerts();
+            unsubscribeClears();
+        };
     }, []);
 
     if (queue.length === 0) return null;

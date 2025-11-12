@@ -12,7 +12,7 @@ export default function PostsContainer({
     showHandshakeShortcut?: boolean;
 }) {
     if (!posts || posts.length === 0) {
-        return <Alert type='danger' message='No posts found.' />;
+        return <Alert type='info' message='No posts found.' />;
     }
 
     return (

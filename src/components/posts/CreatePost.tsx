@@ -31,7 +31,7 @@ type FormValues = {
 type Props = { setShowLoginForm: (show: boolean) => void };
 
 export default function CreatePost({ setShowLoginForm }: Props) {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, user } = useAuth();
     const navigate = useNavigate();
     const routerLocation = useLocation();
 
@@ -75,6 +75,15 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         },
         [form]
     );
+
+    const handleUseProfileLocation = () => {
+        if (user?.location) {
+            setLocation({
+                regionID: user.location.regionID || null,
+                name: user.location.name || null
+            });
+        }
+    };
 
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
@@ -293,21 +302,41 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 onTagsChange={handleTagsChange}
             />
 
-            <label className='block text-sm font-semibold mt-4 text-gray-800 dark:text-gray-200'>
-                Location
-            </label>
-            <MapDisplay
-                edit
-                height={300}
-                shouldGetYourLocation
-                onLocationChange={(data) => {
-                    if (data)
-                        setLocation({
-                            regionID: data.placeID,
-                            name: data.name
-                        });
-                }}
-            />
+            <div>
+                <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
+                    Location
+                </label>
+                {user?.location?.regionID && (
+                    <div className='mb-3'>
+                        <Button
+                            type='button'
+                            onClick={handleUseProfileLocation}
+                            variant='secondary'
+                            className='text-sm'
+                        >
+                            📍 Use My Profile Location
+                            {user.location.name && (
+                                <span className='ml-1 opacity-75'>
+                                    ({user.location.name})
+                                </span>
+                            )}
+                        </Button>
+                    </div>
+                )}
+                <MapDisplay
+                    edit
+                    height={300}
+                    shouldGetYourLocation
+                    regionID={location?.regionID}
+                    onLocationChange={(data) => {
+                        if (data)
+                            setLocation({
+                                regionID: data.placeID,
+                                name: data.name
+                            });
+                    }}
+                />
+            </div>
 
             <Button
                 type='submit'

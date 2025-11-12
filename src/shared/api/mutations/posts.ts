@@ -4,7 +4,8 @@ import type {
     CreatePostDTO,
     PostDTO,
     CreateHandshakeDTO,
-    UpdatePostDTO
+    UpdatePostDTO,
+    HandshakeDTO
 } from '@/shared/api/types';
 import { pushAlert } from '@/components/common/alertBus';
 
@@ -139,13 +140,9 @@ export function useReportPost() {
 
 export function useCreateHandshake() {
     const qc = useQueryClient();
-    return useMutation<{ data: any }, Error, CreateHandshakeDTO>({
+    return useMutation<HandshakeDTO, Error, CreateHandshakeDTO>({
         mutationFn: (payload) =>
-            apiMutate<{ data: any }, CreateHandshakeDTO>(
-                '/handshakes',
-                'post',
-                payload
-            ),
+            apiMutate<HandshakeDTO, CreateHandshakeDTO>('/handshakes', 'post', payload),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['posts', 'infinite'] });

@@ -22,6 +22,17 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
+    // Pass ordering to the API along with other filters
+    const queryFilters = React.useMemo(
+        () => ({
+            ...filters,
+            includeSender: true,
+            orderBy: ordering.type,
+            orderDir: ordering.order
+        }),
+        [filters, ordering]
+    );
+
     const {
         data,
         isLoading,
@@ -29,53 +40,34 @@ export default function PostsInfinite({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = usePostsInfiniteQuery(filters);
+    } = usePostsInfiniteQuery(queryFilters);
 
     const flat = React.useMemo(
         () => data?.pages.flatMap((p) => p.data) ?? [],
         [data]
     );
-    filters.includeSender = true; //Ensure sender is always included
 
+    // Only filter by type, let backend handle sorting
     const visible = React.useMemo(() => {
-        const filtered =
-            activeTab === 'all'
-                ? flat
-                : flat.filter(
-                    (p) =>
-                        p.type ===
-                          (activeTab === 'gifts' ? 'gift' : 'request')
-                );
-
-        const cmp = {
-            date: (a: any, b: any) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            // TODO: replace with real distance sort
-            distance: () => Math.random() - 0.5,
-            kudos: (a: any, b: any) =>
-                (b.sender?.kudos ?? 0) - (a.sender?.kudos ?? 0)
-        }[ordering.type];
-
-        return [...filtered].sort((a, b) =>
-            ordering.order === 'asc' ? -cmp(a, b) : cmp(a, b)
+        if (activeTab === 'all') return flat;
+        
+        return flat.filter(
+            (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
         );
-    }, [flat, activeTab, ordering]);
+    }, [flat, activeTab]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {
         const el = sentinelRef.current;
-        if (!el) return;
-
-        if (!hasNextPage) return;
+        if (!el || !hasNextPage) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 const first = entries[0];
-                if (!first?.isIntersecting) return;
-                if (isFetchingNextPage) return;
-                fetchNextPage();
+                if (first?.isIntersecting && !isFetchingNextPage && hasNextPage) {
+                    fetchNextPage();
+                }
             },
             {
                 root: null,
@@ -86,7 +78,7 @@ export default function PostsInfinite({
 
         observer.observe(el);
         return () => observer.disconnect();
-    }, [fetchNextPage, hasNextPage, isFetchingNextPage, visible.length]);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     if (isLoading) return <Spinner />;
     if (isError) return <Alert type='danger' message='Failed to load posts.' />;
@@ -95,13 +87,17 @@ export default function PostsInfinite({
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex justify-center'>
-                {isFetchingNextPage ? (
-                    <Spinner text='Loading more...' />
-                ) : hasNextPage ? (
-                    <div ref={sentinelRef} style={{ height: 1, width: 1 }} />
-                ) : (
-                    <div className='h-2' />
+                {isFetchingNextPage && <Spinner text='Loading more...' />}
+                {hasNextPage && (
+                    <div 
+                        ref={sentinelRef} 
+                        style={{ 
+                            height: 1, 
+                            width: 1
+                        }} 
+                    />
                 )}
+                {!hasNextPage && !isFetchingNextPage && <div className='h-2' />}
             </div>
         </>
     );
