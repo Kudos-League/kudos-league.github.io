@@ -222,7 +222,7 @@ export default function PostDetails(props: Props) {
 
     const handleOpenChatFromSuccess = () => {
         //navigator navigate to chat
-        navigate(`/messages/${postDetails?.senderID}`);
+        navigate(`/dms/${postDetails?.senderID}`);
         // setHandshakeSuccessModal(false);
         // setIsChatOpen(true);
     };
