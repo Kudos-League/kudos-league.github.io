@@ -31,6 +31,7 @@ import type {
 import Pill from '../common/Pill';
 import Button from '../common/Button';
 import TextWithLinks from '../common/TextWithLinks';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
     id?: string;
@@ -95,6 +96,7 @@ export default function PostDetails(props: Props) {
     const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
     const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
     const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
+    const navigate = useNavigate();
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -219,8 +221,10 @@ export default function PostDetails(props: Props) {
     };
 
     const handleOpenChatFromSuccess = () => {
-        setHandshakeSuccessModal(false);
-        setIsChatOpen(true);
+        //navigator navigate to chat
+        navigate(`/messages/${postDetails?.senderID}`);
+        // setHandshakeSuccessModal(false);
+        // setIsChatOpen(true);
     };
 
     const handleCloseChatModal = (open: boolean) => {
