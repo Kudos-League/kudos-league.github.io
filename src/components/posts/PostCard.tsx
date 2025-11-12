@@ -107,15 +107,17 @@ export default function PostCard(props: Props) {
             </div>
             {viewerHandshake && showHandshakeShortcut && (
                 <div className='mt-4' onClick={(e) => e.stopPropagation()}>
-                    <HandshakeCard
-                        handshake={{
-                            ...viewerHandshake,
-                            post: props
-                        }}
-                        userID={user?.id}
-                        showPostDetails={false}
-                        showSenderOrReceiver='sender'
-                    />
+                    {!viewerHandshake.cancelledAt && (
+                        <HandshakeCard
+                            handshake={{
+                                ...viewerHandshake,
+                                post: props
+                            }}
+                            userID={user?.id}
+                            showPostDetails={false}
+                            showSenderOrReceiver='sender'
+                        />
+                    )}
                 </div>
             )}
         </div>
