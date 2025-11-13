@@ -326,7 +326,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 <MapDisplay
                     edit
                     height={300}
-                    shouldGetYourLocation
+                    shouldGetYourLocation={true}
                     regionID={location?.regionID}
                     onLocationChange={(data) => {
                         if (data)
@@ -335,6 +335,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 name: data.name
                             });
                     }}
+                    shouldSavedLocationButton={true}
                 />
             </div>
 

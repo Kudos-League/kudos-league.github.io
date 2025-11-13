@@ -9,7 +9,8 @@ import {
 import debounce from '@/shared/debounce';
 import useUserLocation from '@/hooks/useLocation';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
-import { XMarkIcon, GlobeAmericasIcon } from '@heroicons/react/16/solid';
+import { XMarkIcon, GlobeAmericasIcon, MapPinIcon } from '@heroicons/react/16/solid';
+import { useAuth } from '@/contexts/useAuth';
 
 const SearchInput: React.FC<{
     value: string;
@@ -96,6 +97,7 @@ interface MapComponentPropsBase {
     onLabelChange?: (label: string) => void;
     approximateRadiusMeters?: number;
     inlineBanner?: boolean;
+    shouldSavedLocationButton?: boolean;
 }
 
 type MapComponentProps =
@@ -147,9 +149,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     onLabelChange,
     shouldGetYourLocation = false,
     approximateRadiusMeters = 3200,
-    inlineBanner = true
+    inlineBanner = true,
+    shouldSavedLocationButton = false
 }) => {
     const { location: userLocation, errorMsg } = useUserLocation();
+    const { user } = useAuth();
     const fallback =
         coordinates ?? (shouldGetYourLocation ? userLocation : null);
     const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(
@@ -220,6 +224,35 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             }
         );
     };
+
+    const useSavedLocation = () => {
+        if (!user?.location) return;
+        
+        const savedLocation = user.location as MapCoordinates;
+        const coords = {
+            latitude: savedLocation.latitude,
+            longitude: savedLocation.longitude,
+            changed: true
+        };
+
+        setMapCoordinates(coords);
+        setIsCleared(false);
+        
+        const label = savedLocation.name || 'Saved Location';
+        setSearchInput(label);
+        setDisplayLabel(label);
+        setIsSearching(false);
+        setSuggestions([]);
+        onLabelChange?.(label);
+
+        onLocationChange?.({
+            coordinates: coords,
+            placeID: savedLocation.regionID || '',
+            name: label,
+            changed: true
+        });
+    };
+
     const suppressSearchRef = useRef(false);
     const autoServiceRef =
         useRef<google.maps.places.AutocompleteService | null>(null);
@@ -356,16 +389,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         lng: mapCoordinates?.longitude ?? DEFAULT_CENTER.longitude
     };
 
-    // const isValidCoordinates = mapCoordinates?.latitude != null && mapCoordinates?.longitude != null;
     const hasLabel = !!displayLabel && !isSearching;
-    // never show “failed to get location” if regionID is provided
     const effectiveError = regionID ? null : errorMsg;
-
-    // banner only when the address bar is visible AND there’s something to show, and not cleared
     const showBanner =
         edit && inlineBanner && !isCleared && (hasLabel || !!effectiveError);
-
-    // pick the text in priority order
     const bannerText = effectiveError || displayLabel || '';
 
     if (loading) {
@@ -376,6 +403,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         label: s.description as string,
         value: s.place_id as string
     }));
+
+    const hasSavedLocation = user?.location && 
+        typeof user.location === 'object' && 
+        'latitude' in user.location && 
+        'longitude' in user.location;
 
     return (
         <div
@@ -416,6 +448,16 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         showLeftIcon={true}
                         placeholder='Search address'
                     />
+                    {shouldSavedLocationButton && hasSavedLocation && (
+                        <button
+                            type='button'
+                            onClick={useSavedLocation}
+                            className='mt-2 w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400'
+                        >
+                            <MapPinIcon className='size-4' aria-hidden='true' />
+        Use Saved Location
+                        </button>
+                    )}
                     {suggestions.length > 0 && (
                         <div className='absolute top-full left-0 right-0 z-[1000]'>
                             <Dropdown
@@ -441,30 +483,6 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 options={{
                     disableDefaultUI: true,
                     clickableIcons: false
-                    /*
-                    styles: [
-                        {
-                            featureType: 'poi',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        },
-                        {
-                            featureType: 'transit',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        },
-                        {
-                            featureType: 'road',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        },
-                        {
-                            featureType: 'administrative',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        }
-                    ]
-                    */
                 }}
             >
                 {!isCleared &&

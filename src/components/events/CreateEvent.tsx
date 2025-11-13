@@ -335,6 +335,7 @@ export default function CreateEvent() {
                             }
                             width='100%'
                             height={300}
+                            shouldSavedLocationButton={true}
                         />
                     </div>
                     {!global && !location?.regionID && errorMessages.length > 0 && (
