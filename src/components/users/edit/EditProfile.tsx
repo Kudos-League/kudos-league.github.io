@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import useLocation from '@/hooks/useLocation';
-
 import { useUpdateUser } from '@/shared/api/mutations/users';
 
 import Input from '@/components/forms/Input';
@@ -25,6 +23,7 @@ import { apiMutate } from '@/shared/api/apiClient';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
+import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -335,7 +334,13 @@ const EditProfile: React.FC<Props> = ({
             if (locationDirty && !('location' in payload)) {
                 const currentLoc2 = form.getValues('location') ?? null;
                 (payload as any).location =
-                    currentLoc2 === null ? null : currentLoc2;
+        currentLoc2 === null ? null : currentLoc2;
+            }
+
+            // ADD THIS: Clean up the location object before sending
+            if ('location' in payload && payload.location) {
+                const { changed, ...cleanLocation } = payload.location;
+                payload.location = cleanLocation;
             }
 
             if ('avatar' in payload) {
@@ -366,8 +371,11 @@ const EditProfile: React.FC<Props> = ({
             if ('tags' in payload) {
                 (payload as any).tags = (payload as any).tags || [];
             }
-
+            console.log('Submitting payload:', payload); // DEBUG: See what's being sent
+        
             const updatedUser = await updateUserMutation.mutateAsync(payload);
+        
+            console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
             if (updatedUser?.id && updatedUser.id === auth.user?.id) {
                 updateUserCache(updatedUser);
@@ -721,16 +729,40 @@ const EditProfile: React.FC<Props> = ({
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-                                                setTargetUser({
-                                                    ...targetUser,
-                                                    location: {
-                                                        ...targetUser.location,
-                                                        regionID: null
-                                                    }
-                                                });
+                                                if (setTargetUser) {
+                                                    setTargetUser({
+                                                        ...targetUser,
+                                                        location: {
+                                                            ...targetUser.location,
+                                                            regionID: null
+                                                        }
+                                                    });
+                                                }
                                             }
-                                        }
-                                        }
+                                            else {
+                                                // Simplified version - might be what backend expects
+                                                const locationValue = {
+                                                    latitude: data.coordinates.latitude,
+                                                    longitude: data.coordinates.longitude,
+                                                    name: data.name || data.businessName || '',
+                                                    regionID: data.placeID
+                                                    // Note: NOT including 'changed'
+                                                };
+        
+                                                setLocation(data.coordinates);
+                                                form.setValue('location', locationValue, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+        
+                                                if (setTargetUser) {
+                                                    setTargetUser({
+                                                        ...targetUser,
+                                                        location: locationValue
+                                                    });
+                                                }
+                                            }
+                                        }}
                                     />
                                 </div>
                             </FormField>
