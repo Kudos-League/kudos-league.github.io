@@ -5,7 +5,7 @@ import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
 import MessageList from '@/components/posts/MessageList';
-import ChatModal from '@/components/messages/ChatModal';
+// import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';

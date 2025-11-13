@@ -8,7 +8,7 @@ import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
-import ChatModal from '@/components/messages/ChatModal';
+// import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
