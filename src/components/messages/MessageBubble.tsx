@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import TextWithLinks from '../common/TextWithLinks';
 import UserCard from '../users/UserCard';
@@ -69,18 +69,89 @@ const MessageBubble: React.FC<Props> = ({
     onEditCancel,
     showSenderName = false
 }) => {
+    const [showActions, setShowActions] = useState(false);
+    const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Close actions when clicking outside
+    React.useEffect(() => {
+        if (!showActions) return;
+
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setShowActions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showActions]);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (isEditing) return;
+        
+        const touch = e.touches[0];
+        touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+        
+        touchTimerRef.current = setTimeout(() => {
+            setShowActions(true);
+            // Haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, 500); // 500ms hold to show actions
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!touchStartPos.current) return;
+        
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+        const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+        
+        // Cancel if user moves finger more than 10px
+        if (deltaX > 10 || deltaY > 10) {
+            if (touchTimerRef.current) {
+                clearTimeout(touchTimerRef.current);
+                touchTimerRef.current = null;
+            }
+            touchStartPos.current = null;
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (touchTimerRef.current) {
+            clearTimeout(touchTimerRef.current);
+            touchTimerRef.current = null;
+        }
+        touchStartPos.current = null;
+    };
+
+    const handleActionClick = (e: React.MouseEvent | React.TouchEvent, action: () => void) => {
+        e.stopPropagation(); // Prevent click from bubbling up
+        action();
+        setShowActions(false);
+    };
+
     return (
         <div
+            ref={containerRef}
             id={`msg-${message.id}`}
-            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-2 items-end gap-1`}
+            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-2 items-end`}
         >
-            {/* Action buttons - left side for own messages */}
+            {/* Action buttons - positioned absolutely over message for own messages */}
             {isOwn && !isEditing && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-zinc-800 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 mb-1">
+                <div className={`absolute left-0 top-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
                     <button
                         type='button'
                         title={message.deletedAt ? 'Message deleted' : 'Reply'}
-                        onClick={() => onReply?.(message)}
+                        onClick={(e) => handleActionClick(e, () => onReply?.(message))}
                         disabled={Boolean(message.deletedAt)}
                         className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                     >
@@ -90,7 +161,7 @@ const MessageBubble: React.FC<Props> = ({
                         <button
                             type='button'
                             title={message.deletedAt ? 'Message deleted' : 'Edit'}
-                            onClick={() => onEdit?.(message)}
+                            onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
@@ -101,7 +172,7 @@ const MessageBubble: React.FC<Props> = ({
                         <button
                             type='button'
                             title={message.deletedAt ? 'Message deleted' : 'Delete'}
-                            onClick={() => onDelete?.(message)}
+                            onClick={(e) => handleActionClick(e, () => onDelete?.(message))}
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
@@ -111,7 +182,12 @@ const MessageBubble: React.FC<Props> = ({
                 </div>
             )}
             
-            <div className={`max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}>
+            <div 
+                className={`max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
                 {/* Show sender name for non-own messages (WhatsApp style) */}
                 {!isOwn && showSenderName && (
                     <div className="text-xs font-semibold mb-1 ml-1 text-teal-600 dark:text-teal-400">
@@ -243,13 +319,13 @@ const MessageBubble: React.FC<Props> = ({
                 </div>
             </div>
             
-            {/* Action buttons - right side for other users' messages */}
+            {/* Action buttons - positioned absolutely over message for other users' messages */}
             {!isOwn && !isEditing && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-zinc-800 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 mb-1">
+                <div className={`absolute right-0 top-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
                     <button
                         type='button'
                         title={message.deletedAt ? 'Message deleted' : 'Reply'}
-                        onClick={() => onReply?.(message)}
+                        onClick={(e) => handleActionClick(e, () => onReply?.(message))}
                         disabled={Boolean(message.deletedAt)}
                         className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                     >
@@ -259,7 +335,7 @@ const MessageBubble: React.FC<Props> = ({
                         <button
                             type='button'
                             title={message.deletedAt ? 'Message deleted' : 'Edit'}
-                            onClick={() => onEdit?.(message)}
+                            onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
@@ -270,7 +346,7 @@ const MessageBubble: React.FC<Props> = ({
                         <button
                             type='button'
                             title={message.deletedAt ? 'Message deleted' : 'Delete'}
-                            onClick={() => onDelete?.(message)}
+                            onClick={(e) => handleActionClick(e, () => onDelete?.(message))}
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
