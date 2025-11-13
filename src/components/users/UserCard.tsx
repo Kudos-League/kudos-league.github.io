@@ -184,7 +184,7 @@ const UserCard: React.FC<Props> = ({
                 }
             >
                 {nameEl}
-                {kudosEl}
+                {/* {kudosEl} */}
                 {subtitle ? (
                     <div
                         className={[
