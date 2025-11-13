@@ -1334,51 +1334,59 @@ export default function GanttEventsCalendar() {
                             {filteredEvents.slice(0, visibleEventCount).map((event) => {
                                 const start = toZonedTime(new Date(event.startTime), tz);
                                 const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
-                                
+                
                                 return (
                                     <div
                                         key={event.id}
                                         onClick={() => setSelectedEvent(event)}
-                                        className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
+                                        className='p-2.5 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
                                     >
-                                        <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                            <p className='font-bold text-base sm:text-lg text-gray-900'>{event.title}</p>
+                                        <div className='flex items-start justify-between gap-2 mb-1'>
+                                            <p className='font-bold text-sm sm:text-lg text-gray-900 line-clamp-1 flex-1'>
+                                                {event.title}
+                                            </p>
                                             {event.location?.global ? (
-                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                    🌐 Global
+                                                <span className='px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
+                                    🌐<span className='hidden sm:inline'> Global</span>
                                                 </span>
                                             ) : (
-                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                    📍 Local
+                                                <span className='px-1.5 py-0.5 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
+                                    📍<span className='hidden sm:inline'> Local</span>
                                                 </span>
                                             )}
                                         </div>
                                         {event.description && (
-                                            <p className='text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                            <p className='hidden md:block text-gray-600 text-xs sm:text-sm mb-1.5 line-clamp-1'>
+                                                {event.description}
+                                            </p>
                                         )}
-                                        <div className='space-y-0.5 sm:space-y-1'>
-                                            <p className='text-xs sm:text-sm text-gray-700 flex items-center gap-1.5 sm:gap-2'>
-                                                <Clock className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                        <div className='space-y-0.5'>
+                                            <p className='text-[0.7rem] sm:text-sm text-gray-700 flex items-center gap-1 sm:gap-2'>
+                                                <Clock className='w-3 h-3 flex-shrink-0' />
                                                 <span className='truncate'>
-                                                    {format(start, 'MMM d, yyyy • h:mm a')} –{' '}
-                                                    {end ? format(end, 'MMM d, yyyy • h:mm a') : 'Ongoing'}
+                                                    {format(start, 'MMM d, yyyy • h:mm a')}
+                                                    {end && <span className='hidden sm:inline'> – {format(end, 'MMM d, yyyy • h:mm a')}</span>}
+                                                    {end && <span className='sm:hidden'> – {format(end, 'h:mm a')}</span>}
                                                 </span>
                                             </p>
                                             {event.location?.name && !event.location.global && (
-                                                <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
-                                                    <MapPin className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                                <p className='text-[0.7rem] sm:text-sm text-gray-600 flex items-center gap-1 sm:gap-2'>
+                                                    <MapPin className='w-3 h-3 flex-shrink-0' />
                                                     <span className='truncate'>{event.location.name}</span>
                                                 </p>
                                             )}
 
                                             {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                                <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
-                                                    <Users className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
-                                                    {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                <p className='text-[0.7rem] sm:text-sm text-blue-600 flex items-center gap-1 sm:gap-2'>
+                                                    <Users className='w-3 h-3 flex-shrink-0' />
+                                                    <span className='sm:hidden'>{event.participantCount}</span>
+                                                    <span className='hidden sm:inline'>
+                                                        {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                    </span>
                                                 </p>
                                             )}
                                             {event.creatorID && (
-                                                <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                                <div className='hidden sm:block text-xs sm:text-sm text-gray-600'>
                                                     {eventIDToUserMap[event.creatorID] ? (
                                                         <UserCard
                                                             user={eventIDToUserMap[event.creatorID]!}
@@ -1387,13 +1395,13 @@ export default function GanttEventsCalendar() {
                                                     ) : (
                                                         <span>Loading organizer...</span>
                                                     )}
-                                                </p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
                                 );
                             })}
-                            
+            
                             {/* Load More Button */}
                             {visibleEventCount < filteredEvents.length && (
                                 <div className='text-center pt-3 sm:pt-4'>
@@ -1402,7 +1410,7 @@ export default function GanttEventsCalendar() {
                                         variant='secondary'
                                         className='text-xs sm:text-sm'
                                     >
-                                        Show More ({filteredEvents.length - visibleEventCount} remaining)
+                        Show More ({filteredEvents.length - visibleEventCount} remaining)
                                     </Button>
                                 </div>
                             )}
