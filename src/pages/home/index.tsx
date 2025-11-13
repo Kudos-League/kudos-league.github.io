@@ -58,7 +58,7 @@ export default function Feed() {
                 />
 
                 <div className='flex flex-wrap items-center gap-2'>
-                    <Button
+                    {/* <Button
                         onClick={() => {
                             setTypeOfOrdering({ type: 'date', order: 'desc' });
                             setShowLocationWarning(false);
@@ -84,7 +84,43 @@ export default function Feed() {
                         className='text-sm border'
                     >
                         Sort by distance
-                    </Button>
+                    </Button> */}
+                    <div className='flex flex-wrap gap-2'>
+                        <Button
+                            onClick={() => setActiveTab('all')}
+                            variant='secondary'
+                            className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                activeTab === 'all' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                            }`}
+                        >
+                    All
+                        </Button>
+                        <Button
+                            onClick={() => setActiveTab('gifts')}
+                            variant='secondary'
+                            className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                activeTab === 'gifts' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                            }`}
+                        >
+                    Gifts
+                        </Button>
+                        <Button
+                            onClick={() => setActiveTab('requests')}
+                            variant='secondary'
+                            className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                activeTab === 'requests' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                            }`}
+                        >
+                    Requests
+                        </Button>
+                    </div>
+
                     <Button
                         onClick={() => setFilterOpen((v) => !v)}
                         variant='secondary'
@@ -179,41 +215,6 @@ export default function Feed() {
                 </div>
             )}
 
-            <div className='flex flex-wrap gap-2'>
-                <Button
-                    onClick={() => setActiveTab('all')}
-                    variant='secondary'
-                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                        activeTab === 'all' 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                >
-                    All
-                </Button>
-                <Button
-                    onClick={() => setActiveTab('gifts')}
-                    variant='secondary'
-                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                        activeTab === 'gifts' 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                >
-                    Gifts
-                </Button>
-                <Button
-                    onClick={() => setActiveTab('requests')}
-                    variant='secondary'
-                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                        activeTab === 'requests' 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                >
-                    Requests
-                </Button>
-            </div>
 
             <div className='w-full overflow-x-hidden'>
                 {searchingActive ? (
