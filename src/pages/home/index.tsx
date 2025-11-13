@@ -38,8 +38,6 @@ export default function Feed() {
 
     return (
         <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6'>
-            <EventsCarousel />
-
             <div className='flex flex-col sm:flex-row sm:items-center gap-4 border-b pb-4'>
                 <Button
                     onClick={() => navigate('/create-post')}
