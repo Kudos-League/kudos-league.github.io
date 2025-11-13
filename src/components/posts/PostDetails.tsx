@@ -979,7 +979,7 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Chat Modal */}
-            {isChatOpen && (
+            {/* {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
                     setIsChatOpen={handleCloseChatModal}
@@ -989,7 +989,7 @@ export default function PostDetails(props: Props) {
                     initialMessage=""
                     onMessageSent={handleMessageSent}
                 />
-            )}
+            )} */}
 
             {/* Report Modal */}
             {reportModalVisible && (

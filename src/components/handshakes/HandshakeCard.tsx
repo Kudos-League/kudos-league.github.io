@@ -486,7 +486,7 @@ const HandshakeCard: React.FC<Props> = ({
             </div>
 
             {/* Chat Modal */}
-            {isChatOpen && (
+            {/* {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
                     setIsChatOpen={setIsChatOpen}
@@ -497,7 +497,7 @@ const HandshakeCard: React.FC<Props> = ({
                             : ''
                     }
                 />
-            )}
+            )} */}
 
             {/* Confirmation Modals */}
             <ConfirmationModal
