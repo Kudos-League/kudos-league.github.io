@@ -143,32 +143,38 @@ const MessageBubble: React.FC<Props> = ({
         <div
             ref={containerRef}
             id={`msg-${message.id}`}
-            className={`group relative flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-2 items-end`}
+            className={`group flex w-full ${isOwn ? 'justify-end' : 'justify-start'} mb-2 items-end`}
         >
-            {/* Action buttons - positioned absolutely over message for own messages */}
-            {isOwn && !isEditing && (
-                <div className={`absolute left-0 top-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
-                    <button
-                        type='button'
-                        title={message.deletedAt ? 'Message deleted' : 'Reply'}
-                        onClick={(e) => handleActionClick(e, () => onReply?.(message))}
-                        disabled={Boolean(message.deletedAt)}
-                        className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                    >
-                        <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                    </button>
-                    {canEdit && (
+            <div 
+                className={`relative max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                {/* Action buttons - positioned absolutely at bottom for own messages */}
+                {isOwn && !isEditing && (
+                    <div className={`absolute -left-14 bottom-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
                         <button
                             type='button'
-                            title={message.deletedAt ? 'Message deleted' : 'Edit'}
-                            onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
+                            title={message.deletedAt ? 'Message deleted' : 'Reply'}
+                            onClick={(e) => handleActionClick(e, () => onReply?.(message))}
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
-                            <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
-                    )}
-                    {canDelete && (
+                        {canEdit && (
+                            <button
+                                type='button'
+                                title={message.deletedAt ? 'Message deleted' : 'Edit'}
+                                onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                            >
+                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            </button>
+                        )}
+                        {/* {canDelete && ( //HACK: for some unexplainable reason this doesn't work on mobile so I'm deleting it atm*/}
                         <button
                             type='button'
                             title={message.deletedAt ? 'Message deleted' : 'Delete'}
@@ -178,16 +184,9 @@ const MessageBubble: React.FC<Props> = ({
                         >
                             <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
-                    )}
-                </div>
-            )}
-            
-            <div 
-                className={`max-w-[85%] sm:max-w-md min-w-0 ${isOwn ? 'text-right' : 'text-left'}`}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-            >
+                        {/* )} */}
+                    </div>
+                )}
                 {/* Show sender name for non-own messages (WhatsApp style) */}
                 {!isOwn && showSenderName && (
                     <div className="text-xs font-semibold mb-1 ml-1 text-teal-600 dark:text-teal-400">
@@ -317,44 +316,44 @@ const MessageBubble: React.FC<Props> = ({
                         </>
                     )}
                 </div>
+                
+                {/* Action buttons - positioned absolutely at bottom for other users' messages */}
+                {!isOwn && !isEditing && (
+                    <div className={`absolute -right-8 bottom-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
+                        <button
+                            type='button'
+                            title={message.deletedAt ? 'Message deleted' : 'Reply'}
+                            onClick={(e) => handleActionClick(e, () => onReply?.(message))}
+                            disabled={Boolean(message.deletedAt)}
+                            className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                        >
+                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                        </button>
+                        {canEdit && (
+                            <button
+                                type='button'
+                                title={message.deletedAt ? 'Message deleted' : 'Edit'}
+                                onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                            >
+                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            </button>
+                        )}
+                        {canDelete && (
+                            <button
+                                type='button'
+                                title={message.deletedAt ? 'Message deleted' : 'Delete'}
+                                onClick={(e) => handleActionClick(e, () => onDelete?.(message))}
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                            >
+                                <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
-            
-            {/* Action buttons - positioned absolutely over message for other users' messages */}
-            {!isOwn && !isEditing && (
-                <div className={`absolute right-0 top-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
-                    <button
-                        type='button'
-                        title={message.deletedAt ? 'Message deleted' : 'Reply'}
-                        onClick={(e) => handleActionClick(e, () => onReply?.(message))}
-                        disabled={Boolean(message.deletedAt)}
-                        className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                    >
-                        <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                    </button>
-                    {canEdit && (
-                        <button
-                            type='button'
-                            title={message.deletedAt ? 'Message deleted' : 'Edit'}
-                            onClick={(e) => handleActionClick(e, () => onEdit?.(message))}
-                            disabled={Boolean(message.deletedAt)}
-                            className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                        >
-                            <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                        </button>
-                    )}
-                    {canDelete && (
-                        <button
-                            type='button'
-                            title={message.deletedAt ? 'Message deleted' : 'Delete'}
-                            onClick={(e) => handleActionClick(e, () => onDelete?.(message))}
-                            disabled={Boolean(message.deletedAt)}
-                            className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                        >
-                            <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
-                        </button>
-                    )}
-                </div>
-            )}
         </div>
     );
 };
