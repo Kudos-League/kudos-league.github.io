@@ -227,6 +227,7 @@ export default function GanttEventsCalendar() {
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
     const [eventIDToUserMap, setEventIDToUserMap] = useState<Record<string, UserDTO>>({});
+    const [fetchedCreatorIds, setFetchedCreatorIds] = useState<Array<number>>([]);
 
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
@@ -635,61 +636,52 @@ export default function GanttEventsCalendar() {
     }, []);
     useEffect(() => {
         const fetchCreators = async () => {
-        // Get unique creator IDs that we haven't fetched yet
-            const creatorIds = new Array<number>();
+        // Get unique creator IDs that we haven't attempted to fetch yet
+            const creatorIdsToFetch = new Array<number>();
+        
             events.forEach(event => {
-                if (event.creatorID && !eventIDToUserMap[event.id]) {
-                    creatorIds.push(event.creatorID);
+                if (event.creatorID && !fetchedCreatorIds.includes(event.creatorID)) {
+                    creatorIdsToFetch.push(event.creatorID);
                 }
             });
 
-            if (creatorIds.length === 0) return;
-            console.log(`Fetching creators for ${creatorIds.length} events`);
+            if (creatorIdsToFetch.length === 0) return;
+        
+            console.log(`Fetching ${creatorIdsToFetch.length} unique creators`);
 
-            // Fetch creators with a small delay between requests to avoid rate limiting
-            const creatorCache = new Map<number, UserDTO>();
+            // Mark these IDs as "attempted" to prevent retries
+            setFetchedCreatorIds(prev => Array.from(new Set([...prev, ...creatorIdsToFetch])));
+
+            // Fetch creators with a small delay between requests
+            const updates: Record<number, UserDTO> = {};
     
-            for (const creatorId of creatorIds) {
+            for (const creatorId of creatorIdsToFetch) {
                 try {
-                // Check if we already fetched this creator for another event
-                    let creator = creatorCache.get(creatorId);
-            
-                    if (!creator) {
-                        creator = await apiGet<UserDTO>(`/users/${creatorId}`);
-                        creatorCache.set(creatorId, creator);
+                    const creator = await apiGet<UserDTO>(`/users/${creatorId}`);
+                    updates[creatorId] = creator;
+                    console.log(`✓ Fetched creator ${creatorId}: ${creator.username}`);
                 
-                        // Small delay to avoid rate limiting
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
-                    console.log(`Fetched creator ${creatorId}: ${creator.username}`);
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 catch (error) {
-                    console.error(`Failed to fetch creator ${creatorId}:`, error);
+                    console.error(`✗ Failed to fetch creator ${creatorId}:`, error);
+                // Don't add to updates, but we've marked it as attempted
                 }
             }
 
-            // Update the map once with all fetched creators
-            const updates: Record<string, UserDTO> = {};
-            events.forEach(event => {
-                if (event.creatorID && !eventIDToUserMap[event.id]) {
-                    const creator = creatorCache.get(event.creatorID);
-                    if (creator) {
-                        updates[event.id] = creator;
-                    }
-                }
-            });
-            console.log(`Updating eventIDToUserMap with ${Object.keys(updates).length} entries`);
-
-            // Use functional update to see the actual new state
-            setEventIDToUserMap(prev => {
-                const newMap = { ...prev, ...updates };
-                console.log(`eventIDToUserMap will now have ${Object.keys(newMap).length} entries`);
-                return newMap;
-            });
+            // Update the map with successfully fetched creators
+            if (Object.keys(updates).length > 0) {
+                setEventIDToUserMap(prev => {
+                    const newMap = { ...prev, ...updates };
+                    console.log(`Updated map: ${Object.keys(newMap).length} total creators`);
+                    return newMap;
+                });
+            }
         };
 
         fetchCreators();
-    }, [events]); // Remove eventIDToUserMap from dependencies
+    }, [events, fetchedCreatorIds]); // Include fetchedCreatorIds but we control when it changes
 
     // Optional: Add a separate effect to log when the map actually updates
     useEffect(() => {
