@@ -22,10 +22,12 @@ import {
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { EventDTO } from '@/shared/api/types';
+import { EventDTO, UserDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
+import UserCard from '../users/UserCard';
+import { apiGet } from '@/shared/api/apiClient';
 
 interface EventDetailsModalProps {
     event: EventDTO | null;
@@ -206,7 +208,7 @@ export default function GanttEventsCalendar() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('month');
+    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('week');
     const [filterText, setFilterText] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
@@ -224,6 +226,7 @@ export default function GanttEventsCalendar() {
     const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
+    const [eventIDToUserMap, setEventIDToUserMap] = useState<Record<string, UserDTO>>({});
 
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
@@ -630,6 +633,70 @@ export default function GanttEventsCalendar() {
         window.addEventListener('resize', measureWidth);
         return () => window.removeEventListener('resize', measureWidth);
     }, []);
+    useEffect(() => {
+        const fetchCreators = async () => {
+        // Get unique creator IDs that we haven't fetched yet
+            const creatorIds = new Array<number>();
+            events.forEach(event => {
+                if (event.creatorID && !eventIDToUserMap[event.id]) {
+                    creatorIds.push(event.creatorID);
+                }
+            });
+
+            if (creatorIds.length === 0) return;
+            console.log(`Fetching creators for ${creatorIds.length} events`);
+
+            // Fetch creators with a small delay between requests to avoid rate limiting
+            const creatorCache = new Map<number, UserDTO>();
+    
+            for (const creatorId of creatorIds) {
+                try {
+                // Check if we already fetched this creator for another event
+                    let creator = creatorCache.get(creatorId);
+            
+                    if (!creator) {
+                        creator = await apiGet<UserDTO>(`/users/${creatorId}`);
+                        creatorCache.set(creatorId, creator);
+                
+                        // Small delay to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    console.log(`Fetched creator ${creatorId}: ${creator.username}`);
+                }
+                catch (error) {
+                    console.error(`Failed to fetch creator ${creatorId}:`, error);
+                }
+            }
+
+            // Update the map once with all fetched creators
+            const updates: Record<string, UserDTO> = {};
+            events.forEach(event => {
+                if (event.creatorID && !eventIDToUserMap[event.id]) {
+                    const creator = creatorCache.get(event.creatorID);
+                    if (creator) {
+                        updates[event.id] = creator;
+                    }
+                }
+            });
+            console.log(`Updating eventIDToUserMap with ${Object.keys(updates).length} entries`);
+
+            // Use functional update to see the actual new state
+            setEventIDToUserMap(prev => {
+                const newMap = { ...prev, ...updates };
+                console.log(`eventIDToUserMap will now have ${Object.keys(newMap).length} entries`);
+                return newMap;
+            });
+        };
+
+        fetchCreators();
+    }, [events]); // Remove eventIDToUserMap from dependencies
+
+    // Optional: Add a separate effect to log when the map actually updates
+    useEffect(() => {
+        console.log(`eventIDToUserMap updated: ${Object.keys(eventIDToUserMap).length} entries`);
+    }, [eventIDToUserMap]);// ✅ Only depend on events
+
+
 
     if (selectedPeriodEvents && viewDate) {
         return (
@@ -695,6 +762,11 @@ export default function GanttEventsCalendar() {
                                         <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
                                             <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.location.name}
+                                        </p>
+                                    )}
+                                    {event.creatorID && eventIDToUserMap[event.id] && (
+                                        <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                            <UserCard user={eventIDToUserMap[event.id]} />
                                         </p>
                                     )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
@@ -1306,10 +1378,23 @@ export default function GanttEventsCalendar() {
                                                     <span className='truncate'>{event.location.name}</span>
                                                 </p>
                                             )}
+
                                             {typeof event.participantCount === 'number' && event.participantCount > 0 && (
                                                 <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
                                                     <Users className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
                                                     {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                </p>
+                                            )}
+                                            {event.creatorID && (
+                                                <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                                    {eventIDToUserMap[event.creatorID] ? (
+                                                        <UserCard
+                                                            user={eventIDToUserMap[event.creatorID]!}
+                                                            className='text-xs sm:text-sm'
+                                                        />
+                                                    ) : (
+                                                        <span>Loading organizer...</span>
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
