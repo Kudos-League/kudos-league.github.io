@@ -238,57 +238,57 @@ const EditProfile: React.FC<Props> = ({
         setShowImageOptions(false);
     }, [form]);
 
-    const handleUseCurrentLocation = React.useCallback(async () => {
-        if (locationError) {
-            setToastType('error');
-            setToastMessage('Unable to get your location. Please enable location services.');
-            return;
-        }
+    // const handleUseCurrentLocation = React.useCallback(async () => {
+    //     if (locationError) {
+    //         setToastType('error');
+    //         setToastMessage('Unable to get your location. Please enable location services.');
+    //         return;
+    //     }
 
-        if (!browserLocation) {
-            setToastType('error');
-            setToastMessage('Waiting for browser location... Please allow location access.');
-            return;
-        }
+    //     if (!browserLocation) {
+    //         setToastType('error');
+    //         setToastMessage('Waiting for browser location... Please allow location access.');
+    //         return;
+    //     }
 
-        try {
-            const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
-            );
-            const data = await response.json();
+    //     try {
+    //         const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
+    //         const response = await fetch(
+    //             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
+    //         );
+    //         const data = await response.json();
             
-            if (data.status !== 'OK' || !data.results?.[0]) {
-                throw new Error('Failed to geocode location');
-            }
+    //         if (data.status !== 'OK' || !data.results?.[0]) {
+    //             throw new Error('Failed to geocode location');
+    //         }
 
-            const result = data.results[0];
-            const placeID = result.place_id;
-            const formatted = result.formatted_address || '';
+    //         const result = data.results[0];
+    //         const placeID = result.place_id;
+    //         const formatted = result.formatted_address || '';
 
-            const next = {
-                latitude: browserLocation.latitude,
-                longitude: browserLocation.longitude,
-                name: formatted,
-                regionID: placeID,
-                changed: true
-            };
+    //         const next = {
+    //             latitude: browserLocation.latitude,
+    //             longitude: browserLocation.longitude,
+    //             name: formatted,
+    //             regionID: placeID,
+    //             changed: true
+    //         };
 
-            setLocation(browserLocation);
-            form.setValue('location', next, {
-                shouldDirty: true,
-                shouldValidate: true
-            });
-            setLocationLabel(formatted);
-            setToastType('success');
-            setToastMessage('Current location set successfully');
-        }
-        catch (err) {
-            console.error('Failed to set current location:', err);
-            setToastType('error');
-            setToastMessage('Failed to set current location');
-        }
-    }, [browserLocation, locationError, form, setLocation]);
+    //         setLocation(browserLocation);
+    //         form.setValue('location', next, {
+    //             shouldDirty: true,
+    //             shouldValidate: true
+    //         });
+    //         setLocationLabel(formatted);
+    //         setToastType('success');
+    //         setToastMessage('Current location set successfully');
+    //     }
+    //     catch (err) {
+    //         console.error('Failed to set current location:', err);
+    //         setToastType('error');
+    //         setToastMessage('Failed to set current location');
+    //     }
+    // }, [browserLocation, locationError, form, setLocation]);
 
     const handleClearLocation = React.useCallback(() => {
         setLocation(null);
@@ -703,18 +703,6 @@ const EditProfile: React.FC<Props> = ({
                                         </Button>
                                     </div>
                                 )}
-
-                                {/* Location action button */}
-                                <div className='mb-3'>
-                                    <Button
-                                        type='button'
-                                        variant='secondary'
-                                        onClick={handleUseCurrentLocation}
-                                        className='text-sm w-full sm:w-auto'
-                                    >
-                                        📍 Use My Current Location
-                                    </Button>
-                                </div>
 
                                 <div className="max-w-full overflow-hidden pr-4">
                                     <MapDisplay
