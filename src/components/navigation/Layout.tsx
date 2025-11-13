@@ -141,7 +141,12 @@ const Layout: React.FC = () => {
                             to={routes.home}
                             className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col'
                         >
-Kudos League
+                            {/* Kudos League */}
+                            <img 
+                                src={`${process.env.PUBLIC_URL}/logo512.png`}
+                                alt="Kudos League"
+                                className="h-10 w-15"
+                            />
                         </Link>
                     }
                 />
