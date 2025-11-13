@@ -90,7 +90,7 @@ export default function PostCard(props: Props) {
                         {body}
                     </TextWithLinks>
                 </div>
-                <div className='w-20 h-20 flex items-center justify-center mt-2'>
+                <div className='w-20 h-20 flex-shrink-0 flex items-center justify-center mt-2 overflow-hidden'>
                     {showBodyInImageBox ? (
                         <div className='w-full h-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
                             {truncateBody(body)}
