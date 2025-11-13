@@ -240,13 +240,11 @@ export default function GanttEventsCalendar() {
     }, [allEvents]);
 
     const dateRange = useMemo(() => {
-        // Use custom date range if enabled
         if (useCustomRange && customStartDate) {
             const start = startOfDay(new Date(customStartDate));
             let end: Date;
             
             if (useDuration) {
-                // Calculate end date based on duration
                 switch (durationUnit) {
                 case 'days':
                     end = endOfDay(addDays(start, durationValue - 1));
@@ -263,14 +261,12 @@ export default function GanttEventsCalendar() {
                 end = endOfDay(new Date(customEndDate));
             }
             else {
-                // Default to one month if no end date specified
                 end = endOfMonth(start);
             }
             
             return { start, end };
         }
         
-        // Use default time range selection
         const now = startOfDay(new Date());
         let start: Date, end: Date;
 
@@ -481,6 +477,98 @@ export default function GanttEventsCalendar() {
         setShowingRangeEvents(false);
     };
 
+    const handleNavigatePeriodPrevious = () => {
+        if (!viewDate || !viewPeriodType) return;
+        
+        let newDate: Date;
+        if (viewPeriodType === 'day') {
+            newDate = addDays(viewDate, -1);
+        }
+        else if (viewPeriodType === 'week') {
+            newDate = addWeeks(viewDate, -1);
+        }
+        else {
+            newDate = addMonths(viewDate, -1);
+        }
+        
+        setViewDate(newDate);
+        
+        let periodStart: Date, periodEnd: Date;
+        const clicked = startOfDay(newDate);
+        
+        if (viewPeriodType === 'day') {
+            periodStart = startOfDay(clicked);
+            periodEnd = endOfDay(clicked);
+        }
+        else if (viewPeriodType === 'week') {
+            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+        }
+        else {
+            periodStart = startOfMonth(clicked);
+            periodEnd = endOfMonth(clicked);
+        }
+        
+        const eventsInPeriod = filteredEvents.filter((e) => {
+            const start = new Date(e.startTime);
+            const end = e.endTime ? new Date(e.endTime) : null;
+            
+            if (!end) {
+                return start <= periodEnd;
+            }
+            
+            return start <= periodEnd && end >= periodStart;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        
+        setSelectedPeriodEvents(eventsInPeriod);
+    };
+
+    const handleNavigatePeriodNext = () => {
+        if (!viewDate || !viewPeriodType) return;
+        
+        let newDate: Date;
+        if (viewPeriodType === 'day') {
+            newDate = addDays(viewDate, 1);
+        }
+        else if (viewPeriodType === 'week') {
+            newDate = addWeeks(viewDate, 1);
+        }
+        else {
+            newDate = addMonths(viewDate, 1);
+        }
+        
+        setViewDate(newDate);
+        
+        let periodStart: Date, periodEnd: Date;
+        const clicked = startOfDay(newDate);
+        
+        if (viewPeriodType === 'day') {
+            periodStart = startOfDay(clicked);
+            periodEnd = endOfDay(clicked);
+        }
+        else if (viewPeriodType === 'week') {
+            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+        }
+        else {
+            periodStart = startOfMonth(clicked);
+            periodEnd = endOfMonth(clicked);
+        }
+        
+        const eventsInPeriod = filteredEvents.filter((e) => {
+            const start = new Date(e.startTime);
+            const end = e.endTime ? new Date(e.endTime) : null;
+            
+            if (!end) {
+                return start <= periodEnd;
+            }
+            
+            return start <= periodEnd && end >= periodStart;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        
+        setSelectedPeriodEvents(eventsInPeriod);
+    };
+
     const handleShowRangeEvents = () => {
         const { start, end } = dateRange;
         
@@ -549,7 +637,6 @@ export default function GanttEventsCalendar() {
             setUseDuration(false);
         }
         else if (periodType === 'week-number' && weekNumber) {
-            // Calculate the start date of the given week number in current year
             const yearStart = startOfYear(now);
             const targetWeekStart = addWeeks(yearStart, weekNumber - 1);
             const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
@@ -634,9 +721,9 @@ export default function GanttEventsCalendar() {
         window.addEventListener('resize', measureWidth);
         return () => window.removeEventListener('resize', measureWidth);
     }, []);
+
     useEffect(() => {
         const fetchCreators = async () => {
-        // Get unique creator IDs that we haven't attempted to fetch yet
             const creatorIdsToFetch = new Array<number>();
         
             events.forEach(event => {
@@ -649,10 +736,8 @@ export default function GanttEventsCalendar() {
         
             console.log(`Fetching ${creatorIdsToFetch.length} unique creators`);
 
-            // Mark these IDs as "attempted" to prevent retries
             setFetchedCreatorIds(prev => Array.from(new Set([...prev, ...creatorIdsToFetch])));
 
-            // Fetch creators with a small delay between requests
             const updates: Record<number, UserDTO> = {};
     
             for (const creatorId of creatorIdsToFetch) {
@@ -661,16 +746,13 @@ export default function GanttEventsCalendar() {
                     updates[creatorId] = creator;
                     console.log(`✓ Fetched creator ${creatorId}: ${creator.username}`);
                 
-                    // Small delay to avoid rate limiting
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 catch (error) {
                     console.error(`✗ Failed to fetch creator ${creatorId}:`, error);
-                // Don't add to updates, but we've marked it as attempted
                 }
             }
 
-            // Update the map with successfully fetched creators
             if (Object.keys(updates).length > 0) {
                 setEventIDToUserMap(prev => {
                     const newMap = { ...prev, ...updates };
@@ -681,31 +763,60 @@ export default function GanttEventsCalendar() {
         };
 
         fetchCreators();
-    }, [events, fetchedCreatorIds]); // Include fetchedCreatorIds but we control when it changes
+    }, [events, fetchedCreatorIds]);
 
-    // Optional: Add a separate effect to log when the map actually updates
     useEffect(() => {
         console.log(`eventIDToUserMap updated: ${Object.keys(eventIDToUserMap).length} entries`);
-    }, [eventIDToUserMap]);// ✅ Only depend on events
-
-
+    }, [eventIDToUserMap]);
 
     if (selectedPeriodEvents && viewDate) {
         return (
             <div className='max-w-5xl mx-auto p-3 sm:p-4'>
-                <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4'>
-                    <Button onClick={handleBackToGantt} variant='secondary' className='text-sm w-full sm:w-auto flex items-center justify-center gap-2'>
-                        <ChevronLeft className='w-4 h-4' />
-                        Back to Calendar
-                    </Button>
-                    <div className='flex-1'>
-                        <h2 className='text-base sm:text-xl font-semibold'>
-                            {showingRangeEvents ? 'Events during ' : `Events ${viewPeriodType === 'day' ? 'on' : 'during'} `}
-                            {getViewPeriodLabel()}
-                        </h2>
-                        <p className='text-xs sm:text-sm text-gray-600 mt-0.5'>
-                            {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
-                        </p>
+                <div className='flex flex-col gap-3 sm:gap-4 mb-4'>
+                    <div className='flex flex-col items-start gap-2 sm:gap-3'>
+                        <Button onClick={handleBackToGantt} variant='secondary' className='text-sm flex items-center justify-center gap-2'>
+                            <ChevronLeft className='w-4 h-4' />
+                            <span className='hidden sm:inline'>Back to Calendar</span>
+                            <span className='sm:hidden'>Back</span>
+                        </Button>
+                        
+                        {!showingRangeEvents ? (
+                            <div className='flex items-center justify-between gap-3 sm:gap-4 w-full'>
+                                <button
+                                    onClick={handleNavigatePeriodPrevious}
+                                    className='p-2.5 sm:p-3 hover:bg-blue-50 rounded-xl transition-all border-2 border-gray-300 hover:border-blue-500 hover:shadow-md'
+                                    title={`Previous ${viewPeriodType}`}
+                                >
+                                    <ChevronLeft className='w-5 h-5 sm:w-6 sm:h-6 text-gray-700' />
+                                </button>
+                            
+                                <div className='flex-1 text-center'>
+                                    <h2 className='text-base sm:text-xl font-semibold'>
+                                    Events {viewPeriodType === 'day' ? 'on' : 'during'} {getViewPeriodLabel()}
+                                    </h2>
+                                    <p className='text-xs sm:text-sm text-gray-600 mt-0.5'>
+                                        {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                    </p>
+                                </div>
+                            
+                                <button
+                                    onClick={handleNavigatePeriodNext}
+                                    className='p-2.5 sm:p-3 hover:bg-blue-50 rounded-xl transition-all border-2 border-gray-300 hover:border-blue-500 hover:shadow-md'
+                                    title={`Next ${viewPeriodType}`}
+                                >
+                                    <ChevronRight className='w-5 h-5 sm:w-6 sm:h-6 text-gray-700' />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className='text-center'>
+                                <h2 className='text-base sm:text-xl font-semibold'>
+                                Events during {getViewPeriodLabel()}
+                                </h2>
+                                <p className='text-xs sm:text-sm text-gray-600 mt-0.5'>
+                                    {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -756,9 +867,9 @@ export default function GanttEventsCalendar() {
                                             {event.location.name}
                                         </p>
                                     )}
-                                    {event.creatorID && eventIDToUserMap[event.id] && (
+                                    {event.creatorID && eventIDToUserMap[event.creatorID] && (
                                         <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
-                                            <UserCard user={eventIDToUserMap[event.id]} />
+                                            <UserCard user={eventIDToUserMap[event.creatorID]} />
                                         </p>
                                     )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
