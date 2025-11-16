@@ -22,16 +22,15 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
-    // Pass ordering to the API along with other filters
-    const queryFilters = React.useMemo(
-        () => ({
+    const queryFilters = React.useMemo(() => {
+        const sort: 'date' | 'tags' | 'location' | 'kudos' = ordering.type === 'distance' ? 'location' : ordering.type;
+        return {
             ...filters,
             includeSender: true,
-            orderBy: ordering.type,
-            orderDir: ordering.order
-        }),
-        [filters, ordering]
-    );
+            sort,
+            order: ordering.order
+        };
+    }, [filters, ordering]);
 
     const {
         data,
@@ -50,7 +49,6 @@ export default function PostsInfinite({
     // Only filter by type, let backend handle sorting
     const visible = React.useMemo(() => {
         if (activeTab === 'all') return flat;
-        
         return flat.filter(
             (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
         );
