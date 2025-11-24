@@ -48,6 +48,7 @@ export type PostDTO = {
     rewardOffers?: RewardOfferDTO[];
     messages?: MessageDTO[];
     tags?: Tag[];
+    distance?: number | null;
 };
 
 export interface CustomFile extends File {
