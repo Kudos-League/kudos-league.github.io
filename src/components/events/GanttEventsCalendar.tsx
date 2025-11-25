@@ -802,8 +802,8 @@ export default function GanttEventsCalendar() {
             <div className='max-w-5xl mx-auto p-3 sm:p-4'>
                 <div className='flex flex-col gap-3 sm:gap-4 mb-4'>
                     <div className='flex flex-col items-start gap-2 sm:gap-3'>
-                        <Button onClick={handleBackToGantt} variant='secondary' className='text-sm flex items-center justify-center gap-2'>
-                            <ChevronLeft className='w-4 h-4' />
+                        <Button onClick={handleBackToGantt} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
+                            <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
                             <span className='hidden sm:inline'>Back to Calendar</span>
                             <span className='sm:hidden'>Back</span>
                         </Button>
