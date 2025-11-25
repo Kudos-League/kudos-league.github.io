@@ -44,12 +44,16 @@ export default function PostCard(props: Props) {
     const navigate = useNavigate();
     const [imgError, setImgError] = useState(false);
 
+    console.log('PostCard - Post ID:', id, 'Images:', images, 'Images length:', images?.length);
+
     const imageSrc = fake
         ? images?.[0]
         : images?.[0]
             ? getImagePath(images[0])
             : undefined;
     const showBodyInImageBox = imgError || !images?.length || !imageSrc;
+
+    console.log('PostCard - Post ID:', id, 'imageSrc:', imageSrc, 'showBodyInImageBox:', showBodyInImageBox);
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
