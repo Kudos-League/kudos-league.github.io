@@ -38,8 +38,34 @@ interface EventDetailsModalProps {
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onViewPeriod }) => {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const [fullEvent, setFullEvent] = useState<EventDTO | null>(null);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
+
+    useEffect(() => {
+        const fetchFullEvent = async () => {
+            if (!event?.id) return;
+
+            setLoadingParticipants(true);
+            setFullEvent(null);
+            try {
+                const eventData = await apiGet<EventDTO>(`/events/${event.id}`);
+                setFullEvent(eventData);
+            }
+            catch (error) {
+                console.error('Failed to fetch event details:', error);
+                setFullEvent(event);
+            }
+            finally {
+                setLoadingParticipants(false);
+            }
+        };
+
+        fetchFullEvent();
+    }, [event?.id, event]);
 
     if (!event) return null;
+
+    const displayEvent = fullEvent || event;
 
     const start = toZonedTime(new Date(event.startTime), tz);
     const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
@@ -152,12 +178,14 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                             <Users className='w-5 h-5 text-purple-600' />
                             Participants
                             <span className='ml-1 text-sm font-normal text-gray-600'>
-                                ({event.participantCount || 0})
+                                ({displayEvent.participantCount || 0})
                             </span>
                         </h3>
-                        {event.participants && event.participants.length > 0 ? (
+                        {loadingParticipants ? (
+                            <p className='text-gray-500 italic'>Loading participants...</p>
+                        ) : displayEvent.participants && displayEvent.participants.length > 0 ? (
                             <div className='space-y-2'>
-                                {event.participants.slice(0, 8).map((p: any) => (
+                                {displayEvent.participants.slice(0, 8).map((p: any) => (
                                     <div key={p.id} className='flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors'>
                                         <img
                                             src={getImagePath(p.avatar)}
@@ -167,9 +195,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                                         <span className='font-medium text-gray-900'>{p.username}</span>
                                     </div>
                                 ))}
-                                {event.participants.length > 8 && (
+                                {displayEvent.participants.length > 8 && (
                                     <p className='text-sm text-gray-500 pl-2 pt-2'>
-                                        +{event.participants.length - 8} more participant{event.participants.length - 8 !== 1 ? 's' : ''}
+                                        +{displayEvent.participants.length - 8} more participant{displayEvent.participants.length - 8 !== 1 ? 's' : ''}
                                     </p>
                                 )}
                             </div>
