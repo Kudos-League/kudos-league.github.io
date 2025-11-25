@@ -1231,29 +1231,6 @@ export default function GanttEventsCalendar() {
             </div>
 
             <div className='space-y-2 sm:space-y-3'>
-                {/* Legend and Show Events Button */}
-                <div className='flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between'>
-                    <div className='flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm bg-gray-50 p-2 sm:p-3 rounded-lg border flex-1 hidden'>
-                        <div className='flex items-center gap-1.5 sm:gap-2'>
-                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-green-500 to-green-600'></div>
-                        </div>
-                        <div className='flex items-center gap-1.5 sm:gap-2'>
-                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-blue-500 to-blue-600'></div>
-                        </div>
-                        <div className='flex items-center gap-1.5 sm:gap-2 ml-auto'>
-                            <div className='w-0.5 h-3 sm:h-4 bg-red-500'></div>
-                        </div>
-                    </div>
-                    
-                    <Button
-                        onClick={handleShowRangeEvents}
-                        variant='primary'
-                        className='text-xs sm:text-sm whitespace-nowrap'
-                    >
-                        Show Events during selected time period
-                    </Button>
-                </div>
-
                 {/* Timeline Ruler - Sticky */}
                 <div className='sticky top-0 z-[100] bg-white shadow-md rounded-lg border'>
                     {/* Navigation and Month/Year Header */}
@@ -1267,9 +1244,12 @@ export default function GanttEventsCalendar() {
                             </button>
                             
                             <div className='flex items-center gap-2 sm:gap-3'>
-                                <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
+                                <button
+                                    onClick={handleShowRangeEvents}
+                                    className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 hover:bg-white px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-gray-300'
+                                >
                                     {getPeriodLabel()}
-                                </h3>
+                                </button>
                                 {periodOffset !== 0 && (
                                     <button
                                         onClick={handleNavigateToday}
@@ -1292,9 +1272,12 @@ export default function GanttEventsCalendar() {
                     {/* Custom Range Header */}
                     {useCustomRange && (
                         <div className='flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 border-b'>
-                            <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
+                            <button
+                                onClick={handleShowRangeEvents}
+                                className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 hover:bg-white px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-blue-300'
+                            >
                                 {getPeriodLabel()}
-                            </h3>
+                            </button>
                         </div>
                     )}
 
