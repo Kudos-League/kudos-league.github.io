@@ -19,7 +19,6 @@ const SignIn = lazy(() => import('@/pages/login'));
 const SignUp = lazy(() => import('@/pages/signup'));
 const ForgotPassword = lazy(() => import('@/pages/forgot-password'));
 const ResetPassword = lazy(() => import('@/pages/reset-password'));
-const EventsPage = lazy(() => import('@/pages/events'));
 const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
 const FeedbackPage = lazy(() => import('@/pages/feedback'));
@@ -43,10 +42,6 @@ function AppNavigator() {
                     <Route path={routes.about} element={<About/>} />
                     <Route path={routes.home} element={<Home />} />
                     <Route path={routes.result} element={<Result />} />
-                    <Route path={routes.ganttEvents} element={<GanttEventsCalendar />} />
-
-
-
                     <Route path={routes.donate} element={<DonatePage />} />
 
                     <Route
@@ -86,7 +81,7 @@ function AppNavigator() {
                         path={routes.events}
                         element={
                             <RequireAuth>
-                                <EventsPage />
+                                <GanttEventsCalendar />
                             </RequireAuth>
                         }
                     />

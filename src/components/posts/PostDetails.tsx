@@ -794,12 +794,40 @@ export default function PostDetails(props: Props) {
                         <label className='block text-sm font-medium mb-2'>
                             Location
                         </label>
+                        {user?.location?.regionID && (
+                            <div className='mb-3'>
+                                <Button
+                                    type='button'
+                                    onClick={() => {
+                                        if (user?.location) {
+                                            setEditData({
+                                                ...editData,
+                                                location: {
+                                                    regionID: user.location.regionID || null,
+                                                    name: user.location.name || null
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    variant='secondary'
+                                    className='text-sm'
+                                >
+                                    📍 Use My Profile Location
+                                    {user.location.name && (
+                                        <span className='ml-1 opacity-75'>
+                                            ({user.location.name})
+                                        </span>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
                         <MapDisplay
                             edit
                             regionID={editData.location?.regionID}
                             height={300}
                             exactLocation={user?.id === postDetails.sender?.id}
                             onLocationChange={handleLocationChange}
+                            shouldSavedLocationButton={true}
                         />
                     </div>
 

@@ -148,8 +148,17 @@ export default function Chat({ channelType }: Props) {
                     formatted.map(async (channel) => {
                         try {
                             const channelMessages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
-                            const lastMessage = channelMessages && channelMessages.length > 0 ? channelMessages[channelMessages.length - 1] : null;
-                            return { ...channel, lastMessage } as ChannelDTO;
+                            if (channelMessages && channelMessages.length > 0) {
+                                // Sort messages by createdAt to ensure we get the actual last message
+                                const sortedMessages = [...channelMessages].sort((a, b) => {
+                                    const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+                                    const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+                                    return dateB - dateA; // Descending order (newest first)
+                                });
+                                const lastMessage = sortedMessages[0]; // Get the most recent message
+                                return { ...channel, lastMessage } as ChannelDTO;
+                            }
+                            return channel;
                         }
                         catch (error) {
                             console.error(`Error fetching messages for channel ${channel.id}:`, error);
@@ -158,7 +167,14 @@ export default function Chat({ channelType }: Props) {
                     })
                 );
 
-                setChannels(channelsWithLastMessage);
+                // Sort channels by last message timestamp (most recent first)
+                const sortedChannels = channelsWithLastMessage.sort((a, b) => {
+                    const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt || a.lastMessage.updatedAt || 0).getTime() : 0;
+                    const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt || b.lastMessage.updatedAt || 0).getTime() : 0;
+                    return dateB - dateA; // Most recent first
+                });
+
+                setChannels(sortedChannels);
 
                 if (targetUserID) {
                     const parsedId = Number(targetUserID);
@@ -186,8 +202,29 @@ export default function Chat({ channelType }: Props) {
 
     useEffect(() => {
         if (messages.length > 0 && selectedChannel) {
-            const lastMessage = messages[messages.length - 1];
-            setChannels((prevChannels) => prevChannels.map((channel) => (channel.id === selectedChannel.id ? { ...channel, lastMessage } : channel)));
+            // Sort messages to get the actual last message (most recent)
+            const sortedMessages = [...messages].sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+                const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+                return dateB - dateA; // Descending order (newest first)
+            });
+            const lastMessage = sortedMessages[0];
+
+            setChannels((prevChannels) => {
+                // Update the channel with the new last message
+                const updatedChannels = prevChannels.map((channel) =>
+                    channel.id === selectedChannel.id
+                        ? { ...channel, lastMessage }
+                        : channel
+                );
+
+                // Re-sort channels by last message timestamp (most recent first)
+                return updatedChannels.sort((a, b) => {
+                    const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt || a.lastMessage.updatedAt || 0).getTime() : 0;
+                    const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt || b.lastMessage.updatedAt || 0).getTime() : 0;
+                    return dateB - dateA; // Most recent first
+                });
+            });
         }
     }, [messages, selectedChannel]);
 
