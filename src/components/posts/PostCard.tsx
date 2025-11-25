@@ -37,7 +37,8 @@ export default function PostCard(props: Props) {
         handshakes,
         tags = [],
         fake,
-        showHandshakeShortcut = false
+        showHandshakeShortcut = false,
+        distance
     } = props;
 
     const { user } = useAuth();
@@ -74,6 +75,9 @@ export default function PostCard(props: Props) {
                             <h2 className='text-lg font-bold break-words text-gray-800 dark:text-gray-100 truncate'>
                                 {title}
                             </h2>
+                            {distance != null && (
+                                <Pill name={`${distance.toFixed(1)} km`} />
+                            )}
                         </div>
                         <span className='text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap'>
                             {timeAgoLabel(createdAt as any)}
