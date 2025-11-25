@@ -97,7 +97,7 @@ function NavItemComponent({
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
-        <nav className='hidden md:block'>
+        <nav className='hidden lg:block'>
             <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
                 {items.map((item) => (
                     <li key={item.name}>
@@ -113,7 +113,7 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
                                     )}
                                 />
                             )}
-                            <span className='text-xs md:text-sm'>{item.name}</span>
+                            <span className='text-xs lg:text-sm'>{item.name}</span>
                         </NavItemComponent>
                     </li>
                 ))}
@@ -126,15 +126,15 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
 function MobileNavigation({ items }: { items: NavItem[] }) {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
-    
+
     return (
-        <div className='md:hidden'>
-            <button 
+        <div className='lg:hidden'>
+            <button
                 onClick={() => setIsOpen(true)}
                 aria-label='Open menu'
-                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
+                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
             >
-                <Bars3Icon className='h-6 w-6' />
+                <Bars3Icon className='h-5 w-5 sm:h-6 sm:w-6' />
             </button>
             
             {isOpen && (
@@ -233,13 +233,15 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
-                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200'
+                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200 overflow-hidden'
             >
-                <Avatar
-                    avatar={getImagePath(user?.avatar)}
-                    username={user?.username}
-                    size={40}
-                />
+                <div className='h-9 w-9 sm:h-10 sm:w-10'>
+                    <Avatar
+                        avatar={getImagePath(user?.avatar)}
+                        username={user?.username}
+                        size={40}
+                    />
+                </div>
             </button>
             {open && (
                 <div
@@ -291,22 +293,26 @@ export default function Navbar({
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-2 bg-transparent px-4 py-4 backdrop-blur-md'>
-                <div className='flex items-center gap-2'>
+            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 backdrop-blur-md'>
+                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0'>
                     <MobileNavigation items={navItems} />
-                    {brand || <></>}
+                    <div className='flex-shrink-0'>
+                        {brand || <></>}
+                    </div>
                 </div>
 
-                <div className='flex flex-1 justify-end md:justify-center'>
+                <div className='flex flex-1 justify-end lg:justify-center min-w-0'>
                     <DesktopNavigation items={navItems} />
                 </div>
 
-                <div className='flex items-center gap-2'>
+                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0'>
                     {/* <ThemeToggleButton /> */}
 
                     {isLoggedIn ? (
                         <>
-                            <NotificationsBell />
+                            <div className='flex-shrink-0'>
+                                <NotificationsBell />
+                            </div>
                             {/* <Link
                                 to={routes.feedback}
                                 aria-label='Feedback'
@@ -314,19 +320,21 @@ export default function Navbar({
                             >
                                 <FlagIcon className='h-5 w-5' />
                             </Link> */}
-                            <UserMenu onLogout={onLogout} />
+                            <div className='flex-shrink-0'>
+                                <UserMenu onLogout={onLogout} />
+                            </div>
                         </>
                     ) : (
-                        <div className='flex items-center gap-1.5'>
+                        <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
                             <Link
                                 to={routes.login}
-                                className='rounded-full bg-white/90 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
                             >
                                 Login
                             </Link>
                             <Link
                                 to={routes.signUp}
-                                className='rounded-full bg-teal-500 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
+                                className='rounded-full bg-teal-500 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500 whitespace-nowrap'
                             >
                                 Register
                             </Link>

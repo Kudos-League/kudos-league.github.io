@@ -234,7 +234,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
-            <FormField name='categoryID' label='Category'>
+            <FormField name='categoryID' label='Category *' helper='Select the category that best fits your post'>
                 <Controller
                     control={form.control}
                     name='categoryID'

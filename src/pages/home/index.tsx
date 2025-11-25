@@ -7,6 +7,8 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useAuth } from '@/contexts/useAuth';
 import { MapPin, X } from 'lucide-react';
+// import { useSearchUsersQuery } from '@/shared/api/mutations/users';
+import UserCard from '@/components/users/UserCard';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -24,38 +26,44 @@ export default function Feed() {
     const [searchText, setSearchText] = React.useState('');
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
     const debouncedSearch = useDebouncedValue(searchText, 300);
+    // const debouncedSearchUsers = useDebouncedValue(searchText, 300);
 
     const { data: searchResults = [], isFetching: searching } =
         useSearchPostsQuery(debouncedSearch);
+    
+    // const { data: userSearchResults = [], isFetching: searchingUsers } =
+    //     useSearchUsersQuery(debouncedSearch);
 
     const searchingActive = debouncedSearch.length >= 2;
+    // const searchingActiveUsers = debouncedSearchUsers.length >= 2;
 
     const apiParams = {
         includeSender: true,
         includeTags: true,
+        includeImages: true,
         limit: 10
     } as const;
 
     return (
-        <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6'>
-            <div className='flex flex-col sm:flex-row sm:items-center gap-4 border-b pb-4'>
+        <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4'>
+            <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4'>
                 <Button
                     onClick={() => navigate('/create-post')}
                     variant='secondary'
-                    className='whitespace-nowrap self-start sm:self-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:-translate-y-0.5'
+                    className='whitespace-nowrap px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:translate-y-0.5'
                 >
                     + Gift / Request
                 </Button>
-            </div>
-
-            <div className='space-y-3'>
                 <input
                     type='text'
                     placeholder='Search…'
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
-                    className='w-full border px-3 py-2 rounded'
+                    className='flex-1 border px-3 py-2 rounded'
                 />
+            </div>
+
+            <div className='space-y-3'>
 
                 <div className='flex flex-wrap items-center gap-2'>
                     {/* <Button
@@ -217,18 +225,25 @@ export default function Feed() {
 
 
             <div className='w-full overflow-x-hidden'>
-                {searchingActive ? (
-                    <PostsInfinite.StaticList
-                        posts={searchResults}
-                        loading={searching}
-                    />
-                ) : (
-                    <PostsInfinite
-                        filters={apiParams}
-                        activeTab={activeTab}
-                        ordering={typeOfOrdering}
-                    />
-                )}
+                {/*searchingActiveUsers ? (
+                    <div className='space-y-4'>
+                        {userSearchResults.map((user) => (
+                            <UserCard key={user.id} user={user} />
+                        ))}
+                    </div>
+                ) :*/
+                    searchingActive ? (
+                        <PostsInfinite.StaticList
+                            posts={searchResults}
+                            loading={searching}
+                        />
+                    ) : (
+                        <PostsInfinite
+                            filters={apiParams}
+                            activeTab={activeTab}
+                            ordering={typeOfOrdering}
+                        />
+                    )}
             </div>
         </div>
     );

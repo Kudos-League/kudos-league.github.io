@@ -139,13 +139,13 @@ const Layout: React.FC = () => {
                     brand={
                         <Link
                             to={routes.home}
-                            className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col'
+                            className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
                         >
                             {/* Kudos League */}
-                            <img 
+                            <img
                                 src={`${process.env.PUBLIC_URL}/logo512.png`}
                                 alt="Kudos League"
-                                className="h-10 w-15"
+                                className="h-8 w-auto sm:h-10"
                             />
                         </Link>
                     }
