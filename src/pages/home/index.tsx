@@ -5,19 +5,21 @@ import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
+import { useSearchUsersQuery } from '@/shared/api/queries/users';
 import { useAuth } from '@/contexts/useAuth';
 import { MapPin, X } from 'lucide-react';
-// import { useSearchUsersQuery } from '@/shared/api/mutations/users';
 import UserCard from '@/components/users/UserCard';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
+type SearchFilterType = 'all' | 'posts' | 'users';
 
 export default function Feed() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
+    const [searchFilter, setSearchFilter] = React.useState<SearchFilterType>('all');
     const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
         type: 'date',
         order: 'desc'
@@ -26,16 +28,14 @@ export default function Feed() {
     const [searchText, setSearchText] = React.useState('');
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
     const debouncedSearch = useDebouncedValue(searchText, 300);
-    // const debouncedSearchUsers = useDebouncedValue(searchText, 300);
 
     const { data: searchResults = [], isFetching: searching } =
         useSearchPostsQuery(debouncedSearch);
-    
-    // const { data: userSearchResults = [], isFetching: searchingUsers } =
-    //     useSearchUsersQuery(debouncedSearch);
+
+    const { data: userSearchResults = [], isFetching: searchingUsers } =
+        useSearchUsersQuery(debouncedSearch);
 
     const searchingActive = debouncedSearch.length >= 2;
-    // const searchingActiveUsers = debouncedSearchUsers.length >= 2;
 
     const apiParams = {
         includeSender: true,
@@ -225,25 +225,138 @@ export default function Feed() {
 
 
             <div className='w-full overflow-x-hidden'>
-                {/*searchingActiveUsers ? (
+                {searchingActive ? (
                     <div className='space-y-4'>
-                        {userSearchResults.map((user) => (
-                            <UserCard key={user.id} user={user} />
-                        ))}
+                        {/* Search Filter Tabs (Reddit-style) */}
+                        <div className='flex items-center gap-2 border-b border-gray-200 pb-2'>
+                            <button
+                                onClick={() => setSearchFilter('all')}
+                                className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
+                                    searchFilter === 'all'
+                                        ? 'bg-blue-500 text-white font-semibold shadow-sm'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                All
+                                <span className='ml-1.5 text-xs opacity-80'>
+                                    ({userSearchResults.length + searchResults.length})
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => setSearchFilter('posts')}
+                                className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
+                                    searchFilter === 'posts'
+                                        ? 'bg-blue-500 text-white font-semibold shadow-sm'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                Posts
+                                <span className='ml-1.5 text-xs opacity-80'>
+                                    ({searchResults.length})
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => setSearchFilter('users')}
+                                className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
+                                    searchFilter === 'users'
+                                        ? 'bg-blue-500 text-white font-semibold shadow-sm'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                Users
+                                <span className='ml-1.5 text-xs opacity-80'>
+                                    ({userSearchResults.length})
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Search Results */}
+                        <div className='space-y-6'>
+                            {/* User Results */}
+                            {(searchFilter === 'all' || searchFilter === 'users') && (
+                                <>
+                                    {searchingUsers ? (
+                                        <div className='text-center py-8 text-gray-500'>
+                                            Searching users...
+                                        </div>
+                                    ) : userSearchResults.length > 0 ? (
+                                        <div className='space-y-3'>
+                                            {searchFilter === 'all' && (
+                                                <h3 className='text-lg font-semibold text-gray-700 flex items-center gap-2'>
+                                                    <span className='bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm'>
+                                                        {userSearchResults.length}
+                                                    </span>
+                                                    Users
+                                                </h3>
+                                            )}
+                                            <div className='space-y-2'>
+                                                {userSearchResults.map((user) => (
+                                                    <UserCard key={user.id} user={user} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : searchFilter === 'users' ? (
+                                        <div className='text-center py-12 text-gray-500'>
+                                            No users found for &quot;{searchText}&quot;
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
+
+                            {/* Post Results */}
+                            {(searchFilter === 'all' || searchFilter === 'posts') && (
+                                <>
+                                    {searching ? (
+                                        <div className='text-center py-8 text-gray-500'>
+                                            Searching posts...
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className='space-y-3'>
+                                            {searchFilter === 'all' && (
+                                                <h3 className='text-lg font-semibold text-gray-700 flex items-center gap-2'>
+                                                    <span className='bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm'>
+                                                        {searchResults.length}
+                                                    </span>
+                                                    Posts
+                                                </h3>
+                                            )}
+                                            <PostsInfinite.StaticList
+                                                posts={searchResults}
+                                                loading={false}
+                                            />
+                                        </div>
+                                    ) : searchFilter === 'posts' ? (
+                                        <div className='text-center py-12 text-gray-500'>
+                                            No posts found for &quot;{searchText}&quot;
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
+
+                            {/* No Results At All */}
+                            {!searching &&
+                                !searchingUsers &&
+                                searchFilter === 'all' &&
+                                userSearchResults.length === 0 &&
+                                searchResults.length === 0 && (
+                                <div className='text-center py-12 space-y-2'>
+                                    <p className='text-lg font-semibold text-gray-700'>
+                                            No results found
+                                    </p>
+                                    <p className='text-gray-500'>
+                                            Try searching for something else or check your spelling
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                ) :*/
-                    searchingActive ? (
-                        <PostsInfinite.StaticList
-                            posts={searchResults}
-                            loading={searching}
-                        />
-                    ) : (
-                        <PostsInfinite
-                            filters={apiParams}
-                            activeTab={activeTab}
-                            ordering={typeOfOrdering}
-                        />
-                    )}
+                ) : (
+                    <PostsInfinite
+                        filters={apiParams}
+                        activeTab={activeTab}
+                        ordering={typeOfOrdering}
+                    />
+                )}
             </div>
         </div>
     );
