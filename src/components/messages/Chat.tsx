@@ -44,15 +44,14 @@ export default function Chat({ channelType }: Props) {
     useEffect(() => {
         if (resolvedIsDM) return;
 
-        if (channelsQuery.data) {
+        if (channelsQuery.data && channelsQuery.data.length > 0) {
             setChannels(channelsQuery.data);
 
-            if (channelsQuery.data.length > 0 && (!selectedChannel || selectedChannel.type === 'dm')) {
-                selectChannel(channelsQuery.data[0]);
-                setShowChatOnMobile(true); // Auto-open chat on mobile for public channels
-            }
+            // Always auto-select first public channel
+            selectChannel(channelsQuery.data[0]);
+            setShowChatOnMobile(true);
         }
-    }, [channelsQuery.data, routeIsDM, selectedChannel, resolvedIsDM, channelType]);
+    }, [channelsQuery.data, resolvedIsDM]);
 
     useEffect(() => {
         setSelectedChannel(null);
