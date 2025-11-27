@@ -19,7 +19,7 @@ import {
     endOfDay
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
@@ -1039,32 +1039,35 @@ export default function GanttEventsCalendar() {
                     <div className='flex gap-2'>
                         <button
                             onClick={() => setLocationFilter('local')}
-                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
                                 locationFilter === 'local'
                                     ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 dark:shadow-green-500/30'
                                     : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-green-500 dark:hover:border-green-500 hover:text-green-600 dark:hover:text-green-400'
                             }`}
                         >
-                            📍 Local
+                            <MapPin className='w-4 h-4' />
+                            Local
                         </button>
                         <button
                             onClick={() => setLocationFilter('global')}
-                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
                                 locationFilter === 'global'
                                     ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 dark:shadow-blue-500/30'
                                     : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'
                             }`}
                         >
-                            🌐 Global
+                            <Globe className='w-4 h-4' />
+                            Global
                         </button>
                         <button
                             onClick={() => setLocationFilter('all')}
-                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
                                 locationFilter === 'all'
                                     ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/50 dark:shadow-purple-500/30'
                                     : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-purple-500 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400'
                             }`}
                         >
+                            <Filter className='w-4 h-4' />
                             All
                         </button>
                     </div>
