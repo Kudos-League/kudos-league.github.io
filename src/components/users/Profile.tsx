@@ -295,6 +295,7 @@ const Profile: React.FC<Props> = ({
                             showAll={false}
                             onShowAll={() => setFilter('handshakes')}
                             showPostDetails
+                            showSenderOrReceiver='sender'
                         />
                     </div>
                 )}

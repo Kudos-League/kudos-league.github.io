@@ -304,23 +304,6 @@ export default function CreateEvent() {
                         The &nbsp;<u>EXACT</u>&nbsp; event location will be
                         visible to all participants.
                     </p>
-                    {user?.location?.regionID && (
-                        <div className='mb-3'>
-                            <Button
-                                type='button'
-                                onClick={handleUseProfileLocation}
-                                variant='secondary'
-                                className='text-sm'
-                            >
-                                📍 Use My Profile Location
-                                {user.location.name && (
-                                    <span className='ml-1 opacity-75'>
-                                        ({user.location.name})
-                                    </span>
-                                )}
-                            </Button>
-                        </div>
-                    )}
                     <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
                         <MapDisplay
                             edit={true}
@@ -335,6 +318,7 @@ export default function CreateEvent() {
                             }
                             width='100%'
                             height={300}
+                            shouldSavedLocationButton={true}
                         />
                     </div>
                     {!global && !location?.regionID && errorMessages.length > 0 && (

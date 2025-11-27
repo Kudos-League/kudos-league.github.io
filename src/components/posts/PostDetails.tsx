@@ -5,7 +5,7 @@ import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
 import MessageList from '@/components/posts/MessageList';
-import ChatModal from '@/components/messages/ChatModal';
+// import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
@@ -31,6 +31,7 @@ import type {
 import Pill from '../common/Pill';
 import Button from '../common/Button';
 import TextWithLinks from '../common/TextWithLinks';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
     id?: string;
@@ -95,6 +96,7 @@ export default function PostDetails(props: Props) {
     const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
     const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
     const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
+    const navigate = useNavigate();
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -219,8 +221,10 @@ export default function PostDetails(props: Props) {
     };
 
     const handleOpenChatFromSuccess = () => {
-        setHandshakeSuccessModal(false);
-        setIsChatOpen(true);
+        //navigator navigate to chat
+        navigate(`/dms/${postDetails?.senderID}`);
+        // setHandshakeSuccessModal(false);
+        // setIsChatOpen(true);
     };
 
     const handleCloseChatModal = (open: boolean) => {
@@ -790,12 +794,40 @@ export default function PostDetails(props: Props) {
                         <label className='block text-sm font-medium mb-2'>
                             Location
                         </label>
+                        {user?.location?.regionID && (
+                            <div className='mb-3'>
+                                <Button
+                                    type='button'
+                                    onClick={() => {
+                                        if (user?.location) {
+                                            setEditData({
+                                                ...editData,
+                                                location: {
+                                                    regionID: user.location.regionID || null,
+                                                    name: user.location.name || null
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    variant='secondary'
+                                    className='text-sm'
+                                >
+                                    📍 Use My Profile Location
+                                    {user.location.name && (
+                                        <span className='ml-1 opacity-75'>
+                                            ({user.location.name})
+                                        </span>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
                         <MapDisplay
                             edit
                             regionID={editData.location?.regionID}
                             height={300}
                             exactLocation={user?.id === postDetails.sender?.id}
                             onLocationChange={handleLocationChange}
+                            shouldSavedLocationButton={true}
                         />
                     </div>
 
@@ -921,12 +953,15 @@ export default function PostDetails(props: Props) {
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails={false}
+                    showSenderOrReceiver={'sender'}
                 />
 
 
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    postDetails.handshakes?.map((h: any) => h.senderID !== user?.id).every((h: any) => h.status === 'cancelled') &&
+                    !postDetails.handshakes?.some((h: any) => 
+                        h.senderID === user?.id && h.status !== 'cancelled'
+                    ) &&
                     (
                         <div className='mt-4 flex justify-center'>
                             <Button
@@ -974,7 +1009,7 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Chat Modal */}
-            {isChatOpen && (
+            {/* {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
                     setIsChatOpen={handleCloseChatModal}
@@ -984,7 +1019,7 @@ export default function PostDetails(props: Props) {
                     initialMessage=""
                     onMessageSent={handleMessageSent}
                 />
-            )}
+            )} */}
 
             {/* Report Modal */}
             {reportModalVisible && (

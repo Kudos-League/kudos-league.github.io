@@ -22,10 +22,12 @@ import {
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { EventDTO } from '@/shared/api/types';
+import { EventDTO, UserDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
+import UserCard from '../users/UserCard';
+import { apiGet } from '@/shared/api/apiClient';
 
 interface EventDetailsModalProps {
     event: EventDTO | null;
@@ -36,8 +38,34 @@ interface EventDetailsModalProps {
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onViewPeriod }) => {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const [fullEvent, setFullEvent] = useState<EventDTO | null>(null);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
+
+    useEffect(() => {
+        const fetchFullEvent = async () => {
+            if (!event?.id) return;
+
+            setLoadingParticipants(true);
+            setFullEvent(null);
+            try {
+                const eventData = await apiGet<EventDTO>(`/events/${event.id}`);
+                setFullEvent(eventData);
+            }
+            catch (error) {
+                console.error('Failed to fetch event details:', error);
+                setFullEvent(event);
+            }
+            finally {
+                setLoadingParticipants(false);
+            }
+        };
+
+        fetchFullEvent();
+    }, [event?.id, event]);
 
     if (!event) return null;
+
+    const displayEvent = fullEvent || event;
 
     const start = toZonedTime(new Date(event.startTime), tz);
     const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
@@ -55,11 +83,11 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
 
     return (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4'>
-            <div className='bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
-                <div className='sticky top-0 bg-white border-b p-6'>
+            <div className='bg-white dark:bg-zinc-900 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
+                <div className='sticky top-0 bg-white dark:bg-zinc-900 border-b dark:border-zinc-700 p-6'>
                     <div className='flex items-start justify-between'>
                         <div className='flex-1'>
-                            <h2 className='text-2xl font-bold text-gray-900 mb-2'>{event.title}</h2>
+                            <h2 className='text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-2'>{event.title}</h2>
                             <div className='flex flex-wrap gap-2'>
                                 {event.location?.global ? (
                                     <span className='px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded'>
@@ -74,62 +102,62 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                         </div>
                         <button
                             onClick={onClose}
-                            className='p-2 hover:bg-gray-100 rounded-lg transition-colors'
+                            className='p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
                         >
-                            <X className='w-5 h-5' />
+                            <X className='w-5 h-5 text-gray-900 dark:text-zinc-100' />
                         </button>
                     </div>
                 </div>
 
                 <div className='p-6 space-y-6'>
                     <div>
-                        <h3 className='font-semibold text-gray-900 mb-2 flex items-center gap-2'>
+                        <h3 className='font-semibold text-gray-900 dark:text-zinc-100 mb-2 flex items-center gap-2'>
                             <span className='text-lg'>📝</span>
                             Description
                         </h3>
-                        <p className='text-gray-700 leading-relaxed'>{event.description}</p>
+                        <p className='text-gray-700 dark:text-zinc-300 leading-relaxed'>{event.description}</p>
                     </div>
 
-                    <div className='border-t pt-4'>
-                        <h3 className='font-semibold text-gray-900 mb-3 flex items-center gap-2'>
-                            <Clock className='w-5 h-5 text-blue-600' />
+                    <div className='border-t dark:border-zinc-700 pt-4'>
+                        <h3 className='font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2'>
+                            <Clock className='w-5 h-5 text-blue-600 dark:text-blue-400' />
                             Schedule
                         </h3>
                         <div className='space-y-2 text-sm'>
                             <div className='flex items-start gap-3'>
-                                <span className='font-medium text-gray-600 w-16'>Start:</span>
-                                <span className='text-gray-900'>{format(start, 'EEEE, MMMM d, yyyy')}</span>
+                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>Start:</span>
+                                <span className='text-gray-900 dark:text-zinc-100'>{format(start, 'EEEE, MMMM d, yyyy')}</span>
                             </div>
                             <div className='flex items-start gap-3'>
-                                <span className='font-medium text-gray-600 w-16'></span>
-                                <span className='text-gray-700'>{format(start, 'h:mm a')}</span>
+                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'></span>
+                                <span className='text-gray-700 dark:text-zinc-300'>{format(start, 'h:mm a')}</span>
                             </div>
                             {event.endTime && (
                                 <>
                                     <div className='flex items-start gap-3'>
-                                        <span className='font-medium text-gray-600 w-16'>End:</span>
-                                        <span className='text-gray-900'>{format(end!, 'EEEE, MMMM d, yyyy')}</span>
+                                        <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>End:</span>
+                                        <span className='text-gray-900 dark:text-zinc-100'>{format(end!, 'EEEE, MMMM d, yyyy')}</span>
                                     </div>
                                     <div className='flex items-start gap-3'>
-                                        <span className='font-medium text-gray-600 w-16'></span>
-                                        <span className='text-gray-700'>{format(end!, 'h:mm a')}</span>
+                                        <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'></span>
+                                        <span className='text-gray-700 dark:text-zinc-300'>{format(end!, 'h:mm a')}</span>
                                     </div>
                                 </>
                             )}
-                            <div className='flex items-start gap-3 pt-2 border-t'>
-                                <span className='font-medium text-gray-600 w-16'>Duration:</span>
-                                <span className='text-blue-600 font-medium'>{getDuration()}</span>
+                            <div className='flex items-start gap-3 pt-2 border-t dark:border-zinc-700'>
+                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>Duration:</span>
+                                <span className='text-blue-600 dark:text-blue-400 font-medium'>{getDuration()}</span>
                             </div>
                         </div>
                     </div>
 
                     {event.location && (
-                        <div className='border-t pt-4'>
-                            <h3 className='font-semibold text-gray-900 mb-3 flex items-center gap-2'>
-                                <MapPin className='w-5 h-5 text-green-600' />
+                        <div className='border-t dark:border-zinc-700 pt-4'>
+                            <h3 className='font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2'>
+                                <MapPin className='w-5 h-5 text-green-600 dark:text-green-400' />
                                 Location
                             </h3>
-                            <p className='text-gray-700'>
+                            <p className='text-gray-700 dark:text-zinc-300'>
                                 {event.location.global ? (
                                     <span className='flex items-center gap-2'>
                                         <span>🌐</span>
@@ -145,38 +173,40 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                         </div>
                     )}
 
-                    <div className='border-t pt-4'>
-                        <h3 className='font-semibold text-gray-900 mb-3 flex items-center gap-2'>
-                            <Users className='w-5 h-5 text-purple-600' />
+                    <div className='border-t dark:border-zinc-700 pt-4'>
+                        <h3 className='font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2'>
+                            <Users className='w-5 h-5 text-purple-600 dark:text-purple-400' />
                             Participants
-                            <span className='ml-1 text-sm font-normal text-gray-600'>
-                                ({event.participantCount || 0})
+                            <span className='ml-1 text-sm font-normal text-gray-600 dark:text-zinc-400'>
+                                ({displayEvent.participantCount || 0})
                             </span>
                         </h3>
-                        {event.participants && event.participants.length > 0 ? (
+                        {loadingParticipants ? (
+                            <p className='text-gray-500 dark:text-zinc-400 italic'>Loading participants...</p>
+                        ) : displayEvent.participants && displayEvent.participants.length > 0 ? (
                             <div className='space-y-2'>
-                                {event.participants.slice(0, 8).map((p: any) => (
-                                    <div key={p.id} className='flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors'>
+                                {displayEvent.participants.slice(0, 8).map((p: any) => (
+                                    <div key={p.id} className='flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-lg transition-colors'>
                                         <img
                                             src={getImagePath(p.avatar)}
                                             alt={p.username}
-                                            className='w-10 h-10 rounded-full border-2 border-gray-200'
+                                            className='w-10 h-10 rounded-full border-2 border-gray-200 dark:border-zinc-700'
                                         />
-                                        <span className='font-medium text-gray-900'>{p.username}</span>
+                                        <span className='font-medium text-gray-900 dark:text-zinc-100'>{p.username}</span>
                                     </div>
                                 ))}
-                                {event.participants.length > 8 && (
-                                    <p className='text-sm text-gray-500 pl-2 pt-2'>
-                                        +{event.participants.length - 8} more participant{event.participants.length - 8 !== 1 ? 's' : ''}
+                                {displayEvent.participants.length > 8 && (
+                                    <p className='text-sm text-gray-500 dark:text-zinc-400 pl-2 pt-2'>
+                                        +{displayEvent.participants.length - 8} more participant{displayEvent.participants.length - 8 !== 1 ? 's' : ''}
                                     </p>
                                 )}
                             </div>
                         ) : (
-                            <p className='text-gray-500 italic'>No participants yet</p>
+                            <p className='text-gray-500 dark:text-zinc-400 italic'>No participants yet</p>
                         )}
                     </div>
 
-                    <div className='flex gap-3 pt-4 border-t'>
+                    <div className='flex gap-3 pt-4 border-t dark:border-zinc-700'>
                         <Button
                             onClick={() => {
                                 onViewPeriod(new Date(event.startTime), 'day');
@@ -206,7 +236,7 @@ export default function GanttEventsCalendar() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('month');
+    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('week');
     const [filterText, setFilterText] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
@@ -224,6 +254,8 @@ export default function GanttEventsCalendar() {
     const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
+    const [eventIDToUserMap, setEventIDToUserMap] = useState<Record<string, UserDTO>>({});
+    const [fetchedCreatorIds, setFetchedCreatorIds] = useState<Array<number>>([]);
 
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
@@ -236,13 +268,11 @@ export default function GanttEventsCalendar() {
     }, [allEvents]);
 
     const dateRange = useMemo(() => {
-        // Use custom date range if enabled
         if (useCustomRange && customStartDate) {
             const start = startOfDay(new Date(customStartDate));
             let end: Date;
             
             if (useDuration) {
-                // Calculate end date based on duration
                 switch (durationUnit) {
                 case 'days':
                     end = endOfDay(addDays(start, durationValue - 1));
@@ -259,14 +289,12 @@ export default function GanttEventsCalendar() {
                 end = endOfDay(new Date(customEndDate));
             }
             else {
-                // Default to one month if no end date specified
                 end = endOfMonth(start);
             }
             
             return { start, end };
         }
         
-        // Use default time range selection
         const now = startOfDay(new Date());
         let start: Date, end: Date;
 
@@ -477,6 +505,98 @@ export default function GanttEventsCalendar() {
         setShowingRangeEvents(false);
     };
 
+    const handleNavigatePeriodPrevious = () => {
+        if (!viewDate || !viewPeriodType) return;
+        
+        let newDate: Date;
+        if (viewPeriodType === 'day') {
+            newDate = addDays(viewDate, -1);
+        }
+        else if (viewPeriodType === 'week') {
+            newDate = addWeeks(viewDate, -1);
+        }
+        else {
+            newDate = addMonths(viewDate, -1);
+        }
+        
+        setViewDate(newDate);
+        
+        let periodStart: Date, periodEnd: Date;
+        const clicked = startOfDay(newDate);
+        
+        if (viewPeriodType === 'day') {
+            periodStart = startOfDay(clicked);
+            periodEnd = endOfDay(clicked);
+        }
+        else if (viewPeriodType === 'week') {
+            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+        }
+        else {
+            periodStart = startOfMonth(clicked);
+            periodEnd = endOfMonth(clicked);
+        }
+        
+        const eventsInPeriod = filteredEvents.filter((e) => {
+            const start = new Date(e.startTime);
+            const end = e.endTime ? new Date(e.endTime) : null;
+            
+            if (!end) {
+                return start <= periodEnd;
+            }
+            
+            return start <= periodEnd && end >= periodStart;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        
+        setSelectedPeriodEvents(eventsInPeriod);
+    };
+
+    const handleNavigatePeriodNext = () => {
+        if (!viewDate || !viewPeriodType) return;
+        
+        let newDate: Date;
+        if (viewPeriodType === 'day') {
+            newDate = addDays(viewDate, 1);
+        }
+        else if (viewPeriodType === 'week') {
+            newDate = addWeeks(viewDate, 1);
+        }
+        else {
+            newDate = addMonths(viewDate, 1);
+        }
+        
+        setViewDate(newDate);
+        
+        let periodStart: Date, periodEnd: Date;
+        const clicked = startOfDay(newDate);
+        
+        if (viewPeriodType === 'day') {
+            periodStart = startOfDay(clicked);
+            periodEnd = endOfDay(clicked);
+        }
+        else if (viewPeriodType === 'week') {
+            periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+            periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+        }
+        else {
+            periodStart = startOfMonth(clicked);
+            periodEnd = endOfMonth(clicked);
+        }
+        
+        const eventsInPeriod = filteredEvents.filter((e) => {
+            const start = new Date(e.startTime);
+            const end = e.endTime ? new Date(e.endTime) : null;
+            
+            if (!end) {
+                return start <= periodEnd;
+            }
+            
+            return start <= periodEnd && end >= periodStart;
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        
+        setSelectedPeriodEvents(eventsInPeriod);
+    };
+
     const handleShowRangeEvents = () => {
         const { start, end } = dateRange;
         
@@ -545,7 +665,6 @@ export default function GanttEventsCalendar() {
             setUseDuration(false);
         }
         else if (periodType === 'week-number' && weekNumber) {
-            // Calculate the start date of the given week number in current year
             const yearStart = startOfYear(now);
             const targetWeekStart = addWeeks(yearStart, weekNumber - 1);
             const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
@@ -631,31 +750,159 @@ export default function GanttEventsCalendar() {
         return () => window.removeEventListener('resize', measureWidth);
     }, []);
 
+    useEffect(() => {
+        const fetchCreators = async () => {
+            const creatorIdsToFetch = new Array<number>();
+        
+            events.forEach(event => {
+                if (event.creatorID && !fetchedCreatorIds.includes(event.creatorID)) {
+                    creatorIdsToFetch.push(event.creatorID);
+                }
+            });
+
+            if (creatorIdsToFetch.length === 0) return;
+        
+            console.log(`Fetching ${creatorIdsToFetch.length} unique creators`);
+
+            setFetchedCreatorIds(prev => Array.from(new Set([...prev, ...creatorIdsToFetch])));
+
+            const updates: Record<number, UserDTO> = {};
+    
+            for (const creatorId of creatorIdsToFetch) {
+                try {
+                    const creator = await apiGet<UserDTO>(`/users/${creatorId}`);
+                    updates[creatorId] = creator;
+                    console.log(`✓ Fetched creator ${creatorId}: ${creator.username}`);
+                
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                catch (error) {
+                    console.error(`✗ Failed to fetch creator ${creatorId}:`, error);
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                setEventIDToUserMap(prev => {
+                    const newMap = { ...prev, ...updates };
+                    console.log(`Updated map: ${Object.keys(newMap).length} total creators`);
+                    return newMap;
+                });
+            }
+        };
+
+        fetchCreators();
+    }, [events, fetchedCreatorIds]);
+
+    useEffect(() => {
+        console.log(`eventIDToUserMap updated: ${Object.keys(eventIDToUserMap).length} entries`);
+    }, [eventIDToUserMap]);
+
+    useEffect(() => {
+        if (viewDate && viewPeriodType && !showingRangeEvents) {
+            let periodStart: Date, periodEnd: Date;
+            const clicked = startOfDay(viewDate);
+
+            if (viewPeriodType === 'day') {
+                periodStart = startOfDay(clicked);
+                periodEnd = endOfDay(clicked);
+            }
+            else if (viewPeriodType === 'week') {
+                periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
+                periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+            }
+            else {
+                periodStart = startOfMonth(clicked);
+                periodEnd = endOfMonth(clicked);
+            }
+
+            const eventsInPeriod = filteredEvents.filter((e) => {
+                const start = new Date(e.startTime);
+                const end = e.endTime ? new Date(e.endTime) : null;
+
+                if (!end) {
+                    return start <= periodEnd;
+                }
+
+                return start <= periodEnd && end >= periodStart;
+            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+            setSelectedPeriodEvents(eventsInPeriod);
+        }
+        else if (showingRangeEvents) {
+            const { start, end } = dateRange;
+
+            const eventsInRange = filteredEvents.filter((e) => {
+                const eventStart = new Date(e.startTime);
+                const eventEnd = e.endTime ? new Date(e.endTime) : null;
+
+                if (!eventEnd) {
+                    return eventStart <= end;
+                }
+
+                return eventStart <= end && eventEnd >= start;
+            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+            setSelectedPeriodEvents(eventsInRange);
+        }
+    }, [filterText, locationFilter, filteredEvents, viewDate, viewPeriodType, showingRangeEvents, dateRange]);
+
     if (selectedPeriodEvents && viewDate) {
         return (
             <div className='max-w-5xl mx-auto p-3 sm:p-4'>
-                <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4'>
-                    <Button onClick={handleBackToGantt} variant='secondary' className='text-sm w-full sm:w-auto flex items-center justify-center gap-2'>
-                        <ChevronLeft className='w-4 h-4' />
-                        Back to Calendar
-                    </Button>
-                    <div className='flex-1'>
-                        <h2 className='text-base sm:text-xl font-semibold'>
-                            {showingRangeEvents ? 'Events during ' : `Events ${viewPeriodType === 'day' ? 'on' : 'during'} `}
-                            {getViewPeriodLabel()}
-                        </h2>
-                        <p className='text-xs sm:text-sm text-gray-600 mt-0.5'>
-                            {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
-                        </p>
+                <div className='flex flex-col gap-3 sm:gap-4 mb-4'>
+                    <div className='flex flex-col items-start gap-2 sm:gap-3'>
+                        <Button onClick={handleBackToGantt} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
+                            <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
+                            <span className='hidden sm:inline'>Back to Calendar</span>
+                            <span className='sm:hidden'>Back</span>
+                        </Button>
+                        
+                        {!showingRangeEvents ? (
+                            <div className='flex items-center justify-between gap-3 sm:gap-4 w-full'>
+                                <button
+                                    onClick={handleNavigatePeriodPrevious}
+                                    className='p-2.5 sm:p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all border-2 border-gray-300 dark:border-zinc-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md'
+                                    title={`Previous ${viewPeriodType}`}
+                                >
+                                    <ChevronLeft className='w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-zinc-300' />
+                                </button>
+
+                                <div className='flex-1 text-center'>
+                                    <h2 className='text-base sm:text-xl font-semibold text-gray-900 dark:text-zinc-100'>
+                                    Events {viewPeriodType === 'day' ? 'on' : 'during'} {getViewPeriodLabel()}
+                                    </h2>
+                                    <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-0.5'>
+                                        {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleNavigatePeriodNext}
+                                    className='p-2.5 sm:p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all border-2 border-gray-300 dark:border-zinc-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md'
+                                    title={`Next ${viewPeriodType}`}
+                                >
+                                    <ChevronRight className='w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-zinc-300' />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className='text-center'>
+                                <h2 className='text-base sm:text-xl font-semibold text-gray-900 dark:text-zinc-100'>
+                                Events during {getViewPeriodLabel()}
+                                </h2>
+                                <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-0.5'>
+                                    {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {selectedPeriodEvents.length === 0 ? (
-                    <div className='flex items-center justify-center text-gray-500 py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300'>
+                    <div className='flex items-center justify-center text-gray-500 dark:text-zinc-400 py-12 bg-gray-50 dark:bg-zinc-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700'>
                         <div className='text-center'>
-                            <Calendar className='w-12 h-12 mx-auto mb-2 text-gray-400' />
+                            <Calendar className='w-12 h-12 mx-auto mb-2 text-gray-400 dark:text-zinc-500' />
                             <p className='text-sm sm:text-base font-medium'>No events during this period</p>
-                            <p className='text-xs text-gray-400 mt-1'>Try selecting a different time range</p>
+                            <p className='text-xs text-gray-400 dark:text-zinc-500 mt-1'>Try selecting a different time range</p>
                         </div>
                     </div>
                 ) : (
@@ -664,10 +911,10 @@ export default function GanttEventsCalendar() {
                             <li
                                 key={event.id}
                                 onClick={() => navigate(`/event/${event.id}`)}
-                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
+                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                             >
                                 <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                    <p className='font-bold text-base sm:text-lg text-gray-900'>{event.title}</p>
+                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
                                     {event.location?.global ? (
                                         <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                             🌐 Global
@@ -679,10 +926,10 @@ export default function GanttEventsCalendar() {
                                     )}
                                 </div>
                                 {event.description && (
-                                    <p className='text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
                                 )}
                                 <div className='space-y-0.5 sm:space-y-1'>
-                                    <p className='text-xs sm:text-sm text-gray-700 flex items-center gap-1.5 sm:gap-2'>
+                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
                                         <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                         <span className='truncate'>
                                             {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
@@ -692,13 +939,18 @@ export default function GanttEventsCalendar() {
                                         </span>
                                     </p>
                                     {event.location?.name && !event.location.global && (
-                                        <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                             <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.location.name}
                                         </p>
                                     )}
+                                    {event.creatorID && eventIDToUserMap[event.creatorID] && (
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <UserCard user={eventIDToUserMap[event.creatorID]} />
+                                        </p>
+                                    )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                        <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
+                                        <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                             <Users className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
                                         </p>
@@ -716,7 +968,7 @@ export default function GanttEventsCalendar() {
         return (
             <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-base sm:text-lg text-gray-600'>Loading events...</div>
+                    <div className='text-base sm:text-lg text-gray-600 dark:text-zinc-400'>Loading events...</div>
                 </div>
             </div>
         );
@@ -726,7 +978,7 @@ export default function GanttEventsCalendar() {
         return (
             <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-base sm:text-lg text-red-600'>Failed to load events</div>
+                    <div className='text-base sm:text-lg text-red-600 dark:text-red-400'>Failed to load events</div>
                 </div>
             </div>
         );
@@ -737,8 +989,8 @@ export default function GanttEventsCalendar() {
             <div className='mb-3 sm:mb-4'>
                 <div className='flex items-center justify-between mb-4'>
                     <div>
-                        <h1 className='text-xl sm:text-2xl font-bold'>Events Calendar</h1>
-                        <p className='text-xs sm:text-sm text-gray-600 mt-1'>
+                        <h1 className='text-xl sm:text-2xl font-bold text-gray-900 dark:text-zinc-100'>Events Calendar</h1>
+                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-1'>
                             Viewing {timelineUnits.length} {timeUnit} • {filteredEvents.length} events
                         </p>
                     </div>
@@ -787,15 +1039,15 @@ export default function GanttEventsCalendar() {
                 </div>
 
                 {showPeriodPicker && (
-                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200'>
+                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800'>
                         <div className='flex items-center justify-between mb-3'>
-                            <h3 className='text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2'>
+                            <h3 className='text-sm sm:text-base font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
                                 <Calendar className='w-4 h-4' />
                                 Jump to Period
                             </h3>
                             <button
                                 onClick={() => setShowPeriodPicker(false)}
-                                className='text-gray-500 hover:text-gray-700'
+                                className='text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
                             >
                                 <X className='w-4 h-4' />
                             </button>
@@ -804,32 +1056,32 @@ export default function GanttEventsCalendar() {
                         <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
                             <button
                                 onClick={() => handleJumpToPeriod('this-week')}
-                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                             >
                                 This Week
                             </button>
                             <button
                                 onClick={() => handleJumpToPeriod('next-week')}
-                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                             >
                                 Next Week
                             </button>
                             <button
                                 onClick={() => handleJumpToPeriod('this-month')}
-                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                             >
                                 This Month
                             </button>
                             <button
                                 onClick={() => handleJumpToPeriod('next-month')}
-                                className='px-3 py-2 bg-white hover:bg-blue-100 border border-blue-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors'
+                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                             >
                                 Next Month
                             </button>
                         </div>
 
-                        <div className='mt-3 pt-3 border-t border-blue-200'>
-                            <label className='block text-xs sm:text-sm font-medium text-gray-700 mb-2'>
+                        <div className='mt-3 pt-3 border-t border-blue-200 dark:border-blue-800'>
+                            <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2'>
                                 Jump to Week Number
                             </label>
                             <div className='flex gap-2'>
@@ -839,7 +1091,7 @@ export default function GanttEventsCalendar() {
                                     max='53'
                                     placeholder='Week #'
                                     id='week-number-input'
-                                    className='flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                    className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                 />
                                 <button
                                     onClick={() => {
@@ -849,12 +1101,12 @@ export default function GanttEventsCalendar() {
                                             handleJumpToPeriod('week-number', weekNum);
                                         }
                                     }}
-                                    className='px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors'
+                                    className='px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors'
                                 >
                                     Go
                                 </button>
                             </div>
-                            <p className='mt-1 text-[0.65rem] sm:text-xs text-gray-600'>
+                            <p className='mt-1 text-[0.65rem] sm:text-xs text-gray-600 dark:text-zinc-400'>
                                 Current week: {format(new Date(), 'w')} of {format(new Date(), 'yyyy')}
                             </p>
                         </div>
@@ -862,9 +1114,9 @@ export default function GanttEventsCalendar() {
                 )}
 
                 {showFilters && (
-                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg space-y-3 sm:space-y-4'>
+                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-lg space-y-3 sm:space-y-4'>
                         <div>
-                            <label className='block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2'>
+                            <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5 sm:mb-2'>
                                 Search Events
                             </label>
                             <input
@@ -872,7 +1124,7 @@ export default function GanttEventsCalendar() {
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)}
                                 placeholder='Filter by title, description, or location...'
-                                className='w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                className='w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                             />
                         </div>
 
@@ -884,13 +1136,13 @@ export default function GanttEventsCalendar() {
                                     onChange={() => setLocationFilter(!locationFilter)}
                                     className='w-3.5 h-3.5 sm:w-4 sm:h-4'
                                 />
-                                <span className='text-xs sm:text-sm font-medium text-gray-700'>
+                                <span className='text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300'>
                                     Global events only
                                 </span>
                             </label>
                         </div>
 
-                        <div className='border-t pt-3 sm:pt-4'>
+                        <div className='border-t dark:border-zinc-700 pt-3 sm:pt-4'>
                             <div className='flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3'>
                                 <input
                                     type='checkbox'
@@ -1028,75 +1280,58 @@ export default function GanttEventsCalendar() {
             </div>
 
             <div className='space-y-2 sm:space-y-3'>
-                {/* Legend and Show Events Button */}
-                <div className='flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between'>
-                    <div className='flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm bg-gray-50 p-2 sm:p-3 rounded-lg border flex-1 hidden'>
-                        <div className='flex items-center gap-1.5 sm:gap-2'>
-                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-green-500 to-green-600'></div>
-                        </div>
-                        <div className='flex items-center gap-1.5 sm:gap-2'>
-                            <div className='w-3 h-3 sm:w-4 sm:h-4 rounded bg-gradient-to-r from-blue-500 to-blue-600'></div>
-                        </div>
-                        <div className='flex items-center gap-1.5 sm:gap-2 ml-auto'>
-                            <div className='w-0.5 h-3 sm:h-4 bg-red-500'></div>
-                        </div>
-                    </div>
-                    
-                    <Button
-                        onClick={handleShowRangeEvents}
-                        variant='primary'
-                        className='text-xs sm:text-sm whitespace-nowrap'
-                    >
-                        Show Events during selected time period
-                    </Button>
-                </div>
-
                 {/* Timeline Ruler - Sticky */}
-                <div className='sticky top-0 z-[100] bg-white shadow-md rounded-lg border'>
+                <div className='sticky top-0 z-40 bg-white dark:bg-zinc-900 shadow-md rounded-lg border dark:border-zinc-700'>
                     {/* Navigation and Month/Year Header */}
                     {(timeRange !== 'all' && !useCustomRange) && (
-                        <div className='flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 p-2 sm:p-3 border-b'>
+                        <div className='flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-zinc-800 dark:to-zinc-800/50 p-2 sm:p-3 border-b dark:border-zinc-700'>
                             <button
                                 onClick={handleNavigatePrevious}
-                                className='p-1.5 sm:p-2 hover:bg-white rounded-lg transition-colors'
+                                className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors'
                             >
-                                <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-zinc-100' />
                             </button>
-                            
+
                             <div className='flex items-center gap-2 sm:gap-3'>
-                                <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
+                                <button
+                                    onClick={handleShowRangeEvents}
+                                    className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-gray-300 dark:hover:border-zinc-600'
+                                >
                                     {getPeriodLabel()}
-                                </h3>
+                                </button>
                                 {periodOffset !== 0 && (
                                     <button
                                         onClick={handleNavigateToday}
-                                        className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+                                        className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors'
                                     >
                                         Today
                                     </button>
                                 )}
                             </div>
-                            
+
                             <button
                                 onClick={handleNavigateNext}
-                                className='p-1.5 sm:p-2 hover:bg-white rounded-lg transition-colors'
+                                className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors'
                             >
-                                <ChevronRight className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <ChevronRight className='w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-zinc-100' />
                             </button>
                         </div>
                     )}
-                    
+
                     {/* Custom Range Header */}
                     {useCustomRange && (
-                        <div className='flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 p-2 sm:p-3 border-b'>
-                            <h3 className='text-sm sm:text-base md:text-lg font-semibold text-gray-900'>
+                        <div className='flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-2 sm:p-3 border-b dark:border-zinc-700'>
+                            <button
+                                onClick={handleShowRangeEvents}
+                                className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-blue-300 dark:hover:border-blue-700'
+                            >
                                 {getPeriodLabel()}
-                            </h3>
+                            </button>
                         </div>
                     )}
 
                     {/* Timeline Units */}
-                    <div ref={containerRef} className='relative bg-white'>
+                    <div ref={containerRef} className='relative bg-white dark:bg-zinc-900'>
                         {todayPosition !== null && todayPosition <= containerWidth && (
                             <div
                                 className='absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none'
@@ -1109,20 +1344,20 @@ export default function GanttEventsCalendar() {
                         
                         {/* Month header row - only for days view */}
                         {timeUnit === 'days' && (
-                            <div className='flex border-b bg-gray-50'>
+                            <div className='flex border-b dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800'>
                                 {timelineUnits.map((unit, index) => {
                                     if (!unit.showMonth) return null;
-                                    
+
                                     // Calculate colspan - how many days in this month
                                     let colspan = 1;
                                     for (let i = index + 1; i < timelineUnits.length; i++) {
                                         if (timelineUnits[i].showMonth) break;
                                         colspan++;
                                     }
-                                    
+
                                     const availableWidth = pixelsPerUnit * colspan;
                                     let monthText = '';
-                                    
+
                                     if (availableWidth > 120) {
                                         monthText = format(unit.date, 'MMMM yyyy');
                                     }
@@ -1135,11 +1370,11 @@ export default function GanttEventsCalendar() {
                                     else {
                                         monthText = format(unit.date, 'MMM').charAt(0);
                                     }
-                                    
+
                                     return (
                                         <div
                                             key={`month-${index}`}
-                                            className='text-center py-1 text-[0.7rem] sm:text-xs font-semibold text-gray-700 border-r'
+                                            className='text-center py-1 text-[0.7rem] sm:text-xs font-semibold text-gray-700 dark:text-zinc-300 border-r dark:border-zinc-700'
                                             style={{
                                                 width: `${availableWidth}px`,
                                                 minWidth: `${availableWidth}px`
@@ -1175,8 +1410,8 @@ export default function GanttEventsCalendar() {
                                     <div
                                         key={index}
                                         onClick={() => handleUnitClick(unit.date)}
-                                        className={`border-r cursor-pointer hover:bg-blue-50 transition-colors ${
-                                            isTodayUnit ? 'bg-blue-100' : ''
+                                        className={`border-r dark:border-zinc-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                                            isTodayUnit ? 'bg-blue-100 dark:bg-blue-900/30' : ''
                                         }`}
                                         style={{
                                             width: `${pixelsPerUnit}px`,
@@ -1188,19 +1423,19 @@ export default function GanttEventsCalendar() {
                                                 <>
                                                     <div
                                                         className={`text-[0.6rem] font-semibold uppercase tracking-wider ${
-                                                            isTodayUnit ? 'text-blue-700' : 'text-gray-600'
+                                                            isTodayUnit ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-zinc-400'
                                                         }`}
                                                     >
                                                         {unit.sublabel}
                                                     </div>
                                                     <div
                                                         className={`text-xl sm:text-2xl font-bold leading-none ${
-                                                            isTodayUnit ? 'text-blue-600' : 'text-gray-900'
+                                                            isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
                                                         }`}
                                                     >
                                                         {unit.label}
                                                     </div>
-                                                    <div className='text-[0.55rem] text-gray-500 leading-tight mt-0.5'>
+                                                    <div className='text-[0.55rem] text-gray-500 dark:text-zinc-500 leading-tight mt-0.5'>
                                                         {(() => {
                                                             const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
                                                             const startMonth = format(unit.date, 'MMM');
@@ -1218,14 +1453,14 @@ export default function GanttEventsCalendar() {
                                                 <>
                                                     <div
                                                         className={`text-[0.65rem] font-medium uppercase ${
-                                                            isTodayUnit ? 'text-blue-700' : 'text-gray-500'
+                                                            isTodayUnit ? 'text-blue-700 dark:text-blue-400' : 'text-gray-500 dark:text-zinc-500'
                                                         }`}
                                                     >
                                                         {unit.sublabel}
                                                     </div>
                                                     <div
                                                         className={`text-xl sm:text-2xl font-bold leading-none ${
-                                                            isTodayUnit ? 'text-blue-600' : 'text-gray-900'
+                                                            isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
                                                         }`}
                                                     >
                                                         {unit.label}
@@ -1270,53 +1505,74 @@ export default function GanttEventsCalendar() {
                             {filteredEvents.slice(0, visibleEventCount).map((event) => {
                                 const start = toZonedTime(new Date(event.startTime), tz);
                                 const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
-                                
+                
                                 return (
                                     <div
                                         key={event.id}
                                         onClick={() => setSelectedEvent(event)}
-                                        className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 transition-colors'
+                                        className='p-2.5 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                                     >
-                                        <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                            <p className='font-bold text-base sm:text-lg text-gray-900'>{event.title}</p>
+                                        <div className='flex items-start justify-between gap-2 mb-1'>
+                                            <p className='font-bold text-sm sm:text-lg text-gray-900 dark:text-zinc-100 line-clamp-1 flex-1'>
+                                                {event.title}
+                                            </p>
                                             {event.location?.global ? (
-                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                    🌐 Global
+                                                <span className='px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
+                                    🌐<span className='hidden sm:inline'> Global</span>
                                                 </span>
                                             ) : (
-                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                    📍 Local
+                                                <span className='px-1.5 py-0.5 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
+                                    📍<span className='hidden sm:inline'> Local</span>
                                                 </span>
                                             )}
                                         </div>
                                         {event.description && (
-                                            <p className='text-gray-600 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                            <p className='hidden md:block text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 line-clamp-1'>
+                                                {event.description}
+                                            </p>
                                         )}
-                                        <div className='space-y-0.5 sm:space-y-1'>
-                                            <p className='text-xs sm:text-sm text-gray-700 flex items-center gap-1.5 sm:gap-2'>
-                                                <Clock className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                        <div className='space-y-0.5'>
+                                            <p className='text-[0.7rem] sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1 sm:gap-2'>
+                                                <Clock className='w-3 h-3 flex-shrink-0' />
                                                 <span className='truncate'>
-                                                    {format(start, 'MMM d, yyyy • h:mm a')} –{' '}
-                                                    {end ? format(end, 'MMM d, yyyy • h:mm a') : 'Ongoing'}
+                                                    {format(start, 'MMM d, yyyy • h:mm a')}
+                                                    {end && <span className='hidden sm:inline'> – {format(end, 'MMM d, yyyy • h:mm a')}</span>}
+                                                    {end && <span className='sm:hidden'> – {format(end, 'h:mm a')}</span>}
                                                 </span>
                                             </p>
                                             {event.location?.name && !event.location.global && (
-                                                <p className='text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2'>
-                                                    <MapPin className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
+                                                <p className='text-[0.7rem] sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1 sm:gap-2'>
+                                                    <MapPin className='w-3 h-3 flex-shrink-0' />
                                                     <span className='truncate'>{event.location.name}</span>
                                                 </p>
                                             )}
+
                                             {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                                <p className='text-xs sm:text-sm text-blue-600 flex items-center gap-1.5 sm:gap-2'>
-                                                    <Users className='w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' />
-                                                    {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                <p className='text-[0.7rem] sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2'>
+                                                    <Users className='w-3 h-3 flex-shrink-0' />
+                                                    <span className='sm:hidden'>{event.participantCount}</span>
+                                                    <span className='hidden sm:inline'>
+                                                        {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                    </span>
                                                 </p>
+                                            )}
+                                            {event.creatorID && (
+                                                <div className='hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
+                                                    {eventIDToUserMap[event.creatorID] ? (
+                                                        <UserCard
+                                                            user={eventIDToUserMap[event.creatorID]!}
+                                                            className='text-xs sm:text-sm'
+                                                        />
+                                                    ) : (
+                                                        <span>Loading organizer...</span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
                                 );
                             })}
-                            
+            
                             {/* Load More Button */}
                             {visibleEventCount < filteredEvents.length && (
                                 <div className='text-center pt-3 sm:pt-4'>
@@ -1325,7 +1581,7 @@ export default function GanttEventsCalendar() {
                                         variant='secondary'
                                         className='text-xs sm:text-sm'
                                     >
-                                        Show More ({filteredEvents.length - visibleEventCount} remaining)
+                        Show More ({filteredEvents.length - visibleEventCount} remaining)
                                     </Button>
                                 </div>
                             )}

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import useLocation from '@/hooks/useLocation';
-
 import { useUpdateUser } from '@/shared/api/mutations/users';
 
 import Input from '@/components/forms/Input';
@@ -25,6 +23,7 @@ import { apiMutate } from '@/shared/api/apiClient';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
+import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -238,57 +237,57 @@ const EditProfile: React.FC<Props> = ({
         setShowImageOptions(false);
     }, [form]);
 
-    const handleUseCurrentLocation = React.useCallback(async () => {
-        if (locationError) {
-            setToastType('error');
-            setToastMessage('Unable to get your location. Please enable location services.');
-            return;
-        }
+    // const handleUseCurrentLocation = React.useCallback(async () => {
+    //     if (locationError) {
+    //         setToastType('error');
+    //         setToastMessage('Unable to get your location. Please enable location services.');
+    //         return;
+    //     }
 
-        if (!browserLocation) {
-            setToastType('error');
-            setToastMessage('Waiting for browser location... Please allow location access.');
-            return;
-        }
+    //     if (!browserLocation) {
+    //         setToastType('error');
+    //         setToastMessage('Waiting for browser location... Please allow location access.');
+    //         return;
+    //     }
 
-        try {
-            const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
-            );
-            const data = await response.json();
+    //     try {
+    //         const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
+    //         const response = await fetch(
+    //             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
+    //         );
+    //         const data = await response.json();
             
-            if (data.status !== 'OK' || !data.results?.[0]) {
-                throw new Error('Failed to geocode location');
-            }
+    //         if (data.status !== 'OK' || !data.results?.[0]) {
+    //             throw new Error('Failed to geocode location');
+    //         }
 
-            const result = data.results[0];
-            const placeID = result.place_id;
-            const formatted = result.formatted_address || '';
+    //         const result = data.results[0];
+    //         const placeID = result.place_id;
+    //         const formatted = result.formatted_address || '';
 
-            const next = {
-                latitude: browserLocation.latitude,
-                longitude: browserLocation.longitude,
-                name: formatted,
-                regionID: placeID,
-                changed: true
-            };
+    //         const next = {
+    //             latitude: browserLocation.latitude,
+    //             longitude: browserLocation.longitude,
+    //             name: formatted,
+    //             regionID: placeID,
+    //             changed: true
+    //         };
 
-            setLocation(browserLocation);
-            form.setValue('location', next, {
-                shouldDirty: true,
-                shouldValidate: true
-            });
-            setLocationLabel(formatted);
-            setToastType('success');
-            setToastMessage('Current location set successfully');
-        }
-        catch (err) {
-            console.error('Failed to set current location:', err);
-            setToastType('error');
-            setToastMessage('Failed to set current location');
-        }
-    }, [browserLocation, locationError, form, setLocation]);
+    //         setLocation(browserLocation);
+    //         form.setValue('location', next, {
+    //             shouldDirty: true,
+    //             shouldValidate: true
+    //         });
+    //         setLocationLabel(formatted);
+    //         setToastType('success');
+    //         setToastMessage('Current location set successfully');
+    //     }
+    //     catch (err) {
+    //         console.error('Failed to set current location:', err);
+    //         setToastType('error');
+    //         setToastMessage('Failed to set current location');
+    //     }
+    // }, [browserLocation, locationError, form, setLocation]);
 
     const handleClearLocation = React.useCallback(() => {
         setLocation(null);
@@ -335,7 +334,13 @@ const EditProfile: React.FC<Props> = ({
             if (locationDirty && !('location' in payload)) {
                 const currentLoc2 = form.getValues('location') ?? null;
                 (payload as any).location =
-                    currentLoc2 === null ? null : currentLoc2;
+        currentLoc2 === null ? null : currentLoc2;
+            }
+
+            // ADD THIS: Clean up the location object before sending
+            if ('location' in payload && payload.location) {
+                const { changed, ...cleanLocation } = payload.location;
+                payload.location = cleanLocation;
             }
 
             if ('avatar' in payload) {
@@ -366,8 +371,11 @@ const EditProfile: React.FC<Props> = ({
             if ('tags' in payload) {
                 (payload as any).tags = (payload as any).tags || [];
             }
-
+            console.log('Submitting payload:', payload); // DEBUG: See what's being sent
+        
             const updatedUser = await updateUserMutation.mutateAsync(payload);
+        
+            console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
             if (updatedUser?.id && updatedUser.id === auth.user?.id) {
                 updateUserCache(updatedUser);
@@ -704,18 +712,6 @@ const EditProfile: React.FC<Props> = ({
                                     </div>
                                 )}
 
-                                {/* Location action button */}
-                                <div className='mb-3'>
-                                    <Button
-                                        type='button'
-                                        variant='secondary'
-                                        onClick={handleUseCurrentLocation}
-                                        className='text-sm w-full sm:w-auto'
-                                    >
-                                        📍 Use My Current Location
-                                    </Button>
-                                </div>
-
                                 <div className="max-w-full overflow-hidden pr-4">
                                     <MapDisplay
                                         regionID={targetUser.location?.regionID}
@@ -733,16 +729,40 @@ const EditProfile: React.FC<Props> = ({
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-                                                setTargetUser({
-                                                    ...targetUser,
-                                                    location: {
-                                                        ...targetUser.location,
-                                                        regionID: null
-                                                    }
-                                                });
+                                                if (setTargetUser) {
+                                                    setTargetUser({
+                                                        ...targetUser,
+                                                        location: {
+                                                            ...targetUser.location,
+                                                            regionID: null
+                                                        }
+                                                    });
+                                                }
                                             }
-                                        }
-                                        }
+                                            else {
+                                                // Simplified version - might be what backend expects
+                                                const locationValue = {
+                                                    latitude: data.coordinates.latitude,
+                                                    longitude: data.coordinates.longitude,
+                                                    name: data.name || data.businessName || '',
+                                                    regionID: data.placeID
+                                                    // Note: NOT including 'changed'
+                                                };
+        
+                                                setLocation(data.coordinates);
+                                                form.setValue('location', locationValue, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                });
+        
+                                                if (setTargetUser) {
+                                                    setTargetUser({
+                                                        ...targetUser,
+                                                        location: locationValue
+                                                    });
+                                                }
+                                            }
+                                        }}
                                     />
                                 </div>
                             </FormField>

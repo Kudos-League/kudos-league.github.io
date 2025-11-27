@@ -219,12 +219,12 @@ export default function NotificationsBell() {
                             return next;
                         })
                     }
-                    className='relative flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                    className='relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >
-                    <BellIcon className='h-5 w-5' aria-hidden='true' />
+                    <BellIcon className='h-5 w-5 sm:h-6 sm:w-6' aria-hidden='true' />
                     {state.unread > 0 && (
                         <span
-                            className='absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
+                            className='absolute -top-1 -right-1 sm:-top-2 sm:-right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
                             aria-label={`${state.unread} unread notifications`}
                         >
                             {state.unread > 9 ? '9+' : state.unread}

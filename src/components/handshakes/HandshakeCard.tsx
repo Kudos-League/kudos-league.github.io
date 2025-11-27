@@ -8,7 +8,7 @@ import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
-import ChatModal from '@/components/messages/ChatModal';
+// import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
@@ -20,13 +20,15 @@ interface Props {
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
     onDelete?: (id: number) => void;
+    showSenderOrReceiver?: 'sender' | 'receiver';
 }
 
 const HandshakeCard: React.FC<Props> = ({
     handshake,
     userID,
     showPostDetails,
-    onDelete
+    onDelete,
+    showSenderOrReceiver = 'receiver'
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -39,6 +41,7 @@ const HandshakeCard: React.FC<Props> = ({
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [error, setError] = useState<string | null>();
     const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
+    const [receiverUser, setReceiverUser] = useState<UserDTO | null>(null);
     const [imgError, setImgError] = useState(false);
     const [lastMessage, setLastMessage] = useState<MessageDTO | null>(null);
     const [loadingMessage, setLoadingMessage] = useState(false);
@@ -76,6 +79,20 @@ const HandshakeCard: React.FC<Props> = ({
             }
         };
         fetchSender();
+    }, [handshake]);
+
+    useEffect(() => {
+        const fetchReceiver = async () => {
+            try {
+                const receiver = await apiGet<UserDTO>(`/users/${handshake.receiverID}`);
+                setReceiverUser(receiver);
+            }
+            catch (err) {
+                console.error('Error loading user info', err);
+                setError('Error loading user info');
+            }
+        };
+        fetchReceiver();
     }, [handshake]);
 
     useEffect(() => {
@@ -232,7 +249,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {/* Header: User + Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div className="font-semibold flex-1 min-w-0">
-                        <UserCard user={senderUser} large={!showPostDetails} />
+                        <UserCard user={showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails} />
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
@@ -469,7 +486,7 @@ const HandshakeCard: React.FC<Props> = ({
             </div>
 
             {/* Chat Modal */}
-            {isChatOpen && (
+            {/* {isChatOpen && (
                 <ChatModal
                     isChatOpen={isChatOpen}
                     setIsChatOpen={setIsChatOpen}
@@ -480,7 +497,7 @@ const HandshakeCard: React.FC<Props> = ({
                             : ''
                     }
                 />
-            )}
+            )} */}
 
             {/* Confirmation Modals */}
             <ConfirmationModal

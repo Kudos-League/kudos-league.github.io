@@ -234,7 +234,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
-            <FormField name='categoryID' label='Category'>
+            <FormField name='categoryID' label='Category *' helper='Select the category that best fits your post'>
                 <Controller
                     control={form.control}
                     name='categoryID'
@@ -326,7 +326,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 <MapDisplay
                     edit
                     height={300}
-                    shouldGetYourLocation
+                    shouldGetYourLocation={true}
                     regionID={location?.regionID}
                     onLocationChange={(data) => {
                         if (data)
@@ -335,6 +335,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 name: data.name
                             });
                     }}
+                    shouldSavedLocationButton={true}
                 />
             </div>
 

@@ -37,12 +37,15 @@ export default function PostCard(props: Props) {
         handshakes,
         tags = [],
         fake,
-        showHandshakeShortcut = false
+        showHandshakeShortcut = false,
+        distance
     } = props;
 
     const { user } = useAuth();
     const navigate = useNavigate();
     const [imgError, setImgError] = useState(false);
+
+    console.log('PostCard - Post ID:', id, 'Images:', images, 'Images length:', images?.length);
 
     const imageSrc = fake
         ? images?.[0]
@@ -50,6 +53,8 @@ export default function PostCard(props: Props) {
             ? getImagePath(images[0])
             : undefined;
     const showBodyInImageBox = imgError || !images?.length || !imageSrc;
+
+    console.log('PostCard - Post ID:', id, 'imageSrc:', imageSrc, 'showBodyInImageBox:', showBodyInImageBox);
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
@@ -70,6 +75,9 @@ export default function PostCard(props: Props) {
                             <h2 className='text-lg font-bold break-words text-gray-800 dark:text-gray-100 truncate'>
                                 {title}
                             </h2>
+                            {distance != null && (
+                                <Pill name={`${distance.toFixed(1)} km`} />
+                            )}
                         </div>
                         <span className='text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap'>
                             {timeAgoLabel(createdAt as any)}
@@ -90,7 +98,7 @@ export default function PostCard(props: Props) {
                         {body}
                     </TextWithLinks>
                 </div>
-                <div className='w-20 h-20 flex items-center justify-center mt-2'>
+                <div className='w-20 h-20 flex-shrink-0 flex items-center justify-center mt-2 overflow-hidden'>
                     {showBodyInImageBox ? (
                         <div className='w-full h-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300 rounded flex items-center justify-center text-center p-2 overflow-hidden'>
                             {truncateBody(body)}
@@ -107,14 +115,17 @@ export default function PostCard(props: Props) {
             </div>
             {viewerHandshake && showHandshakeShortcut && (
                 <div className='mt-4' onClick={(e) => e.stopPropagation()}>
-                    <HandshakeCard
-                        handshake={{
-                            ...viewerHandshake,
-                            post: props
-                        }}
-                        userID={user?.id}
-                        showPostDetails={false}
-                    />
+                    {!viewerHandshake.cancelledAt && (
+                        <HandshakeCard
+                            handshake={{
+                                ...viewerHandshake,
+                                post: props
+                            }}
+                            userID={user?.id}
+                            showPostDetails={false}
+                            showSenderOrReceiver='sender'
+                        />
+                    )}
                 </div>
             )}
         </div>
