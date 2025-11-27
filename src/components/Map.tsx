@@ -225,9 +225,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         );
     };
 
-    const useSavedLocation = () => {
-        if (!user?.location) return;
-        
+    const useSavedLocation = async () => {
+        if (!user?.location || loading) return;
+
+        // Prevent rapid double-clicks
+        setLoading(true);
+
         const savedLocation = user.location as MapCoordinates;
         const coords = {
             latitude: savedLocation.latitude,
@@ -235,22 +238,101 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             changed: true
         };
 
+        // Suppress search to prevent autocomplete from triggering
+        suppressSearchRef.current = true;
+
         setMapCoordinates(coords);
         setIsCleared(false);
-        
-        const label = savedLocation.name || 'Saved Location';
-        setSearchInput(label);
-        setDisplayLabel(label);
         setIsSearching(false);
         setSuggestions([]);
-        onLabelChange?.(label);
 
-        onLocationChange?.({
-            coordinates: coords,
-            placeID: savedLocation.regionID || '',
-            name: label,
-            changed: true
-        });
+        // If we have a regionID (placeID), fetch the full place details for consistent labeling
+        if (savedLocation.regionID && placesRef.current) {
+            try {
+                const request = { placeId: savedLocation.regionID };
+                placesRef.current.getDetails(request, (place, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                        const business = place.name ?? '';
+                        const formatted = place.formatted_address ?? savedLocation.name ?? '';
+                        const label = business && !formatted.startsWith(business)
+                            ? `${business}, ${formatted}`
+                            : formatted || business || savedLocation.name || 'Saved Location';
+
+                        setSearchInput(label);
+                        setDisplayLabel(label);
+                        onLabelChange?.(label);
+
+                        onLocationChange?.({
+                            coordinates: coords,
+                            placeID: savedLocation.regionID || '',
+                            name: label,
+                            businessName: business || undefined,
+                            changed: true
+                        });
+                    }
+                    else {
+                        // Fallback to saved name if API fails
+                        const fallbackLabel = savedLocation.name || 'Saved Location';
+                        setSearchInput(fallbackLabel);
+                        setDisplayLabel(fallbackLabel);
+                        onLabelChange?.(fallbackLabel);
+
+                        onLocationChange?.({
+                            coordinates: coords,
+                            placeID: savedLocation.regionID || '',
+                            name: fallbackLabel,
+                            changed: true
+                        });
+                    }
+
+                    // Re-enable search and loading after processing
+                    setTimeout(() => {
+                        suppressSearchRef.current = false;
+                        setLoading(false);
+                    }, 500);
+                });
+            }
+            catch (error) {
+                console.error('Error fetching place details:', error);
+                // Fallback on error
+                const fallbackLabel = savedLocation.name || 'Saved Location';
+                setSearchInput(fallbackLabel);
+                setDisplayLabel(fallbackLabel);
+                onLabelChange?.(fallbackLabel);
+
+                onLocationChange?.({
+                    coordinates: coords,
+                    placeID: savedLocation.regionID || '',
+                    name: fallbackLabel,
+                    changed: true
+                });
+
+                setTimeout(() => {
+                    suppressSearchRef.current = false;
+                    setLoading(false);
+                }, 500);
+            }
+        }
+        else {
+            // No regionID, use the stored name
+            const label = savedLocation.name || 'Saved Location';
+            setSearchInput(label);
+            setDisplayLabel(label);
+            onLabelChange?.(label);
+
+            onLocationChange?.({
+                coordinates: coords,
+                placeID: savedLocation.regionID || '',
+                name: label,
+                changed: true
+            });
+
+            // Re-enable search and loading after a delay
+            setTimeout(() => {
+                suppressSearchRef.current = false;
+                setLoading(false);
+            }, 500);
+        }
     };
 
     const suppressSearchRef = useRef(false);
@@ -452,7 +534,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         <button
                             type='button'
                             onClick={useSavedLocation}
-                            className='mt-2 w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400'
+                            disabled={loading}
+                            className='mt-2 w-full inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed'
                         >
                             <MapPinIcon className='size-4' aria-hidden='true' />
         Use Saved Location

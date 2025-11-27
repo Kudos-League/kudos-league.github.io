@@ -13,16 +13,14 @@ import {
     addMonths,
     addYears,
     differenceInDays,
-    differenceInWeeks,
     differenceInMonths,
     isSameDay,
-    isToday,
     startOfDay,
     endOfDay
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { EventDTO, UserDTO } from '@/shared/api/types';
+import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
+import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
@@ -238,12 +236,11 @@ export default function GanttEventsCalendar() {
 
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('week');
     const [filterText, setFilterText] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
     const [viewDate, setViewDate] = useState<Date | null>(null);
     const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | null>(null);
     const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
-    const [locationFilter, setLocationFilter] = useState(false);
+    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>('local');
     const [periodOffset, setPeriodOffset] = useState(0);
     const [visibleEventCount, setVisibleEventCount] = useState(10);
     const [useCustomRange, setUseCustomRange] = useState(false);
@@ -254,8 +251,6 @@ export default function GanttEventsCalendar() {
     const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
-    const [eventIDToUserMap, setEventIDToUserMap] = useState<Record<string, UserDTO>>({});
-    const [fetchedCreatorIds, setFetchedCreatorIds] = useState<Array<number>>([]);
 
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
@@ -341,8 +336,11 @@ export default function GanttEventsCalendar() {
                 if (!matchesSearch) return false;
             }
 
-            if (locationFilter) {
+            if (locationFilter === 'global') {
                 return event.location?.global === true;
+            }
+            else if (locationFilter === 'local') {
+                return event.location?.global !== true;
             }
 
             return true;
@@ -419,11 +417,11 @@ export default function GanttEventsCalendar() {
 
     const todayPosition = useMemo(() => {
         const now = startOfDay(new Date());
-        
+
         if (now < dateRange.start || now > dateRange.end) {
             return null;
         }
-        
+
         if (timeUnit === 'days') {
             const dayIndex = timelineUnits.findIndex(u => isSameDay(u.date, now));
             if (dayIndex < 0) return null;
@@ -436,11 +434,11 @@ export default function GanttEventsCalendar() {
                 return now >= weekStart && now <= weekEnd;
             });
             if (weekIndex < 0) return null;
-            
+
             const weekStart = startOfWeek(timelineUnits[weekIndex].date, { weekStartsOn: 0 });
             const daysIntoWeek = differenceInDays(now, weekStart);
             const proportionIntoWeek = daysIntoWeek / 7;
-            
+
             return weekIndex * pixelsPerUnit + proportionIntoWeek * pixelsPerUnit;
         }
         else {
@@ -450,16 +448,107 @@ export default function GanttEventsCalendar() {
                 return now >= monthStart && now <= monthEnd;
             });
             if (monthIndex < 0) return null;
-            
+
             const monthStart = startOfMonth(timelineUnits[monthIndex].date);
             const monthEnd = endOfMonth(timelineUnits[monthIndex].date);
             const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
             const daysIntoMonth = differenceInDays(now, monthStart);
             const proportionIntoMonth = daysIntoMonth / daysInMonth;
-            
+
             return monthIndex * pixelsPerUnit + proportionIntoMonth * pixelsPerUnit;
         }
     }, [timelineUnits, pixelsPerUnit, timeUnit, dateRange]);
+
+    const calculateEventPosition = (event: EventDTO) => {
+        const eventStart = startOfDay(new Date(event.startTime));
+        // For eternal events (no end time), extend to the end of visible range
+        const eventEnd = event.endTime ? startOfDay(new Date(event.endTime)) : dateRange.end;
+        const isEternal = !event.endTime;
+
+        // If event is completely outside the visible range, don't render
+        if (eventEnd < dateRange.start || eventStart > dateRange.end) {
+            return null;
+        }
+
+        // Clamp event to visible range
+        const visibleStart = eventStart < dateRange.start ? dateRange.start : eventStart;
+        const visibleEnd = eventEnd > dateRange.end ? dateRange.end : eventEnd;
+
+        if (timeUnit === 'days') {
+            // Snap to full days
+            const snappedStart = startOfDay(visibleStart);
+            const snappedEnd = endOfDay(visibleEnd);
+
+            const startDayIndex = differenceInDays(snappedStart, dateRange.start);
+            const endDayIndex = differenceInDays(snappedEnd, dateRange.start);
+
+            const left = startDayIndex * pixelsPerUnit;
+            const width = Math.max((endDayIndex - startDayIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.8);
+
+            return { left, width, isCompressed: startDayIndex === endDayIndex && !isEternal, isEternal };
+        }
+        else if (timeUnit === 'weeks') {
+            // Snap to full weeks
+            const snappedStart = startOfWeek(visibleStart, { weekStartsOn: 0 });
+            const snappedEnd = endOfWeek(visibleEnd, { weekStartsOn: 0 });
+
+            // Timeline starts from the week boundary of dateRange.start
+            const timelineStart = startOfWeek(dateRange.start, { weekStartsOn: 0 });
+
+            const startWeekIndex = Math.floor(differenceInDays(snappedStart, timelineStart) / 7);
+            const endWeekIndex = Math.floor(differenceInDays(snappedEnd, timelineStart) / 7);
+
+            const left = startWeekIndex * pixelsPerUnit;
+            const width = Math.max((endWeekIndex - startWeekIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.15);
+
+            const durationInWeeks = endWeekIndex - startWeekIndex + 1;
+            return { left, width, isCompressed: durationInWeeks <= 1 && !isEternal, isEternal };
+        }
+        else {
+            // Snap to full months
+            const snappedStart = startOfMonth(visibleStart);
+            const snappedEnd = endOfMonth(visibleEnd);
+
+            // Timeline starts from the month boundary of dateRange.start
+            const timelineStart = startOfMonth(dateRange.start);
+
+            const startMonthIndex = differenceInMonths(snappedStart, timelineStart);
+            const endMonthIndex = differenceInMonths(snappedEnd, timelineStart);
+
+            const left = startMonthIndex * pixelsPerUnit;
+            const width = Math.max((endMonthIndex - startMonthIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.1);
+
+            const durationInMonths = endMonthIndex - startMonthIndex + 1;
+            return { left, width, isCompressed: durationInMonths <= 1 && !isEternal, isEternal };
+        }
+    };
+
+    const eventBars = useMemo(() => {
+        const bars: Array<{ event: EventDTO; left: number; width: number; isCompressed: boolean; isEternal: boolean; row: number }> = [];
+        const rowEndPositions: number[] = [];
+
+        filteredEvents.forEach((event) => {
+            const position = calculateEventPosition(event);
+            if (!position) return;
+
+            // Find row where this event fits
+            let row = 0;
+            while (row < rowEndPositions.length && rowEndPositions[row] > position.left) {
+                row++;
+            }
+
+            if (row >= rowEndPositions.length) {
+                rowEndPositions.push(position.left + position.width);
+            }
+            else {
+                rowEndPositions[row] = position.left + position.width;
+            }
+
+            bars.push({ event, ...position, row });
+        });
+
+        return bars;
+    }, [filteredEvents, dateRange, timeUnit, pixelsPerUnit, timelineUnits]);
 
     const handleUnitClick = (date: Date) => {
         const clicked = startOfDay(date);
@@ -751,53 +840,6 @@ export default function GanttEventsCalendar() {
     }, []);
 
     useEffect(() => {
-        const fetchCreators = async () => {
-            const creatorIdsToFetch = new Array<number>();
-        
-            events.forEach(event => {
-                if (event.creatorID && !fetchedCreatorIds.includes(event.creatorID)) {
-                    creatorIdsToFetch.push(event.creatorID);
-                }
-            });
-
-            if (creatorIdsToFetch.length === 0) return;
-        
-            console.log(`Fetching ${creatorIdsToFetch.length} unique creators`);
-
-            setFetchedCreatorIds(prev => Array.from(new Set([...prev, ...creatorIdsToFetch])));
-
-            const updates: Record<number, UserDTO> = {};
-    
-            for (const creatorId of creatorIdsToFetch) {
-                try {
-                    const creator = await apiGet<UserDTO>(`/users/${creatorId}`);
-                    updates[creatorId] = creator;
-                    console.log(`✓ Fetched creator ${creatorId}: ${creator.username}`);
-                
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                catch (error) {
-                    console.error(`✗ Failed to fetch creator ${creatorId}:`, error);
-                }
-            }
-
-            if (Object.keys(updates).length > 0) {
-                setEventIDToUserMap(prev => {
-                    const newMap = { ...prev, ...updates };
-                    console.log(`Updated map: ${Object.keys(newMap).length} total creators`);
-                    return newMap;
-                });
-            }
-        };
-
-        fetchCreators();
-    }, [events, fetchedCreatorIds]);
-
-    useEffect(() => {
-        console.log(`eventIDToUserMap updated: ${Object.keys(eventIDToUserMap).length} entries`);
-    }, [eventIDToUserMap]);
-
-    useEffect(() => {
         if (viewDate && viewPeriodType && !showingRangeEvents) {
             let periodStart: Date, periodEnd: Date;
             const clicked = startOfDay(viewDate);
@@ -944,9 +986,9 @@ export default function GanttEventsCalendar() {
                                             {event.location.name}
                                         </p>
                                     )}
-                                    {event.creatorID && eventIDToUserMap[event.creatorID] && (
+                                    {event.creator && (
                                         <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                            <UserCard user={eventIDToUserMap[event.creatorID]} />
+                                            <UserCard user={event.creator} />
                                         </p>
                                     )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
@@ -987,60 +1029,83 @@ export default function GanttEventsCalendar() {
     return (
         <div className='max-w-full mx-auto p-3 sm:p-4'>
             <div className='mb-3 sm:mb-4'>
-                <div className='flex items-center justify-between mb-4'>
+                <div className='flex items-center justify-between mb-4 gap-3'>
                     <div>
                         <h1 className='text-xl sm:text-2xl font-bold text-gray-900 dark:text-zinc-100'>Events Calendar</h1>
                         <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-1'>
                             Viewing {timelineUnits.length} {timeUnit} • {filteredEvents.length} events
                         </p>
                     </div>
-                    <Button onClick={() => navigate('/create-event')} className='text-sm sm:text-base'>
+                    <div className='flex gap-2'>
+                        <button
+                            onClick={() => setLocationFilter('local')}
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'local'
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 dark:shadow-green-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-green-500 dark:hover:border-green-500 hover:text-green-600 dark:hover:text-green-400'
+                            }`}
+                        >
+                            <MapPin className='w-4 h-4' />
+                            Local
+                        </button>
+                        <button
+                            onClick={() => setLocationFilter('global')}
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'global'
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 dark:shadow-blue-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'
+                            }`}
+                        >
+                            <Globe className='w-4 h-4' />
+                            Global
+                        </button>
+                        <button
+                            onClick={() => setLocationFilter('all')}
+                            className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'all'
+                                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/50 dark:shadow-purple-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-purple-500 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400'
+                            }`}
+                        >
+                            <Filter className='w-4 h-4' />
+                            All
+                        </button>
+                    </div>
+                </div>
+
+                {/* Search Events + Jump to Period + Create Event */}
+                <div className='flex gap-2 sm:gap-3 mb-3 sm:mb-4'>
+                    <input
+                        type='text'
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        placeholder='Search events by title, description, or location...'
+                        className='flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
+                    />
+                    <Button
+                        onClick={() => setShowPeriodPicker(!showPeriodPicker)}
+                        variant='secondary'
+                        className='text-xs sm:text-sm whitespace-nowrap'
+                    >
+                        <Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
+                        <span className='hidden sm:inline'>Jump to Period</span>
+                        <span className='sm:hidden'>Period</span>
+                        {useCustomRange && (
+                            <span className='ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
+                                Custom
+                            </span>
+                        )}
+                    </Button>
+                    <Button onClick={() => navigate('/create-event')} className='text-sm sm:text-base whitespace-nowrap'>
                         <span className='hidden sm:inline'>+ Create Event</span>
                         <span className='sm:hidden'>+ New</span>
                     </Button>
                 </div>
 
-                <div className='flex flex-wrap items-center gap-2 sm:gap-3 mb-4'>
-                    <div className='flex gap-2'>
-                        {(['week', 'month', 'year', 'all'] as const).map((range) => (
-                            <Button
-                                key={range}
-                                onClick={() => setTimeRange(range)}
-                                variant={timeRange === range ? 'primary' : 'secondary'}
-                                className='capitalize text-xs sm:text-sm px-2 sm:px-4'
-                            >
-                                {range === 'all' ? 'All Time' : `This ${range}`}
-                            </Button>
-                        ))}
-                    </div>
-
-                    <Button
-                        onClick={() => setShowPeriodPicker(!showPeriodPicker)}
-                        variant='secondary'
-                        className='text-xs sm:text-sm'
-                    >
-                        <Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-                        Jump to Period
-                    </Button>
-
-                    <Button
-                        onClick={() => setShowFilters(!showFilters)}
-                        variant='secondary'
-                        className='ml-auto text-xs sm:text-sm'
-                    >
-                        <Filter className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-                        Filters
-                        {(filterText || locationFilter || useCustomRange) && (
-                            <span className='ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
-                                Active
-                            </span>
-                        )}
-                    </Button>
-                </div>
 
                 {showPeriodPicker && (
-                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800'>
-                        <div className='flex items-center justify-between mb-3'>
+                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800 space-y-4'>
+                        <div className='flex items-center justify-between'>
                             <h3 className='text-sm sm:text-base font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
                                 <Calendar className='w-4 h-4' />
                                 Jump to Period
@@ -1053,100 +1118,70 @@ export default function GanttEventsCalendar() {
                             </button>
                         </div>
 
-                        <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
-                            <button
-                                onClick={() => handleJumpToPeriod('this-week')}
-                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
-                            >
-                                This Week
-                            </button>
-                            <button
-                                onClick={() => handleJumpToPeriod('next-week')}
-                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
-                            >
-                                Next Week
-                            </button>
-                            <button
-                                onClick={() => handleJumpToPeriod('this-month')}
-                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
-                            >
-                                This Month
-                            </button>
-                            <button
-                                onClick={() => handleJumpToPeriod('next-month')}
-                                className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
-                            >
-                                Next Month
-                            </button>
-                        </div>
-
-                        <div className='mt-3 pt-3 border-t border-blue-200 dark:border-blue-800'>
+                        {/* Time Range Buttons */}
+                        <div>
                             <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2'>
-                                Jump to Week Number
+                                View Range
                             </label>
                             <div className='flex gap-2'>
-                                <input
-                                    type='number'
-                                    min='1'
-                                    max='53'
-                                    placeholder='Week #'
-                                    id='week-number-input'
-                                    className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
-                                />
+                                {(['week', 'month', 'year', 'all'] as const).map((range) => (
+                                    <button
+                                        key={range}
+                                        onClick={() => {
+                                            setTimeRange(range);
+                                            setUseCustomRange(false);
+                                        }}
+                                        className={`flex-1 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
+                                            timeRange === range && !useCustomRange
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                                        }`}
+                                    >
+                                        {range === 'all' ? 'All' : range.charAt(0).toUpperCase() + range.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Quick Jump Buttons */}
+                        <div>
+                            <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2'>
+                                Quick Jump
+                            </label>
+                            <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
                                 <button
-                                    onClick={() => {
-                                        const input = document.getElementById('week-number-input') as HTMLInputElement;
-                                        const weekNum = parseInt(input.value);
-                                        if (weekNum >= 1 && weekNum <= 53) {
-                                            handleJumpToPeriod('week-number', weekNum);
-                                        }
-                                    }}
-                                    className='px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors'
+                                    onClick={() => handleJumpToPeriod('this-week')}
+                                    className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                                 >
-                                    Go
+                                    This Week
+                                </button>
+                                <button
+                                    onClick={() => handleJumpToPeriod('next-week')}
+                                    className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
+                                >
+                                    Next Week
+                                </button>
+                                <button
+                                    onClick={() => handleJumpToPeriod('this-month')}
+                                    className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
+                                >
+                                    This Month
+                                </button>
+                                <button
+                                    onClick={() => handleJumpToPeriod('next-month')}
+                                    className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
+                                >
+                                    Next Month
                                 </button>
                             </div>
-                            <p className='mt-1 text-[0.65rem] sm:text-xs text-gray-600 dark:text-zinc-400'>
-                                Current week: {format(new Date(), 'w')} of {format(new Date(), 'yyyy')}
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {showFilters && (
-                    <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-lg space-y-3 sm:space-y-4'>
-                        <div>
-                            <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5 sm:mb-2'>
-                                Search Events
-                            </label>
-                            <input
-                                type='text'
-                                value={filterText}
-                                onChange={(e) => setFilterText(e.target.value)}
-                                placeholder='Filter by title, description, or location...'
-                                className='w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
-                            />
                         </div>
 
-                        <div className='flex items-center gap-2 sm:gap-3'>
-                            <label className='flex items-center gap-1.5 sm:gap-2 cursor-pointer'>
+                        {/* Custom Date Range */}
+                        <div className='border-t border-blue-200 dark:border-blue-800 pt-3'>
+                            <div className='flex items-center gap-2 mb-3'>
                                 <input
                                     type='checkbox'
-                                    checked={locationFilter}
-                                    onChange={() => setLocationFilter(!locationFilter)}
-                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
-                                />
-                                <span className='text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300'>
-                                    Global events only
-                                </span>
-                            </label>
-                        </div>
-
-                        <div className='border-t dark:border-zinc-700 pt-3 sm:pt-4'>
-                            <div className='flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3'>
-                                <input
-                                    type='checkbox'
-                                    id='customRange'
+                                    id='customRangePicker'
                                     checked={useCustomRange}
                                     onChange={(e) => {
                                         setUseCustomRange(e.target.checked);
@@ -1155,128 +1190,91 @@ export default function GanttEventsCalendar() {
                                             setCustomEndDate('');
                                         }
                                     }}
-                                    className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                    className='w-4 h-4'
                                 />
-                                <label htmlFor='customRange' className='text-xs sm:text-sm font-medium text-gray-700'>
+                                <label htmlFor='customRangePicker' className='text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300'>
                                     Custom Date Range
                                 </label>
                             </div>
 
                             {useCustomRange && (
-                                <div className='space-y-2 sm:space-y-3 ml-4 sm:ml-6'>
+                                <div className='space-y-3 ml-6'>
                                     <div>
-                                        <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
+                                        <label className='block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1'>
                                             Start Date
                                         </label>
                                         <input
                                             type='date'
                                             value={customStartDate}
                                             onChange={(e) => setCustomStartDate(e.target.value)}
-                                            className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                            className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                         />
                                     </div>
 
-                                    <div className='flex items-center gap-1.5 sm:gap-2'>
+                                    <div className='flex items-center gap-2'>
                                         <input
                                             type='radio'
-                                            id='useEndDate'
+                                            id='useEndDatePicker'
                                             checked={!useDuration}
                                             onChange={() => setUseDuration(false)}
-                                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                            className='w-4 h-4'
                                         />
-                                        <label htmlFor='useEndDate' className='text-xs sm:text-sm text-gray-700'>
+                                        <label htmlFor='useEndDatePicker' className='text-xs font-medium text-gray-700 dark:text-zinc-300'>
                                             Specify End Date
                                         </label>
                                     </div>
 
                                     {!useDuration && (
-                                        <div className='ml-4 sm:ml-6'>
-                                            <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
-                                                End Date
-                                            </label>
+                                        <div className='ml-6'>
                                             <input
                                                 type='date'
                                                 value={customEndDate}
                                                 onChange={(e) => setCustomEndDate(e.target.value)}
                                                 min={customStartDate}
-                                                className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                             />
                                         </div>
                                     )}
 
-                                    <div className='flex items-center gap-1.5 sm:gap-2'>
+                                    <div className='flex items-center gap-2'>
                                         <input
                                             type='radio'
-                                            id='useDuration'
+                                            id='useDurationPicker'
                                             checked={useDuration}
                                             onChange={() => setUseDuration(true)}
-                                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                                            className='w-4 h-4'
                                         />
-                                        <label htmlFor='useDuration' className='text-xs sm:text-sm text-gray-700'>
+                                        <label htmlFor='useDurationPicker' className='text-xs font-medium text-gray-700 dark:text-zinc-300'>
                                             Specify Duration
                                         </label>
                                     </div>
 
                                     {useDuration && (
-                                        <div className='ml-4 sm:ml-6 flex gap-2'>
-                                            <div className='flex-1'>
-                                                <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
-                                                    Duration
-                                                </label>
-                                                <input
-                                                    type='number'
-                                                    min='1'
-                                                    value={durationValue}
-                                                    onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
-                                                    className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                                />
-                                            </div>
-                                            <div className='flex-1'>
-                                                <label className='block text-xs sm:text-sm font-medium text-gray-600 mb-1'>
-                                                    Unit
-                                                </label>
-                                                <select
-                                                    value={durationUnit}
-                                                    onChange={(e) => setDurationUnit(e.target.value as 'days' | 'weeks' | 'months')}
-                                                    className='w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                                >
-                                                    <option value='days'>Days</option>
-                                                    <option value='weeks'>Weeks</option>
-                                                    <option value='months'>Months</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {customStartDate && (
-                                        <div className='text-[0.65rem] sm:text-xs text-gray-600 bg-blue-50 p-2 rounded'>
-                                            <strong>Range:</strong> {format(new Date(customStartDate), 'MMM d, yyyy')} 
-                                            {' → '}
-                                            {useDuration ? (
-                                                format(
-                                                    durationUnit === 'days' 
-                                                        ? addDays(new Date(customStartDate), durationValue - 1)
-                                                        : durationUnit === 'weeks'
-                                                            ? addDays(new Date(customStartDate), durationValue * 7 - 1)
-                                                            : addMonths(new Date(customStartDate), durationValue),
-                                                    'MMM d, yyyy'
-                                                )
-                                            ) : customEndDate ? (
-                                                format(new Date(customEndDate), 'MMM d, yyyy')
-                                            ) : (
-                                                'Select end date'
-                                            )}
+                                        <div className='ml-6 flex gap-2'>
+                                            <input
+                                                type='number'
+                                                min='1'
+                                                value={durationValue}
+                                                onChange={(e) => setDurationValue(parseInt(e.target.value) || 1)}
+                                                className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
+                                            />
+                                            <select
+                                                value={durationUnit}
+                                                onChange={(e) => setDurationUnit(e.target.value as 'days' | 'weeks' | 'months')}
+                                                className='px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
+                                            >
+                                                <option value='days'>Days</option>
+                                                <option value='weeks'>Weeks</option>
+                                                <option value='months'>Months</option>
+                                            </select>
                                         </div>
                                     )}
                                 </div>
                             )}
                         </div>
-
-                        <p className='text-xs sm:text-sm text-gray-600 pt-2 sm:pt-3 border-t'>
-                            Showing {filteredEvents.length} of {events.length} upcoming events
-                        </p>
                     </div>
                 )}
+
             </div>
 
             <div className='space-y-2 sm:space-y-3'>
@@ -1335,13 +1333,13 @@ export default function GanttEventsCalendar() {
                         {todayPosition !== null && todayPosition <= containerWidth && (
                             <div
                                 className='absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none'
-                                style={{ 
+                                style={{
                                     left: `${Math.min(todayPosition, containerWidth - 2)}px`,
                                     zIndex: 50
                                 }}
                             />
                         )}
-                        
+
                         {/* Month header row - only for days view */}
                         {timeUnit === 'days' && (
                             <div className='flex border-b dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800'>
@@ -1386,7 +1384,7 @@ export default function GanttEventsCalendar() {
                                 })}
                             </div>
                         )}
-                        
+
                         <div style={{ height: '60px', width: '100%' }} className='relative flex overflow-x-hidden'>
                             {timelineUnits.map((unit, index) => {
                                 const now = startOfDay(new Date());
@@ -1489,103 +1487,199 @@ export default function GanttEventsCalendar() {
                             })}
                         </div>
                     </div>
-                </div>
 
-                {/* Events List */}
-                <div className='p-2 sm:p-4 space-y-2 sm:space-y-3 bg-white border rounded-lg'>
-                    {filteredEvents.length === 0 ? (
-                        <div className='flex items-center justify-center text-gray-500 py-8 sm:py-12'>
-                            <div className='text-center'>
-                                <Calendar className='w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-gray-400' />
-                                <p className='text-sm sm:text-base'>No upcoming events to display</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {filteredEvents.slice(0, visibleEventCount).map((event) => {
-                                const start = toZonedTime(new Date(event.startTime), tz);
-                                const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
-                
+                    {/* Event Bars - Main Event Display */}
+                    {eventBars.length > 0 && (
+                        <div className='relative mt-2 bg-white dark:bg-zinc-900 border-t dark:border-zinc-700' style={{ minHeight: `${Math.max(eventBars.length > 0 ? Math.max(...eventBars.map(b => b.row)) + 1 : 1, 3) * 180}px` }}>
+                            {eventBars.map((bar, idx) => {
+                                const start = toZonedTime(new Date(bar.event.startTime), tz);
+                                const end = bar.event.endTime ? toZonedTime(new Date(bar.event.endTime), tz) : null;
+
+                                // Determine detail level based on width
+                                const detailLevel = bar.width >= 350 ? 'full' : bar.width >= 180 ? 'medium' : bar.width >= 80 ? 'minimal' : 'icon';
+
                                 return (
                                     <div
-                                        key={event.id}
-                                        onClick={() => setSelectedEvent(event)}
-                                        className='p-2.5 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                        key={`${bar.event.id}-${idx}`}
+                                        onClick={() => setSelectedEvent(bar.event)}
+                                        className={`absolute cursor-pointer transition-all hover:shadow-md hover:z-10 rounded-lg border overflow-hidden ${
+                                            bar.isEternal
+                                                ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                                                : bar.isCompressed
+                                                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                                                    : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700'
+                                        }`}
+                                        style={{
+                                            left: `${bar.left}px`,
+                                            width: `${bar.width}px`,
+                                            top: `${bar.row * 180 + 4}px`,
+                                            height: '168px'
+                                        }}
+                                        title={detailLevel === 'icon' ? bar.event.title : undefined}
                                     >
-                                        <div className='flex items-start justify-between gap-2 mb-1'>
-                                            <p className='font-bold text-sm sm:text-lg text-gray-900 dark:text-zinc-100 line-clamp-1 flex-1'>
-                                                {event.title}
-                                            </p>
-                                            {event.location?.global ? (
-                                                <span className='px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
-                                    🌐<span className='hidden sm:inline'> Global</span>
-                                                </span>
-                                            ) : (
-                                                <span className='px-1.5 py-0.5 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap flex-shrink-0'>
-                                    📍<span className='hidden sm:inline'> Local</span>
-                                                </span>
-                                            )}
-                                        </div>
-                                        {event.description && (
-                                            <p className='hidden md:block text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 line-clamp-1'>
-                                                {event.description}
-                                            </p>
-                                        )}
-                                        <div className='space-y-0.5'>
-                                            <p className='text-[0.7rem] sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1 sm:gap-2'>
-                                                <Clock className='w-3 h-3 flex-shrink-0' />
-                                                <span className='truncate'>
-                                                    {format(start, 'MMM d, yyyy • h:mm a')}
-                                                    {end && <span className='hidden sm:inline'> – {format(end, 'MMM d, yyyy • h:mm a')}</span>}
-                                                    {end && <span className='sm:hidden'> – {format(end, 'h:mm a')}</span>}
-                                                </span>
-                                            </p>
-                                            {event.location?.name && !event.location.global && (
-                                                <p className='text-[0.7rem] sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1 sm:gap-2'>
-                                                    <MapPin className='w-3 h-3 flex-shrink-0' />
-                                                    <span className='truncate'>{event.location.name}</span>
-                                                </p>
-                                            )}
-
-                                            {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                                <p className='text-[0.7rem] sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2'>
-                                                    <Users className='w-3 h-3 flex-shrink-0' />
-                                                    <span className='sm:hidden'>{event.participantCount}</span>
-                                                    <span className='hidden sm:inline'>
-                                                        {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
-                                                    </span>
-                                                </p>
-                                            )}
-                                            {event.creatorID && (
-                                                <div className='hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
-                                                    {eventIDToUserMap[event.creatorID] ? (
-                                                        <UserCard
-                                                            user={eventIDToUserMap[event.creatorID]!}
-                                                            className='text-xs sm:text-sm'
-                                                        />
+                                        {/* Full detail - original event card design */}
+                                        {detailLevel === 'full' && (
+                                            <div className='p-3 sm:p-4 h-full flex flex-col'>
+                                                <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                                    <div className='flex items-center gap-1.5 flex-1 overflow-hidden'>
+                                                        {bar.isEternal && <span className='text-amber-600 dark:text-amber-400 text-sm flex-shrink-0'>∞</span>}
+                                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100 line-clamp-2 flex-1 overflow-hidden'>
+                                                            {bar.event.title}
+                                                        </p>
+                                                    </div>
+                                                    {bar.event.location?.global ? (
+                                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
+                                                            🌐 Global
+                                                        </span>
                                                     ) : (
-                                                        <span>Loading organizer...</span>
+                                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
+                                                            📍 Local
+                                                        </span>
                                                     )}
                                                 </div>
-                                            )}
-                                        </div>
+                                                {bar.event.description && (
+                                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-2 line-clamp-2 overflow-hidden'>
+                                                        {bar.event.description}
+                                                    </p>
+                                                )}
+                                                <div className='space-y-0.5 sm:space-y-1 mt-auto min-h-0'>
+                                                    <p className='text-[0.7rem] sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1 sm:gap-2'>
+                                                        <Clock className='w-3 h-3 flex-shrink-0' />
+                                                        <span className='truncate'>
+                                                            {format(start, 'MMM d, yyyy • h:mm a')}
+                                                            {end && <span className='hidden sm:inline'> – {format(end, 'MMM d, yyyy • h:mm a')}</span>}
+                                                            {end && <span className='sm:hidden'> – {format(end, 'h:mm a')}</span>}
+                                                        </span>
+                                                    </p>
+                                                    {bar.event.location?.name && !bar.event.location.global && (
+                                                        <p className='text-[0.7rem] sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1 sm:gap-2'>
+                                                            <MapPin className='w-3 h-3 flex-shrink-0' />
+                                                            <span className='truncate'>{bar.event.location.name}</span>
+                                                        </p>
+                                                    )}
+                                                    {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                        <p className='text-[0.7rem] sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2'>
+                                                            <Users className='w-3 h-3 flex-shrink-0' />
+                                                            <span className='sm:hidden'>{bar.event.participantCount}</span>
+                                                            <span className='hidden sm:inline'>
+                                                                {bar.event.participantCount} participant{bar.event.participantCount !== 1 ? 's' : ''}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                    {bar.event.creator && (
+                                                        <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
+                                                            <UserCard
+                                                                user={bar.event.creator}
+                                                                className='text-xs sm:text-sm'
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Medium detail - title, time, location badge */}
+                                        {detailLevel === 'medium' && (
+                                            <div className='p-2.5 h-full flex flex-col'>
+                                                <div className='flex items-start gap-1.5 mb-1'>
+                                                    {bar.isEternal && <span className='text-amber-600 dark:text-amber-400 text-xs'>∞</span>}
+                                                    {!bar.isEternal && bar.event.location?.global && <span className='text-xs'>🌐</span>}
+                                                    {!bar.isEternal && !bar.event.location?.global && <span className='text-xs'>📍</span>}
+                                                    <p className='font-bold text-sm text-gray-900 dark:text-zinc-100 line-clamp-2 flex-1 overflow-hidden'>
+                                                        {bar.event.title}
+                                                    </p>
+                                                </div>
+                                                {bar.event.description && (
+                                                    <p className='text-gray-600 dark:text-zinc-400 text-xs mb-1 line-clamp-1 overflow-hidden'>
+                                                        {bar.event.description}
+                                                    </p>
+                                                )}
+                                                <div className='space-y-1 mt-auto min-h-0'>
+                                                    <p className='text-xs text-gray-700 dark:text-zinc-300 flex items-center gap-1'>
+                                                        <Clock className='w-3 h-3 flex-shrink-0' />
+                                                        <span className='truncate'>{format(start, 'MMM d, h:mm a')}</span>
+                                                    </p>
+                                                    {bar.event.location?.name && !bar.event.location.global && (
+                                                        <p className='text-xs text-gray-600 dark:text-zinc-400 truncate'>
+                                                            {bar.event.location.name}
+                                                        </p>
+                                                    )}
+                                                    <div className='flex items-center gap-2'>
+                                                        {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                            <p className='text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1'>
+                                                                <Users className='w-3 h-3 flex-shrink-0' />
+                                                                {bar.event.participantCount}
+                                                            </p>
+                                                        )}
+                                                        {bar.event.creator && (
+                                                            <div className='text-xs text-gray-600 dark:text-zinc-400 truncate'>
+                                                                <UserCard
+                                                                    user={bar.event.creator}
+                                                                    className='text-xs'
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Minimal detail - title and basic info */}
+                                        {detailLevel === 'minimal' && (
+                                            <div className='px-2 py-1.5 h-full flex flex-col justify-center'>
+                                                <div className='flex items-center gap-1 mb-1'>
+                                                    {bar.isEternal && <span className='text-xs text-amber-600 dark:text-amber-400'>∞</span>}
+                                                    {!bar.isEternal && bar.isCompressed && <span className='text-xs'>📌</span>}
+                                                    {!bar.isEternal && bar.event.location?.global && <span className='text-xs'>🌐</span>}
+                                                    {!bar.isEternal && !bar.event.location?.global && <span className='text-xs'>📍</span>}
+                                                </div>
+                                                <p className='font-semibold text-xs text-gray-900 dark:text-zinc-100 line-clamp-2 mb-1'>
+                                                    {bar.event.title}
+                                                </p>
+                                                <p className='text-[0.65rem] text-gray-600 dark:text-zinc-400 truncate'>
+                                                    {format(start, 'MMM d')}
+                                                </p>
+                                                {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                    <p className='text-[0.65rem] text-blue-600 dark:text-blue-400 flex items-center gap-0.5'>
+                                                        <Users className='w-2.5 h-2.5' />
+                                                        {bar.event.participantCount}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Icon only - very compressed */}
+                                        {detailLevel === 'icon' && (
+                                            <div className='h-full flex items-center justify-center px-1'>
+                                                <div className='flex flex-col items-center gap-0.5'>
+                                                    {bar.isEternal && <span className='text-base text-amber-600 dark:text-amber-400'>∞</span>}
+                                                    {!bar.isEternal && bar.isCompressed && <span className='text-base'>📌</span>}
+                                                    {!bar.isEternal && !bar.isCompressed && bar.event.location?.global && <span className='text-base'>🌐</span>}
+                                                    {!bar.isEternal && !bar.isCompressed && !bar.event.location?.global && <span className='text-base'>📍</span>}
+                                                    {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                        <span className='text-[0.6rem] font-bold text-blue-600 dark:text-blue-400'>
+                                                            {bar.event.participantCount}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
-            
-                            {/* Load More Button */}
-                            {visibleEventCount < filteredEvents.length && (
-                                <div className='text-center pt-3 sm:pt-4'>
-                                    <Button
-                                        onClick={() => setVisibleEventCount(prev => Math.min(prev + 10, filteredEvents.length))}
-                                        variant='secondary'
-                                        className='text-xs sm:text-sm'
-                                    >
-                        Show More ({filteredEvents.length - visibleEventCount} remaining)
-                                    </Button>
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {eventBars.length === 0 && (
+                        <div className='p-8 sm:p-12 bg-white dark:bg-zinc-900 border dark:border-zinc-700 rounded-lg'>
+                            <div className='flex items-center justify-center text-gray-500 dark:text-zinc-400'>
+                                <div className='text-center'>
+                                    <Calendar className='w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-gray-400 dark:text-zinc-500' />
+                                    <p className='text-sm sm:text-base'>No upcoming events to display</p>
                                 </div>
-                            )}
-                        </>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

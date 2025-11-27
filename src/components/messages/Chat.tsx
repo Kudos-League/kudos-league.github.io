@@ -44,14 +44,14 @@ export default function Chat({ channelType }: Props) {
     useEffect(() => {
         if (resolvedIsDM) return;
 
-        if (channelsQuery.data) {
+        if (channelsQuery.data && channelsQuery.data.length > 0) {
             setChannels(channelsQuery.data);
 
-            if (channelsQuery.data.length > 0 && (!selectedChannel || selectedChannel.type === 'dm')) {
-                selectChannel(channelsQuery.data[0]);
-            }
+            // Always auto-select first public channel
+            selectChannel(channelsQuery.data[0]);
+            setShowChatOnMobile(true);
         }
-    }, [channelsQuery.data, routeIsDM, selectedChannel, resolvedIsDM, channelType]);
+    }, [channelsQuery.data, resolvedIsDM]);
 
     useEffect(() => {
         setSelectedChannel(null);
@@ -332,33 +332,15 @@ export default function Chat({ channelType }: Props) {
                 <div className='flex flex-col h-full min-h-0'>
                     <div className='flex items-center justify-between mb-2'>
                     </div>
-                    {!showChatOnMobile ? (
-                        isDMView ? (
-                            <DMList
-                                channels={channels}
-                                onSelect={openChat}
-                                searchQuery={searchQuery}
-                                selectedChannel={selectedChannel}
-                                isMobile={true}
-                                isLoading={isLoadingChannels}
-                            />
-                        ) : (
-                            <div className='p-3'>
-                                {channels.map((channel) => (
-                                    <Button
-                                        key={channel.id}
-                                        onClick={() => openChat(channel)}
-                                        className={`block w-full text-left px-3 py-2 mb-1 rounded ${
-                                            selectedChannel?.id === channel.id
-                                                ? 'bg-blue-100 font-semibold text-blue-800'
-                                                : 'hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {channel.name}
-                                    </Button>
-                                ))}
-                            </div>
-                        )
+                    {!showChatOnMobile && isDMView ? (
+                        <DMList
+                            channels={channels}
+                            onSelect={openChat}
+                            searchQuery={searchQuery}
+                            selectedChannel={selectedChannel}
+                            isMobile={true}
+                            isLoading={isLoadingChannels}
+                        />
                     ) : (
                         <div className='flex-1 min-h-0 flex flex-col'>
                             <ChatWindow
@@ -366,7 +348,7 @@ export default function Chat({ channelType }: Props) {
                                 channel={selectedChannel}
                                 messages={messages}
                                 onSend={sendMessage}
-                                onBack={() => setShowChatOnMobile(false)}
+                                onBack={isDMView ? () => setShowChatOnMobile(false) : undefined}
                                 isMobile={true}
                                 allowEdit={true}
                                 onEdit={handleEditMessage}
@@ -378,7 +360,7 @@ export default function Chat({ channelType }: Props) {
             </div>
 
             <div className='hidden md:flex w-full h-full min-h-0'>
-                {isDMView ? (
+                {isDMView && (
                     <DMList
                         channels={channels}
                         onSelect={openChat}
@@ -387,22 +369,6 @@ export default function Chat({ channelType }: Props) {
                         isMobile={false}
                         isLoading={isLoadingChannels}
                     />
-                ) : (
-                    <div className='w-48 border-r overflow-y-auto bg-gray-100 p-3'>
-                        {channels.map((channel) => (
-                            <Button
-                                key={channel.id}
-                                onClick={() => selectChannel(channel)}
-                                className={`block w-full text-left px-3 py-2 mb-1 rounded ${
-                                    selectedChannel?.id === channel.id
-                                        ? 'bg-blue-100 font-semibold text-blue-800'
-                                        : 'hover:bg-gray-200'
-                                }`}
-                            >
-                                {channel.name}
-                            </Button>
-                        ))}
-                    </div>
                 )}
 
                 <div className='flex-1 flex flex-col'>

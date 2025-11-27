@@ -7,6 +7,7 @@ import MapDisplay from '@/components/Map';
 import Button from '@/components/common/Button';
 import { useCreateEvent } from '@/shared/api/mutations/events';
 import { useAuth } from '@/contexts/useAuth';
+import { pushAlert } from '@/components/common/alertBus';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function CreateEvent() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['user-events'] });
+            pushAlert({ type: 'success', message: 'Event created successfully!' });
             navigate('/events');
         }
     });
@@ -139,10 +141,11 @@ export default function CreateEvent() {
         }
 
         const isValid = errors.length === 0;
-        const canSubmit = isValid && title.trim() && description.trim();
+        const hasLocation = global || (location?.regionID != null);
+        const canSubmit = isValid && title.trim() && description.trim() && hasLocation;
 
         return { errors, warnings, info, isValid, canSubmit };
-    }, [startDate, endDate, title, description]);
+    }, [startDate, endDate, title, description, global, location]);
 
     const handleStartDateChange = (newStartDate: Date) => {
         setStartDate(newStartDate);
@@ -177,14 +180,14 @@ export default function CreateEvent() {
     const onSubmit = async () => {
         setErrorMessages([]);
 
+        const hasLocation = global || (location?.regionID != null);
+
         if (!dateValidation.canSubmit) {
             setErrorMessages([
                 ...dateValidation.errors,
                 ...(title.trim() ? [] : ['Title is required']),
                 ...(description.trim() ? [] : ['Description is required']),
-                ...(global || location?.regionID
-                    ? []
-                    : ['Location is required when Global is off'])
+                ...(hasLocation ? [] : ['Location is required (select a location or check Global Event)'])
             ]);
             return;
         }
@@ -281,51 +284,60 @@ export default function CreateEvent() {
                 )}
             </div>
 
-            <div className='flex items-center gap-3'>
-                <label className='font-semibold'>Is Global Event?</label>
-                <input
-                    type='checkbox'
-                    checked={global}
-                    onChange={() => setGlobal((prev) => !prev)}
-                    className='w-4 h-4'
-                />
-                <span className='text-sm text-gray-600'>
-                    (Global events are visible to everyone)
-                </span>
-            </div>
-
-            {!global && (
-                <div className='space-y-2'>
-                    <label className='block font-semibold'>
-                        Pick a Location <span className='text-red-500'>*</span>
-                    </label>
-                    <p className='text-yellow-700 text-sm font-medium flex items-center'>
-                        <span className='mr-2'>⚠️</span>
-                        The &nbsp;<u>EXACT</u>&nbsp; event location will be
-                        visible to all participants.
-                    </p>
-                    <div className={`border-2 rounded-lg ${!location?.regionID && errorMessages.length > 0 ? 'border-red-300' : 'border-gray-300'}`}>
-                        <MapDisplay
-                            edit={true}
-                            regionID={location?.regionID}
-                            onLocationChange={(data) =>
-                                setLocation({
-                                    regionID: data.placeID,
-                                    name: data.name,
-                                    latitude: data?.coordinates.latitude,
-                                    longitude: data?.coordinates.longitude
-                                })
-                            }
-                            width='100%'
-                            height={300}
-                            shouldSavedLocationButton={true}
-                        />
-                    </div>
-                    {!global && !location?.regionID && errorMessages.length > 0 && (
-                        <p className='text-red-600 text-sm'>Location is required when Global is off</p>
-                    )}
+            <div className={`p-4 rounded-lg border-2 ${!global && !location?.regionID && errorMessages.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'}`}>
+                <label className='block font-semibold mb-2'>
+                    Location <span className='text-red-500'>*</span>
+                </label>
+                <div className='flex items-center gap-3 mb-3'>
+                    <input
+                        type='checkbox'
+                        checked={global}
+                        onChange={() => setGlobal((prev) => !prev)}
+                        className='w-4 h-4'
+                    />
+                    <label className='font-medium'>Is Global Event?</label>
+                    <span className='text-sm text-gray-600'>
+                        (Global events are visible to everyone)
+                    </span>
+                    {global && <span className='text-green-600 text-sm ml-2'>✓ Location set to Global</span>}
                 </div>
-            )}
+                {!global && !location?.regionID && errorMessages.length > 0 && (
+                    <p className='text-red-600 text-sm mb-2'>Location is required (select a location or check Global Event)</p>
+                )}
+
+                {!global && (
+                    <div className='space-y-2 mt-4'>
+                        <label className='block font-semibold'>
+                            Pick a Location
+                        </label>
+                        <p className='text-yellow-700 text-sm font-medium flex items-center'>
+                            <span className='mr-2'>⚠️</span>
+                            The &nbsp;<u>EXACT</u>&nbsp; event location will be
+                            visible to all participants.
+                        </p>
+                        <div className='border-2 rounded-lg overflow-hidden'>
+                            <MapDisplay
+                                edit={true}
+                                regionID={location?.regionID}
+                                onLocationChange={(data) =>
+                                    setLocation({
+                                        regionID: data.placeID,
+                                        name: data.name,
+                                        latitude: data?.coordinates.latitude,
+                                        longitude: data?.coordinates.longitude
+                                    })
+                                }
+                                width='100%'
+                                height={300}
+                                shouldSavedLocationButton={true}
+                            />
+                        </div>
+                        {!location?.regionID && errorMessages.length > 0 && (
+                            <p className='text-red-600 text-sm'>Please select a location on the map</p>
+                        )}
+                    </div>
+                )}
+            </div>
 
             <div
                 className={`p-4 rounded-lg border-2 ${getValidationClasses(

@@ -189,6 +189,7 @@ export type EventDTO = {
     startTime: string;
     endTime: string;
     creatorID: number | null;
+    creator?: UserDTO | null;
     createdAt: string;
     updatedAt: string;
     content?: string;
