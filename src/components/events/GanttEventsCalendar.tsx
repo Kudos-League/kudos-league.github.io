@@ -20,7 +20,7 @@ import {
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { EventDTO, UserDTO } from '@/shared/api/types';
+import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
@@ -251,8 +251,6 @@ export default function GanttEventsCalendar() {
     const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
-    const [eventIDToUserMap, setEventIDToUserMap] = useState<Record<string, UserDTO>>({});
-    const [fetchedCreatorIds, setFetchedCreatorIds] = useState<Array<number>>([]);
 
     const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
 
@@ -477,8 +475,12 @@ export default function GanttEventsCalendar() {
         const visibleEnd = eventEnd > dateRange.end ? dateRange.end : eventEnd;
 
         if (timeUnit === 'days') {
-            const startDayIndex = differenceInDays(visibleStart, dateRange.start);
-            const endDayIndex = differenceInDays(visibleEnd, dateRange.start);
+            // Snap to full days
+            const snappedStart = startOfDay(visibleStart);
+            const snappedEnd = endOfDay(visibleEnd);
+
+            const startDayIndex = differenceInDays(snappedStart, dateRange.start);
+            const endDayIndex = differenceInDays(snappedEnd, dateRange.start);
 
             const left = startDayIndex * pixelsPerUnit;
             const width = Math.max((endDayIndex - startDayIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.8);
@@ -486,44 +488,38 @@ export default function GanttEventsCalendar() {
             return { left, width, isCompressed: startDayIndex === endDayIndex && !isEternal, isEternal };
         }
         else if (timeUnit === 'weeks') {
-            const startWeekIndex = Math.floor(differenceInDays(visibleStart, dateRange.start) / 7);
-            const endWeekIndex = Math.floor(differenceInDays(visibleEnd, dateRange.start) / 7);
+            // Snap to full weeks
+            const snappedStart = startOfWeek(visibleStart, { weekStartsOn: 0 });
+            const snappedEnd = endOfWeek(visibleEnd, { weekStartsOn: 0 });
 
-            const startWeekDate = addDays(dateRange.start, startWeekIndex * 7);
-            const daysIntoStartWeek = differenceInDays(visibleStart, startWeekDate);
-            const proportionIntoStartWeek = daysIntoStartWeek / 7;
+            // Timeline starts from the week boundary of dateRange.start
+            const timelineStart = startOfWeek(dateRange.start, { weekStartsOn: 0 });
 
-            const endWeekDate = addDays(dateRange.start, endWeekIndex * 7);
-            const daysIntoEndWeek = differenceInDays(visibleEnd, endWeekDate);
-            const proportionIntoEndWeek = (daysIntoEndWeek + 1) / 7;
+            const startWeekIndex = Math.floor(differenceInDays(snappedStart, timelineStart) / 7);
+            const endWeekIndex = Math.floor(differenceInDays(snappedEnd, timelineStart) / 7);
 
-            const left = startWeekIndex * pixelsPerUnit + proportionIntoStartWeek * pixelsPerUnit;
-            const right = endWeekIndex * pixelsPerUnit + proportionIntoEndWeek * pixelsPerUnit;
-            const width = Math.max(right - left, pixelsPerUnit * 0.15);
+            const left = startWeekIndex * pixelsPerUnit;
+            const width = Math.max((endWeekIndex - startWeekIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.15);
 
-            const durationInDays = differenceInDays(visibleEnd, visibleStart) + 1;
-            return { left, width, isCompressed: durationInDays <= 1 && !isEternal, isEternal };
+            const durationInWeeks = endWeekIndex - startWeekIndex + 1;
+            return { left, width, isCompressed: durationInWeeks <= 1 && !isEternal, isEternal };
         }
         else {
-            const startMonthIndex = differenceInMonths(visibleStart, dateRange.start);
-            const endMonthIndex = differenceInMonths(visibleEnd, dateRange.start);
+            // Snap to full months
+            const snappedStart = startOfMonth(visibleStart);
+            const snappedEnd = endOfMonth(visibleEnd);
 
-            const startMonthDate = addMonths(dateRange.start, startMonthIndex);
-            const startMonthDays = differenceInDays(endOfMonth(startMonthDate), startOfMonth(startMonthDate)) + 1;
-            const daysIntoStartMonth = differenceInDays(visibleStart, startOfMonth(startMonthDate));
-            const proportionIntoStartMonth = daysIntoStartMonth / startMonthDays;
+            // Timeline starts from the month boundary of dateRange.start
+            const timelineStart = startOfMonth(dateRange.start);
 
-            const endMonthDate = addMonths(dateRange.start, endMonthIndex);
-            const endMonthDays = differenceInDays(endOfMonth(endMonthDate), startOfMonth(endMonthDate)) + 1;
-            const daysIntoEndMonth = differenceInDays(visibleEnd, startOfMonth(endMonthDate));
-            const proportionIntoEndMonth = (daysIntoEndMonth + 1) / endMonthDays;
+            const startMonthIndex = differenceInMonths(snappedStart, timelineStart);
+            const endMonthIndex = differenceInMonths(snappedEnd, timelineStart);
 
-            const left = startMonthIndex * pixelsPerUnit + proportionIntoStartMonth * pixelsPerUnit;
-            const right = endMonthIndex * pixelsPerUnit + proportionIntoEndMonth * pixelsPerUnit;
-            const width = Math.max(right - left, pixelsPerUnit * 0.1);
+            const left = startMonthIndex * pixelsPerUnit;
+            const width = Math.max((endMonthIndex - startMonthIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.1);
 
-            const durationInDays = differenceInDays(visibleEnd, visibleStart) + 1;
-            return { left, width, isCompressed: durationInDays <= 3 && !isEternal, isEternal };
+            const durationInMonths = endMonthIndex - startMonthIndex + 1;
+            return { left, width, isCompressed: durationInMonths <= 1 && !isEternal, isEternal };
         }
     };
 
@@ -844,53 +840,6 @@ export default function GanttEventsCalendar() {
     }, []);
 
     useEffect(() => {
-        const fetchCreators = async () => {
-            const creatorIdsToFetch = new Array<number>();
-        
-            events.forEach(event => {
-                if (event.creatorID && !fetchedCreatorIds.includes(event.creatorID)) {
-                    creatorIdsToFetch.push(event.creatorID);
-                }
-            });
-
-            if (creatorIdsToFetch.length === 0) return;
-        
-            console.log(`Fetching ${creatorIdsToFetch.length} unique creators`);
-
-            setFetchedCreatorIds(prev => Array.from(new Set([...prev, ...creatorIdsToFetch])));
-
-            const updates: Record<number, UserDTO> = {};
-    
-            for (const creatorId of creatorIdsToFetch) {
-                try {
-                    const creator = await apiGet<UserDTO>(`/users/${creatorId}`);
-                    updates[creatorId] = creator;
-                    console.log(`✓ Fetched creator ${creatorId}: ${creator.username}`);
-                
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                catch (error) {
-                    console.error(`✗ Failed to fetch creator ${creatorId}:`, error);
-                }
-            }
-
-            if (Object.keys(updates).length > 0) {
-                setEventIDToUserMap(prev => {
-                    const newMap = { ...prev, ...updates };
-                    console.log(`Updated map: ${Object.keys(newMap).length} total creators`);
-                    return newMap;
-                });
-            }
-        };
-
-        fetchCreators();
-    }, [events, fetchedCreatorIds]);
-
-    useEffect(() => {
-        console.log(`eventIDToUserMap updated: ${Object.keys(eventIDToUserMap).length} entries`);
-    }, [eventIDToUserMap]);
-
-    useEffect(() => {
         if (viewDate && viewPeriodType && !showingRangeEvents) {
             let periodStart: Date, periodEnd: Date;
             const clicked = startOfDay(viewDate);
@@ -1037,9 +986,9 @@ export default function GanttEventsCalendar() {
                                             {event.location.name}
                                         </p>
                                     )}
-                                    {event.creatorID && eventIDToUserMap[event.creatorID] && (
+                                    {event.creator && (
                                         <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                            <UserCard user={eventIDToUserMap[event.creatorID]} />
+                                            <UserCard user={event.creator} />
                                         </p>
                                     )}
                                     {typeof event.participantCount === 'number' && event.participantCount > 0 && (
@@ -1614,10 +1563,10 @@ export default function GanttEventsCalendar() {
                                                             </span>
                                                         </p>
                                                     )}
-                                                    {bar.event.creatorID && eventIDToUserMap[bar.event.creatorID] && (
+                                                    {bar.event.creator && (
                                                         <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
                                                             <UserCard
-                                                                user={eventIDToUserMap[bar.event.creatorID]!}
+                                                                user={bar.event.creator}
                                                                 className='text-xs sm:text-sm'
                                                             />
                                                         </div>
@@ -1659,10 +1608,10 @@ export default function GanttEventsCalendar() {
                                                                 {bar.event.participantCount}
                                                             </p>
                                                         )}
-                                                        {bar.event.creatorID && eventIDToUserMap[bar.event.creatorID] && (
+                                                        {bar.event.creator && (
                                                             <div className='text-xs text-gray-600 dark:text-zinc-400 truncate'>
                                                                 <UserCard
-                                                                    user={eventIDToUserMap[bar.event.creatorID]!}
+                                                                    user={bar.event.creator}
                                                                     className='text-xs'
                                                                 />
                                                             </div>
