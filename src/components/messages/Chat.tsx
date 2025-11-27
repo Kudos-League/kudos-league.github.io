@@ -49,6 +49,7 @@ export default function Chat({ channelType }: Props) {
 
             if (channelsQuery.data.length > 0 && (!selectedChannel || selectedChannel.type === 'dm')) {
                 selectChannel(channelsQuery.data[0]);
+                setShowChatOnMobile(true); // Auto-open chat on mobile for public channels
             }
         }
     }, [channelsQuery.data, routeIsDM, selectedChannel, resolvedIsDM, channelType]);
