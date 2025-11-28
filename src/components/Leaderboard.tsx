@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
 import { UserDTO } from '@/shared/api/types';
+import useLocation from '@/hooks/useLocation';
 
 type LeaderboardUser = {
     id: number;
@@ -22,6 +23,7 @@ const TIME_FILTERS = [
 export default function Leaderboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { location: browserLocation } = useLocation();
 
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
     const [loading, setLoading] = useState(false);
@@ -33,11 +35,23 @@ export default function Leaderboard() {
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
 
+    // Check if we have any location available (saved or browser)
+    const hasLocation = !!user?.location?.regionID || !!browserLocation;
+
     const loadLeaderboard = async () => {
         if (!user) {
             setError('Must be logged in.');
             return;
         }
+
+        // If local filter is enabled but no location available, show error
+        if (useLocal && !hasLocation) {
+            setError(null); // Clear error, will show message in UI instead
+            setLoading(false);
+            setLeaderboard([]);
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
@@ -126,43 +140,64 @@ export default function Leaderboard() {
             {loading && <p className='text-center text-gray-500'>Loading...</p>}
             {error && <p className='text-center text-red-500'>{error}</p>}
 
-            {/* Stacked List */}
-            <ul
-                role='list'
-                className='divide-y divide-gray-200 dark:divide-white/10 mt-4'
-            >
-                {leaderboard.map((entry) => (
-                    <li
-                        key={entry.id}
-                        className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
-                        onClick={() => navigate(`/user/${entry.id}`)}
+            {/* No location message when local filter is on but no location available */}
+            {useLocal && !hasLocation && !loading && (
+                <div className='mt-4 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-center'>
+                    <div className='text-4xl mb-3'>📍</div>
+                    <h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-2'>
+                        Location Required
+                    </h3>
+                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                        To view your local leaderboard, you need to set your location first.
+                    </p>
+                    <button
+                        onClick={() => navigate('/settings')}
+                        className='inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors'
                     >
-                        <div className='flex min-w-0 gap-x-4 flex-1'>
-                            <UserCard
-                                user={
-                                    {
-                                        ...entry,
-                                        kudos: entry.totalKudos
-                                    } as any as UserDTO
-                                }
-                                large
-                                triggerVariant='avatar-name'
-                                subtitle={entry.location?.name || '—'}
-                                centered={false}
-                                subtitleClassName='max-w-[180px]'
-                            />
-                        </div>
+                        Add Location in Settings
+                    </button>
+                </div>
+            )}
 
-                        <div className='flex shrink-0 flex-col items-end justify-center'>
-                            <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                {entry.totalKudos.toLocaleString()}
-                            </p>
-                            <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Kudos
-                            </p>
-                        </div>
-                    </li>                ))}
-            </ul>
+            {/* Stacked List */}
+            {(!useLocal || hasLocation) && (
+                <ul
+                    role='list'
+                    className='divide-y divide-gray-200 dark:divide-white/10 mt-4'
+                >
+                    {leaderboard.map((entry) => (
+                        <li
+                            key={entry.id}
+                            className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
+                            onClick={() => navigate(`/user/${entry.id}`)}
+                        >
+                            <div className='flex min-w-0 gap-x-4 flex-1'>
+                                <UserCard
+                                    user={
+                                        {
+                                            ...entry,
+                                            kudos: entry.totalKudos
+                                        } as any as UserDTO
+                                    }
+                                    large
+                                    triggerVariant='avatar-name'
+                                    subtitle={entry.location?.name || '—'}
+                                    centered={false}
+                                    subtitleClassName='max-w-[180px]'
+                                />
+                            </div>
+
+                            <div className='flex shrink-0 flex-col items-end justify-center'>
+                                <p className='text-sm font-semibold text-gray-900 dark:text-white'>
+                                    {entry.totalKudos.toLocaleString()}
+                                </p>
+                                <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                    Kudos
+                                </p>
+                            </div>
+                        </li>                ))}
+                </ul>
+            )}
         </div>
     );
 }
