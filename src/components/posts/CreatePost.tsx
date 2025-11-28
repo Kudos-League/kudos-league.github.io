@@ -131,16 +131,17 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             return setServerError(quantityValidation);
         }
 
+        // Ensure all values are properly typed before sending to backend
         const payload: CreatePostDTO = {
-            title: data.title,
-            body: data.body,
-            type: postType,
-            itemsLimit: data.itemsLimit,
-            tags: data.tags,
-            categoryID: data.categoryID,
+            title: String(data.title || '').trim(),
+            body: String(data.body || '').trim(),
+            type: postType as 'gift' | 'request',
+            itemsLimit: Number(data.itemsLimit),
+            tags: data.tags.map(tag => String(tag).trim()),
+            categoryID: Number(data.categoryID),
             files: selectedImages,
             location
-        };
+        } as CreatePostDTO;
 
         setServerError(null);
 
@@ -163,14 +164,28 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             form.clearErrors();
 
             const first = Array.isArray(errs) ? errs[0] : null;
+            const errorMessage = first || errs?.message || 'Failed to create post.';
+
             if (
                 first?.includes('413') ||
-                first?.toLowerCase().includes('too large')
+                errorMessage.toLowerCase().includes('too large')
             ) {
-                setServerError('Files are too large.');
+                setServerError('Files are too large. Please reduce file size or number of files.');
+            }
+            else if (errorMessage.toLowerCase().includes('expected string')) {
+                setServerError('Please enter valid text for title and description.');
+            }
+            else if (errorMessage.toLowerCase().includes('invalid characters')) {
+                setServerError('Title or description contains invalid characters. Please remove < and > symbols.');
+            }
+            else if (errorMessage.toLowerCase().includes('title')) {
+                setServerError(`Title error: ${errorMessage}`);
+            }
+            else if (errorMessage.toLowerCase().includes('body') || errorMessage.toLowerCase().includes('description')) {
+                setServerError(`Description error: ${errorMessage}`);
             }
             else {
-                setServerError(first || 'Failed to create post.');
+                setServerError(errorMessage);
             }
         }
     };
@@ -197,7 +212,24 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     name='title'
                     label=''
                     form={form}
-                    registerOptions={{ required: 'Title is required' }}
+                    valueTransformer={(v) => String(v || '')}
+                    registerOptions={{
+                        required: 'Title is required',
+                        minLength: { value: 3, message: 'Title must be at least 3 characters' },
+                        maxLength: { value: 60, message: 'Title cannot exceed 60 characters' },
+                        validate: (value) => {
+                            if (!value || typeof value !== 'string') {
+                                return 'Please enter a valid title';
+                            }
+                            if (value.trim().length < 3) {
+                                return 'Title must be at least 3 characters';
+                            }
+                            if (/<|>/.test(value)) {
+                                return 'Title cannot contain < or > characters';
+                            }
+                            return true;
+                        }
+                    }}
                 />
             </FormField>
             
@@ -206,7 +238,22 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     name='body'
                     label=''
                     form={form}
-                    registerOptions={{ required: 'Description is required' }}
+                    valueTransformer={(v) => String(v || '')}
+                    registerOptions={{
+                        required: 'Description is required',
+                        validate: (value) => {
+                            if (!value || typeof value !== 'string') {
+                                return 'Please enter a valid description';
+                            }
+                            if (value.trim().length === 0) {
+                                return 'Description cannot be empty';
+                            }
+                            if (/<|>/.test(value)) {
+                                return 'Description cannot contain < or > characters';
+                            }
+                            return true;
+                        }
+                    }}
                     multiline
                 />
             </FormField>
@@ -234,11 +281,18 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
-            <FormField name='categoryID' label='Category *' helper='Select the category that best fits your post'>
+            <FormField
+                name='categoryID'
+                label='Category * (REQUIRED)'
+                helper='⚠️ You must select a category before creating your post'
+            >
                 <Controller
                     control={form.control}
                     name='categoryID'
-                    rules={{ validate: (v) => (v && v !== 0) || 'Please select a category.' }}
+                    rules={{
+                        required: 'Category is required - please select one from the dropdown',
+                        validate: (v) => (v && v !== 0) || 'Please select a category from the dropdown.'
+                    }}
                     render={({ field }) => (
                         <DropdownPicker
                             options={(categories as CategoryDTO[]).map((c) => ({
@@ -251,7 +305,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 field.onChange(parsed);
                             }}
                             onBlur={field.onBlur}
-                            placeholder={catsLoading ? 'Loading…' : 'Select a category'}
+                            placeholder={catsLoading ? 'Loading…' : '⚠️ Select a category (required)'}
                         />
                     )}
                 />

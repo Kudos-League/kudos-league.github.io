@@ -17,12 +17,26 @@ function extractErrMessage(err: any): string {
     if (Array.isArray(err) && err.every((s) => typeof s === 'string')) {
         return err.join(', ');
     }
-    return (
+
+    const message =
         err?.response?.data?.errors?.[0]?.message ||
         err?.response?.data?.message ||
         err?.message ||
-        'Something went wrong'
-    );
+        'Something went wrong';
+
+    // Make common errors more user-friendly
+    if (message.toLowerCase().includes('expected string, received number')) {
+        if (message.toLowerCase().includes('title')) {
+            return 'Invalid title format. Please enter text only.';
+        }
+        return 'Invalid input format. Please check all fields and try again.';
+    }
+
+    if (message.toLowerCase().includes('categoryid')) {
+        return 'Please select a category from the dropdown.';
+    }
+
+    return message;
 }
 
 export function useUpdatePost() {

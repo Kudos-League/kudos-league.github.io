@@ -237,57 +237,80 @@ const EditProfile: React.FC<Props> = ({
         setShowImageOptions(false);
     }, [form]);
 
-    // const handleUseCurrentLocation = React.useCallback(async () => {
-    //     if (locationError) {
-    //         setToastType('error');
-    //         setToastMessage('Unable to get your location. Please enable location services.');
-    //         return;
-    //     }
+    const handleUseCurrentLocation = React.useCallback(async () => {
+        // Request location permission if not already granted
+        if (!browserLocation && !locationError) {
+            try {
+                await navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        setLocation({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        setToastType('error');
+                        setToastMessage('Location access denied. Please enable location permissions in your browser.');
+                    }
+                );
+                return; // Wait for the location to be set
+            } 
+            catch (err) {
+                setToastType('error');
+                setToastMessage('Unable to access location. Please check your browser settings.');
+                return;
+            }
+        }
 
-    //     if (!browserLocation) {
-    //         setToastType('error');
-    //         setToastMessage('Waiting for browser location... Please allow location access.');
-    //         return;
-    //     }
+        if (locationError) {
+            setToastType('error');
+            setToastMessage('Unable to get your location. Please enable location services in your browser.');
+            return;
+        }
 
-    //     try {
-    //         const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
-    //         const response = await fetch(
-    //             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
-    //         );
-    //         const data = await response.json();
-            
-    //         if (data.status !== 'OK' || !data.results?.[0]) {
-    //             throw new Error('Failed to geocode location');
-    //         }
+        if (!browserLocation) {
+            setToastType('error');
+            setToastMessage('Waiting for browser location... Please allow location access when prompted.');
+            return;
+        }
 
-    //         const result = data.results[0];
-    //         const placeID = result.place_id;
-    //         const formatted = result.formatted_address || '';
+        try {
+            const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY;
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${browserLocation.latitude},${browserLocation.longitude}&key=${GOOGLE_MAPS_KEY}`
+            );
+            const data = await response.json();
 
-    //         const next = {
-    //             latitude: browserLocation.latitude,
-    //             longitude: browserLocation.longitude,
-    //             name: formatted,
-    //             regionID: placeID,
-    //             changed: true
-    //         };
+            if (data.status !== 'OK' || !data.results?.[0]) {
+                throw new Error('Failed to geocode location');
+            }
 
-    //         setLocation(browserLocation);
-    //         form.setValue('location', next, {
-    //             shouldDirty: true,
-    //             shouldValidate: true
-    //         });
-    //         setLocationLabel(formatted);
-    //         setToastType('success');
-    //         setToastMessage('Current location set successfully');
-    //     }
-    //     catch (err) {
-    //         console.error('Failed to set current location:', err);
-    //         setToastType('error');
-    //         setToastMessage('Failed to set current location');
-    //     }
-    // }, [browserLocation, locationError, form, setLocation]);
+            const result = data.results[0];
+            const placeID = result.place_id;
+            const formatted = result.formatted_address || '';
+
+            const next = {
+                latitude: browserLocation.latitude,
+                longitude: browserLocation.longitude,
+                name: formatted,
+                regionID: placeID
+            };
+
+            setLocation(browserLocation);
+            form.setValue('location', next, {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+            setLocationLabel(formatted);
+            setToastType('success');
+            setToastMessage('Current location set successfully!');
+        }
+        catch (err) {
+            console.error('Failed to set current location:', err);
+            setToastType('error');
+            setToastMessage('Failed to set current location. Please try again.');
+        }
+    }, [browserLocation, locationError, form, setLocation]);
 
     const handleClearLocation = React.useCallback(() => {
         setLocation(null);
@@ -690,7 +713,7 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {/* Fix for Map - add right margin and make responsive */}
+                        {/* Location */}
                         {canEditProfile && (
                             <FormField
                                 label='Location'
@@ -740,21 +763,19 @@ const EditProfile: React.FC<Props> = ({
                                                 }
                                             }
                                             else {
-                                                // Simplified version - might be what backend expects
                                                 const locationValue = {
                                                     latitude: data.coordinates.latitude,
                                                     longitude: data.coordinates.longitude,
                                                     name: data.name || data.businessName || '',
                                                     regionID: data.placeID
-                                                    // Note: NOT including 'changed'
                                                 };
-        
+
                                                 setLocation(data.coordinates);
                                                 form.setValue('location', locationValue, {
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-        
+
                                                 if (setTargetUser) {
                                                     setTargetUser({
                                                         ...targetUser,
