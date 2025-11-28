@@ -86,9 +86,7 @@ function NavItemComponent({
                 )}
             >
                 {children}
-                {isActive && (
-                    <span className='absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0' />
-                )}
+
             </Link>
         </li>
     );
@@ -233,15 +231,13 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
-                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200 overflow-hidden'
+                className='mt-1'
             >
-                <div className='h-9 w-9 sm:h-10 sm:w-10'>
-                    <Avatar
-                        avatar={getImagePath(user?.avatar)}
-                        username={user?.username}
-                        size={40}
-                    />
-                </div>
+                <Avatar
+                    avatar={getImagePath(user?.avatar)}
+                    username={user?.username}
+                    size={40}
+                />
             </button>
             {open && (
                 <div
