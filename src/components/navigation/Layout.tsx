@@ -155,7 +155,7 @@ const Layout: React.FC = () => {
                     <Outlet />
                 </main>
 
-                <LayoutFooter />
+                {/* <LayoutFooter /> */}
             </div>
         </div>
     );
