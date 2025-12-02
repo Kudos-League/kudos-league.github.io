@@ -49,6 +49,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const qc = useQueryClient();
 
+    const clearPostsCache = React.useCallback(() => {
+        try {
+            qc.removeQueries({
+                predicate: (query) => {
+                    const k = query.queryKey;
+                    if (!Array.isArray(k) || k.length === 0) return false;
+                    const first = k[0];
+                    if (typeof first !== 'string') return false;
+                    return first === 'posts';
+                }
+            });
+        }
+        catch (err) {
+            console.warn('Failed to clear posts cache:', err);
+        }
+    }, [qc]);
+
     type LoginData = { token: string; user?: { username?: string } };
     type LoginPayload = { username?: string; password?: string; token?: string };
 
@@ -94,6 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             dispatch(updateAuth(newAuthState));
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
             setAuthToken(newAuthState.token);
+            clearPostsCache();
             try {
                 await qc.fetchQuery({ queryKey: ['user', 'me'], queryFn: () => apiGet<UserDTO>('/users/me') });
                 const cached = qc.getQueryData<UserDTO>(['user', 'me']);
@@ -204,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserProfile(null);
         dispatch(updateAuth({} as any));
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        clearPostsCache();
         clearAlerts();
     };
 
