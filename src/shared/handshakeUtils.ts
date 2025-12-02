@@ -52,6 +52,7 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
     const canCancel =
         !postIsPast &&
         status !== 'cancelled' &&
+        status !== 'completed' &&
         currentUserId !== undefined &&
         ((senderID !== undefined && senderID === currentUserId) ||
             (postSenderID !== undefined && postSenderID === currentUserId) ||
@@ -60,14 +61,8 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
     const canUndoAccept = (() => {
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
-        if (handshake.post.type === 'request') {
-            // return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
-            return false;
-        }
-        if (handshake.post.type === 'gift') {
-            return status === 'accepted' && receiverID !== undefined && receiverID === currentUserId;
-        }
-        return false;
+        // The acceptor is always the post creator (User A), regardless of gift or request
+        return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
     })();
 
     const canComplete = (() => {

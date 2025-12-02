@@ -323,13 +323,13 @@ export default function Chat({ channelType }: Props) {
     }, []);
 
     const pageContainerStyle: React.CSSProperties = pageHeaderHeight > 0
-        ? { boxSizing: 'border-box', overflow: 'hidden', height: `100%` }
-        : { minHeight: '60vh', boxSizing: 'border-box', overflow: 'hidden' };
+        ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
+        : { minHeight: '60vh', boxSizing: 'border-box' };
 
     return (
-        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 '>
-            <div className='md:hidden w-full h-full min-h-0'>
-                <div className='flex flex-col h-full min-h-0'>
+        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
+            <div className='md:hidden w-full h-full min-h-0 overflow-hidden'>
+                <div className='flex flex-col h-full min-h-0 overflow-hidden'>
                     <div className='flex items-center justify-between mb-2'>
                     </div>
                     {!showChatOnMobile && isDMView ? (
@@ -359,7 +359,7 @@ export default function Chat({ channelType }: Props) {
                 </div>
             </div>
 
-            <div className='hidden md:flex w-full h-full min-h-0'>
+            <div className='hidden md:flex w-full h-full min-h-0 overflow-hidden'>
                 {isDMView && (
                     <DMList
                         channels={channels}
@@ -371,7 +371,7 @@ export default function Chat({ channelType }: Props) {
                     />
                 )}
 
-                <div className='flex-1 flex flex-col'>
+                <div className='flex-1 flex flex-col min-h-0 overflow-hidden'>
                     <ChatWindow
                         user={user}
                         channel={selectedChannel}

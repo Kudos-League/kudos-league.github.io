@@ -12,6 +12,7 @@ import { getEndpointUrl } from '@/shared/api/config';
 import Button from '../common/Button';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
+import Alert from '../common/Alert';
 import { current } from '@reduxjs/toolkit';
 
 interface Props {
@@ -47,6 +48,9 @@ const HandshakeCard: React.FC<Props> = ({
     const [loadingMessage, setLoadingMessage] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showNoShowModal, setShowNoShowModal] = useState(false);
+    const [showAcceptedWarningModal, setShowAcceptedWarningModal] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     const imageSrc = handshake.post.images?.[0]
         ? getEndpointUrl() + handshake.post.images[0]
@@ -136,6 +140,12 @@ const HandshakeCard: React.FC<Props> = ({
         fetchLastMessage();
     }, [status, userID, otherUserID, isParticipant]);
 
+    useEffect(() => {
+        if (!toastMessage) return;
+        const t = setTimeout(() => setToastMessage(null), 3000);
+        return () => clearTimeout(t);
+    }, [toastMessage]);
+
     const handleAccept = async (): Promise<boolean> => {
         setError(null);
         if (status !== 'new') return false;
@@ -145,12 +155,36 @@ const HandshakeCard: React.FC<Props> = ({
             await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'accepted' });
             setStatus('accepted');
             setIsChatOpen(true);
+            setToastType('success');
+            setToastMessage('Handshake accepted! You can now chat and coordinate the exchange.');
             return true;
         }
         catch (err) {
             console.error(err);
             setError('Could not accept handshake.');
+            setToastType('error');
+            setToastMessage('Failed to accept handshake. Please try again.');
             return false;
+        }
+        finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleUndoAccept = async () => {
+        setError(null);
+        setProcessing(true);
+        try {
+            await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
+            setStatus('new');
+            setToastType('success');
+            setToastMessage('Handshake acceptance undone. Status reverted to pending.');
+        }
+        catch (err) {
+            console.error('Failed to undo accept', err);
+            setError('Failed to undo accept');
+            setToastType('error');
+            setToastMessage('Failed to undo acceptance. Please try again.');
         }
         finally {
             setProcessing(false);
@@ -159,7 +193,14 @@ const HandshakeCard: React.FC<Props> = ({
 
     const handleCancelHandshake = () => {
         if (cancelling || status === 'cancelled') return;
-        setShowCancelModal(true);
+
+        // If status is accepted, show warning about item exchange first
+        if (status === 'accepted') {
+            setShowAcceptedWarningModal(true);
+        } 
+        else {
+            setShowCancelModal(true);
+        }
     };
 
     const handleCancelConfirmed = async () => {
@@ -194,19 +235,28 @@ const HandshakeCard: React.FC<Props> = ({
             setStatus('cancelled');
             setIsChatOpen(false);
             onDelete?.(handshake.id);
+            setToastType('success');
+            setToastMessage('Handshake cancelled successfully.');
         }
         catch (err) {
             console.error('Failed to cancel handshake', err);
             setError('Failed to cancel handshake.');
+            setToastType('error');
+            setToastMessage('Failed to cancel handshake. Please try again.');
         }
         finally {
             setCancelling(false);
+            setShowCancelModal(false);
+            setShowNoShowModal(false);
+            setShowAcceptedWarningModal(false);
         }
     };
 
     const handleKudosSubmit = async () => {
         if (!kudosValue || isNaN(Number(kudosValue))) {
             setError('Enter a valid kudos number.');
+            setToastType('error');
+            setToastMessage('Please enter a valid kudos amount.');
             return;
         }
 
@@ -223,10 +273,14 @@ const HandshakeCard: React.FC<Props> = ({
             await completeHandshakeMutation.mutateAsync(handshake.id);
             setStatus('completed');
             setKudosValue('');
+            setToastType('success');
+            setToastMessage(`Handshake completed! ${kudosValue} kudos sent successfully.`);
         }
         catch (err) {
             console.error(err);
             setError('Failed to submit kudos.');
+            setToastType('error');
+            setToastMessage('Failed to submit kudos. Please try again.');
         }
         finally {
             setSubmitting(false);
@@ -366,7 +420,9 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new' && (
+                {/* Unified Accept/Undo Button */}
+                {((canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new') ||
+                  (canUndoAccept && !stage.postIsPast)) && (
                     <Button
                         className={`
                             w-full sm:w-auto relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
@@ -375,24 +431,26 @@ const HandshakeCard: React.FC<Props> = ({
                             ${
                     processing
                         ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
+                        : canUndoAccept
+                            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700'
+                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
                     }
-                            before:absolute before:inset-0 before:bg-white before:opacity-0 
+                            before:absolute before:inset-0 before:bg-white before:opacity-0
                             hover:before:opacity-10 before:transition-opacity before:duration-200
                         `}
-                        onClick={handleAccept}
+                        onClick={canUndoAccept ? handleUndoAccept : handleAccept}
                         disabled={processing}
                     >
                         <span
                             className={`transition-opacity duration-200 ${processing ? 'opacity-0' : 'opacity-100'}`}
                         >
-                            Accept Offer
+                            {canUndoAccept ? 'Undo Accept' : 'Accept Offer'}
                         </span>
                         {processing && (
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 <span className="ml-2 text-sm">
-                                    Accepting...
+                                    {canUndoAccept ? 'Undoing...' : 'Accepting...'}
                                 </span>
                             </div>
                         )}
@@ -442,26 +500,6 @@ const HandshakeCard: React.FC<Props> = ({
                             </p>
                         )}
                     </div>
-                )}
-
-
-                {canUndoAccept && !stage.postIsPast && (
-                    <Button
-                        onClick={async () => {
-                            try {
-                                await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
-                                setStatus('new');
-                            }
-                            catch (err) {
-                                console.error('Failed to undo accept', err);
-                                setError('Failed to undo accept');
-                            }
-                        }}
-                        variant="warning"
-                        className="w-full sm:w-auto"
-                    >
-                        Undo Accept
-                    </Button>
                 )}
 
                 {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
@@ -527,6 +565,35 @@ const HandshakeCard: React.FC<Props> = ({
                 cancelText="No"
                 variant="warning"
             />
+
+            {/* Accepted State Warning Modal */}
+            <ConfirmationModal
+                isOpen={showAcceptedWarningModal}
+                onClose={() => setShowAcceptedWarningModal(false)}
+                onConfirm={() => {
+                    setShowAcceptedWarningModal(false);
+                    setShowCancelModal(true);
+                }}
+                title="Cancel Accepted Handshake"
+                message="You both agreed to this exchange. Did you not receive the item? Canceling will end this handshake."
+                confirmText="Yes, Cancel It"
+                cancelText="No, Keep It"
+                variant="warning"
+            />
+
+            {/* Toast Notification */}
+            {toastMessage && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+                    <Alert
+                        type={toastType === 'success' ? 'success' : 'danger'}
+                        title={toastType === 'success' ? 'Success' : 'Error'}
+                        message={toastMessage}
+                        show={!!toastMessage}
+                        onClose={() => setToastMessage(null)}
+                        closable={true}
+                    />
+                </div>
+            )}
         </>
     );
 };
