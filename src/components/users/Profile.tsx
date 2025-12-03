@@ -5,6 +5,7 @@ import { useReportUser } from '@/shared/api/mutations/users';
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 
 import { useAuth } from '@/contexts/useAuth';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
@@ -36,6 +37,7 @@ const Profile: React.FC<Props> = ({
     setUser
 }) => {
     const { user: currentUser, token } = useAuth();
+    const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
@@ -326,6 +328,42 @@ const Profile: React.FC<Props> = ({
                 {isSelf && currentUser?.admin && (
                     <InviteManager />
                 )}
+
+                {/* Accessibility Settings - Only for own profile */}
+                {/* {isSelf && (
+                    <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-6'>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
+                            Accessibility
+                        </h3>
+                        <div className='flex items-center justify-between'>
+                            <div className='flex-1'>
+                                <label htmlFor='dyslexic-font-toggle' className='text-sm font-medium text-gray-700 dark:text-gray-200'>
+                                    OpenDyslexic Font
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Use a font designed to increase readability for readers with dyslexia
+                                </p>
+                            </div>
+                            <button
+                                id='dyslexic-font-toggle'
+                                role='switch'
+                                aria-checked={useDyslexicFont}
+                                onClick={() => setUseDyslexicFont(!useDyslexicFont)}
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                                    useDyslexicFont ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        useDyslexicFont ? 'translate-x-5' : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                )} */}
 
                 {!isSelf && (
                     <div className='flex justify-center'>

@@ -37,3 +37,15 @@
 .rbc-month-view .rbc-day-bg {
     cursor: pointer;
 }
+
+/* OpenDyslexic Font for Accessibility */
+.dyslexic-font,
+.dyslexic-font * {
+    font-family: 'OpenDyslexicRegular', 'OpenDyslexic3Regular', sans-serif !important;
+}
+
+/* Preserve code blocks even with dyslexic font */
+.dyslexic-font code,
+.dyslexic-font pre {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
+}

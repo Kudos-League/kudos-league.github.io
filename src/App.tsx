@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { MobileChatProvider } from '@/contexts/MobileChatContext';
+import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import ConnectingOverlay from '@/components/common/ConnectingOverlay';
 
 import AppNavigator from '@/components/navigation/AppNavigator';
@@ -46,17 +47,19 @@ export default function App() {
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
                         <NotificationsProvider>
-                            <ThemeProvider>
-                                <MobileChatProvider>
-                                    <WebSocketProvider>
-                                        <BlockedUsersProvider>
-                                            <AppCore />
-                                            <AlertHost />
-                                            <ConnectingOverlay />
-                                        </BlockedUsersProvider>
-                                    </WebSocketProvider>
-                                </MobileChatProvider>
-                            </ThemeProvider>
+                            <AccessibilityProvider>
+                                <ThemeProvider>
+                                    <MobileChatProvider>
+                                        <WebSocketProvider>
+                                            <BlockedUsersProvider>
+                                                <AppCore />
+                                                <AlertHost />
+                                                <ConnectingOverlay />
+                                            </BlockedUsersProvider>
+                                        </WebSocketProvider>
+                                    </MobileChatProvider>
+                                </ThemeProvider>
+                            </AccessibilityProvider>
                         </NotificationsProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
                     </AuthProvider>
