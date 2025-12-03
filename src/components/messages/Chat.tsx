@@ -43,6 +43,9 @@ export default function Chat({ channelType }: Props) {
     const isDMFromProp = channelType === 'dm';
     const resolvedIsDM = channelType ? isDMFromProp : routeIsDM;
 
+    // Track previous value to detect actual mode changes
+    const prevResolvedIsDM = useRef<boolean | null>(null);
+
     // Update mobile chat context when showChatOnMobile changes (DMs only, mobile only)
     useEffect(() => {
         const isMobile = window.innerWidth < 768; // md breakpoint
@@ -50,24 +53,30 @@ export default function Chat({ channelType }: Props) {
     }, [showChatOnMobile, resolvedIsDM, setIsInMobileChat]);
 
     useEffect(() => {
+        // Only reset when actually switching between DM and Forum modes
+        if (prevResolvedIsDM.current !== null && prevResolvedIsDM.current !== resolvedIsDM) {
+            setSelectedChannel(null);
+            setMessages([]);
+            setShowChatOnMobile(false);
+            setIsLoadingMessages(false);
+            setIsLoadingChannels(false);
+        }
+        prevResolvedIsDM.current = resolvedIsDM;
+    }, [resolvedIsDM]);
+
+    useEffect(() => {
         if (resolvedIsDM) return;
 
         if (channelsQuery.data && channelsQuery.data.length > 0) {
             setChannels(channelsQuery.data);
 
-            // Always auto-select first public channel
-            selectChannel(channelsQuery.data[0]);
-            setShowChatOnMobile(true);
+            // Auto-select first public channel if none selected
+            if (!selectedChannel) {
+                selectChannel(channelsQuery.data[0]);
+                setShowChatOnMobile(true);
+            }
         }
-    }, [channelsQuery.data, resolvedIsDM]);
-
-    useEffect(() => {
-        setSelectedChannel(null);
-        setMessages([]);
-        setShowChatOnMobile(false);
-        setIsLoadingMessages(false);
-        setIsLoadingChannels(false);
-    }, [resolvedIsDM]);
+    }, [channelsQuery.data, resolvedIsDM, selectedChannel]);
 
     useEffect(() => {
         if (scrollRef.current) {
