@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useMemo, useRef } from 'react';
+import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     XMarkIcon, 
@@ -226,6 +226,22 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
     const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        }
+
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [open]);
 
     return (
         <div className='relative' ref={menuRef}>
