@@ -69,20 +69,42 @@ const EditProfile: React.FC<Props> = ({
 
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
     const defaults = React.useMemo(
-        () => ({
-            email: user.email,
-            username: user.username,
-            displayName: user.displayName,
-            avatar: [],
-            location: user.location || undefined,
-            tags: user.tags.map((t) => t.name) || [],
-            about: user.settings?.about || '',
-            profession: user.settings?.profession || '',
-            avatarURL: '',
-            admin: targetUser?.admin ?? false,
-            kudos: targetUser?.kudos ?? 0
-        }),
-        [user.id, targetUser?.id, targetUser?.admin]
+        () => {
+            // Normalize location to only include expected fields
+            let normalizedLocation = undefined;
+            if (user.location) {
+                const { latitude, longitude, name, regionID } = user.location;
+                // Only include if we have the core location data
+                if (latitude != null && longitude != null) {
+                    normalizedLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
+                }
+            }
+
+            return {
+                email: user.email,
+                username: user.username,
+                displayName: user.displayName,
+                avatar: [],
+                location: normalizedLocation,
+                tags: user.tags.map((t) => t.name) || [],
+                about: user.settings?.about || '',
+                profession: user.settings?.profession || '',
+                avatarURL: '',
+                admin: targetUser?.admin ?? false,
+                kudos: targetUser?.kudos ?? 0
+            };
+        },
+        [
+            user.email,
+            user.username,
+            user.displayName,
+            JSON.stringify(user.location),
+            JSON.stringify(user.tags),
+            user.settings?.about,
+            user.settings?.profession,
+            targetUser?.admin,
+            targetUser?.kudos
+        ]
     );
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
@@ -96,6 +118,15 @@ const EditProfile: React.FC<Props> = ({
     const tags = useWatch({ control, name: 'tags' });
 
     const resetFromUser = (u: UserDTO) => {
+        // Normalize location to match defaults
+        let normalizedLocation = undefined;
+        if (u.location) {
+            const { latitude, longitude, name, regionID } = u.location;
+            if (latitude != null && longitude != null) {
+                normalizedLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
+            }
+        }
+
         form.reset(
             {
                 ...defaults,
@@ -105,7 +136,7 @@ const EditProfile: React.FC<Props> = ({
                 about: u.settings?.about || '',
                 profession: u.settings?.profession || '',
                 tags: (u.tags || []).map((t: any) => t.name),
-                location: u.location || undefined,
+                location: normalizedLocation,
                 admin: u.admin ?? false,
                 kudos: (u as any).kudos ?? 0
             },
@@ -116,8 +147,18 @@ const EditProfile: React.FC<Props> = ({
     const baselineRef = React.useRef(defaults);
 
     const effectiveChanges = React.useMemo(() => {
-        return computeChanged(form.getValues(), baselineRef.current);
-    }, [allValues]);
+        const changes = computeChanged(form.getValues(), baselineRef.current);
+        // Debug logging
+        if (Object.keys(changes).length > 0) {
+            console.log('🔴 Detected changes:', Object.keys(changes));
+            if (changes.location) {
+                console.log('📍 Location in form:', form.getValues('location'));
+                console.log('📍 Location in baseline:', baselineRef.current.location);
+                console.log('📍 Are they deeply equal?', JSON.stringify(form.getValues('location')) === JSON.stringify(baselineRef.current.location));
+            }
+        }
+        return changes;
+    }, [allValues, form]);
 
     const locationDirty = React.useMemo(() => {
         try {
@@ -135,8 +176,11 @@ const EditProfile: React.FC<Props> = ({
         !updateUserMutation.isPending;
 
     useEffect(() => {
+        // Update baseline first
+        baselineRef.current = defaults as any;
+        // Then reset form to match
         form.reset(defaults, { keepDirty: false, keepTouched: false });
-    }, [user?.id]);
+    }, [user?.id, defaults, form]);
 
     useEffect(() => {
         baselineRef.current = defaults as any;
@@ -419,12 +463,22 @@ const EditProfile: React.FC<Props> = ({
             }
 
             resetFromUser(updatedUser);
+
+            // Normalize location for baseline
+            let baselineLocation = undefined;
+            if (updatedUser.location) {
+                const { latitude, longitude, name, regionID } = updatedUser.location;
+                if (latitude != null && longitude != null) {
+                    baselineLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
+                }
+            }
+
             baselineRef.current = {
                 email: updatedUser.email,
                 username: updatedUser.username,
                 displayName: updatedUser.displayName ?? '',
                 avatar: [],
-                location: updatedUser.location || undefined,
+                location: baselineLocation,
                 tags: (updatedUser.tags || []).map((t: any) => t.name),
                 about: updatedUser.settings?.about || '',
                 profession: updatedUser.settings?.profession || '',
@@ -515,21 +569,21 @@ const EditProfile: React.FC<Props> = ({
                 }
             `}</style>
             
-            <div className='max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-x-hidden'>
+            <div className='w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden'>
                 {/* Header */}
-                <div className='border-b border-gray-200 dark:border-gray-700 px-6 py-4'>
-                    <div className='flex items-center justify-between'>
-                        <div className='flex items-center gap-4'>
+                <div className='border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4'>
+                    <div className='flex items-center justify-between min-w-0'>
+                        <div className='flex items-center gap-4 min-w-0 flex-1'>
                             <button
                                 onClick={onClose}
-                                className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors'
+                                className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex-shrink-0'
                                 aria-label='Close settings'
                             >
                                 <svg className='w-6 h-6' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
                                 </svg>
                             </button>
-                            <h1 className='text-2xl font-semibold text-gray-900 dark:text-white'>
+                            <h1 className='text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white truncate'>
                                 Account Settings
                             </h1>
                         </div>
@@ -790,12 +844,14 @@ const EditProfile: React.FC<Props> = ({
                         )}                        
 
                         {/* IMPROVED: More visible ActionsBar */}
-                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 px-6 sm:-mx-6 sm:px-6 pb-4 z-10'>
-                            <ActionsBar
-                                canSave={canSave}
-                                isSubmitting={updateUserMutation.isPending}
-                                onCancel={onClose}
-                            />
+                        <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 pb-4 z-10 -mx-4 sm:-mx-6'>
+                            <div className='px-4 sm:px-6'>
+                                <ActionsBar
+                                    canSave={canSave}
+                                    isSubmitting={updateUserMutation.isPending}
+                                    onCancel={onClose}
+                                />
+                            </div>
                         </div>
 
                         <ErrorList errors={form.formState.errors as any} />
