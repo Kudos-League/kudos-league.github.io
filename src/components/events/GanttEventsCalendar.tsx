@@ -8,12 +8,16 @@ import {
     endOfMonth,
     startOfYear,
     endOfYear,
+    startOfQuarter,
+    endOfQuarter,
     addDays,
     addWeeks,
     addMonths,
     addYears,
+    addQuarters,
     differenceInDays,
     differenceInMonths,
+    differenceInQuarters,
     isSameDay,
     startOfDay,
     endOfDay
@@ -227,7 +231,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
     );
 };
 
-type TimeUnit = 'days' | 'weeks' | 'months';
+type TimeUnit = 'days' | 'weeks' | 'months' | 'quarters';
 
 export default function GanttEventsCalendar() {
     const navigate = useNavigate();
@@ -239,7 +243,7 @@ export default function GanttEventsCalendar() {
     const [filterText, setFilterText] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
     const [viewDate, setViewDate] = useState<Date | null>(null);
-    const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | null>(null);
+    const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | 'quarter' | null>(null);
     const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
     const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>('local');
     const [periodOffset, setPeriodOffset] = useState(0);
@@ -350,21 +354,41 @@ export default function GanttEventsCalendar() {
 
     const timeUnit: TimeUnit = useMemo(() => {
         if (containerWidth === 0) return 'days';
-        
+
         const totalDays = differenceInDays(dateRange.end, dateRange.start) + 1;
-        const minPixelsPerDay = 40;
-        const minPixelsPerWeek = 60;
-        
+
+        // Aggressive minimum pixels to ensure events are readable
+        // These values ensure we can display at least medium detail level (180px+ per event)
+        const minPixelsPerDay = 120;     // Very comfortable space for daily events
+        const minPixelsPerWeek = 200;    // Enough for medium detail view per week
+        const minPixelsPerMonth = 250;   // Enough for medium detail view per month
+        const minPixelsPerQuarter = 300; // Enough for medium detail view per quarter
+
+        // Try days first
         if (totalDays * minPixelsPerDay <= containerWidth) {
             return 'days';
         }
-        
+
+        // Try weeks
         const totalWeeks = Math.ceil(totalDays / 7);
         if (totalWeeks * minPixelsPerWeek <= containerWidth) {
             return 'weeks';
         }
-        
-        return 'months';
+
+        // Try months
+        const totalMonths = differenceInMonths(dateRange.end, dateRange.start) + 1;
+        if (totalMonths * minPixelsPerMonth <= containerWidth) {
+            return 'months';
+        }
+
+        // Try quarters
+        const totalQuarters = differenceInQuarters(dateRange.end, dateRange.start) + 1;
+        if (totalQuarters * minPixelsPerQuarter <= containerWidth) {
+            return 'quarters';
+        }
+
+        // Fall back to quarters even if tight (better than nothing)
+        return 'quarters';
     }, [containerWidth, dateRange]);
 
     const timelineUnits = useMemo(() => {
@@ -397,7 +421,7 @@ export default function GanttEventsCalendar() {
                 current = addWeeks(current, 1);
             }
         }
-        else {
+        else if (timeUnit === 'months') {
             let current = startOfMonth(dateRange.start);
             while (current <= dateRange.end) {
                 units.push({
@@ -408,13 +432,25 @@ export default function GanttEventsCalendar() {
                 current = addMonths(current, 1);
             }
         }
+        else if (timeUnit === 'quarters') {
+            let current = startOfQuarter(dateRange.start);
+            while (current <= dateRange.end) {
+                const quarter = Math.floor(current.getMonth() / 3) + 1;
+                units.push({
+                    date: current,
+                    label: `Q${quarter}`,
+                    sublabel: format(current, 'yyyy')
+                });
+                current = addQuarters(current, 1);
+            }
+        }
         
         return units;
     }, [dateRange, timeUnit]);
 
-    const pixelsPerUnit = containerWidth > 0 && timelineUnits.length > 0 
-        ? containerWidth / timelineUnits.length 
-        : (timeUnit === 'days' ? 60 : timeUnit === 'weeks' ? 80 : 100);
+    const pixelsPerUnit = containerWidth > 0 && timelineUnits.length > 0
+        ? containerWidth / timelineUnits.length
+        : (timeUnit === 'days' ? 60 : timeUnit === 'weeks' ? 80 : timeUnit === 'months' ? 100 : 120);
 
     const todayPosition = useMemo(() => {
         const now = startOfDay(new Date());
@@ -442,7 +478,7 @@ export default function GanttEventsCalendar() {
 
             return weekIndex * pixelsPerUnit + proportionIntoWeek * pixelsPerUnit;
         }
-        else {
+        else if (timeUnit === 'months') {
             const monthIndex = timelineUnits.findIndex(u => {
                 const monthStart = startOfMonth(u.date);
                 const monthEnd = endOfMonth(u.date);
@@ -457,6 +493,23 @@ export default function GanttEventsCalendar() {
             const proportionIntoMonth = daysIntoMonth / daysInMonth;
 
             return monthIndex * pixelsPerUnit + proportionIntoMonth * pixelsPerUnit;
+        }
+        else {
+            // quarters
+            const quarterIndex = timelineUnits.findIndex(u => {
+                const quarterStart = startOfQuarter(u.date);
+                const quarterEnd = endOfQuarter(u.date);
+                return now >= quarterStart && now <= quarterEnd;
+            });
+            if (quarterIndex < 0) return null;
+
+            const quarterStart = startOfQuarter(timelineUnits[quarterIndex].date);
+            const quarterEnd = endOfQuarter(timelineUnits[quarterIndex].date);
+            const daysInQuarter = differenceInDays(quarterEnd, quarterStart) + 1;
+            const daysIntoQuarter = differenceInDays(now, quarterStart);
+            const proportionIntoQuarter = daysIntoQuarter / daysInQuarter;
+
+            return quarterIndex * pixelsPerUnit + proportionIntoQuarter * pixelsPerUnit;
         }
     }, [timelineUnits, pixelsPerUnit, timeUnit, dateRange]);
 
@@ -505,7 +558,7 @@ export default function GanttEventsCalendar() {
             const durationInWeeks = endWeekIndex - startWeekIndex + 1;
             return { left, width, isCompressed: durationInWeeks <= 1 && !isEternal, isEternal };
         }
-        else {
+        else if (timeUnit === 'months') {
             // Snap to full months
             const snappedStart = startOfMonth(visibleStart);
             const snappedEnd = endOfMonth(visibleEnd);
@@ -521,6 +574,23 @@ export default function GanttEventsCalendar() {
 
             const durationInMonths = endMonthIndex - startMonthIndex + 1;
             return { left, width, isCompressed: durationInMonths <= 1 && !isEternal, isEternal };
+        }
+        else {
+            // Snap to full quarters
+            const snappedStart = startOfQuarter(visibleStart);
+            const snappedEnd = endOfQuarter(visibleEnd);
+
+            // Timeline starts from the quarter boundary of dateRange.start
+            const timelineStart = startOfQuarter(dateRange.start);
+
+            const startQuarterIndex = differenceInQuarters(snappedStart, timelineStart);
+            const endQuarterIndex = differenceInQuarters(snappedEnd, timelineStart);
+
+            const left = startQuarterIndex * pixelsPerUnit;
+            const width = Math.max((endQuarterIndex - startQuarterIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.1);
+
+            const durationInQuarters = endQuarterIndex - startQuarterIndex + 1;
+            return { left, width, isCompressed: durationInQuarters <= 1 && !isEternal, isEternal };
         }
     };
 
@@ -553,8 +623,8 @@ export default function GanttEventsCalendar() {
 
     const handleUnitClick = (date: Date) => {
         const clicked = startOfDay(date);
-        let periodStart: Date, periodEnd: Date, periodType: 'day' | 'week' | 'month';
-        
+        let periodStart: Date, periodEnd: Date, periodType: 'day' | 'week' | 'month' | 'quarter';
+
         if (timeUnit === 'days') {
             periodStart = startOfDay(clicked);
             periodEnd = endOfDay(clicked);
@@ -565,10 +635,16 @@ export default function GanttEventsCalendar() {
             periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
             periodType = 'week';
         }
-        else {
+        else if (timeUnit === 'months') {
             periodStart = startOfMonth(clicked);
             periodEnd = endOfMonth(clicked);
             periodType = 'month';
+        }
+        else {
+            // quarters
+            periodStart = startOfQuarter(clicked);
+            periodEnd = endOfQuarter(clicked);
+            periodType = 'quarter';
         }
         
         const eventsInPeriod = filteredEvents.filter((e) => {
@@ -597,7 +673,7 @@ export default function GanttEventsCalendar() {
 
     const handleNavigatePeriodPrevious = () => {
         if (!viewDate || !viewPeriodType) return;
-        
+
         let newDate: Date;
         if (viewPeriodType === 'day') {
             newDate = addDays(viewDate, -1);
@@ -605,15 +681,18 @@ export default function GanttEventsCalendar() {
         else if (viewPeriodType === 'week') {
             newDate = addWeeks(viewDate, -1);
         }
-        else {
+        else if (viewPeriodType === 'month') {
             newDate = addMonths(viewDate, -1);
         }
-        
+        else {
+            newDate = addQuarters(viewDate, -1);
+        }
+
         setViewDate(newDate);
-        
+
         let periodStart: Date, periodEnd: Date;
         const clicked = startOfDay(newDate);
-        
+
         if (viewPeriodType === 'day') {
             periodStart = startOfDay(clicked);
             periodEnd = endOfDay(clicked);
@@ -622,9 +701,13 @@ export default function GanttEventsCalendar() {
             periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
             periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
         }
-        else {
+        else if (viewPeriodType === 'month') {
             periodStart = startOfMonth(clicked);
             periodEnd = endOfMonth(clicked);
+        }
+        else {
+            periodStart = startOfQuarter(clicked);
+            periodEnd = endOfQuarter(clicked);
         }
         
         const eventsInPeriod = filteredEvents.filter((e) => {
@@ -643,7 +726,7 @@ export default function GanttEventsCalendar() {
 
     const handleNavigatePeriodNext = () => {
         if (!viewDate || !viewPeriodType) return;
-        
+
         let newDate: Date;
         if (viewPeriodType === 'day') {
             newDate = addDays(viewDate, 1);
@@ -651,15 +734,18 @@ export default function GanttEventsCalendar() {
         else if (viewPeriodType === 'week') {
             newDate = addWeeks(viewDate, 1);
         }
-        else {
+        else if (viewPeriodType === 'month') {
             newDate = addMonths(viewDate, 1);
         }
-        
+        else {
+            newDate = addQuarters(viewDate, 1);
+        }
+
         setViewDate(newDate);
-        
+
         let periodStart: Date, periodEnd: Date;
         const clicked = startOfDay(newDate);
-        
+
         if (viewPeriodType === 'day') {
             periodStart = startOfDay(clicked);
             periodEnd = endOfDay(clicked);
@@ -668,9 +754,13 @@ export default function GanttEventsCalendar() {
             periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
             periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
         }
-        else {
+        else if (viewPeriodType === 'month') {
             periodStart = startOfMonth(clicked);
             periodEnd = endOfMonth(clicked);
+        }
+        else {
+            periodStart = startOfQuarter(clicked);
+            periodEnd = endOfQuarter(clicked);
         }
         
         const eventsInPeriod = filteredEvents.filter((e) => {
@@ -815,8 +905,14 @@ export default function GanttEventsCalendar() {
             const weekEnd = endOfWeek(viewDate, { weekStartsOn: 0 });
             return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
         }
-        else {
+        else if (viewPeriodType === 'month') {
             return format(viewDate, 'MMMM yyyy');
+        }
+        else {
+            // quarter
+            const quarter = Math.floor(viewDate.getMonth() / 3) + 1;
+            const year = format(viewDate, 'yyyy');
+            return `Q${quarter} ${year}`;
         }
     };
 
@@ -853,9 +949,13 @@ export default function GanttEventsCalendar() {
                 periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
                 periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
             }
-            else {
+            else if (viewPeriodType === 'month') {
                 periodStart = startOfMonth(clicked);
                 periodEnd = endOfMonth(clicked);
+            }
+            else {
+                periodStart = startOfQuarter(clicked);
+                periodEnd = endOfQuarter(clicked);
             }
 
             const eventsInPeriod = filteredEvents.filter((e) => {
@@ -1431,10 +1531,16 @@ export default function GanttEventsCalendar() {
                                         const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
                                         isTodayUnit = now >= weekStart && now <= weekEnd;
                                     }
-                                    else {
+                                    else if (timeUnit === 'months') {
                                         const monthStart = startOfMonth(unit.date);
                                         const monthEnd = endOfMonth(unit.date);
                                         isTodayUnit = now >= monthStart && now <= monthEnd;
+                                    }
+                                    else {
+                                        // quarters
+                                        const quarterStart = startOfQuarter(unit.date);
+                                        const quarterEnd = endOfQuarter(unit.date);
+                                        isTodayUnit = now >= quarterStart && now <= quarterEnd;
                                     }
                                 
                                     return (
@@ -1502,16 +1608,30 @@ export default function GanttEventsCalendar() {
                                                     <>
                                                         <div
                                                             className={`text-lg sm:text-xl font-bold leading-none ${
-                                                                isTodayUnit ? 'text-blue-600' : 'text-gray-900'
+                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
                                                             }`}
                                                         >
                                                             {pixelsPerUnit < 60 ? unit.label.charAt(0) : unit.label}
                                                         </div>
                                                         {pixelsPerUnit >= 60 && (
-                                                            <div className='text-[0.6rem] font-semibold text-gray-600 mt-1'>
+                                                            <div className='text-[0.6rem] font-semibold text-gray-600 dark:text-zinc-400 mt-1'>
                                                                 {unit.sublabel}
                                                             </div>
                                                         )}
+                                                    </>
+                                                )}
+                                                {timeUnit === 'quarters' && (
+                                                    <>
+                                                        <div
+                                                            className={`text-lg sm:text-xl font-bold leading-none ${
+                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
+                                                            }`}
+                                                        >
+                                                            {unit.label}
+                                                        </div>
+                                                        <div className='text-[0.6rem] font-semibold text-gray-600 dark:text-zinc-400 mt-1'>
+                                                            {unit.sublabel}
+                                                        </div>
                                                     </>
                                                 )}
                                             </div>
