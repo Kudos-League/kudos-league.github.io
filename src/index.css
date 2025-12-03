@@ -2,19 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-    margin: 0;
-    font-family:
-        -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+@layer base {
+    /* Default body uses Inter (modern, readable) */
+    body {
+        @apply font-sans;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Headings use Poppins (bold, friendly) */
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-heading;
+    }
+
+    /* Code blocks */
+    code, pre {
+        font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    }
 }
 
-code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+/* Utility classes for easy font switching */
+.font-body {
+    @apply font-sans;
+}
+
+.font-label {
+    @apply font-detail font-medium;
+}
+
+.font-special {
+    @apply font-accent;
 }
 
 .rbc-month-view .rbc-day-bg {
