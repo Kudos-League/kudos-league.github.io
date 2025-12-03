@@ -139,7 +139,7 @@ export default function Feed() {
             </div>
 
             {showLocationWarning && (
-                <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3'>
+                <div className='bg-blue-50 border border-blue-400 rounded-lg p-4 flex items-start gap-3'>
                     <MapPin className='w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0' />
                     <div className='flex-1'>
                         <h4 className='font-semibold text-blue-900 mb-1'>Location Required</h4>
@@ -163,7 +163,7 @@ export default function Feed() {
                     <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2'>
                         <Button
                             className='text-sm'
-                            variant='secondary'
+                            variant={typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'primary' : 'secondary'}
                             onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'date',
@@ -172,11 +172,11 @@ export default function Feed() {
                                 setShowLocationWarning(false);
                             }}
                         >
-                            Newest
+                            Newest {typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'}
                         </Button>
                         <Button
                             className='text-sm'
-                            variant='secondary'
+                            variant={typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'primary' : 'secondary'}
                             onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'date',
@@ -189,7 +189,7 @@ export default function Feed() {
                         </Button>
                         <Button
                             className='text-sm'
-                            variant='secondary'
+                            variant={typeOfOrdering.type === 'distance' ? 'primary' : 'secondary'}
                             onClick={() => {
                                 if (!user?.location?.name) {
                                     setShowLocationWarning(true);
@@ -207,7 +207,7 @@ export default function Feed() {
                         </Button>
                         <Button
                             className='text-sm'
-                            variant='secondary'
+                            variant={typeOfOrdering.type === 'kudos' ? 'primary' : 'secondary'}
                             onClick={() => {
                                 setTypeOfOrdering({
                                     type: 'kudos',

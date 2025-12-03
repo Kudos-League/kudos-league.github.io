@@ -187,7 +187,7 @@ export default function NotificationsPage() {
                         <button
                             type='button'
                             onClick={() => refetch()}
-                            className='rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900'
+                            className='rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900'
                         >
                             Try again
                         </button>
@@ -211,28 +211,28 @@ export default function NotificationsPage() {
                             );
                             const highlight = notification.isRead
                                 ? 'border-zinc-200/70 bg-white dark:border-zinc-700/60 dark:bg-zinc-900/60'
-                                : 'border-teal-300/70 bg-teal-50/70 dark:border-teal-900/50 dark:bg-teal-900/40';
+                                : 'border-brand-300/70 bg-brand-50/70 dark:border-brand-900/50 dark:bg-brand-900/40';
 
                             return (
                                 <li key={notification.id}>
                                     <button
                                         type='button'
                                         onClick={() => handleOpen(notification)}
-                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
+                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
                                     >
                                         <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-                                            <div>
+                                            <div className='flex-1 min-w-0'>
                                                 <div className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
                                                     {meta.title}
                                                 </div>
                                                 {meta.description && (
-                                                    <div className='mt-1 text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    <div className='mt-1 text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2'>
                                                         {meta.description}
                                                     </div>
                                                 )}
                                             </div>
                                             {createdAt && (
-                                                <time className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+                                                <time className='flex-shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:ml-4'>
                                                     {createdAt}
                                                 </time>
                                             )}
@@ -242,7 +242,7 @@ export default function NotificationsPage() {
                                                 className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                                                     notification.isRead
                                                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                        : 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300'
+                                                        : 'bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300'
                                                 }`}
                                             >
                                                 {notification.isRead
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
                                 type='button'
                                 onClick={() => fetchNextPage()}
                                 disabled={isFetchingNextPage}
-                                className='inline-flex items-center rounded-md border border-transparent bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:focus:ring-offset-zinc-900'
+                                className='inline-flex items-center rounded-md border border-transparent bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:focus:ring-offset-zinc-900'
                             >
                                 {isFetchingNextPage
                                     ? 'Loading…'
