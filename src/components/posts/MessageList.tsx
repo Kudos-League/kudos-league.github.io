@@ -247,9 +247,9 @@ const MessageList: React.FC<Props> = ({
                                             behavior: 'smooth',
                                             block: 'center'
                                         });
-                                        el.classList.add('ring-2', 'ring-teal-400');
+                                        el.classList.add('ring-2', 'ring-brand-400');
                                         setTimeout(() => {
-                                            el.classList.remove('ring-2', 'ring-teal-400');
+                                            el.classList.remove('ring-2', 'ring-brand-400');
                                         }, 1200);
                                         return true;
                                     }
@@ -262,9 +262,9 @@ const MessageList: React.FC<Props> = ({
                                     }, 50);
                                 }
                             }}
-                            className='block w-full text-left px-2 py-1.5 rounded-lg border-l-4 border-teal-500 bg-gray-100 dark:bg-zinc-700'
+                            className='block w-full text-left px-2 py-1.5 rounded-lg border-l-4 border-brand-600 dark:border-brand-300 bg-gray-100 dark:bg-zinc-700'
                         >
-                            <div className='text-xs font-semibold mb-0.5 text-teal-600 dark:text-teal-400'>
+                            <div className='text-xs font-semibold mb-0.5 text-brand-600 dark:text-brand-300'>
                                 <UserCard
                                     triggerVariant='name'
                                     user={byId.get(msg.replyToMessageID)?.author}
@@ -396,9 +396,9 @@ const MessageList: React.FC<Props> = ({
                     {showSendMessage && (
                         <div className='flex flex-col border-t pt-3 gap-2'>
                             {replyTo && (
-                                <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-teal-500'>
+                                <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                                     <div className='flex items-center justify-between mb-1'>
-                                        <span className='text-xs font-semibold text-teal-600 dark:text-teal-400'>
+                                        <span className='text-xs font-semibold text-brand-600 dark:text-brand-300'>
                                     Replying to {getDisplayName(replyTo.author)}
                                         </span>
                                         <button

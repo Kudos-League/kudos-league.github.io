@@ -279,12 +279,12 @@ export default function NotificationsBell() {
                                             hover:bg-zinc-50 
                                             dark:hover:bg-zinc-800/60 
                                             active:bg-zinc-100 dark:active:bg-zinc-800
-                                            ${n.isRead ? 'opacity-90' : 'bg-teal-50/60 dark:bg-teal-900/30'}
+                                            ${n.isRead ? 'opacity-90' : 'bg-brand-50/60 dark:bg-brand-900/30'}
                                         `}
                                         onClick={() => go(n)}
                                     >
                                         {!n.isRead && (
-                                            <span className='absolute right-4 md:right-3 top-4 md:top-3 text-[10px] font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-400'>
+                                            <span className='absolute right-4 md:right-3 top-4 md:top-3 text-[10px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300'>
                                                 New
                                             </span>
                                         )}
@@ -373,7 +373,7 @@ export default function NotificationsBell() {
                             <Link
                                 to={routes.notifications}
                                 onClick={() => setOpen(false)}
-                                className='block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-500 transition-colors'
+                                className='block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 transition-colors'
                             >
                                 View all notifications
                             </Link>

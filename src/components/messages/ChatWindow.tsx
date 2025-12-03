@@ -232,7 +232,7 @@ const ChatWindow: React.FC<Props> = ({
             }`}>
                 {/* Reply preview */}
                 {replyTo && (
-                    <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-teal-500'>
+                    <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                         <div className='flex-1 min-w-0'>
                             <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
                                 Replying to <UserCard triggerVariant='name' user={replyTo.author} />
@@ -260,20 +260,19 @@ const ChatWindow: React.FC<Props> = ({
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyDown={handleKeyPress}
                         disabled={isLoading}
-                        className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isMobile 
-                                ? 'px-4 py-3 text-base' 
+                        className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isMobile
+                                ? 'px-4 py-3 text-base'
                                 : 'px-3 py-2'
                         }`}
                     />
                     <Button
                         onClick={handleSend}
                         disabled={!messageInput.trim() || isLoading}
-                        className={`bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isMobile 
-                                ? 'px-6 py-3 text-base font-medium' 
-                                : 'px-4 py-2'
-                        }`}
+                        className={isMobile
+                            ? 'px-6 py-3 text-base font-medium'
+                            : 'px-4 py-2'
+                        }
                     >
                         Send
                     </Button>

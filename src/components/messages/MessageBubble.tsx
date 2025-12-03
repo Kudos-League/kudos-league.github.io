@@ -189,7 +189,7 @@ const MessageBubble: React.FC<Props> = ({
                 )}
                 {/* Show sender name for non-own messages (WhatsApp style) */}
                 {!isOwn && showSenderName && (
-                    <div className="text-xs font-semibold mb-1 ml-1 text-teal-600 dark:text-teal-400">
+                    <div className="text-xs font-semibold mb-1 ml-1 text-brand-600 dark:text-brand-300">
                         <UserCard
                             triggerVariant='name'
                             user={message.author}
@@ -210,16 +210,16 @@ const MessageBubble: React.FC<Props> = ({
                                         behavior: 'smooth',
                                         block: 'center'
                                     });
-                                    el.classList.add('ring-2', 'ring-teal-400');
+                                    el.classList.add('ring-2', 'ring-brand-400');
                                     setTimeout(() => {
-                                        el.classList.remove('ring-2', 'ring-teal-400');
+                                        el.classList.remove('ring-2', 'ring-brand-400');
                                     }, 1200);
                                 }
                             }}
                             className={`block w-full text-left px-2 py-1.5 rounded-t-lg border-l-4 ${
                                 isOwn
                                     ? 'bg-teal-700/40 border-teal-300'
-                                    : 'bg-gray-100 dark:bg-zinc-600 border-teal-500'
+                                    : 'bg-gray-100 dark:bg-zinc-600 border-brand-600'
                             }`}
                         >
                             <div className={`text-xs font-semibold mb-0.5 ${
@@ -250,7 +250,7 @@ const MessageBubble: React.FC<Props> = ({
                         isOwn ? 'rounded-br-none' : 'rounded-bl-none'
                     } text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere shadow-sm transition-colors transform-gpu ${
                         isOwn
-                            ? 'bg-teal-600 dark:bg-teal-500 text-white'
+                            ? 'bg-brand-600 dark:bg-brand-400 text-white'
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
                     }`}
                 >
@@ -260,7 +260,7 @@ const MessageBubble: React.FC<Props> = ({
                             <textarea
                                 value={editContent}
                                 onChange={(e) => onEditChange?.(e.target.value)}
-                                className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
                                 rows={3}
                                 autoFocus
                                 onKeyDown={(e) => {
@@ -278,7 +278,7 @@ const MessageBubble: React.FC<Props> = ({
                                 <Button
                                     onClick={() => onEditSave?.(message.id)}
                                     disabled={!editContent.trim()}
-                                    className='text-xs px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded'
+                                    className='text-xs px-3 py-1 bg-brand-600 hover:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 text-white rounded'
                                 >
                                     Save
                                 </Button>

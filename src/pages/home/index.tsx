@@ -49,8 +49,7 @@ export default function Feed() {
             <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4'>
                 <Button
                     onClick={() => navigate('/create-post')}
-                    variant='secondary'
-                    className='whitespace-nowrap px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:translate-y-0.5'
+                    className='whitespace-nowrap px-6 py-3 bg-brand-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 transition-all duration-200 transform hover:translate-y-0.5'
                 >
                     + Gift / Request
                 </Button>

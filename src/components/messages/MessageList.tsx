@@ -203,7 +203,7 @@ const MessageList: React.FC<Props> = ({
                                 <textarea
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
-                                    className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                    className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
                                     rows={3}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && e.ctrlKey) {
@@ -327,7 +327,7 @@ const MessageList: React.FC<Props> = ({
                         <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300'
                             rows={3}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -421,7 +421,7 @@ const MessageList: React.FC<Props> = ({
                                     setReplyTo(null);
                                 }
                             }}
-                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300'
                         />
                         <Button
                             onClick={handleSubmitMessage}

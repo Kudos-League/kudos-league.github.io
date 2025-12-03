@@ -81,8 +81,8 @@ function NavItemComponent({
                 className={clsx(
                     'group relative flex flex-col items-center justify-center transition-all duration-150',
                     isActive
-                        ? 'text-teal-500 dark:text-teal-400'
-                        : 'hover:text-teal-500 dark:hover:text-teal-400',
+                        ? 'text-brand-600 dark:text-brand-300'
+                        : 'hover:text-brand-600 dark:hover:text-brand-300',
                     className
                 )}
             >
@@ -108,7 +108,7 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
                                 <item.icon
                                     className={clsx(
                                         'h-5 w-5 mb-1 transition-colors duration-150',
-                                        'text-zinc-500 group-hover:text-teal-500 dark:text-zinc-400 dark:group-hover:text-teal-400'
+                                        'text-zinc-500 group-hover:text-brand-600 dark:text-zinc-400 dark:group-hover:text-brand-300'
                                     )}
                                 />
                             )}
@@ -165,7 +165,7 @@ function MobileNavigation({ items }: { items: NavItem[] }) {
                                                 }}
                                                 className='flex items-center gap-4 px-6 py-4 text-base font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors w-full text-left'
                                             >
-                                                {Icon && <Icon className='h-6 w-6 text-teal-600 dark:text-teal-400 flex-shrink-0' />}
+                                                {Icon && <Icon className='h-6 w-6 text-brand-600 dark:text-brand-300 flex-shrink-0' />}
                                                 <span>{item.name}</span>
                                             </button>
                                         </li>
@@ -341,7 +341,7 @@ export default function Navbar({
                             </Link>
                             <Link
                                 to={routes.signUp}
-                                className='rounded-full bg-teal-500 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500 whitespace-nowrap'
+                                className='rounded-full bg-brand-600 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-white shadow-lg hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:bg-brand-400 dark:hover:bg-brand-300 whitespace-nowrap'
                             >
                                 Register
                             </Link>

@@ -23,17 +23,17 @@ const baseClasses =
 
 const variantClasses: Record<Variant, string> = {
     primary:
-        'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400',
+        'bg-brand-600 text-white shadow-xs hover:bg-brand-500 focus-visible:outline-brand-600 dark:bg-brand-400 dark:hover:bg-brand-300',
     secondary:
-        'bg-white text-gray-900 shadow-xs inset-ring inset-ring-gray-300 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:inset-ring-white/5 dark:hover:bg-white/20',
+        'bg-white text-zinc-900 shadow-xs inset-ring inset-ring-zinc-300 hover:bg-zinc-50 dark:bg-white/10 dark:text-white dark:inset-ring-white/5 dark:hover:bg-white/20',
     danger: 'bg-red-600 text-white shadow-xs hover:bg-red-500 focus-visible:outline-red-600 dark:bg-red-500 dark:hover:bg-red-400',
     warning:
-        'bg-yellow-500 text-black shadow-xs hover:bg-yellow-400 focus-visible:outline-yellow-500 dark:bg-yellow-400 dark:text-gray-900',
+        'bg-amber-500 text-black shadow-xs hover:bg-amber-400 focus-visible:outline-amber-500 dark:bg-amber-400 dark:text-zinc-900',
     success:
         'bg-green-600 text-white shadow-xs hover:bg-green-500 focus-visible:outline-green-600 dark:bg-green-500 dark:hover:bg-green-400',
-    info: 'bg-sky-600 text-white shadow-xs hover:bg-sky-500 focus-visible:outline-sky-600 dark:bg-sky-500 dark:hover:bg-sky-400',
-    icon: 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:outline-gray-400 dark:text-gray-300 dark:hover:bg-white/10'
+    info: 'bg-blue-500 text-white shadow-xs hover:bg-blue-400 focus-visible:outline-blue-500 dark:bg-blue-400 dark:hover:bg-blue-300',
+    icon: 'bg-brand-600 text-white shadow-xs hover:bg-brand-500 focus-visible:outline-brand-600 dark:bg-brand-400 dark:hover:bg-brand-300',
+    ghost: 'bg-transparent text-zinc-700 hover:bg-zinc-100 focus-visible:outline-zinc-400 dark:text-zinc-300 dark:hover:bg-white/10'
 };
 
 const shapeClasses: Record<Shape, string> = {
