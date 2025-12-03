@@ -147,32 +147,11 @@ const EditProfile: React.FC<Props> = ({
     const baselineRef = React.useRef(defaults);
 
     const effectiveChanges = React.useMemo(() => {
-        const changes = computeChanged(form.getValues(), baselineRef.current);
-        // Debug logging
-        if (Object.keys(changes).length > 0) {
-            console.log('🔴 Detected changes:', Object.keys(changes));
-            if (changes.location) {
-                console.log('📍 Location in form:', form.getValues('location'));
-                console.log('📍 Location in baseline:', baselineRef.current.location);
-                console.log('📍 Are they deeply equal?', JSON.stringify(form.getValues('location')) === JSON.stringify(baselineRef.current.location));
-            }
-        }
-        return changes;
-    }, [allValues, form]);
-
-    const locationDirty = React.useMemo(() => {
-        try {
-            const current = form.getValues('location') ?? null;
-            const base = (baselineRef.current as any)?.location ?? null;
-            return !deepEqual(current, base);
-        }
-        catch {
-            return false;
-        }
+        return computeChanged(form.getValues(), baselineRef.current);
     }, [allValues]);
 
     const canSave =
-        (Object.keys(effectiveChanges).length > 0 || locationDirty) &&
+        Object.keys(effectiveChanges).length > 0 &&
         !updateUserMutation.isPending;
 
     useEffect(() => {
@@ -375,7 +354,7 @@ const EditProfile: React.FC<Props> = ({
     }, [form, setLocation, setTargetUser, targetUser]);
 
     const handleFormSubmit = async () => {
-        if (!(Object.keys(effectiveChanges).length > 0 || locationDirty)) {
+        if (!(Object.keys(effectiveChanges).length > 0)) {
             setToastType('error');
             setToastMessage('No changes to save.');
             return;
@@ -398,13 +377,7 @@ const EditProfile: React.FC<Props> = ({
                 // noop
             }
 
-            if (locationDirty && !('location' in payload)) {
-                const currentLoc2 = form.getValues('location') ?? null;
-                (payload as any).location =
-        currentLoc2 === null ? null : currentLoc2;
-            }
-
-            // ADD THIS: Clean up the location object before sending
+            // Clean up the location object before sending
             if ('location' in payload && payload.location) {
                 const { changed, ...cleanLocation } = payload.location;
                 payload.location = cleanLocation;
@@ -1033,7 +1006,7 @@ const EditProfile: React.FC<Props> = ({
                                             Unsaved Changes
                                         </div>
                                         <div className='text-xs sm:text-sm text-indigo-100'>
-                                            You have {Object.keys(effectiveChanges).length + (locationDirty ? 1 : 0)} unsaved {Object.keys(effectiveChanges).length + (locationDirty ? 1 : 0) === 1 ? 'change' : 'changes'}
+                                            You have {Object.keys(effectiveChanges).length} unsaved {Object.keys(effectiveChanges).length === 1 ? 'change' : 'changes'}
                                         </div>
                                     </div>
                                 </div>
@@ -1044,8 +1017,7 @@ const EditProfile: React.FC<Props> = ({
                                         type='button'
                                         onClick={() => {
                                             if (window.confirm('Discard all unsaved changes?')) {
-                                                resetFromUser(targetUser);
-                                                setLocationLabel(targetUser?.location?.name || '');
+                                                onClose();
                                             }
                                         }}
                                         className='px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-colors'

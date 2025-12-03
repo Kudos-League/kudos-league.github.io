@@ -57,12 +57,18 @@ export default function computeChanged(
         : [];
     if (!deepEqual(nextTags, baseTags)) changed.tags = nextTags;
 
-    // location (strip client-only flags before compare)
+    // location (compare by regionID only - the unique identifier)
     const nextLoc = values.location ? { ...values.location } : null;
     if (nextLoc && 'changed' in nextLoc) delete (nextLoc as any).changed;
     const baseLoc = baseline.location ? { ...baseline.location } : null;
     if (baseLoc && 'changed' in baseLoc) delete (baseLoc as any).changed;
-    if (!same(nextLoc, baseLoc)) changed.location = nextLoc;
+
+    // Compare locations by regionID only (handles type differences and name variations)
+    const nextRegionID = nextLoc?.regionID ?? null;
+    const baseRegionID = baseLoc?.regionID ?? null;
+    if (nextRegionID !== baseRegionID) {
+        changed.location = nextLoc;
+    }
 
     // avatar: prefer file; otherwise URL if present
     const arr = Array.isArray(values.avatar)
