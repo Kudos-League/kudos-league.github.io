@@ -1017,6 +1017,8 @@ const EditProfile: React.FC<Props> = ({
                                         type='button'
                                         onClick={() => {
                                             if (window.confirm('Discard all unsaved changes?')) {
+                                                resetFromUser(targetUser);
+                                                setLocationLabel(targetUser?.location?.name || '');
                                                 onClose();
                                             }
                                         }}
