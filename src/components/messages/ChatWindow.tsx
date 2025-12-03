@@ -159,8 +159,8 @@ const ChatWindow: React.FC<Props> = ({
 
     return (
         <div className='flex flex-col h-full w-full min-h-0 overflow-hidden'>
-            {/* Header - Sticky at top */}
-            <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 sticky top-0 z-10 ${
+            {/* Header - Fixed at top */}
+            <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
                 isMobile ? 'px-4 py-3' : 'px-4 py-3'
             }`}>
                 <div className='flex items-center gap-3'>
@@ -222,8 +222,8 @@ const ChatWindow: React.FC<Props> = ({
                 <div ref={bottomRef} />
             </div>
 
-            {/* Message input - Sticky at bottom */}
-            <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 sticky bottom-0 z-10 ${
+            {/* Message input - Fixed at bottom */}
+            <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
                 isMobile ? 'p-3' : 'p-4'
             }`}>
                 {/* Reply preview */}
