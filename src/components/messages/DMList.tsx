@@ -73,7 +73,7 @@ const DMList: React.FC<Props> = ({
             <div className='overflow-y-auto flex-1 space-y-2'>
                 {isLoading ? (
                     <div className='flex flex-col items-center justify-center h-32'>
-                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 dark:border-teal-400'></div>
+                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 dark:border-brand-300'></div>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading conversations...</p>
                     </div>
                 ) : filteredChannels.length === 0 ? (
@@ -101,7 +101,7 @@ const DMList: React.FC<Props> = ({
                                         : 'p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                                 } ${
                                     isSelected
-                                        ? 'bg-teal-100 dark:bg-teal-800 text-teal-900 dark:text-teal-100'
+                                        ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
                                         : ''
                                 }`}
                             >

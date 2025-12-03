@@ -504,9 +504,9 @@ export default function ChatModal({
                                                             behavior: 'smooth',
                                                             block: 'center'
                                                         });
-                                                        el.classList.add('ring-2', 'ring-teal-400');
+                                                        el.classList.add('ring-2', 'ring-brand-400');
                                                         setTimeout(() => {
-                                                            el.classList.remove('ring-2', 'ring-teal-400');
+                                                            el.classList.remove('ring-2', 'ring-brand-400');
                                                         }, 1200);
                                                     }
                                                 }}
@@ -516,7 +516,7 @@ export default function ChatModal({
                                                         : 'text-zinc-700 dark:text-zinc-200'
                                                 } text-xs pl-2 pr-2 py-1 border-l-2 ${
                                                     isOwn
-                                                        ? 'border-teal-300/70'
+                                                        ? 'border-brand-300/70'
                                                         : 'border-zinc-400/60'
                                                 } bg-zinc-100/80 dark:bg-zinc-800/60 rounded`}
                                                 title={`${
@@ -526,8 +526,8 @@ export default function ChatModal({
                                             >
                                                 <div className={`text-xs font-semibold mb-0.5 ${
                                                     isOwn 
-                                                        ? 'text-teal-200' 
-                                                        : 'text-teal-600 dark:text-teal-300'
+                                                        ? 'text-brand-200' 
+                                                        : 'text-brand-600 dark:text-brand-300'
                                                 }`}>
                                                     <UserCard
                                                         triggerVariant='name'
@@ -537,7 +537,7 @@ export default function ChatModal({
                                                 </div>
                                                 <div className={`text-xs line-clamp-2 ${
                                                     isOwn 
-                                                        ? 'text-teal-200' 
+                                                        ? 'text-brand-200' 
                                                         : 'text-zinc-600 dark:text-zinc-300'
                                                 }`}>
                                                     {repliedTo.content}
@@ -554,7 +554,7 @@ export default function ChatModal({
                                             isOwn ? 'rounded-br-none' : 'rounded-bl-none'
                                         } text-sm shadow-sm transition-colors transform-gpu break-words overflow-wrap-anywhere ${
                                             isOwn
-                                                ? 'bg-teal-600 dark:bg-teal-500 text-white self-end ml-auto'
+                                                ? 'bg-brand-600 dark:bg-brand-400 text-white self-end ml-auto'
                                                 : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 self-start'
                                         }`}
                                     >
@@ -564,7 +564,7 @@ export default function ChatModal({
                                                 <textarea
                                                     value={editContent}
                                                     onChange={(e) => setEditContent(e.target.value)}
-                                                    className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                                    className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
                                                     rows={3}
                                                     autoFocus
                                                     onKeyDown={(e) => {
@@ -582,7 +582,7 @@ export default function ChatModal({
                                                     <Button
                                                         onClick={() => handleEditSave(safeMsg.id)}
                                                         disabled={!editContent.trim()}
-                                                        className='text-xs px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded'
+                                                        className='text-xs px-3 py-1 bg-brand-600 hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 text-white rounded'
                                                     >
                                                         Save
                                                     </Button>
@@ -603,7 +603,7 @@ export default function ChatModal({
                                             <>
                                                 {/* Show sender name for non-own messages */}
                                                 {!isOwn && (
-                                                    <div className="text-xs font-semibold mb-1 text-teal-600 dark:text-teal-400">
+                                                    <div className="text-xs font-semibold mb-1 text-brand-600 dark:text-brand-300">
                                                         <UserCard
                                                             triggerVariant='name'
                                                             user={replyTo.author}
@@ -715,7 +715,7 @@ export default function ChatModal({
                                                 <div
                                                     className={`text-xs text-right mt-2 ${
                                                         isOwn
-                                                            ? 'text-teal-200'
+                                                            ? 'text-brand-200'
                                                             : 'text-zinc-400 dark:text-zinc-500'
                                                     }`}
                                                     title={
@@ -741,9 +741,9 @@ export default function ChatModal({
                 {/* Input */}
                 <div className='flex flex-col gap-2'>
                     {replyTo && (
-                        <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-teal-500'>
+                        <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                             <div className="flex items-center justify-between mb-1">
-                                <span className='text-xs font-semibold text-teal-600 dark:text-teal-400'>
+                                <span className='text-xs font-semibold text-zinc-900 dark:text-zinc-100'>
                                     Replying to {getDisplayName(replyTo.author)}
                                 </span>
                                 <button
@@ -770,7 +770,7 @@ export default function ChatModal({
                                     sendMessage();
                                 }
                             }}
-                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors'
+                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 transition-colors'
                             placeholder='Type your message...'
                         />
                         <Button
@@ -778,7 +778,7 @@ export default function ChatModal({
                             onClick={sendMessage}
                             className={`px-4 py-2 rounded-lg text-white transition-colors ${
                                 validateMessage(messageInput) && !loading
-                                    ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
+                                    ? 'bg-brand-600 hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 dark:bg-teal-500 dark:hover:bg-teal-600'
                                     : 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
                             }`}
                         >

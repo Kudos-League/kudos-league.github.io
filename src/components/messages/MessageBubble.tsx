@@ -161,7 +161,7 @@ const MessageBubble: React.FC<Props> = ({
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
-                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
                         {canEdit && (
                             <button
@@ -171,7 +171,7 @@ const MessageBubble: React.FC<Props> = ({
                                 disabled={Boolean(message.deletedAt)}
                                 className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                             >
-                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                             </button>
                         )}
                         {/* {canDelete && ( //HACK: for some unexplainable reason this doesn't work on mobile so I'm deleting it atm*/}
@@ -182,7 +182,7 @@ const MessageBubble: React.FC<Props> = ({
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
-                            <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
                         {/* )} */}
                     </div>
@@ -218,14 +218,14 @@ const MessageBubble: React.FC<Props> = ({
                             }}
                             className={`block w-full text-left px-2 py-1.5 rounded-t-lg border-l-4 ${
                                 isOwn
-                                    ? 'bg-teal-700/40 border-teal-300'
+                                    ? 'bg-brand-700/40 border-brand-300'
                                     : 'bg-gray-100 dark:bg-zinc-600 border-brand-600'
                             }`}
                         >
                             <div className={`text-xs font-semibold mb-0.5 ${
-                                isOwn 
-                                    ? 'text-teal-200' 
-                                    : 'text-teal-600 dark:text-teal-300'
+                                isOwn
+                                    ? 'text-white/90'
+                                    : 'text-zinc-900 dark:text-zinc-100'
                             }`}>
                                 <UserCard
                                     triggerVariant='name'
@@ -233,8 +233,8 @@ const MessageBubble: React.FC<Props> = ({
                                 />
                             </div>
                             <div className={`text-xs line-clamp-2 ${
-                                isOwn 
-                                    ? 'text-teal-200' 
+                                isOwn
+                                    ? 'text-white/80'
                                     : 'text-zinc-600 dark:text-zinc-300'
                             }`}>
                                 {replyTo.content}
@@ -327,7 +327,7 @@ const MessageBubble: React.FC<Props> = ({
                             disabled={Boolean(message.deletedAt)}
                             className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                         >
-                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                            <ArrowUturnLeftIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                         </button>
                         {canEdit && (
                             <button
@@ -337,7 +337,7 @@ const MessageBubble: React.FC<Props> = ({
                                 disabled={Boolean(message.deletedAt)}
                                 className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                             >
-                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                <PencilIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                             </button>
                         )}
                         {canDelete && (
@@ -348,7 +348,7 @@ const MessageBubble: React.FC<Props> = ({
                                 disabled={Boolean(message.deletedAt)}
                                 className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                             >
-                                <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-teal-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
+                                <TrashIcon className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`} />
                             </button>
                         )}
                     </div>

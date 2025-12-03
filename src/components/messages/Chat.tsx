@@ -43,9 +43,10 @@ export default function Chat({ channelType }: Props) {
     const isDMFromProp = channelType === 'dm';
     const resolvedIsDM = channelType ? isDMFromProp : routeIsDM;
 
-    // Update mobile chat context when showChatOnMobile changes (DMs only)
+    // Update mobile chat context when showChatOnMobile changes (DMs only, mobile only)
     useEffect(() => {
-        setIsInMobileChat(showChatOnMobile && resolvedIsDM);
+        const isMobile = window.innerWidth < 768; // md breakpoint
+        setIsInMobileChat(showChatOnMobile && resolvedIsDM && isMobile);
     }, [showChatOnMobile, resolvedIsDM, setIsInMobileChat]);
 
     useEffect(() => {

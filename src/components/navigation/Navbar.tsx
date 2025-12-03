@@ -290,9 +290,10 @@ export default function Navbar({
     const location = useLocation();
     const { isInMobileChat } = useMobileChat();
 
-    // Hide navbar on mobile when in a chat conversation
+    // Hide navbar ONLY on mobile when in a chat conversation
     // Check both URL (for direct navigation) and context (for in-app navigation)
     const isInConversation = location.pathname.match(/^\/dms\/\d+$/) || isInMobileChat;
+    // Only hide if we're in a conversation AND on mobile (screen width < 1024px for 'lg' breakpoint)
     const hideOnMobile = isInConversation;
 
     return (
