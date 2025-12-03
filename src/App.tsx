@@ -12,6 +12,7 @@ import { BlockedUsersProvider } from '@/contexts/useBlockedUsers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
+import { MobileChatProvider } from '@/contexts/MobileChatContext';
 import ConnectingOverlay from '@/components/common/ConnectingOverlay';
 
 import AppNavigator from '@/components/navigation/AppNavigator';
@@ -46,13 +47,15 @@ export default function App() {
                     <AuthProvider>
                         <NotificationsProvider>
                             <ThemeProvider>
-                                <WebSocketProvider>
-                                    <BlockedUsersProvider>
-                                        <AppCore />
-                                        <AlertHost />
-                                        <ConnectingOverlay />
-                                    </BlockedUsersProvider>
-                                </WebSocketProvider>
+                                <MobileChatProvider>
+                                    <WebSocketProvider>
+                                        <BlockedUsersProvider>
+                                            <AppCore />
+                                            <AlertHost />
+                                            <ConnectingOverlay />
+                                        </BlockedUsersProvider>
+                                    </WebSocketProvider>
+                                </MobileChatProvider>
                             </ThemeProvider>
                         </NotificationsProvider>
                         <ReactQueryDevtools initialIsOpen={false} />

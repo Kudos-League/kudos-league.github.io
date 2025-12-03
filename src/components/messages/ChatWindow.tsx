@@ -19,6 +19,7 @@ interface Props {
     allowEdit?: boolean;
     onEdit?: (id: number, content: string) => void;
     isLoading?: boolean;
+    hideHeader?: boolean;
 }
 
 // Helper function to sort messages chronologically
@@ -47,7 +48,8 @@ const ChatWindow: React.FC<Props> = ({
     allowDelete,
     allowEdit,
     onEdit,
-    isLoading = false
+    isLoading = false,
+    hideHeader = false
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
@@ -160,28 +162,30 @@ const ChatWindow: React.FC<Props> = ({
     return (
         <div className='flex flex-col h-full w-full min-h-0 overflow-hidden'>
             {/* Header - Fixed at top */}
-            <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
-                isMobile ? 'px-4 py-3' : 'px-4 py-3'
-            }`}>
-                <div className='flex items-center gap-3'>
-                    {isMobile && (
-                        <Button
-                            onClick={onBack}
-                            className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800'
-                            variant='secondary'
-                        >
-                            <ArrowLeftIcon className='w-5 h-5' />
-                        </Button>
-                    )}
-                    <h2 className={`font-bold ${isMobile ? 'text-lg' : 'text-lg'}`}>
-                        {otherUser ? (
-                            <UserCard user={otherUser} />
-                        ) : (
-                            <span>{channel.name}</span>
+            {!hideHeader && (
+                <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
+                    isMobile ? 'px-4 py-3' : 'px-4 py-3'
+                }`}>
+                    <div className='flex items-center gap-3'>
+                        {isMobile && (
+                            <Button
+                                onClick={onBack}
+                                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800'
+                                variant='secondary'
+                            >
+                                <ArrowLeftIcon className='w-5 h-5' />
+                            </Button>
                         )}
-                    </h2>
+                        <h2 className={`font-bold ${isMobile ? 'text-lg' : 'text-lg'}`}>
+                            {otherUser ? (
+                                <UserCard user={otherUser} />
+                            ) : (
+                                <span>{channel.name}</span>
+                            )}
+                        </h2>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Message list - Scrollable middle section */}
             <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${

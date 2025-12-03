@@ -63,11 +63,12 @@ const DMList: React.FC<Props> = ({
         } border-r border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 h-full flex flex-col ${
             isMobile ? 'p-4' : 'p-4'
         }`}>
-            <h2 className={`font-bold text-zinc-900 dark:text-zinc-100 mb-4 ${
+            {!isMobile && (<h2 className={`font-bold text-zinc-900 dark:text-zinc-100 mb-4 ${
                 isMobile ? 'text-xl text-center' : 'text-xl'
             }`}>
                 Direct Messages
-            </h2>
+            </h2>)
+            }
 
             <div className='overflow-y-auto flex-1 space-y-2'>
                 {isLoading ? (

@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMobileChat } from '@/contexts/MobileChatContext';
 import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
@@ -286,10 +287,20 @@ export default function Navbar({
         [isLoggedIn, user]
     );
 
+    const location = useLocation();
+    const { isInMobileChat } = useMobileChat();
+
+    // Hide navbar on mobile when in a chat conversation
+    // Check both URL (for direct navigation) and context (for in-app navigation)
+    const isInConversation = location.pathname.match(/^\/dms\/\d+$/) || isInMobileChat;
+    const hideOnMobile = isInConversation;
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 backdrop-blur-md'>
+            <header className={clsx(
+                'sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 backdrop-blur-md',
+                hideOnMobile && 'hidden lg:flex'
+            )}>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0'>
                     <MobileNavigation items={navItems} />
                     <div className='flex-shrink-0'>

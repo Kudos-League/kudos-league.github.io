@@ -5,6 +5,7 @@ import { apiGet } from '@/shared/api/apiClient';
 import { MessageDTO, ChannelDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
+import { useMobileChat } from '@/contexts/MobileChatContext';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { usePublicChannels } from '@/shared/api/queries/messages';
@@ -20,6 +21,7 @@ export default function Chat({ channelType }: Props) {
     const { id: targetUserID } = useParams<{ id: string }>();
     const { token, user } = useAuth();
     const { messages, setMessages, joinChannel, leaveChannel, send } = useWebSocketContext();
+    const { setIsInMobileChat } = useMobileChat();
 
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
@@ -40,6 +42,11 @@ export default function Chat({ channelType }: Props) {
     const routeIsDM = location.pathname.includes('/dms') || Boolean(targetUserID);
     const isDMFromProp = channelType === 'dm';
     const resolvedIsDM = channelType ? isDMFromProp : routeIsDM;
+
+    // Update mobile chat context when showChatOnMobile changes (DMs only)
+    useEffect(() => {
+        setIsInMobileChat(showChatOnMobile && resolvedIsDM);
+    }, [showChatOnMobile, resolvedIsDM, setIsInMobileChat]);
 
     useEffect(() => {
         if (resolvedIsDM) return;
@@ -322,9 +329,13 @@ export default function Chat({ channelType }: Props) {
         };
     }, []);
 
-    const pageContainerStyle: React.CSSProperties = pageHeaderHeight > 0
-        ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
-        : { minHeight: '60vh', boxSizing: 'border-box' };
+    // On mobile when in a DM chat, use full viewport height (navbar is hidden)
+    // For forum, always use header height calculation (navbar stays visible)
+    const pageContainerStyle: React.CSSProperties = showChatOnMobile && resolvedIsDM && window.innerWidth < 768
+        ? { boxSizing: 'border-box', height: '100vh', minHeight: '100vh' }
+        : pageHeaderHeight > 0
+            ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
+            : { minHeight: '60vh', boxSizing: 'border-box' };
 
     return (
         <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
@@ -353,6 +364,7 @@ export default function Chat({ channelType }: Props) {
                                 allowEdit={true}
                                 onEdit={handleEditMessage}
                                 isLoading={isLoadingMessages}
+                                hideHeader={!isDMView}
                             />
                         </div>
                     )}
