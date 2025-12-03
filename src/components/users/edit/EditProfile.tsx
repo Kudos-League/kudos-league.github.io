@@ -613,14 +613,14 @@ const EditProfile: React.FC<Props> = ({
                         )}
 
                         <FormField label='Email'>
-                            <div className="max-w-full overflow-hidden">
+                            <div className="w-full overflow-hidden">
                                 <Input
                                     disabled={wasInvited}
                                     name='email'
                                     form={form}
                                     label=''
                                     placeholder={targetUser.email || 'Enter email address'}
-                                    className="max-w-full"
+                                    className="w-full"
                                 />
                             </div>
                             {wasInvited && (
@@ -631,33 +631,33 @@ const EditProfile: React.FC<Props> = ({
                         </FormField>
 
                         <FormField label='Username'>
-                            <div className="max-w-full overflow-hidden">
+                            <div className="w-full overflow-hidden">
                                 <Input
                                     name='username'
                                     form={form}
                                     label=''
                                     placeholder={user.username}
                                     disabled={!canEditProfile}
-                                    className="max-w-full"
+                                    className="w-full"
                                 />
                             </div>
                         </FormField>
 
                         <FormField label='Display Name'>
-                            <div className="max-w-full overflow-hidden">
+                            <div className="w-full overflow-hidden">
                                 <Input
                                     name='displayName'
                                     form={form}
                                     label=''
                                     placeholder={user.displayName}
                                     disabled={!canEditProfile}
-                                    className="max-w-full"
+                                    className="w-full"
                                 />
                             </div>
                         </FormField>
 
                         <FormField label='Profession' help='Share your current profession or role.'>
-                            <div className="max-w-full overflow-hidden">
+                            <div className="w-full overflow-hidden">
                                 <Input
                                     data-testid='profession'
                                     name='profession'
@@ -665,7 +665,7 @@ const EditProfile: React.FC<Props> = ({
                                     label=''
                                     placeholder='e.g., Software Engineer'
                                     disabled={!canEditProfile}
-                                    className="max-w-full"
+                                    className="w-full"
                                 />
                             </div>
                         </FormField>
@@ -674,7 +674,7 @@ const EditProfile: React.FC<Props> = ({
                             label='Description'
                             help='This will appear on your public profile.'
                         >
-                            <div className="max-w-full overflow-hidden">
+                            <div className="w-full overflow-hidden">
                                 <Input
                                     data-testid='about'
                                     name='about'
@@ -683,7 +683,7 @@ const EditProfile: React.FC<Props> = ({
                                     placeholder='Write a short bio...'
                                     multiline
                                     disabled={!canEditProfile}
-                                    className="max-w-full"
+                                    className="w-full"
                                 />
                             </div>
                         </FormField>
@@ -691,7 +691,7 @@ const EditProfile: React.FC<Props> = ({
                         {/* Fix for TagInput */}
                         {canEditProfile && (
                             <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
-                                <div className="max-w-full overflow-hidden">
+                                <div className="w-full overflow-hidden">
                                     <TagInput
                                         initialTags={tags}
                                         onTagsChange={(nextTags) => {
@@ -707,7 +707,7 @@ const EditProfile: React.FC<Props> = ({
                                                 });
                                             }
                                         }}
-                                        className="max-w-full"
+                                        className="w-full"
                                     />
                                 </div>
                             </FormField>
@@ -735,7 +735,7 @@ const EditProfile: React.FC<Props> = ({
                                     </div>
                                 )}
 
-                                <div className="max-w-full overflow-hidden pr-4">
+                                <div className="w-full overflow-hidden">
                                     <MapDisplay
                                         regionID={targetUser.location?.regionID}
                                         width='100%'
