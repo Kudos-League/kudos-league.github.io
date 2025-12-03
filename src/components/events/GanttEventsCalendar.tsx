@@ -1523,7 +1523,7 @@ export default function GanttEventsCalendar() {
 
                         {/* Event Bars - Main Event Display */}
                         {eventBars.length > 0 && (
-                            <div className='relative mt-2 bg-white dark:bg-zinc-900 border-t dark:border-zinc-700' style={{ minHeight: `${Math.max(eventBars.length > 0 ? Math.max(...eventBars.map(b => b.row)) + 1 : 1, 3) * 220}px` }}>
+                            <div className='relative mt-2 bg-white dark:bg-zinc-900 border-t dark:border-zinc-700' style={{ minHeight: `${Math.max(eventBars.length > 0 ? Math.max(...eventBars.map(b => b.row)) + 1 : 1, 3) * 270}px` }}>
                                 {eventBars.map((bar, idx) => {
                                     const start = toZonedTime(new Date(bar.event.startTime), tz);
                                     const end = bar.event.endTime ? toZonedTime(new Date(bar.event.endTime), tz) : null;
@@ -1545,8 +1545,8 @@ export default function GanttEventsCalendar() {
                                             style={{
                                                 left: `${bar.left}px`,
                                                 width: `${bar.width}px`,
-                                                top: `${bar.row * 220 + 4}px`,
-                                                height: '208px'
+                                                top: `${bar.row * 270 + 4}px`,
+                                                height: '258px'
                                             }}
                                             title={detailLevel === 'icon' ? bar.event.title : undefined}
                                         >
