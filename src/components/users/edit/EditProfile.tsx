@@ -779,15 +779,6 @@ const EditProfile: React.FC<Props> = ({
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-                                                if (setTargetUser) {
-                                                    setTargetUser({
-                                                        ...targetUser,
-                                                        location: {
-                                                            ...targetUser.location,
-                                                            regionID: null
-                                                        }
-                                                    });
-                                                }
                                             }
                                             else {
                                                 const locationValue = {
@@ -802,13 +793,6 @@ const EditProfile: React.FC<Props> = ({
                                                     shouldDirty: true,
                                                     shouldValidate: true
                                                 });
-
-                                                if (setTargetUser) {
-                                                    setTargetUser({
-                                                        ...targetUser,
-                                                        location: locationValue
-                                                    });
-                                                }
                                             }
                                         }}
                                     />
@@ -1015,13 +999,7 @@ const EditProfile: React.FC<Props> = ({
                                 <div className='flex items-center gap-2 sm:gap-3'>
                                     <button
                                         type='button'
-                                        onClick={() => {
-                                            if (window.confirm('Discard all unsaved changes?')) {
-                                                resetFromUser(targetUser);
-                                                setLocationLabel(targetUser?.location?.name || '');
-                                                onClose();
-                                            }
-                                        }}
+                                        onClick={onClose}
                                         className='px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-colors'
                                     >
                                         Discard
