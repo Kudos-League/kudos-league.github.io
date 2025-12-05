@@ -47,6 +47,17 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     });
 
     const { data: categories = [], isLoading: catsLoading } = useCategories();
+
+    // Deduplicate categories by ID to prevent any duplicates from showing
+    const uniqueCategories = React.useMemo(() => {
+        const seen = new Set<number>();
+        return categories.filter((cat) => {
+            if (seen.has(cat.id)) return false;
+            seen.add(cat.id);
+            return true;
+        });
+    }, [categories]);
+
     const createPost = useCreatePost();
 
     const [postType, setPostType] = React.useState<'gift' | 'request'>('gift');
@@ -310,7 +321,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     }}
                     render={({ field }) => (
                         <DropdownPicker
-                            options={(categories as CategoryDTO[]).map((c) => ({
+                            options={(uniqueCategories as CategoryDTO[]).map((c) => ({
                                 label: c.name,
                                 value: String(c.id)
                             }))}
