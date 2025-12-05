@@ -64,6 +64,7 @@ export function usePostsInfiniteQuery(filters?: {
             }),
         initialPageParam: undefined as number | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-        staleTime: 60_000
+        staleTime: 60_000,
+        gcTime: 0
     });
 }
