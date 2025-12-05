@@ -22,15 +22,17 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
+    const safeIncomingFilters = React.useMemo(() => ({ ...(filters ?? {}) }), [filters]);
+
     const queryFilters = React.useMemo(() => {
         const sort: 'date' | 'tags' | 'location' | 'kudos' = ordering.type === 'distance' ? 'location' : ordering.type;
         return {
-            ...filters,
+            ...safeIncomingFilters,
             includeSender: true,
             sort,
             order: ordering.order
         };
-    }, [filters, ordering]);
+    }, [safeIncomingFilters, ordering]);
 
     const {
         data,
