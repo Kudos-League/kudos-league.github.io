@@ -94,11 +94,10 @@ const DMList: React.FC<Props> = ({
                         return (
                             <div
                                 key={channel.id}
-                                onClick={() => onSelect(channel)}
-                                className={`flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
-                                    isMobile 
-                                        ? 'p-4 active:bg-zinc-200 dark:active:bg-zinc-700' 
-                                        : 'p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                                className={`flex items-center gap-3 rounded-lg transition-colors ${
+                                    isMobile
+                                        ? 'p-4'
+                                        : 'p-3'
                                 } ${
                                     isSelected
                                         ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
@@ -107,11 +106,12 @@ const DMList: React.FC<Props> = ({
                             >
                                 <div className='flex-1 min-w-0'>
                                     <div className='flex justify-between items-baseline'>
-                                        <p className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
+                                        {/* UserCard is clickable for profile */}
+                                        <div className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
                                             isMobile ? 'text-base' : 'text-sm'
                                         }`}>
                                             <UserCard user={user} />
-                                        </p>
+                                        </div>
                                         {timestamp && (
                                             <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
                                                 isMobile ? 'text-sm' : 'text-xs'
@@ -120,8 +120,10 @@ const DMList: React.FC<Props> = ({
                                             </span>
                                         )}
                                     </div>
+                                    {/* Last message area - clickable for selecting conversation */}
                                     <p
-                                        className={`truncate ${
+                                        onClick={() => onSelect(channel)}
+                                        className={`truncate cursor-pointer hover:underline ${
                                             channel.lastMessage?.content
                                                 ? 'text-zinc-600 dark:text-zinc-400'
                                                 : 'text-zinc-400 dark:text-zinc-500 italic'
