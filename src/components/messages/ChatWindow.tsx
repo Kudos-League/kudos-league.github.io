@@ -9,6 +9,7 @@ import UserCard from '../users/UserCard';
 import AvatarComponent from '../users/Avatar';
 import { getImagePath } from '@/shared/api/config';
 import { ArrowLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 
 interface Props {
     user: UserDTO | null;
@@ -62,6 +63,7 @@ const ChatWindow: React.FC<Props> = ({
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
+    const { blockedUsers } = useBlockedUsers();
     
     // Sort messages before grouping them
     const sortedMessages = useMemo(() => sortMessages(messages), [messages]);
@@ -162,6 +164,7 @@ const ChatWindow: React.FC<Props> = ({
     }
 
     const otherUser = channel.users?.find((u) => u.id !== user?.id);
+    const isBlocked = otherUser && blockedUsers ? blockedUsers.includes(otherUser.id) : false;
 
     return (
         <div className='flex flex-col h-full w-full min-h-0 overflow-hidden'>
@@ -257,53 +260,63 @@ const ChatWindow: React.FC<Props> = ({
                 <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
                     isMobile ? 'p-3' : 'p-4'
                 }`}>
-                    {/* Reply preview */}
-                    {replyTo && (
-                        <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
-                            <div className='flex-1 min-w-0'>
-                                <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
-                                    Replying to <UserCard triggerVariant='name' user={replyTo.author} />
-                                </p>
-                                <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
-                                    {replyTo.content}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setReplyTo(null)}
-                                className='ml-3 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                                title='Cancel reply (Esc)'
-                            >
-                                <XMarkIcon className='w-5 h-5 text-zinc-500 dark:text-zinc-400' />
-                            </button>
+                    {isBlocked ? (
+                        <div className='flex items-center justify-center py-4'>
+                            <p className='text-zinc-500 dark:text-zinc-400 text-sm'>
+                                You have blocked this user. Unblock them to send messages.
+                            </p>
                         </div>
-                    )}
+                    ) : (
+                        <>
+                            {/* Reply preview */}
+                            {replyTo && (
+                                <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
+                                    <div className='flex-1 min-w-0'>
+                                        <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
+                                            Replying to <UserCard triggerVariant='name' user={replyTo.author} />
+                                        </p>
+                                        <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
+                                            {replyTo.content}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setReplyTo(null)}
+                                        className='ml-3 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                        title='Cancel reply (Esc)'
+                                    >
+                                        <XMarkIcon className='w-5 h-5 text-zinc-500 dark:text-zinc-400' />
+                                    </button>
+                                </div>
+                            )}
 
-                    <div className='flex gap-3'>
-                        <input
-                            ref={inputRef}
-                            type='text'
-                            placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
-                            value={messageInput}
-                            onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyDown={handleKeyPress}
-                            disabled={isLoading}
-                            className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
-                                isMobile
-                                    ? 'px-4 py-3 text-base'
-                                    : 'px-3 py-2'
-                            }`}
-                        />
-                        <Button
-                            onClick={handleSend}
-                            disabled={!messageInput.trim() || isLoading}
-                            className={isMobile
-                                ? 'px-6 py-3 text-base font-medium'
-                                : 'px-4 py-2'
-                            }
-                        >
-                            Send
-                        </Button>
-                    </div>
+                            <div className='flex gap-3'>
+                                <input
+                                    ref={inputRef}
+                                    type='text'
+                                    placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyDown={handleKeyPress}
+                                    disabled={isLoading}
+                                    className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        isMobile
+                                            ? 'px-4 py-3 text-base'
+                                            : 'px-3 py-2'
+                                    }`}
+                                />
+                                <Button
+                                    onClick={handleSend}
+                                    disabled={!messageInput.trim() || isLoading}
+                                    className={isMobile
+                                        ? 'px-6 py-3 text-base font-medium'
+                                        : 'px-4 py-2'
+                                    }
+                                >
+                                    Send
+                                </Button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
