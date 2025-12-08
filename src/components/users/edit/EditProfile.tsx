@@ -19,11 +19,13 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { apiMutate } from '@/shared/api/apiClient';
+import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
 import useLocation, { MapCoordinates } from '@/hooks/useLocation';
+import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import UserCard from '@/components/users/UserCard';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -47,6 +49,7 @@ const EditProfile: React.FC<Props> = ({
     const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
 
     const { setLocation, location: browserLocation, errorMsg: locationError } = useLocation();
+    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showImageOptions, setShowImageOptions] = useState(false);
@@ -64,6 +67,7 @@ const EditProfile: React.FC<Props> = ({
     const [locationLabel, setLocationLabel] = useState<string>(
         targetUser?.location?.name || ''
     );
+    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
 
     const targetUserID = targetUser?.id;
 
@@ -211,6 +215,37 @@ const EditProfile: React.FC<Props> = ({
             if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
         };
     }, []);
+
+    // Fetch blocked users details
+    useEffect(() => {
+        if (!blockedUsers || blockedUsers.length === 0) {
+            setBlockedUsersDetails([]);
+            return;
+        }
+
+        const fetchBlockedUsersDetails = async () => {
+            try {
+                const usersPromises = blockedUsers.map(async (userId) => {
+                    try {
+                        const userData = await apiGet<UserDTO>(`/users/${userId}`);
+                        return userData;
+                    }
+                    catch (err) {
+                        console.error(`Failed to fetch user ${userId}:`, err);
+                        return null;
+                    }
+                });
+
+                const users = await Promise.all(usersPromises);
+                setBlockedUsersDetails(users.filter((u): u is UserDTO => u !== null));
+            }
+            catch (err) {
+                console.error('Failed to fetch blocked users details:', err);
+            }
+        };
+
+        fetchBlockedUsersDetails();
+    }, [blockedUsers]);
 
     const handleFileSelect = React.useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -929,6 +964,53 @@ const EditProfile: React.FC<Props> = ({
                         <Button type='submit'>Save</Button>
                     </form>
                 </SettingsSection>
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Blocked Users'
+                        description='Users you have blocked. Unblock them to send messages or view their content.'
+                    >
+                        {blockingLoading ? (
+                            <div className='flex items-center justify-center py-4'>
+                                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600'></div>
+                            </div>
+                        ) : blockedUsersDetails.length === 0 ? (
+                            <p className='text-gray-500 dark:text-gray-400 text-sm'>
+                                No blocked users.
+                            </p>
+                        ) : (
+                            <div className='space-y-3'>
+                                {blockedUsersDetails.map((blockedUser) => (
+                                    <div
+                                        key={blockedUser.id}
+                                        className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'
+                                    >
+                                        <div className='flex items-center gap-3 flex-1 min-w-0'>
+                                            <UserCard user={blockedUser} />
+                                        </div>
+                                        <Button
+                                            onClick={async () => {
+                                                try {
+                                                    await unblock(blockedUser.id);
+                                                    setToastMessage(`Unblocked ${blockedUser.username}`);
+                                                    setToastType('success');
+                                                }
+                                                catch (err) {
+                                                    setToastMessage('Failed to unblock user');
+                                                    setToastType('error');
+                                                }
+                                            }}
+                                            variant='secondary'
+                                            className='flex-shrink-0'
+                                        >
+                                            Unblock
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </SettingsSection>
+                )}
 
                 {!isAdminEditingOther && (
                     <SettingsSection
