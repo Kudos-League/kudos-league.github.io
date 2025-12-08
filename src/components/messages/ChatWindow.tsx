@@ -1,10 +1,13 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChannelDTO, MessageDTO, UserDTO } from '@/shared/api/types';
 import MessageGroup from './MessageGroup';
 import SlideInOnScroll from '../common/SlideInOnScroll';
 import { groupMessagesByAuthor } from '@/shared/groupMessagesByAuthor';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
+import AvatarComponent from '../users/Avatar';
+import { getImagePath } from '@/shared/api/config';
 import { ArrowLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Props {
@@ -58,6 +61,7 @@ const ChatWindow: React.FC<Props> = ({
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const navigate = useNavigate();
     
     // Sort messages before grouping them
     const sortedMessages = useMemo(() => sortMessages(messages), [messages]);
@@ -161,15 +165,36 @@ const ChatWindow: React.FC<Props> = ({
 
     return (
         <div className='flex h-full w-full min-h-0 overflow-hidden'>
-            {/* Vertical sidebar back button for mobile */}
+            {/* Vertical sidebar for mobile */}
             {isMobile && !hideHeader && (
-                <button
-                    onClick={onBack}
-                    className='flex-shrink-0 w-8 h-full bg-gradient-to-r from-zinc-200/50 to-transparent dark:from-zinc-700/50 dark:to-transparent hover:from-zinc-300/70 hover:to-transparent dark:hover:from-zinc-600/70 dark:hover:to-transparent active:from-zinc-400/80 active:to-zinc-200/30 dark:active:from-zinc-500/80 dark:active:to-zinc-700/30 transition-all duration-200 flex items-center justify-start pl-1 group'
-                    aria-label='Go back'
-                >
-                    <ArrowLeftIcon className='w-5 h-5 text-brand-600 dark:text-brand-300 group-hover:text-brand-700 dark:group-hover:text-brand-200 transition-colors' />
-                </button>
+                <div className='flex-shrink-0 w-12 h-full bg-gradient-to-r from-zinc-200/50 to-transparent dark:from-zinc-700/50 dark:to-transparent transition-all duration-200 flex flex-col items-center justify-start pt-3 gap-2'>
+                    {/* User avatar - clickable to profile */}
+                    {otherUser && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/user/${otherUser.id}`);
+                            }}
+                            className='hover:opacity-80 transition-opacity'
+                            aria-label={`View ${otherUser.username}'s profile`}
+                        >
+                            <AvatarComponent
+                                avatar={otherUser.avatar ? getImagePath(otherUser.avatar) : null}
+                                username={otherUser.username}
+                                size={32}
+                                pointer={true}
+                            />
+                        </button>
+                    )}
+                    {/* Back button in circle */}
+                    <button
+                        onClick={onBack}
+                        className='w-8 h-8 rounded-full bg-white dark:bg-zinc-800 shadow-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:bg-zinc-200 dark:active:bg-zinc-600 transition-colors flex items-center justify-center group'
+                        aria-label='Go back'
+                    >
+                        <ArrowLeftIcon className='w-4 h-4 text-brand-600 dark:text-brand-300 group-hover:text-brand-700 dark:group-hover:text-brand-200 transition-colors' />
+                    </button>
+                </div>
             )}
 
             {/* Main chat area */}
