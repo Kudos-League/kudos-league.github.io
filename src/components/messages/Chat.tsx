@@ -33,6 +33,7 @@ export default function Chat({ channelType }: Props) {
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const latestMessagesRef = useRef<MessageDTO[]>([]);
 
     const channelsQuery = usePublicChannels();
     const location = useLocation();
@@ -100,21 +101,21 @@ export default function Chat({ channelType }: Props) {
 
         try {
             setIsLoadingMessages(true);
-            const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
-            if (messagesData) setMessages(messagesData);
 
             const prev = selectedChannelRef.current;
             if (prev && prev.id !== channel.id) {
                 leaveChannel(prev.id);
             }
 
+            // joinChannel will handle fetching messages, don't duplicate the fetch here
             joinChannel(channel.id);
+            // Don't set isLoadingMessages to false here - let the messages useEffect handle it
         }
         catch (error) {
             console.error('Error selecting channel:', error);
+            setIsLoadingMessages(false);
         }
         finally {
-            setIsLoadingMessages(false);
             setPendingChannel(null);
         }
     };
@@ -125,21 +126,21 @@ export default function Chat({ channelType }: Props) {
                 try {
                     setIsLoadingMessages(true);
                     const channel = pendingChannel;
-                    const messagesData = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
-                    if (messagesData) setMessages(messagesData);
 
                     const prev = selectedChannelRef.current;
                     if (prev && prev.id !== channel.id) {
                         leaveChannel(prev.id);
                     }
 
+                    // joinChannel will handle fetching messages, don't duplicate the fetch here
                     joinChannel(channel.id);
+                    // Don't set isLoadingMessages to false here - let the messages useEffect handle it
                 }
                 catch (err) {
                     console.error('Error processing pending channel selection:', err);
+                    setIsLoadingMessages(false);
                 }
                 finally {
-                    setIsLoadingMessages(false);
                     setPendingChannel(null);
                 }
             })();
@@ -217,21 +218,36 @@ export default function Chat({ channelType }: Props) {
         }
     }, [user, token, targetUserID, joinChannel, resolvedIsDM, channelType]);
 
+    // Keep track of the latest messages to detect actual changes
     useEffect(() => {
-        if (messages.length > 0 && selectedChannel) {
-            // Sort messages to get the actual last message (most recent)
-            const sortedMessages = [...messages].sort((a, b) => {
-                const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
-                const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
-                return dateB - dateA; // Descending order (newest first)
-            });
-            const lastMessage = sortedMessages[0];
+        latestMessagesRef.current = messages;
+    }, [messages]);
+
+    // Turn off loading state when messages are loaded for the selected channel
+    useEffect(() => {
+        if (selectedChannel && messages.length >= 0 && isLoadingMessages) {
+            // Give a tiny delay to ensure messages have rendered
+            const timer = setTimeout(() => {
+                setIsLoadingMessages(false);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [messages, selectedChannel, isLoadingMessages]);
+
+    // Update channel lastMessage when messages change for the selected channel
+    useEffect(() => {
+        if (messages.length > 0 && selectedChannel && resolvedIsDM) {
+            // Find the actual newest message by timestamp
+            const newestMessage = messages.reduce((newest, msg) => {
+                const msgTime = new Date(msg.createdAt || msg.updatedAt || 0).getTime();
+                const newestTime = new Date(newest.createdAt || newest.updatedAt || 0).getTime();
+                return msgTime > newestTime ? msg : newest;
+            }, messages[0]);
 
             setChannels((prevChannels) => {
-                // Update the channel with the new last message
                 const updatedChannels = prevChannels.map((channel) =>
                     channel.id === selectedChannel.id
-                        ? { ...channel, lastMessage }
+                        ? { ...channel, lastMessage: newestMessage }
                         : channel
                 );
 
@@ -243,7 +259,7 @@ export default function Chat({ channelType }: Props) {
                 });
             });
         }
-    }, [messages, selectedChannel]);
+    }, [messages, selectedChannel, resolvedIsDM]);
 
     const openChat = async (channel: ChannelDTO) => {
         await selectChannel(channel);

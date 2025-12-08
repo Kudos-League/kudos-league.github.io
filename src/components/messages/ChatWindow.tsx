@@ -160,122 +160,125 @@ const ChatWindow: React.FC<Props> = ({
     const otherUser = channel.users?.find((u) => u.id !== user?.id);
 
     return (
-        <div className='flex flex-col h-full w-full min-h-0 overflow-hidden'>
-            {/* Header - Fixed at top */}
-            {!hideHeader && (
-                <div className={`flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 ${
-                    isMobile ? 'px-4 py-3' : 'px-4 py-3'
-                }`}>
-                    <div className='flex items-center gap-3'>
-                        {isMobile && (
-                            <Button
-                                onClick={onBack}
-                                className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800'
-                                variant='secondary'
-                            >
-                                <ArrowLeftIcon className='w-5 h-5' />
-                            </Button>
-                        )}
-                        <h2 className={`font-bold ${isMobile ? 'text-lg' : 'text-lg'}`}>
-                            {otherUser ? (
-                                <UserCard user={otherUser} />
-                            ) : (
-                                <span>{channel.name}</span>
-                            )}
-                        </h2>
-                    </div>
-                </div>
+        <div className='flex h-full w-full min-h-0 overflow-hidden'>
+            {/* Vertical sidebar back button for mobile */}
+            {isMobile && !hideHeader && (
+                <button
+                    onClick={onBack}
+                    className='flex-shrink-0 w-8 h-full bg-gradient-to-r from-zinc-200/50 to-transparent dark:from-zinc-700/50 dark:to-transparent hover:from-zinc-300/70 hover:to-transparent dark:hover:from-zinc-600/70 dark:hover:to-transparent active:from-zinc-400/80 active:to-zinc-200/30 dark:active:from-zinc-500/80 dark:active:to-zinc-700/30 transition-all duration-200 flex items-center justify-start pl-1 group'
+                    aria-label='Go back'
+                >
+                    <ArrowLeftIcon className='w-5 h-5 text-brand-600 dark:text-brand-300 group-hover:text-brand-700 dark:group-hover:text-brand-200 transition-colors' />
+                </button>
             )}
 
-            {/* Message list - Scrollable middle section */}
-            <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
-                isMobile ? 'p-3' : 'p-4'
-            }`}>
-                {isLoading ? (
-                    <div className='flex flex-col items-center justify-center h-full text-gray-500'>
-                        <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 dark:border-teal-400'></div>
-                        <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading messages...</p>
+            {/* Main chat area */}
+            <div className='flex flex-col flex-1 h-full min-h-0 overflow-hidden'>
+                {/* Header - Fixed at top (desktop only) */}
+                {!hideHeader && !isMobile && (
+                    <div className='flex-shrink-0 flex items-center justify-between border-b bg-white dark:bg-zinc-900 px-4 py-3'>
+                        <div className='flex items-center gap-3'>
+                            <h2 className='font-bold text-lg'>
+                                {otherUser ? (
+                                    <UserCard user={otherUser} />
+                                ) : (
+                                    <span>{channel.name}</span>
+                                )}
+                            </h2>
+                        </div>
                     </div>
-                ) : groupedMessages.length === 0 ? (
-                    <div className='flex flex-col items-center justify-center h-full text-gray-500'>
-                        <p className={isMobile ? 'text-base text-center' : 'text-sm'}>
-                            No messages yet. Start the conversation!
-                        </p>
-                    </div>
-                ) : (
-                    groupedMessages.map((group, idx) => (
-                        <SlideInOnScroll key={group[0].id} index={idx}>
-                            <MessageGroup
-                                messages={group}
-                                isOwn={!!user?.id && group[0].author?.id === user.id}
-                                onReply={handleReply}
-                                onDelete={onDelete}
-                                canDelete={allowDelete ? (m) => !!user && user.id === m.authorID : undefined}
-                                findMessageById={(id) => messageById.get(id)}
-                                onEdit={allowEdit ? handleEditStart : undefined}
-                                editingMessageId={editingMessageId}
-                                editContent={editContent}
-                                onEditChange={setEditContent}
-                                onEditSave={handleEditSave}
-                                onEditCancel={handleEditCancel}
-                                canEdit={canEdit}
-                            />
-                        </SlideInOnScroll>
-                    ))
                 )}
-                <div ref={bottomRef} />
-            </div>
 
-            {/* Message input - Fixed at bottom */}
-            <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
-                isMobile ? 'p-3' : 'p-4'
-            }`}>
-                {/* Reply preview */}
-                {replyTo && (
-                    <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
-                        <div className='flex-1 min-w-0'>
-                            <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
-                                Replying to <UserCard triggerVariant='name' user={replyTo.author} />
-                            </p>
-                            <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
-                                {replyTo.content}
+                {/* Message list - Scrollable middle section */}
+                <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
+                    isMobile ? 'p-3' : 'p-4'
+                }`}>
+                    {isLoading ? (
+                        <div className='flex flex-col items-center justify-center h-full text-gray-500'>
+                            <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 dark:border-teal-400'></div>
+                            <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading messages...</p>
+                        </div>
+                    ) : groupedMessages.length === 0 ? (
+                        <div className='flex flex-col items-center justify-center h-full text-gray-500'>
+                            <p className={isMobile ? 'text-base text-center' : 'text-sm'}>
+                                No messages yet. Start the conversation!
                             </p>
                         </div>
-                        <button
-                            onClick={() => setReplyTo(null)}
-                            className='ml-3 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                            title='Cancel reply (Esc)'
+                    ) : (
+                        groupedMessages.map((group, idx) => (
+                            <SlideInOnScroll key={group[0].id} index={idx}>
+                                <MessageGroup
+                                    messages={group}
+                                    isOwn={!!user?.id && group[0].author?.id === user.id}
+                                    onReply={handleReply}
+                                    onDelete={onDelete}
+                                    canDelete={allowDelete ? (m) => !!user && user.id === m.authorID : undefined}
+                                    findMessageById={(id) => messageById.get(id)}
+                                    onEdit={allowEdit ? handleEditStart : undefined}
+                                    editingMessageId={editingMessageId}
+                                    editContent={editContent}
+                                    onEditChange={setEditContent}
+                                    onEditSave={handleEditSave}
+                                    onEditCancel={handleEditCancel}
+                                    canEdit={canEdit}
+                                />
+                            </SlideInOnScroll>
+                        ))
+                    )}
+                    <div ref={bottomRef} />
+                </div>
+
+                {/* Message input - Fixed at bottom */}
+                <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
+                    isMobile ? 'p-3' : 'p-4'
+                }`}>
+                    {/* Reply preview */}
+                    {replyTo && (
+                        <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
+                            <div className='flex-1 min-w-0'>
+                                <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
+                                    Replying to <UserCard triggerVariant='name' user={replyTo.author} />
+                                </p>
+                                <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
+                                    {replyTo.content}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setReplyTo(null)}
+                                className='ml-3 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                title='Cancel reply (Esc)'
+                            >
+                                <XMarkIcon className='w-5 h-5 text-zinc-500 dark:text-zinc-400' />
+                            </button>
+                        </div>
+                    )}
+
+                    <div className='flex gap-3'>
+                        <input
+                            ref={inputRef}
+                            type='text'
+                            placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            disabled={isLoading}
+                            className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                                isMobile
+                                    ? 'px-4 py-3 text-base'
+                                    : 'px-3 py-2'
+                            }`}
+                        />
+                        <Button
+                            onClick={handleSend}
+                            disabled={!messageInput.trim() || isLoading}
+                            className={isMobile
+                                ? 'px-6 py-3 text-base font-medium'
+                                : 'px-4 py-2'
+                            }
                         >
-                            <XMarkIcon className='w-5 h-5 text-zinc-500 dark:text-zinc-400' />
-                        </button>
+                            Send
+                        </Button>
                     </div>
-                )}
-                
-                <div className='flex gap-3'>
-                    <input
-                        ref={inputRef}
-                        type='text'
-                        placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        disabled={isLoading}
-                        className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isMobile
-                                ? 'px-4 py-3 text-base'
-                                : 'px-3 py-2'
-                        }`}
-                    />
-                    <Button
-                        onClick={handleSend}
-                        disabled={!messageInput.trim() || isLoading}
-                        className={isMobile
-                            ? 'px-6 py-3 text-base font-medium'
-                            : 'px-4 py-2'
-                        }
-                    >
-                        Send
-                    </Button>
                 </div>
             </div>
         </div>
