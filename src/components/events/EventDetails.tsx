@@ -311,7 +311,8 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <textarea
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                        className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                        className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                         rows={4}
                         placeholder='Event description'
                     />

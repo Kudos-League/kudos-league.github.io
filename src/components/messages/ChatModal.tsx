@@ -564,7 +564,8 @@ export default function ChatModal({
                                                 <textarea
                                                     value={editContent}
                                                     onChange={(e) => setEditContent(e.target.value)}
-                                                    className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                                    className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
+                                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                                                     rows={3}
                                                     autoFocus
                                                     onKeyDown={(e) => {
@@ -770,7 +771,8 @@ export default function ChatModal({
                                     sendMessage();
                                 }
                             }}
-                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 transition-colors'
+                            className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 transition-colors overflow-y-auto'
+                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                             placeholder='Type your message...'
                         />
                         <Button

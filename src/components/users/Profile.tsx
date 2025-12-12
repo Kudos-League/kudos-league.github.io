@@ -536,7 +536,8 @@ const Profile: React.FC<Props> = ({
                                 onChange={(e) => setReportReason(e.target.value)}
                             />
                             <textarea
-                                className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                                 rows={4}
                                 placeholder='Optional details...'
                                 value={reportNotes}

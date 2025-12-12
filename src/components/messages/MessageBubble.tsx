@@ -260,7 +260,8 @@ const MessageBubble: React.FC<Props> = ({
                             <textarea
                                 value={editContent}
                                 onChange={(e) => onEditChange?.(e.target.value)}
-                                className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                                 rows={3}
                                 autoFocus
                                 onKeyDown={(e) => {

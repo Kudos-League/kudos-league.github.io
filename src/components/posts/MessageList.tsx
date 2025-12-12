@@ -283,7 +283,8 @@ const MessageList: React.FC<Props> = ({
                         <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                             rows={3}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.ctrlKey) {
