@@ -62,9 +62,10 @@ const ChatWindow: React.FC<Props> = ({
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const isEditingRef = useRef(false); // Track if we're currently editing
     const navigate = useNavigate();
     const { blockedUsers } = useBlockedUsers();
-    
+
     // Sort messages before grouping them
     const sortedMessages = useMemo(() => sortMessages(messages), [messages]);
     const groupedMessages = useMemo(
@@ -80,9 +81,12 @@ const ChatWindow: React.FC<Props> = ({
     }, [sortedMessages]);
 
     useEffect(() => {
-        if (bottomRef.current) {
+        // Only scroll to bottom if we're not editing a message
+        if (bottomRef.current && !isEditingRef.current) {
             bottomRef.current.scrollIntoView({ behavior: 'smooth' });
         }
+        // Reset the editing flag after scroll decision
+        isEditingRef.current = false;
     }, [messages]);
 
     useEffect(() => {
@@ -95,9 +99,16 @@ const ChatWindow: React.FC<Props> = ({
 
     const handleSend = () => {
         if (!messageInput.trim()) return;
-        onSend(messageInput.trim(), replyTo?.id);
-        setMessageInput('');
-        setReplyTo(null);
+
+        // If editing, save the edit instead of sending a new message
+        if (editingMessageId) {
+            handleEditSave();
+        }
+        else {
+            onSend(messageInput.trim(), replyTo?.id);
+            setMessageInput('');
+            setReplyTo(null);
+        }
     };
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -105,9 +116,14 @@ const ChatWindow: React.FC<Props> = ({
             e.preventDefault();
             handleSend();
         }
-        else if (e.key === 'Escape' && replyTo) {
+        else if (e.key === 'Escape') {
             e.preventDefault();
-            setReplyTo(null);
+            if (editingMessageId) {
+                handleEditCancel();
+            }
+            else if (replyTo) {
+                setReplyTo(null);
+            }
         }
     };
 
@@ -121,19 +137,24 @@ const ChatWindow: React.FC<Props> = ({
         if (!allowEdit || !user || user.id !== message.authorID) return;
         setEditingMessageId(message.id);
         setEditContent(message.content);
+        setMessageInput(message.content); // Populate the input with message content
         setReplyTo(null); // Cancel any ongoing reply
+        setTimeout(() => inputRef.current?.focus(), 0);
     };
 
-    const handleEditSave = (messageId: number) => {
-        if (!editContent.trim() || !onEdit) return;
-        onEdit(messageId, editContent.trim());
+    const handleEditSave = () => {
+        if (!messageInput.trim() || !onEdit || !editingMessageId) return;
+        isEditingRef.current = true; // Set flag to prevent auto-scroll
+        onEdit(editingMessageId, messageInput.trim());
         setEditingMessageId(null);
         setEditContent('');
+        setMessageInput('');
     };
 
     const handleEditCancel = () => {
         setEditingMessageId(null);
         setEditContent('');
+        setMessageInput('');
     };
 
     const canEdit = (message: MessageDTO) => {
@@ -167,7 +188,7 @@ const ChatWindow: React.FC<Props> = ({
     const isBlocked = otherUser && blockedUsers ? blockedUsers.includes(otherUser.id) : false;
 
     return (
-        <div className='flex flex-col h-full w-full min-h-0 overflow-hidden'>
+        <div className='flex flex-col h-full w-full min-h-0 overflow-hidden overflow-x-hidden'>
             {/* Header/Topbar */}
             {!hideHeader && (
                 <div className='flex-shrink-0 flex items-center gap-3 border-b bg-white dark:bg-zinc-900 px-4 py-3'>
@@ -215,10 +236,10 @@ const ChatWindow: React.FC<Props> = ({
             )}
 
             {/* Main chat area */}
-            <div className='flex flex-col flex-1 h-full min-h-0 overflow-hidden'>
+            <div className='flex flex-col flex-1 h-full min-h-0 overflow-hidden overflow-x-hidden'>
 
                 {/* Message list - Scrollable middle section */}
-                <div className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-800 ${
+                <div className={`flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-zinc-800 ${
                     isMobile ? 'p-3' : 'p-4'
                 }`}>
                     {isLoading ? (
@@ -268,8 +289,29 @@ const ChatWindow: React.FC<Props> = ({
                         </div>
                     ) : (
                         <>
+                            {/* Edit preview */}
+                            {editingMessageId && (
+                                <div className='flex items-center justify-between mb-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500 dark:border-amber-400'>
+                                    <div className='flex-1 min-w-0'>
+                                        <p className='text-xs font-semibold text-amber-700 dark:text-amber-300 mb-1'>
+                                            Editing message
+                                        </p>
+                                        <p className='text-sm text-amber-600 dark:text-amber-400 truncate'>
+                                            {editContent}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleEditCancel}
+                                        className='ml-3 p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-800/30'
+                                        title='Cancel edit (Esc)'
+                                    >
+                                        <XMarkIcon className='w-5 h-5 text-amber-600 dark:text-amber-400' />
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Reply preview */}
-                            {replyTo && (
+                            {replyTo && !editingMessageId && (
                                 <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                                     <div className='flex-1 min-w-0'>
                                         <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
@@ -293,7 +335,13 @@ const ChatWindow: React.FC<Props> = ({
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder={replyTo ? 'Type your reply...' : 'Type a message...'}
+                                    placeholder={
+                                        editingMessageId
+                                            ? 'Edit your message...'
+                                            : replyTo
+                                                ? 'Type your reply...'
+                                                : 'Type a message...'
+                                    }
                                     value={messageInput}
                                     onChange={(e) => setMessageInput(e.target.value)}
                                     onKeyDown={handleKeyPress}
@@ -312,7 +360,7 @@ const ChatWindow: React.FC<Props> = ({
                                         : 'px-4 py-2'
                                     }
                                 >
-                                    Send
+                                    {editingMessageId ? 'Update' : 'Send'}
                                 </Button>
                             </div>
                         </>

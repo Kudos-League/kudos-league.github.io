@@ -47,6 +47,8 @@ const MessageList: React.FC<Props> = ({
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Sorting messages by creation date (newest first)
@@ -126,20 +128,23 @@ const MessageList: React.FC<Props> = ({
         setEditContent('');
     };
 
-    const handleDelete = async (messageId: number) => {
-        if (!token) return;
+    const handleDeleteClick = (messageId: number) => {
+        setMessageToDelete(messageId);
+        setShowDeleteModal(true);
+    };
 
-        if (!window.confirm('Are you sure you want to delete this message?')) {
-            return;
-        }
+    const handleConfirmDelete = async () => {
+        if (!token || !messageToDelete) return;
 
         try {
-            await deleteMessageMutation.mutateAsync(messageId);
+            await deleteMessageMutation.mutateAsync(messageToDelete);
 
-            const original = processedMessages.find((m) => m.id === messageId);
+            const original = processedMessages.find((m) => m.id === messageToDelete);
             if (!original) {
-                onMessageDelete?.(messageId);
-                callback?.({ type: 'delete', messageId });
+                onMessageDelete?.(messageToDelete);
+                callback?.({ type: 'delete', messageId: messageToDelete });
+                setShowDeleteModal(false);
+                setMessageToDelete(null);
                 return;
             }
 
@@ -155,11 +160,15 @@ const MessageList: React.FC<Props> = ({
                 callback?.(enriched);
             }
 
-            onMessageDelete?.(messageId);
+            onMessageDelete?.(messageToDelete);
         }
         catch (err) {
             console.error('Failed to delete message:', err);
             alert('Failed to delete message. Please try again.');
+        }
+        finally {
+            setShowDeleteModal(false);
+            setMessageToDelete(null);
         }
     };
 
@@ -222,7 +231,7 @@ const MessageList: React.FC<Props> = ({
                                 )}
                                 {showDeleteButton && (
                                     <Button
-                                        onClick={() => handleDelete(msg.id)}
+                                        onClick={() => handleDeleteClick(msg.id)}
                                         variant='danger'
                                         className='text-xs'
                                     >
@@ -384,7 +393,12 @@ const MessageList: React.FC<Props> = ({
                             className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
                         />
                         <Button
-                            onClick={handleSubmitMessage}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                if (messageContent.trim()) {
+                                    handleSubmitMessage();
+                                }
+                            }}
                             disabled={!messageContent.trim()}
                             className='w-10 h-10'
                             shape='circle'
@@ -419,6 +433,37 @@ const MessageList: React.FC<Props> = ({
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm'>
+                    <div className='bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl'>
+                        <h3 className='text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100'>
+                            Delete Comment
+                        </h3>
+                        <p className='text-sm text-gray-600 dark:text-gray-300 mb-6'>
+                            Are you sure you want to delete this comment? This action cannot be undone.
+                        </p>
+                        <div className='flex gap-3 justify-end'>
+                            <Button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setMessageToDelete(null);
+                                }}
+                                variant='secondary'
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleConfirmDelete}
+                                variant='danger'
+                            >
+                                Delete
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

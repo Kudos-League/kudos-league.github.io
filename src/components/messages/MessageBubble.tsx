@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import TextWithLinks from '../common/TextWithLinks';
 import UserCard from '../users/UserCard';
-import { ArrowUturnLeftIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ArrowUturnLeftIcon, TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../common/Button';
 
 interface Props {
@@ -151,6 +151,23 @@ const MessageBubble: React.FC<Props> = ({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
+                {/* Cancel button when editing */}
+                {isOwn && isEditing && (
+                    <div className='absolute -left-14 bottom-0 opacity-100 transition-opacity flex gap-1 bg-amber-50/95 dark:bg-amber-900/30 rounded px-1.5 py-1 shadow-lg border border-amber-400 dark:border-amber-500 z-10 backdrop-blur-sm'>
+                        <button
+                            type='button'
+                            title='Cancel edit (Esc)'
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditCancel?.();
+                            }}
+                            className='p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-800/30'
+                        >
+                            <XMarkIcon className='w-4 h-4 text-amber-600 dark:text-amber-400' />
+                        </button>
+                    </div>
+                )}
+
                 {/* Action buttons - positioned absolutely at bottom for own messages */}
                 {isOwn && !isEditing && (
                     <div className={`absolute -left-14 bottom-0 ${showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'} transition-opacity flex gap-1 bg-white/95 dark:bg-zinc-800/95 rounded px-1.5 py-1 shadow-lg border border-zinc-300 dark:border-zinc-600 z-10 backdrop-blur-sm`}>
@@ -252,67 +269,30 @@ const MessageBubble: React.FC<Props> = ({
                         isOwn
                             ? 'bg-brand-600 dark:bg-brand-400 text-white'
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
+                    } ${
+                        isEditing ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
                     }`}
                 >
-                    {isEditing ? (
-                        // Edit mode
-                        <div className='space-y-2'>
-                            <textarea
-                                value={editContent}
-                                onChange={(e) => onEditChange?.(e.target.value)}
-                                className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
-                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
-                                rows={3}
-                                autoFocus
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e.ctrlKey) {
-                                        e.preventDefault();
-                                        onEditSave?.(message.id);
-                                    }
-                                    else if (e.key === 'Escape') {
-                                        e.preventDefault();
-                                        onEditCancel?.();
-                                    }
-                                }}
-                            />
-                            <div className='flex gap-2'>
-                                <Button
-                                    onClick={() => onEditSave?.(message.id)}
-                                    disabled={!editContent.trim()}
-                                    className='text-xs px-3 py-1 bg-brand-600 hover:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 text-white rounded'
-                                >
-                                    Save
-                                </Button>
-                                <Button
-                                    onClick={onEditCancel}
-                                    variant='secondary'
-                                    className='text-xs px-3 py-1'
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                            <p className='text-xs text-zinc-500 dark:text-zinc-400'>
-                                Press Ctrl+Enter to save, Esc to cancel
-                            </p>
+                    {message.deletedAt ? (
+                        <div className='text-white dark:text-zinc-300 italic opacity-90'>
+                            [deleted message]
                         </div>
                     ) : (
-                        // View mode
                         <>
-                            {message.deletedAt ? (
-                                <div className='text-white dark:text-zinc-300 italic opacity-90'>
-                                    [deleted message]
+                            {isEditing && (
+                                <div className='text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1'>
+                                    Editing this message...
                                 </div>
-                            ) : (
-                                isMessageEdited(message.createdAt, message.updatedAt) ? (
-                                    <>
-                                        <TextWithLinks className='italic opacity-90'>
-                                            {`[edited] `} 
-                                        </TextWithLinks>
-                                        <TextWithLinks>{message.content}</TextWithLinks>
-                                    </>
-                                ) : (
+                            )}
+                            {isMessageEdited(message.createdAt, message.updatedAt) ? (
+                                <>
+                                    <TextWithLinks className='italic opacity-90'>
+                                        {`[edited] `}
+                                    </TextWithLinks>
                                     <TextWithLinks>{message.content}</TextWithLinks>
-                                )
+                                </>
+                            ) : (
+                                <TextWithLinks>{message.content}</TextWithLinks>
                             )}
                         </>
                     )}
