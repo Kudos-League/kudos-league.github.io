@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChannelDTO } from '@/shared/api/types';
 import UserCard from '../users/UserCard';
+import { useLatestChannelMessage } from '@/shared/api/queries/messages';
 
 interface Props {
     channels: ChannelDTO[];
@@ -11,17 +12,16 @@ interface Props {
     isLoading?: boolean;
 }
 
-const DMList: React.FC<Props> = ({
-    channels,
-    searchQuery,
-    onSelect,
-    selectedChannel,
-    isMobile = false,
-    isLoading = false
-}) => {
-    const filteredChannels = channels.filter((c) =>
-        c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+interface DMItemProps {
+    channel: ChannelDTO;
+    onSelect: (channel: ChannelDTO) => void;
+    isSelected: boolean;
+    isMobile: boolean;
+}
+
+const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile }) => {
+    const { data: latestMessage, isLoading } = useLatestChannelMessage(channel.id);
+    const user = channel.otherUser;
 
     const formatLastMessage = (lastMessage: any) => {
         if (!lastMessage || !lastMessage.content) {
@@ -57,6 +57,63 @@ const DMList: React.FC<Props> = ({
         }
     };
 
+    const lastMessageText = formatLastMessage(latestMessage);
+    const timestamp = getMessageTimestamp(latestMessage);
+
+    return (
+        <div
+            className={`flex items-center gap-3 rounded-lg transition-colors ${
+                isMobile ? 'p-4' : 'p-3'
+            } ${
+                isSelected
+                    ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
+                    : ''
+            }`}
+        >
+            <div className='flex-1 min-w-0'>
+                <div className='flex justify-between items-baseline'>
+                    {/* UserCard is clickable for profile */}
+                    <div className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
+                        isMobile ? 'text-base' : 'text-sm'
+                    }`}>
+                        <UserCard user={user} />
+                    </div>
+                    {timestamp && (
+                        <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
+                            isMobile ? 'text-sm' : 'text-xs'
+                        }`}>
+                            {timestamp}
+                        </span>
+                    )}
+                </div>
+                {/* Last message area - clickable for selecting conversation */}
+                <p
+                    onClick={() => onSelect(channel)}
+                    className={`truncate cursor-pointer hover:underline ${
+                        latestMessage?.content
+                            ? 'text-zinc-600 dark:text-zinc-400'
+                            : 'text-zinc-400 dark:text-zinc-500 italic'
+                    } ${isMobile ? 'text-sm' : 'text-sm'}`}
+                >
+                    {isLoading ? 'Loading...' : lastMessageText}
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const DMList: React.FC<Props> = ({
+    channels,
+    searchQuery,
+    onSelect,
+    selectedChannel,
+    isMobile = false,
+    isLoading = false
+}) => {
+    const filteredChannels = channels.filter((c) =>
+        c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className={`${
             isMobile ? 'w-full' : 'w-1/3'
@@ -83,58 +140,15 @@ const DMList: React.FC<Props> = ({
                             : 'No matches found.'}
                     </p>
                 ) : (
-                    filteredChannels.map((channel) => {
-                        const user = channel.otherUser;
-                        const isSelected = selectedChannel?.id === channel.id;
-                        const lastMessageText = formatLastMessage(
-                            channel.lastMessage
-                        );
-                        const timestamp = getMessageTimestamp(channel.lastMessage);
-
-                        return (
-                            <div
-                                key={channel.id}
-                                className={`flex items-center gap-3 rounded-lg transition-colors ${
-                                    isMobile
-                                        ? 'p-4'
-                                        : 'p-3'
-                                } ${
-                                    isSelected
-                                        ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
-                                        : ''
-                                }`}
-                            >
-                                <div className='flex-1 min-w-0'>
-                                    <div className='flex justify-between items-baseline'>
-                                        {/* UserCard is clickable for profile */}
-                                        <div className={`font-semibold text-zinc-900 dark:text-zinc-100 truncate ${
-                                            isMobile ? 'text-base' : 'text-sm'
-                                        }`}>
-                                            <UserCard user={user} />
-                                        </div>
-                                        {timestamp && (
-                                            <span className={`text-zinc-400 dark:text-zinc-500 ml-2 flex-shrink-0 ${
-                                                isMobile ? 'text-sm' : 'text-xs'
-                                            }`}>
-                                                {timestamp}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {/* Last message area - clickable for selecting conversation */}
-                                    <p
-                                        onClick={() => onSelect(channel)}
-                                        className={`truncate cursor-pointer hover:underline ${
-                                            channel.lastMessage?.content
-                                                ? 'text-zinc-600 dark:text-zinc-400'
-                                                : 'text-zinc-400 dark:text-zinc-500 italic'
-                                        } ${isMobile ? 'text-sm' : 'text-sm'}`}
-                                    >
-                                        {lastMessageText}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })
+                    filteredChannels.map((channel) => (
+                        <DMItem
+                            key={channel.id}
+                            channel={channel}
+                            onSelect={onSelect}
+                            isSelected={selectedChannel?.id === channel.id}
+                            isMobile={isMobile}
+                        />
+                    ))
                 )}
             </div>
         </div>

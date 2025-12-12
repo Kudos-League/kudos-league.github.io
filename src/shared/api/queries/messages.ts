@@ -21,3 +21,13 @@ export function useChannelMessages(channelId?: number) {
         enabled: !!channelId
     });
 }
+
+export function useLatestChannelMessage(channelId?: number) {
+    return useQuery<MessageDTO | null>({
+        queryKey: channelId ? ['channel', channelId, 'latest-message'] : ['channel', 'none', 'latest-message'],
+        queryFn: () => apiGet<MessageDTO | null>(`/channels/${channelId}/latest-message`),
+        enabled: !!channelId,
+        staleTime: 0, // Always refetch to ensure latest data
+        gcTime: 1000 * 60 * 5 // Keep in cache for 5 minutes
+    });
+}

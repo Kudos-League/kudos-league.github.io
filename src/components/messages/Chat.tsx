@@ -165,21 +165,14 @@ export default function Chat({ channelType }: Props) {
                 const channelsWithLastMessage = await Promise.all(
                     formatted.map(async (channel) => {
                         try {
-                            const channelMessages = await apiGet<MessageDTO[]>(`/channels/${channel.id}/messages`);
-                            if (channelMessages && channelMessages.length > 0) {
-                                // Sort messages by createdAt to ensure we get the actual last message
-                                const sortedMessages = [...channelMessages].sort((a, b) => {
-                                    const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
-                                    const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
-                                    return dateB - dateA; // Descending order (newest first)
-                                });
-                                const lastMessage = sortedMessages[0]; // Get the most recent message
+                            const lastMessage = await apiGet<MessageDTO | null>(`/channels/${channel.id}/latest-message`);
+                            if (lastMessage) {
                                 return { ...channel, lastMessage } as ChannelDTO;
                             }
                             return channel;
                         }
                         catch (error) {
-                            console.error(`Error fetching messages for channel ${channel.id}:`, error);
+                            console.error(`Error fetching latest message for channel ${channel.id}:`, error);
                             return channel;
                         }
                     })
