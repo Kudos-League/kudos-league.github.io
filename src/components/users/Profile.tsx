@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 
@@ -39,8 +40,11 @@ const Profile: React.FC<Props> = ({
     const { user: currentUser, token } = useAuth();
     const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const isSelf = currentUser?.id === user.id;
+    const isFromConversation = location.state?.fromConversation || false;
+    const showBackButton = !isSelf || isFromConversation;
     const [editing, setEditing] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
@@ -316,6 +320,16 @@ const Profile: React.FC<Props> = ({
 
     return (
         <div className='max-w-5xl mx-auto'>
+            {showBackButton && (
+                <button
+                    onClick={() => navigate(-1)}
+                    className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                    aria-label='Go back'
+                >
+                    <ArrowLeftIcon className='w-5 h-5' />
+                    <span className='font-medium'>Back</span>
+                </button>
+            )}
             <div className='bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg px-4 sm:px-6 lg:px-8 py-8 space-y-8'>
                 <ProfileHeader
                     user={user}

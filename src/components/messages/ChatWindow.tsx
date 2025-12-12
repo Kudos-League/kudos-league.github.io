@@ -187,7 +187,7 @@ const ChatWindow: React.FC<Props> = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/user/${otherUser.id}`);
+                                navigate(`/user/${otherUser.id}`, { state: { fromConversation: true } });
                             }}
                             className='hover:opacity-80 transition-opacity flex-shrink-0'
                             aria-label={`View ${otherUser.username}'s profile`}
