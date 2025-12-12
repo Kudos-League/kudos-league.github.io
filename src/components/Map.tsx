@@ -495,16 +495,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         <div
             style={{ position: 'relative', width, height, overflow: 'visible' }}
         >
-            {showBanner && (
-                <div className='absolute left-0 top-50 w-full bg-white p-2 text-center font-semibold text-gray-800 z-[6] shadow'>
-                    {bannerText}
-                </div>
-            )}
             {edit && (
                 <div
                     style={{
                         position: 'absolute',
-                        top: showBanner ? 40 : 10,
+                        top: 10,
                         left: '50%',
                         transform: 'translateX(-50%)',
                         zIndex: 5,
