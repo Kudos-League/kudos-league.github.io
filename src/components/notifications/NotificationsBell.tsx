@@ -197,6 +197,15 @@ export default function NotificationsBell() {
         else if (n.type === 'bug-report' || n.type === 'site-feedback') {
             navigate(routes.admin);
         }
+        else if (n.type === 'handshake-created' || n.type === 'handshake-accepted' ||
+                 n.type === 'handshake-completed' || n.type === 'handshake-cancelled') {
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                console.error('No postID found for handshake notification', n);
+            }
+        }
         setOpen(false);
     };
 
@@ -350,6 +359,56 @@ export default function NotificationsBell() {
                                                 </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #{'feedbackID' in n ? n.feedbackID : ''}
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'handshake-created' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>New handshake request</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    Someone wants to handshake on your post
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'handshake-accepted' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>Handshake accepted</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    Your handshake request was accepted!
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'handshake-completed' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>Handshake completed</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    The transaction has been completed
+                                                </div>
+                                            </div>
+                                        ) : n.type === 'handshake-cancelled' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium'>Handshake cancelled</div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    {'noShowReported' in n && n.noShowReported
+                                                        ? 'Cancelled due to no-show'
+                                                        : 'The handshake was cancelled'}
                                                 </div>
                                             </div>
                                         ) : (

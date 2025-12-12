@@ -70,6 +70,30 @@ function describeNotification(notification: NotificationRecord) {
                 : 'Review in the admin dashboard.'
         };
     }
+    case NotificationType.HANDSHAKE_CREATED:
+        return {
+            title: 'New handshake request',
+            description: 'Someone wants to handshake on your post.'
+        };
+    case NotificationType.HANDSHAKE_ACCEPTED:
+        return {
+            title: 'Handshake accepted',
+            description: 'Your handshake request was accepted!'
+        };
+    case NotificationType.HANDSHAKE_COMPLETED:
+        return {
+            title: 'Handshake completed',
+            description: 'The transaction has been completed.'
+        };
+    case NotificationType.HANDSHAKE_CANCELLED: {
+        const noShow = 'noShowReported' in notification ? notification.noShowReported : false;
+        return {
+            title: 'Handshake cancelled',
+            description: noShow
+                ? 'The handshake was cancelled due to a no-show.'
+                : 'The handshake was cancelled.'
+        };
+    }
     default:
         return {
             title: 'Notification',
@@ -138,6 +162,14 @@ export default function NotificationsPage() {
                 notification.type === NotificationType.SITE_FEEDBACK
             ) {
                 navigate(routes.admin);
+            }
+            else if (
+                notification.type === NotificationType.HANDSHAKE_CREATED ||
+                notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                notification.type === NotificationType.HANDSHAKE_COMPLETED ||
+                notification.type === NotificationType.HANDSHAKE_CANCELLED
+            ) {
+                navigate(`/post/${notification.postID}`);
             }
 
             if (!notification.isActedOn) {
