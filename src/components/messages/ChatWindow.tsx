@@ -80,6 +80,9 @@ const ChatWindow: React.FC<Props> = ({
         return map;
     }, [sortedMessages]);
 
+    // Track if this is the first load of a channel
+    const hasScrolledInitially = useRef<number | null>(null);
+
     useEffect(() => {
         // Only scroll to bottom if we're not editing a message
         if (bottomRef.current && !isEditingRef.current) {
@@ -88,6 +91,20 @@ const ChatWindow: React.FC<Props> = ({
         // Reset the editing flag after scroll decision
         isEditingRef.current = false;
     }, [messages]);
+
+    // Scroll to bottom when messages are first loaded for a channel
+    useEffect(() => {
+        if (bottomRef.current && channel && !isLoading && messages.length > 0) {
+            // Check if this is a new channel or first load
+            if (hasScrolledInitially.current !== channel.id) {
+                hasScrolledInitially.current = channel.id;
+                // Use a small timeout to ensure messages are fully rendered
+                setTimeout(() => {
+                    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+                }, 150);
+            }
+        }
+    }, [channel?.id, isLoading, messages.length]);
 
     useEffect(() => {
         if (isMobile && channel && inputRef.current) {
