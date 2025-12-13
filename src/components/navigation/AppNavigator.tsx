@@ -8,6 +8,7 @@ import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 import About from '@/pages/about';
 import GanttEventsCalendar from '../events/GanttEventsCalendar';
+import { useAuth } from '@/contexts/useAuth';
 
 const Home = lazy(() => import('@/pages/home'));
 const Result = lazy(() => import('@/pages/donate/result'));
@@ -34,13 +35,25 @@ const LegacySignUpRedirect = () => {
     return <Navigate to={`${routes.signUp}${location.search}`} replace />;
 };
 
+const HomeOrAbout = () => {
+    const { isLoggedIn, loading } = useAuth();
+
+    if (loading) return <Spinner text='Loading...' />;
+
+    if (!isLoggedIn) {
+        return <Navigate to={routes.about} replace />;
+    }
+
+    return <Home />;
+};
+
 function AppNavigator() {
     return (
         <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About/>} />
-                    <Route path={routes.home} element={<Home />} />
+                    <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />
 
