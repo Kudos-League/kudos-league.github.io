@@ -379,16 +379,21 @@ const Profile: React.FC<Props> = ({
                     </div>
                 )} */}
 
+                {/* Log Past Gift button - available for all users on their own profile */}
+                {isSelf && (
+                    <div className='flex justify-center'>
+                        <Button
+                            onClick={() => setShowPastGiftModal(true)}
+                            className='!bg-brand-600 !text-white'
+                        >
+                            Log Past Gift
+                        </Button>
+                    </div>
+                )}
+
                 {!isSelf && (
                     <div className='flex justify-center'>
                         <div className='flex gap-3'>
-                            <Button
-                                onClick={() => setShowPastGiftModal(true)}
-                                className='!bg-teal-600 !text-white'
-                            >
-                                Log Past Gift
-                            </Button>
-
                             <Button
                                 onClick={() => setShowReportModal(true)}
                                 className='!bg-red-600 !text-white'

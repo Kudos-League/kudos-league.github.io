@@ -19,11 +19,19 @@ type FormValues = {
 };
 
 export default function ReportPastGiftModal({ open, onClose, receiverID }: { open: boolean; onClose: () => void; receiverID: number }) {
-    const form = useForm<FormValues>({ defaultValues: { tags: [], categoryID: 0 } });
+    const form = useForm<FormValues>({ defaultValues: { tags: [], categoryID: 0, title: '', body: '' } });
     const { data: categories = [], isLoading: catsLoading } = useCategories();
     const mutate = useReportPastGift();
 
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
+
+    // Reset form when modal opens
+    React.useEffect(() => {
+        if (open) {
+            form.reset({ tags: [], categoryID: 0, title: '', body: '' });
+            setSelectedImages([]);
+        }
+    }, [open, form]);
 
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         await mutate.mutateAsync({
@@ -35,6 +43,8 @@ export default function ReportPastGiftModal({ open, onClose, receiverID }: { ope
             files: selectedImages,
             receiverID
         } as any);
+        form.reset({ tags: [], categoryID: 0, title: '', body: '' });
+        setSelectedImages([]);
         onClose();
     };
 
