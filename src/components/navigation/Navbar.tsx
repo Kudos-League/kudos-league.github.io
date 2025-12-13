@@ -53,8 +53,6 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
         base.push(
             { name: 'About', to: routes.about, icon: InformationCircleIcon },
             { name: 'Donate', to: routes.donate, icon: HeartIcon },
-            { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
-            { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
         );
     }
     return base;
