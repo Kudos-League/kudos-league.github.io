@@ -32,9 +32,10 @@ type NavItem = {
 };
 
 function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
-    const base: NavItem[] = [{ name: 'Main', to: routes.home, icon: HomeIcon }];
+    const base: NavItem[] = [];
     if (isLoggedIn) {
         base.push(
+            { name: 'Main', to: routes.home, icon: HomeIcon },
             { name: 'DMs', to: routes.dms, icon: ChatBubbleLeftRightIcon },
             { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
             { name: 'Donate', to: routes.donate, icon: HeartIcon },
@@ -50,8 +51,8 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
     }
     else {
         base.push(
-            { name: 'Donate', to: routes.donate, icon: HeartIcon },
             { name: 'About', to: routes.about, icon: InformationCircleIcon },
+            { name: 'Donate', to: routes.donate, icon: HeartIcon },
             { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
             { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
         );
