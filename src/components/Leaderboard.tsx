@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,11 @@ type LeaderboardUser = {
     avatar?: string | null;
 };
 
+type LeaderboardResponse = {
+    data: LeaderboardUser[];
+    nextCursor: number | null;
+};
+
 const TIME_FILTERS = [
     { label: 'All Time', value: 'all' },
     { label: 'This Month', value: 'month' },
@@ -27,10 +32,15 @@ export default function Leaderboard() {
 
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [useLocal, setUseLocal] = useState(false);
     const [timeFilter, setTimeFilter] = useState('all');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [nextCursor, setNextCursor] = useState<number | null>(null);
+    const [hasMore, setHasMore] = useState(true);
+
+    const observerTarget = useRef<HTMLDivElement>(null);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
@@ -38,7 +48,9 @@ export default function Leaderboard() {
     // Check if we have any location available (saved or browser)
     const hasLocation = !!user?.location?.regionID || !!browserLocation;
 
-    const loadLeaderboard = async () => {
+    console.log('Render - useLocal:', useLocal, 'hasLocation:', hasLocation, 'shouldRender:', !useLocal || hasLocation);
+
+    const loadLeaderboard = async (reset = true) => {
         if (!user) {
             setError('Must be logged in.');
             return;
@@ -49,29 +61,94 @@ export default function Leaderboard() {
             setError(null); // Clear error, will show message in UI instead
             setLoading(false);
             setLeaderboard([]);
+            setHasMore(false);
             return;
         }
 
-        setLoading(true);
+        if (reset) {
+            setLoading(true);
+            setLeaderboard([]);
+            setNextCursor(null);
+            setHasMore(true);
+        }
+
         setError(null);
         try {
-            const data = await apiGet<LeaderboardUser[]>('/leaderboard', {
-                params: { local: useLocal, time: timeFilter }
+            const response = await apiGet<LeaderboardResponse>('/leaderboard', {
+                params: {
+                    local: useLocal,
+                    time: timeFilter,
+                    limit: 20,
+                    cursor: reset ? undefined : nextCursor
+                }
             });
-            setLeaderboard(data);
+
+            console.log('Leaderboard response:', response);
+            console.log('Response data:', response.data);
+            console.log('Data length:', response.data?.length);
+
+            const newData = response.data || [];
+            if (reset) {
+                console.log('Setting leaderboard (reset):', newData);
+                setLeaderboard(newData);
+            }
+            else {
+                const combined = [...leaderboard, ...newData];
+                console.log('Setting leaderboard (append):', combined);
+                setLeaderboard(combined);
+            }
+
+            console.log('Next cursor:', response.nextCursor);
+            setNextCursor(response.nextCursor ?? null);
+            setHasMore(response.nextCursor !== null && response.nextCursor !== undefined);
         }
         catch (err) {
-            console.error(err);
+            console.error('Leaderboard error:', err);
             setError('Failed to load leaderboard');
         }
         finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    const loadMore = useCallback(async () => {
+        if (!hasMore || loadingMore || loading) return;
+
+        setLoadingMore(true);
+        await loadLeaderboard(false);
+    }, [hasMore, loadingMore, loading, nextCursor, useLocal, timeFilter]);
+
     useEffect(() => {
-        loadLeaderboard();
+        loadLeaderboard(true);
     }, [useLocal, timeFilter]);
+
+    useEffect(() => {
+        console.log('Leaderboard state updated:', leaderboard);
+        console.log('Leaderboard length:', leaderboard?.length);
+    }, [leaderboard]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+                    loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
+
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
+            }
+        };
+    }, [loadMore, hasMore, loading, loadingMore]);
 
     return (
         <div className='max-w-3xl mx-auto p-6'>
@@ -160,43 +237,64 @@ export default function Leaderboard() {
             )}
 
             {/* Stacked List */}
-            {(!useLocal || hasLocation) && (
-                <ul
-                    role='list'
-                    className='divide-y divide-gray-200 dark:divide-white/10 mt-4'
-                >
-                    {leaderboard.map((entry) => (
-                        <li
-                            key={entry.id}
-                            className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
-                            onClick={() => navigate(`/user/${entry.id}`)}
-                        >
-                            <div className='flex min-w-0 gap-x-4 flex-1'>
-                                <UserCard
-                                    user={
-                                        {
-                                            ...entry,
-                                            kudos: entry.totalKudos
-                                        } as any as UserDTO
-                                    }
-                                    large
-                                    triggerVariant='avatar-name'
-                                    subtitle={entry.location?.name || '—'}
-                                    centered={false}
-                                    subtitleClassName='max-w-[180px]'
-                                />
-                            </div>
+            {(!useLocal || hasLocation) && !loading && (
+                <>
+                    <ul
+                        role='list'
+                        className='divide-y divide-gray-200 dark:divide-white/10 mt-4'
+                    >
+                        {leaderboard?.map((entry) => (
+                            <li
+                                key={entry.id}
+                                className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
+                                onClick={() => navigate(`/user/${entry.id}`)}
+                            >
+                                <div className='flex min-w-0 gap-x-4 flex-1'>
+                                    <UserCard
+                                        user={
+                                            {
+                                                ...entry,
+                                                kudos: entry.totalKudos
+                                            } as any as UserDTO
+                                        }
+                                        large
+                                        triggerVariant='avatar-name'
+                                        subtitle={entry.location?.name || '—'}
+                                        centered={false}
+                                        subtitleClassName='max-w-[180px]'
+                                    />
+                                </div>
 
-                            <div className='flex shrink-0 flex-col items-end justify-center'>
-                                <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                    {entry.totalKudos.toLocaleString()}
-                                </p>
-                                <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    Kudos
-                                </p>
-                            </div>
-                        </li>                ))}
-                </ul>
+                                <div className='flex shrink-0 flex-col items-end justify-center'>
+                                    <p className='text-sm font-semibold text-gray-900 dark:text-white'>
+                                        {entry.totalKudos.toLocaleString()}
+                                    </p>
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                        Kudos
+                                    </p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+
+                    {/* Infinite scroll trigger */}
+                    {hasMore && <div ref={observerTarget} className='h-10' />}
+
+                    {/* Loading more indicator */}
+                    {loadingMore && (
+                        <div className='flex justify-center items-center py-4'>
+                            <div className='w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin' />
+                            <span className='ml-2 text-sm text-gray-500'>Loading more...</span>
+                        </div>
+                    )}
+
+                    {/* End of list message */}
+                    {!hasMore && leaderboard.length > 0 && (
+                        <div className='text-center py-4 text-sm text-gray-500'>
+                            You&apos;ve reached the end of the leaderboard
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
