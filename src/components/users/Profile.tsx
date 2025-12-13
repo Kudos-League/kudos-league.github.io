@@ -11,7 +11,8 @@ import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
-import { apiMutate } from '@/shared/api/apiClient';
+import UserCard from '@/components/users/UserCard';
+import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
@@ -46,6 +47,7 @@ const Profile: React.FC<Props> = ({
     const isFromConversation = location.state?.fromConversation || false;
     const showBackButton = !isSelf || isFromConversation;
     const [editing, setEditing] = useState(false);
+    const [showBlockedUsers, setShowBlockedUsers] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -59,6 +61,37 @@ const Profile: React.FC<Props> = ({
     const [reportFiles, setReportFiles] = useState<File[]>([]);
     const [reportServerError, setReportServerError] = useState<string | null>(null);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
+    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
+
+    // Fetch blocked users details
+    React.useEffect(() => {
+        if (!isSelf || !blockedUsers || blockedUsers.length === 0) {
+            setBlockedUsersDetails([]);
+            return;
+        }
+
+        const fetchBlockedUsers = async () => {
+            try {
+                const usersData = await Promise.all(
+                    blockedUsers.map(async (userId) => {
+                        try {
+                            return await apiGet<UserDTO>(`/users/${userId}`);
+                        }
+                        catch (err) {
+                            console.error(`Failed to fetch user ${userId}`, err);
+                            return null;
+                        }
+                    })
+                );
+                setBlockedUsersDetails(usersData.filter((u): u is UserDTO => u !== null));
+            }
+            catch (err) {
+                console.error('Failed to fetch blocked users', err);
+            }
+        };
+
+        fetchBlockedUsers();
+    }, [blockedUsers, isSelf]);
 
     // Sort all arrays chronologically (latest first)
     const sortedPosts = useMemo(() => {
@@ -505,6 +538,79 @@ const Profile: React.FC<Props> = ({
                                 {user.settings.profession}
                             </p>
                         </div>
+                    </div>
+                )}
+
+                {/* Blocked Users Section - Only for own profile */}
+                {isSelf && (
+                    <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden'>
+                        <button
+                            onClick={() => setShowBlockedUsers(!showBlockedUsers)}
+                            className='w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors'
+                        >
+                            <div className='flex items-center gap-2'>
+                                <span className='text-red-600 dark:text-red-400 text-lg'>🔐</span>
+                                <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
+                                    Blocked Users
+                                </span>
+                                {blockedUsersDetails.length > 0 && (
+                                    <span className='px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full'>
+                                        {blockedUsersDetails.length}
+                                    </span>
+                                )}
+                            </div>
+                            <svg
+                                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${showBlockedUsers ? 'rotate-180' : ''}`}
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'
+                            >
+                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                            </svg>
+                        </button>
+
+                        {showBlockedUsers && (
+                            <div className='border-t border-gray-200 dark:border-white/10 p-4'>
+                                {blockingLoading ? (
+                                    <div className='text-center py-4'>
+                                        <Spinner text='Loading blocked users...' />
+                                    </div>
+                                ) : blockedUsersDetails.length === 0 ? (
+                                    <p className='text-center text-gray-500 dark:text-gray-400 py-4 text-sm'>
+                                        No blocked users
+                                    </p>
+                                ) : (
+                                    <div className='space-y-3'>
+                                        {blockedUsersDetails.map((blockedUser) => (
+                                            <div
+                                                key={blockedUser.id}
+                                                className='flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'
+                                            >
+                                                <div className='flex items-center gap-3 flex-1 min-w-0'>
+                                                    <UserCard user={blockedUser} />
+                                                </div>
+                                                <Button
+                                                    onClick={async () => {
+                                                        if (blockingLoading) return;
+                                                        try {
+                                                            await unblock(blockedUser.id);
+                                                        }
+                                                        catch (err) {
+                                                            console.error('Failed to unblock user', err);
+                                                        }
+                                                    }}
+                                                    variant='secondary'
+                                                    className='text-xs shrink-0 ml-3'
+                                                    disabled={blockingLoading}
+                                                >
+                                                    Unblock
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
