@@ -79,7 +79,7 @@ const HandshakeCard: React.FC<Props> = ({
             }
             catch (err) {
                 console.error('Error loading user info', err);
-                setError('Error loading user info');
+                setError('Couldn\'t get user info, User might\'ve been deleted.');
             }
         };
         fetchSender();
@@ -93,7 +93,7 @@ const HandshakeCard: React.FC<Props> = ({
             }
             catch (err) {
                 console.error('Error loading user info', err);
-                setError('Error loading user info');
+                setError('Couldn\'t get user info, User might\'ve been deleted.');
             }
         };
         fetchReceiver();
