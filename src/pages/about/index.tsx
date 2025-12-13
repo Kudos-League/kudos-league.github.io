@@ -162,12 +162,12 @@ const About = () => {
                         <li>Penalties for unrealistic Kudos offers (like 1,000,000 Kudos for an apple or 1 Kudos for a Ferrari)</li>
                     </ul>
                     
-                    <div className='bg-white dark:bg-gray-800 rounded-lg p-4 mt-4'>
-                        <p className='text-sm'>
+                    {/* <div className='bg-white dark:bg-gray-800 rounded-lg p-4 mt-4'>
+                        {/* <p className='text-sm'>
                             <strong>Note:</strong> You can edit the amount of Kudos you want to give at any time 
                             before the other person receives it. Mistakes happen, and we account for that!
-                        </p>
-                    </div>
+                        </p> 
+                    </div> */}
                 </div>
             </div>
 

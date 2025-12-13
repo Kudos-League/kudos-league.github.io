@@ -53,13 +53,24 @@ export default function Feed() {
                 >
                     + Gift / Request
                 </Button>
-                <input
-                    type='text'
-                    placeholder='Search…'
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    className='flex-1 border px-3 py-2 rounded'
-                />
+                <div className='flex-1 relative'>
+                    <input
+                        type='text'
+                        placeholder='Search…'
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className='w-full border px-3 py-2 pr-10 rounded'
+                    />
+                    {searchText && (
+                        <button
+                            onClick={() => setSearchText('')}
+                            className='absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors'
+                            aria-label='Clear search'
+                        >
+                            <X className='w-4 h-4 text-gray-500 dark:text-gray-400' />
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className='space-y-3'>

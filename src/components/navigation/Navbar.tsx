@@ -1,8 +1,8 @@
 import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-    XMarkIcon, 
-    FlagIcon, 
+    XMarkIcon,
+    FlagIcon,
     Bars3Icon,
     HomeIcon,
     ChatBubbleLeftRightIcon,
@@ -14,7 +14,8 @@ import {
     InformationCircleIcon,
     UserPlusIcon,
     ArrowRightOnRectangleIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -31,23 +32,18 @@ type NavItem = {
     icon?: React.ComponentType<{ className?: string }>;
 };
 
+// Mobile hamburger menu items (non-redundant for logged-in users)
 function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
     const base: NavItem[] = [];
     if (isLoggedIn) {
+        // Only items not in profile menu or desktop buttons
         base.push(
-            { name: 'Main', to: routes.home, icon: HomeIcon },
+            { name: 'Home', to: routes.home, icon: HomeIcon },
             { name: 'DMs', to: routes.dms, icon: ChatBubbleLeftRightIcon },
             { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
-            { name: 'Donate', to: routes.donate, icon: HeartIcon },
-            { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
-            { name: 'Feedback', to: routes.feedback, icon: FlagIcon },
-            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
             { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'About', to: routes.about, icon: InformationCircleIcon },
+            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
         );
-        if (isAdmin) {
-            base.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
-        }
     }
     else {
         base.push(
@@ -56,6 +52,30 @@ function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
         );
     }
     return base;
+}
+
+// Desktop navigation items for logged-in users (left side)
+function useDesktopNavItems(): NavItem[] {
+    return [
+        { name: 'Home', to: routes.home, icon: HomeIcon },
+        { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
+        { name: 'Events', to: routes.events, icon: CalendarIcon },
+        { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
+    ];
+}
+
+// User menu items for logged-in users
+function useUserMenuItems(isAdmin?: boolean): NavItem[] {
+    const items: NavItem[] = [
+        { name: 'About', to: routes.about, icon: InformationCircleIcon },
+        { name: 'Donate', to: routes.donate, icon: HeartIcon },
+        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
+        { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
+    ];
+    if (isAdmin) {
+        items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
+    }
+    return items;
 }
 
 function NavItemComponent({
@@ -220,7 +240,7 @@ function MobileNavigation({ items }: { items: NavItem[] }) {
 //     );
 // }
 
-function UserMenu({ onLogout }: { onLogout: () => void }) {
+function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: NavItem[] }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
@@ -258,23 +278,39 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             {open && (
                 <div
                     id='profile-dropdown'
-                    className='absolute right-0 z-50 mt-2 w-40 rounded-lg bg-white shadow-lg ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:ring-white/10'
+                    className='absolute right-0 z-50 mt-2 w-56 rounded-lg bg-white shadow-lg ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:ring-white/10'
                 >
                     <Link
                         to={profileHref}
                         onClick={() => setOpen(false)}
-                        className='block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                        className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700 rounded-t-lg'
                     >
-                        Profile
+                        <UserCircleIcon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />
+                        <span>Profile</span>
                     </Link>
+                    {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.name}
+                                to={item.to}
+                                onClick={() => setOpen(false)}
+                                className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                            >
+                                {Icon && <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />}
+                                <span>{item.name}</span>
+                            </Link>
+                        );
+                    })}
                     <button
                         onClick={() => {
                             setOpen(false);
                             onLogout();
                         }}
-                        className='block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-zinc-100 dark:text-red-400 dark:hover:bg-zinc-700'
+                        className='flex items-center gap-3 w-full px-4 py-3 text-left text-base font-medium text-red-600 hover:bg-zinc-100 dark:text-red-400 dark:hover:bg-zinc-700 rounded-b-lg'
                     >
-                        Logout
+                        <ArrowRightOnRectangleIcon className='h-5 w-5' />
+                        <span>Logout</span>
                     </button>
                 </div>
             )}
@@ -302,6 +338,9 @@ export default function Navbar({
         [isLoggedIn, user]
     );
 
+    const desktopNavItems = useMemo(() => useDesktopNavItems(), []);
+    const userMenuItems = useMemo(() => useUserMenuItems(user?.admin), [user?.admin]);
+
     const location = useLocation();
     const { isInMobileChat } = useMobileChat();
 
@@ -322,29 +361,73 @@ export default function Navbar({
                     <div className='flex-shrink-0'>
                         {brand || <></>}
                     </div>
+                    {isLoggedIn ? (
+                        <div className='hidden lg:flex items-center gap-2 ml-4'>
+                            {desktopNavItems.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link
+                                        key={item.name}
+                                        to={item.to}
+                                        className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
+                                    >
+                                        {Icon && <Icon className='h-4 w-4' />}
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className='hidden lg:flex items-center gap-2 ml-4'>
+                            <Link
+                                to={routes.about}
+                                className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
+                            >
+                                <InformationCircleIcon className='h-4 w-4' />
+                                About
+                            </Link>
+                            <Link
+                                to={routes.donate}
+                                className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
+                            >
+                                <HeartIcon className='h-4 w-4' />
+                                Donate
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
-                <div className='flex flex-1 justify-end lg:justify-center min-w-0'>
-                    <DesktopNavigation items={navItems} />
-                </div>
+                {!isLoggedIn ? (
+                    <div className='flex flex-1 justify-center items-center min-w-0 px-2'>
+                        <h1 className='text-zinc-800 dark:text-zinc-200 font-semibold text-center'>
+                            <span className='hidden xl:inline'>Welcome to the Kudos League Foundation!</span>
+                            <span className='hidden sm:inline xl:hidden'>Kudos League Foundation</span>
+                            <span className='inline sm:hidden'>Kudos League</span>
+                        </h1>
+                    </div>
+                ) : (
+                    <div className='flex flex-1 justify-center items-center min-w-0'>
+                        {/* Empty center space when logged in */}
+                    </div>
+                )}
 
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0'>
                     {/* <ThemeToggleButton /> */}
 
                     {isLoggedIn ? (
                         <>
+                            <Link
+                                to={routes.dms}
+                                aria-label='DMs'
+                                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                            >
+                                <ChatBubbleLeftRightIcon className='h-5 w-5 sm:h-5 sm:w-5' />
+                            </Link>
                             <div className='flex-shrink-0'>
                                 <NotificationsBell />
                             </div>
-                            {/* <Link
-                                to={routes.feedback}
-                                aria-label='Feedback'
-                                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-                            >
-                                <FlagIcon className='h-5 w-5' />
-                            </Link> */}
                             <div className='flex-shrink-0'>
-                                <UserMenu onLogout={onLogout} />
+                                <UserMenu onLogout={onLogout} menuItems={userMenuItems} />
                             </div>
                         </>
                     ) : (
