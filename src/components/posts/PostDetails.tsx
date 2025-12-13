@@ -879,21 +879,24 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
-                    <TextWithLinks className='text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words'>
-                        {postDetails.body}
-                    </TextWithLinks>
-                    {postDetails.rewardOffers?.[0]?.kudosFinal && (
-                        <p className='mt-2 font-semibold text-blue-600 dark:text-blue-400'>
-                            Final Kudos:{' '}
-                            {postDetails.rewardOffers[0].kudosFinal}
-                        </p>
-                    )}
-                </div>
-            )}
+                <>
+                    {/* Images */}
+                    <ImageCarousel images={postDetails.images || []} />
 
-            {/* Images */}
-            <ImageCarousel images={postDetails.images || []} />
+                    {/* Body / Description */}
+                    <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
+                        <TextWithLinks className='text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words'>
+                            {postDetails.body}
+                        </TextWithLinks>
+                        {postDetails.rewardOffers?.[0]?.kudosFinal && (
+                            <p className='mt-2 font-semibold text-blue-600 dark:text-blue-400'>
+                                Final Kudos:{' '}
+                                {postDetails.rewardOffers[0].kudosFinal}
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
 
             {/* Map */}
             {postDetails.location?.regionID && (
