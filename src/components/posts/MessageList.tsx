@@ -35,7 +35,8 @@ const MessageList: React.FC<Props> = ({
     postID,
     showSendMessage,
     allowEdit = false,
-    allowDelete = false
+    allowDelete = false,
+    eventID
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
@@ -59,12 +60,13 @@ const MessageList: React.FC<Props> = ({
     }, [messages]);
 
     const handleSubmitMessage = async () => {
-        if (!messageContent.trim() || !user || !token || !postID) return;
+        if (!messageContent.trim() || !user || !token || (!postID && !eventID)) return;
 
         const newMessage: CreateMessageDTO = {
             content: messageContent,
             authorID: user.id,
-            postID,
+            ...(postID ? { postID } : {}),
+            ...(eventID ? { eventID } : {}),
             ...(replyTo?.id ? { replyToMessageID: replyTo.id } : {})
         };
 
