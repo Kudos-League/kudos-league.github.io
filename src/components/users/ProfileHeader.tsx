@@ -93,7 +93,7 @@ const ProfileHeader: React.FC<Props> = ({
                         onClick={onEditProfile}
                         variant='secondary'
                     >
-                        ⚙️ Settings
+                        ⚙️ User Settings
                     </Button>
                 )}
             </div>

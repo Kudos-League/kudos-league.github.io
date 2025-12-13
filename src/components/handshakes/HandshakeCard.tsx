@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
 // import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
+import Pill from '../common/Pill';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
 import Alert from '../common/Alert';
@@ -299,7 +300,7 @@ const HandshakeCard: React.FC<Props> = ({
 
     return (
         <>
-            <div className="border border-gray-200 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4">
+            <div className="border border-gray-200 dark:border-gray-700 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4">
                 {/* Header: User + Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div className="font-semibold flex-1 min-w-0">
@@ -308,29 +309,24 @@ const HandshakeCard: React.FC<Props> = ({
 
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Status badge */}
-                        <span
-                            className={`text-xs font-medium px-3 py-1 rounded-full text-white shadow-sm whitespace-nowrap ${
-                                status === 'new'
-                                    ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                                    : status === 'accepted'
-                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                        : status === 'completed'
-                                            ? 'bg-gradient-to-r from-green-500 to-green-600'
-                                            : 'bg-gradient-to-r from-gray-400 to-gray-500'
-                            }`}
+                        <Pill
+                            tone={
+                                status === 'new' ? 'warning' :
+                                    status === 'accepted' ? 'info' :
+                                        status === 'completed' ? 'success' :
+                                            'neutral'
+                            }
+                            className="uppercase font-semibold"
                         >
-                            {status === 'new'
-                                ? 'Pending'
-                                : status.charAt(0).toUpperCase() +
-                                  status.slice(1)}
-                        </span>
+                            {status === 'new' ? 'Pending' : status}
+                        </Pill>
 
                         {canCancel && !stage.postIsPast && (
                             <Button
                                 variant="danger"
                                 onClick={handleCancelHandshake}
                                 disabled={cancelling}
-                                className="text-xs px-3 py-2 whitespace-nowrap"
+                                className="text-xs"
                             >
                                 {cancelling ? 'Cancelling…' : 'Cancel'}
                             </Button>
@@ -338,183 +334,152 @@ const HandshakeCard: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Post Details Section */}
+                {/* Content: Post Details + Message Preview */}
                 {showPostDetails && (
                     <div className="space-y-3">
-                        <div className="flex gap-3 sm:gap-4">
-                            {/* Post Image/Preview */}
-                            <div
-                                onClick={() => navigate(`/post/${handshake.postID}`)}
-                                className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                            >
+                        {/* Post Details - Optimized for Mobile */}
+                        <div
+                            onClick={() => navigate(`/post/${handshake.postID}`)}
+                            className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                        >
+                            {/* Post Image/Preview - Larger on mobile */}
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                                 {showBodyInImageBox ? (
-                                    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 text-xs text-gray-600 rounded-lg flex items-center justify-center text-center p-2 overflow-hidden border">
+                                    <div className="w-full h-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded-lg flex items-center justify-center text-center p-2 overflow-hidden border border-gray-200 dark:border-gray-600">
                                         {handshake.post.body.slice(0, 60)}…
                                     </div>
                                 ) : (
                                     <img
                                         src={imageSrc}
                                         alt={handshake.post.title}
-                                        className="w-full h-full object-cover rounded-lg border"
+                                        className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                                         onError={() => setImgError(true)}
                                     />
                                 )}
                             </div>
 
-                            {/* Post Info */}
-                            <div className="flex flex-col justify-between flex-1 min-w-0">
-                                <div>
-                                    <span
-                                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium text-sm break-words"
-                                        onClick={() => navigate(`/post/${handshake.postID}`)}
-                                    >
-                                        {handshake.post.title}
-                                    </span>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Created: {new Date(handshake.createdAt).toLocaleDateString()}
-                                    </p>
-                                </div>
+                            {/* Post Info - Better spacing */}
+                            <div className="flex flex-col justify-center flex-1 min-w-0">
+                                <span className="text-blue-600 dark:text-blue-400 font-medium text-base sm:text-sm break-words line-clamp-2">
+                                    {handshake.post.title}
+                                </span>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {new Date(handshake.createdAt).toLocaleDateString()}
+                                </p>
                             </div>
                         </div>
 
-                        {/* Last message preview */}
+                        {/* Last message preview - Compact on mobile */}
                         {(status === 'accepted' || status === 'completed') && isParticipant && (
                             <div
-                                className="p-2 sm:p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                                className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-200"
                                 onClick={() => setIsChatOpen(true)}
                             >
                                 {loadingMessage ? (
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-3 h-3 bg-gray-300 rounded-full animate-pulse"></div>
-                                        <span className="text-xs text-gray-500">
-                                            Loading last message...
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-blue-300 dark:bg-blue-700 rounded-full animate-pulse"></div>
+                                        <span className="text-sm text-blue-700 dark:text-blue-300">
+                                            Loading message...
                                         </span>
                                     </div>
                                 ) : lastMessage ? (
-                                    <div className="flex items-start space-x-2">
-                                        <ChatBubbleLeftIcon className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs text-gray-700 break-words">
-                                                {formatMessagePreview(lastMessage.content)}
+                                    <div className="flex items-start gap-3">
+                                        <ChatBubbleLeftIcon className="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 break-words line-clamp-2 mb-1">
+                                                {lastMessage.content}
                                             </p>
-                                        </div>
-                                        <span className="text-xs text-blue-500 font-medium whitespace-nowrap">
-                                            Click to chat
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center space-x-2">
-                                            <ChatBubbleLeftIcon className="w-3 h-3 text-gray-400" />
-                                            <span className="text-xs text-gray-500">
-                                                No messages yet
+                                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                                Tap to chat →
                                             </span>
                                         </div>
-                                        <span className="text-xs text-blue-500 font-medium whitespace-nowrap">
-                                            Start chat
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Unified Accept/Undo Button */}
-                {((canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new') ||
-                  (canUndoAccept && !stage.postIsPast)) && (
-                    <Button
-                        className={`
-                            w-full sm:w-auto relative overflow-hidden font-medium text-sm px-6 py-3 rounded-lg text-white
-                            transition-all duration-200 transform hover:scale-105 active:scale-95
-                            shadow-lg hover:shadow-xl
-                            ${
-                    processing
-                        ? 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed'
-                        : canUndoAccept
-                            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700'
-                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
-                    }
-                            before:absolute before:inset-0 before:bg-white before:opacity-0
-                            hover:before:opacity-10 before:transition-opacity before:duration-200
-                        `}
-                        onClick={canUndoAccept ? handleUndoAccept : handleAccept}
-                        disabled={processing}
-                    >
-                        <span
-                            className={`transition-opacity duration-200 ${processing ? 'opacity-0' : 'opacity-100'}`}
-                        >
-                            {canUndoAccept ? 'Undo Accept' : 'Accept Offer'}
-                        </span>
-                        {processing && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span className="ml-2 text-sm">
-                                    {canUndoAccept ? 'Undoing...' : 'Accepting...'}
-                                </span>
-                            </div>
-                        )}
-                    </Button>
-                )}
-
-                {/* Kudos Assignment */}
-                {canComplete && (
-                    <div className="space-y-3 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                        <label className="block text-sm font-medium text-green-800">
-                            When you receive the item assign Kudos to Complete
-                        </label>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <input
-                                type="number"
-                                value={kudosValue}
-                                onChange={(e) => setKudosValue(e.target.value)}
-                                className="border border-green-300 rounded-lg flex-1 px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Enter kudos amount"
-                            />
-                            <Button
-                                onClick={handleKudosSubmit}
-                                disabled={submitting}
-                                className={`
-                                    w-full sm:w-auto px-6 py-2 rounded-lg text-white font-medium text-sm
-                                    transition-all duration-200 transform hover:scale-105 active:scale-95
-                                    shadow-md hover:shadow-lg whitespace-nowrap
-                                    ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'}
-                                `}
-                            >
-                                {submitting ? (
-                                    <div className="flex items-center justify-center">
-                                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        Sending...
                                     </div>
                                 ) : (
-                                    'Submit'
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <ChatBubbleLeftIcon className="w-5 h-5 text-blue-400 dark:text-blue-500" />
+                                            <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                                                Start chat
+                                            </span>
+                                        </div>
+                                        <span className="text-xl text-blue-500">→</span>
+                                    </div>
                                 )}
-                            </Button>
-                        </div>
-                        {error && (
-                            <p className="text-sm text-red-600 flex items-center">
-                                <span className="w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2">
-                                    !
-                                </span>
-                                {error}
-                            </p>
+                            </div>
                         )}
                     </div>
                 )}
 
-                {canUndoAccept && status === 'accepted' && !stage.postIsPast && (
-                    <div>
-                        <p className="text-sm text-gray-600">
-                            Waiting for the user to receive the item so you can get kudos
-                        </p>
-                    </div>
-                )}
+                {/* Actions Row */}
+                <div className="space-y-3">
+                    {/* Accept/Undo Button - Full width on mobile */}
+                    {((canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new') ||
+                      (canUndoAccept && !stage.postIsPast)) && (
+                        <Button
+                            variant={canUndoAccept ? 'warning' : 'success'}
+                            onClick={canUndoAccept ? handleUndoAccept : handleAccept}
+                            disabled={processing}
+                            className="w-full text-base py-3"
+                        >
+                            {processing ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    {canUndoAccept ? 'Undoing...' : 'Accepting...'}
+                                </span>
+                            ) : (
+                                canUndoAccept ? 'Undo Accept' : 'Accept Offer'
+                            )}
+                        </Button>
+                    )}
+
+                    {/* Kudos Assignment - Better mobile layout */}
+                    {canComplete && (
+                        <div className="flex flex-col gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+                            <label className="text-base font-semibold text-green-800 dark:text-green-300">
+                                Assign Kudos to Complete
+                            </label>
+                            <div className="flex gap-3">
+                                <input
+                                    type="number"
+                                    value={kudosValue}
+                                    onChange={(e) => setKudosValue(e.target.value)}
+                                    className="border border-green-300 dark:border-green-700 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 flex-1"
+                                    placeholder="Enter amount"
+                                />
+                                <Button
+                                    variant="success"
+                                    onClick={handleKudosSubmit}
+                                    disabled={submitting}
+                                    className="px-6 py-3"
+                                >
+                                    {submitting ? (
+                                        <span className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Sending...
+                                        </span>
+                                    ) : (
+                                        'Submit'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Waiting Message - Full width */}
+                    {canUndoAccept && status === 'accepted' && !stage.postIsPast && !canComplete && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-base text-blue-700 dark:text-blue-300 text-center">
+                                ⏳ Waiting for the user to receive the item
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 {/* Error Message */}
-                {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-700 flex items-center">
-                            <span className="w-4 h-4 bg-red-100 rounded-full flex items-center justify-center mr-2 text-red-600 flex-shrink-0">
+                {error && !canComplete && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+                            <span className="w-4 h-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shrink-0">
                                 !
                             </span>
                             <span className="break-words">{error}</span>

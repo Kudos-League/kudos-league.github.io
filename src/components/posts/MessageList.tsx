@@ -197,7 +197,7 @@ const MessageList: React.FC<Props> = ({
             <div
                 key={msg.id}
                 id={`msg-${msg.id}`}
-                className='border-b border-zinc-200 dark:border-zinc-700 py-3 last:border-b-0'
+                className='border-t border-zinc-200 dark:border-zinc-700 py-3 first:border-t-0'
             >
                 <div className='mb-2 flex justify-between items-start'>
                     <div>
@@ -410,8 +410,8 @@ const MessageList: React.FC<Props> = ({
                     </div>
 
 
-                    {showSendMessage && (
-                        <div className='flex flex-col border-t pt-3 gap-2'>
+                    {showSendMessage && replyTo && (
+                        <div className='flex flex-col pt-3 gap-2'>
                             {replyTo && (
                                 <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                                     <div className='flex items-center justify-between mb-1'>
