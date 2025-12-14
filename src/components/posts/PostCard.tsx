@@ -60,7 +60,7 @@ export default function PostCard(props: Props) {
 
     return (
         <div
-            className='border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer'
+            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer'
             onClick={() => navigate(`/post/${id}`)}
         >
             <div className='flex justify-between items-start gap-2 sm:gap-4 w-full'>
@@ -76,7 +76,9 @@ export default function PostCard(props: Props) {
                                 {title}
                             </h2>
                             {distance != null && (
-                                <Pill name={`${distance.toFixed(1)} km`} />
+                                <span className='hidden sm:inline'>
+                                    <Pill name={`${distance.toFixed(1)} km`} />
+                                </span>
                             )}
                         </div>
                         <span className='text-[0.65rem] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap'>
@@ -113,6 +115,14 @@ export default function PostCard(props: Props) {
                     )}
                 </div>
             </div>
+
+            {/* Distance indicator on mobile - bottom right */}
+            {distance != null && (
+                <div className='sm:hidden absolute bottom-2 right-2'>
+                    <Pill name={`${distance.toFixed(1)} km away`} />
+                </div>
+            )}
+
             {viewerHandshake && showHandshakeShortcut && (
                 <div className='mt-4' onClick={(e) => e.stopPropagation()}>
                     {!viewerHandshake.cancelledAt && (

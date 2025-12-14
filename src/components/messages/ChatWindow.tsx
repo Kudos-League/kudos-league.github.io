@@ -296,7 +296,7 @@ const ChatWindow: React.FC<Props> = ({
 
                 {/* Message input - Fixed at bottom */}
                 <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
-                    isMobile ? 'p-3' : 'p-4'
+                    isMobile ? 'p-3 pb-6' : 'p-4'
                 }`}>
                     {isBlocked ? (
                         <div className='flex items-center justify-center py-4'>
@@ -348,7 +348,7 @@ const ChatWindow: React.FC<Props> = ({
                                 </div>
                             )}
 
-                            <div className='flex gap-3'>
+                            <div className='flex gap-2 items-center'>
                                 <input
                                     ref={inputRef}
                                     type='text'
@@ -363,7 +363,7 @@ const ChatWindow: React.FC<Props> = ({
                                     onChange={(e) => setMessageInput(e.target.value)}
                                     onKeyDown={handleKeyPress}
                                     disabled={isLoading}
-                                    className={`flex-1 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    className={`flex-1 min-w-0 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
                                         isMobile
                                             ? 'px-4 py-3 text-base'
                                             : 'px-3 py-2'
@@ -372,10 +372,10 @@ const ChatWindow: React.FC<Props> = ({
                                 <Button
                                     onClick={handleSend}
                                     disabled={!messageInput.trim() || isLoading}
-                                    className={isMobile
+                                    className={`flex-shrink-0 ${isMobile
                                         ? 'px-6 py-3 text-base font-medium'
                                         : 'px-4 py-2'
-                                    }
+                                    }`}
                                 >
                                     {editingMessageId ? 'Update' : 'Send'}
                                 </Button>
