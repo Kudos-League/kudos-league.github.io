@@ -50,7 +50,6 @@ function useDesktopSidebarItems(): NavItem[] {
     return [
         { name: 'Main', to: routes.home, icon: HomeIcon },
         { name: 'Events', to: routes.events, icon: CalendarIcon },
-        { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
         { name: 'Groups', to: routes.communities, icon: UserGroupIcon},
     ];
 }
@@ -61,7 +60,6 @@ function useMobileNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
         const items: NavItem[] = [
             { name: 'Main', to: routes.home, icon: HomeIcon },
             { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
             { name: 'Groups', to: routes.communities, icon: UserGroupIcon},
             // { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
             // { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
