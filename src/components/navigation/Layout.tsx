@@ -189,6 +189,8 @@ const Layout: React.FC = () => {
 
                 <main className='flex-1 overflow-y-auto'>
                     <Outlet />
+                    {/* Mobile bottom spacer to prevent browser navigation from covering content */}
+                    <div className='lg:hidden h-4' aria-hidden='true' />
                 </main>
 
                 {/* <LayoutFooter /> */}

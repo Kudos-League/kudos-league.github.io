@@ -296,7 +296,7 @@ const ChatWindow: React.FC<Props> = ({
 
                 {/* Message input - Fixed at bottom */}
                 <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
-                    isMobile ? 'p-3 pb-6' : 'p-4'
+                    isMobile ? 'p-3' : 'p-4'
                 }`}>
                     {isBlocked ? (
                         <div className='flex items-center justify-center py-4'>
