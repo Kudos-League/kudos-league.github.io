@@ -4,10 +4,11 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { useCompleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
-import type { HandshakeDTO, UserDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
+import type { HandshakeDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { getEndpointUrl } from '@/shared/api/config';
+import { useCachedUser } from '@/contexts/DataCacheContext';
 // import ChatModal from '@/components/messages/ChatModal';
 import Button from '../common/Button';
 import Pill from '../common/Pill';
@@ -42,8 +43,6 @@ const HandshakeCard: React.FC<Props> = ({
     const [kudosValue, setKudosValue] = useState('');
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [error, setError] = useState<string | null>();
-    const [senderUser, setSenderUser] = useState<UserDTO | null>(null);
-    const [receiverUser, setReceiverUser] = useState<UserDTO | null>(null);
     const [imgError, setImgError] = useState(false);
     const [lastMessage, setLastMessage] = useState<MessageDTO | null>(null);
     const [loadingMessage, setLoadingMessage] = useState(false);
@@ -52,6 +51,10 @@ const HandshakeCard: React.FC<Props> = ({
     const [showAcceptedWarningModal, setShowAcceptedWarningModal] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    // Use cached user data
+    const { user: senderUser } = useCachedUser(handshake.senderID);
+    const { user: receiverUser } = useCachedUser(handshake.receiverID);
 
     const imageSrc = handshake.post.images?.[0]
         ? getEndpointUrl() + handshake.post.images[0]
@@ -71,34 +74,6 @@ const HandshakeCard: React.FC<Props> = ({
     const userIsItemReceiver = stage.userIsItemReceiver;
     const isParticipant = stage.isParticipant;
     const otherUserID = stage.otherUserID;
-
-    useEffect(() => {
-        const fetchSender = async () => {
-            try {
-                const sender = await apiGet<UserDTO>(`/users/${handshake.senderID}`);
-                setSenderUser(sender);
-            }
-            catch (err) {
-                console.error('Error loading user info', err);
-                setError('Couldn\'t get user info, User might\'ve been deleted.');
-            }
-        };
-        fetchSender();
-    }, [handshake]);
-
-    useEffect(() => {
-        const fetchReceiver = async () => {
-            try {
-                const receiver = await apiGet<UserDTO>(`/users/${handshake.receiverID}`);
-                setReceiverUser(receiver);
-            }
-            catch (err) {
-                console.error('Error loading user info', err);
-                setError('Couldn\'t get user info, User might\'ve been deleted.');
-            }
-        };
-        fetchReceiver();
-    }, [handshake]);
 
     useEffect(() => {
         const fetchLastMessage = async () => {
@@ -475,8 +450,26 @@ const HandshakeCard: React.FC<Props> = ({
                     )}
                 </div>
 
+                {/* Cancelled Message */}
+                {status === 'cancelled' && handshake.cancelledByUserID && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {handshake.cancelledByUserID === userID ? (
+                                <>You&apos;ve cancelled handshake on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                            ) : (
+                                <>Handshake cancelled on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                            )}
+                            {handshake.noShowReported && (
+                                <span className="block mt-1 text-xs text-red-600 dark:text-red-400">
+                                    Reason: No-show reported
+                                </span>
+                            )}
+                        </p>
+                    </div>
+                )}
+
                 {/* Error Message */}
-                {error && !canComplete && (
+                {error && !canComplete && status !== 'cancelled' && (
                     <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
                         <p className="text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
                             <span className="w-4 h-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shrink-0">

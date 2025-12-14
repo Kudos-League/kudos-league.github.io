@@ -11,6 +11,10 @@ import {
     UserPlusIcon
 } from '@heroicons/react/24/outline';
 import Navbar from './Navbar';
+import AppSidebar from './Sidebar';
+import DMsModal from '../messages/DMsModal';
+import SearchModal from './SearchModal';
+import MobileTabBar from './MobileTabBar';
 import { useAuth } from '@/contexts/useAuth';
 
 type FooterLinkProps = {
@@ -37,10 +41,12 @@ const LayoutFooter: React.FC = () => {
             <div className='flex justify-around items-center gap-4'>
                 {isLoggedIn ? (
                     <>
+
+                        {/* TODO: Rename later to home bc it's where recommended stuff is going to go */}
                         <FooterLink
                             to={routes.home}
                             icon={HomeIcon}
-                            label='Home'
+                            label='Posts'
                         />
                         <FooterLink
                             to={routes.dms}
@@ -81,6 +87,8 @@ const Layout: React.FC = () => {
     const { isLoggedIn, user, logout } = useAuth();
     const [showDropdown, setShowDropdown] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [dmsModalOpen, setDmsModalOpen] = useState(false);
+    const [searchModalOpen, setSearchModalOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -128,28 +136,56 @@ const Layout: React.FC = () => {
         navigate(routes.home);
     };
 
+    const brandElement = (
+        <Link
+            to={routes.home}
+            className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
+        >
+            <img
+                src={`${process.env.PUBLIC_URL}/logo512.png`}
+                alt="Kudos League"
+                className="h-8 w-auto sm:h-10"
+            />
+        </Link>
+    );
+
     return (
         <div className='flex h-screen'>
-            <div className='flex-1 flex flex-col min-w-0'>
+            {/* Sidebar for desktop, mobile hamburger menu */}
+            <AppSidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+                isLoggedIn={!!isLoggedIn}
+                isAdmin={user?.admin}
+                brand={brandElement}
+            />
+
+            {/* DMs Modal */}
+            <DMsModal
+                open={dmsModalOpen}
+                onClose={() => setDmsModalOpen(false)}
+            />
+
+            {/* Search Modal */}
+            <SearchModal
+                open={searchModalOpen}
+                onClose={() => setSearchModalOpen(false)}
+            />
+
+            {/* Main content area - offset by sidebar width on desktop when logged in */}
+            <div className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}>
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
+                    onOpenDMs={() => setDmsModalOpen(true)}
+                    onOpenSearch={() => setSearchModalOpen(true)}
                     isLoggedIn={!!isLoggedIn}
                     user={user ?? undefined}
                     onLogout={handleLogout}
-                    brand={
-                        <Link
-                            to={routes.home}
-                            className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
-                        >
-                            {/* Kudos League */}
-                            <img
-                                src={`${process.env.PUBLIC_URL}/logo512.png`}
-                                alt="Kudos League"
-                                className="h-8 w-auto sm:h-10"
-                            />
-                        </Link>
-                    }
+                    brand={brandElement}
                 />
+
+                {/* Mobile Tab Bar - only shown when logged in */}
+                {isLoggedIn && <MobileTabBar />}
 
                 <main className='flex-1 overflow-y-auto'>
                     <Outlet />

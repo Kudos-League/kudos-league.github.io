@@ -6,6 +6,7 @@ import { MessageDTO, ChannelDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import { useMobileChat } from '@/contexts/MobileChatContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { usePublicChannels } from '@/shared/api/queries/messages';
@@ -22,6 +23,7 @@ export default function Chat({ channelType }: Props) {
     const { token, user } = useAuth();
     const { messages, setMessages, joinChannel, leaveChannel, send } = useWebSocketContext();
     const { setIsInMobileChat } = useMobileChat();
+    const { state: notificationsState, markActed } = useNotifications();
 
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
@@ -105,6 +107,23 @@ export default function Chat({ channelType }: Props) {
             const prev = selectedChannelRef.current;
             if (prev && prev.id !== channel.id) {
                 leaveChannel(prev.id);
+            }
+
+            // Mark DM notifications from this user as acted upon
+            if (channel.otherUser?.id) {
+                const otherUserId = channel.otherUser.id;
+                const dmNotifications = notificationsState.items.filter(
+                    (n) => n.type === 'direct-message' &&
+                           n.message?.author?.id === otherUserId &&
+                           !n.isActedOn
+                );
+
+                // Mark all DM notifications from this user as acted upon
+                dmNotifications.forEach((notification) => {
+                    markActed(notification.id).catch((err) => {
+                        console.error('Failed to mark DM notification as acted:', err);
+                    });
+                });
             }
 
             // joinChannel will handle fetching messages, don't duplicate the fetch here
@@ -350,11 +369,14 @@ export default function Chat({ channelType }: Props) {
 
     // On mobile when in a DM chat, use full viewport height (navbar is hidden)
     // For forum, always use header height calculation (navbar stays visible)
-    const pageContainerStyle: React.CSSProperties = showChatOnMobile && resolvedIsDM && window.innerWidth < 768
-        ? { boxSizing: 'border-box', height: '100vh', minHeight: '100vh' }
-        : pageHeaderHeight > 0
-            ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
-            : { minHeight: '60vh', boxSizing: 'border-box' };
+    // When channelType is provided (modal context), use 100% height instead of viewport height
+    const pageContainerStyle: React.CSSProperties = channelType
+        ? { boxSizing: 'border-box', height: '100%', minHeight: 0 }
+        : showChatOnMobile && resolvedIsDM && window.innerWidth < 768
+            ? { boxSizing: 'border-box', height: '100dvh', minHeight: '100dvh' }
+            : pageHeaderHeight > 0
+                ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
+                : { minHeight: '60vh', boxSizing: 'border-box' };
 
     return (
         <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
@@ -365,6 +387,7 @@ export default function Chat({ channelType }: Props) {
                     {!showChatOnMobile && isDMView ? (
                         <DMList
                             channels={channels}
+                            publicChannels={channelsQuery.data || []}
                             onSelect={openChat}
                             searchQuery={searchQuery}
                             selectedChannel={selectedChannel}
@@ -394,6 +417,7 @@ export default function Chat({ channelType }: Props) {
                 {isDMView && (
                     <DMList
                         channels={channels}
+                        publicChannels={channelsQuery.data || []}
                         onSelect={openChat}
                         searchQuery={searchQuery}
                         selectedChannel={selectedChannel}

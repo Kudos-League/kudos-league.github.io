@@ -14,6 +14,7 @@ import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { MobileChatProvider } from '@/contexts/MobileChatContext';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
+import { DataCacheProvider } from '@/contexts/DataCacheContext';
 import ConnectingOverlay from '@/components/common/ConnectingOverlay';
 
 import AppNavigator from '@/components/navigation/AppNavigator';
@@ -46,21 +47,23 @@ export default function App() {
             >
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
-                        <NotificationsProvider>
-                            <AccessibilityProvider>
-                                <ThemeProvider>
-                                    <MobileChatProvider>
-                                        <WebSocketProvider>
-                                            <BlockedUsersProvider>
-                                                <AppCore />
-                                                <AlertHost />
-                                                <ConnectingOverlay />
-                                            </BlockedUsersProvider>
-                                        </WebSocketProvider>
-                                    </MobileChatProvider>
-                                </ThemeProvider>
-                            </AccessibilityProvider>
-                        </NotificationsProvider>
+                        <DataCacheProvider>
+                            <NotificationsProvider>
+                                <AccessibilityProvider>
+                                    <ThemeProvider>
+                                        <MobileChatProvider>
+                                            <WebSocketProvider>
+                                                <BlockedUsersProvider>
+                                                    <AppCore />
+                                                    <AlertHost />
+                                                    <ConnectingOverlay />
+                                                </BlockedUsersProvider>
+                                            </WebSocketProvider>
+                                        </MobileChatProvider>
+                                    </ThemeProvider>
+                                </AccessibilityProvider>
+                            </NotificationsProvider>
+                        </DataCacheProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
                     </AuthProvider>
                 </QueryClientProvider>

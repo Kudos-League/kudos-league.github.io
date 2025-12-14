@@ -12,7 +12,6 @@ import {
 import { toZonedTime } from 'date-fns-tz';
 import { EventDTO } from '@/shared/api/types';
 
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import EventCard from './EventCard';
 import Button from '../common/Button';
 

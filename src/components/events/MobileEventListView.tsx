@@ -162,7 +162,6 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
         <div className="max-w-full mx-auto p-3 sm:p-4">
             {/* Header and Filters */}
             <div className="mb-4">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-3">Events</h1>
 
                 {/* Search Input */}
                 <div className="relative mb-3">

@@ -85,7 +85,7 @@ export default function PostCard(props: Props) {
                     </div>
 
                     {sender && (
-                        <div className='mb-1 sm:mb-2'>
+                        <div className='mb-1 sm:mb-2' onClick={(e) => e.stopPropagation()}>
                             <UserCard user={sender} />
                         </div>
                     )}

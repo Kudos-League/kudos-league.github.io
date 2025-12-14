@@ -96,7 +96,7 @@ const UserCard: React.FC<Props> = ({
     subtitleClassName = '',
     disableTooltip = false,
     onAdminReportOpen,
-    showKudos = true
+    showKudos = false
 }) => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
@@ -184,7 +184,7 @@ const UserCard: React.FC<Props> = ({
                 }
             >
                 {nameEl}
-                {/* {kudosEl} */}
+                {kudosEl}
                 {subtitle ? (
                     <div
                         className={[

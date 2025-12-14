@@ -1,30 +1,26 @@
-import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
-    XMarkIcon,
     FlagIcon,
-    Bars3Icon,
-    HomeIcon,
     ChatBubbleLeftRightIcon,
-    PlusCircleIcon,
     HeartIcon,
     TrophyIcon,
-    ChatBubbleBottomCenterTextIcon,
-    CalendarIcon,
     InformationCircleIcon,
-    UserPlusIcon,
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
-    UserCircleIcon
+    UserCircleIcon,
+    MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useMobileChat } from '@/contexts/MobileChatContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
 import NotificationsBell from '@/components/notifications/NotificationsBell';
+import SearchBar from './SearchBar';
+import { useNavigate } from 'react-router-dom';
 
 type NavItem = {
     name: string;
@@ -32,45 +28,12 @@ type NavItem = {
     icon?: React.ComponentType<{ className?: string }>;
 };
 
-// Mobile hamburger menu items (non-redundant for logged-in users)
-function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
-    const base: NavItem[] = [];
-    if (isLoggedIn) {
-        // Only items not in profile menu or desktop buttons
-        base.push(
-            { name: 'Home', to: routes.home, icon: HomeIcon },
-            { name: 'DMs', to: routes.dms, icon: ChatBubbleLeftRightIcon },
-            { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
-            { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
-        );
-    }
-    else {
-        base.push(
-            { name: 'About', to: routes.about, icon: InformationCircleIcon },
-            { name: 'Donate', to: routes.donate, icon: HeartIcon },
-        );
-    }
-    return base;
-}
-
-// Desktop navigation items for logged-in users (left side)
-function useDesktopNavItems(): NavItem[] {
-    return [
-        { name: 'Home', to: routes.home, icon: HomeIcon },
-        { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
-        { name: 'Events', to: routes.events, icon: CalendarIcon },
-        { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
-    ];
-}
-
 // User menu items for logged-in users
 function useUserMenuItems(isAdmin?: boolean): NavItem[] {
     const items: NavItem[] = [
         { name: 'About', to: routes.about, icon: InformationCircleIcon },
         { name: 'Donate', to: routes.donate, icon: HeartIcon },
         { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
-        { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
     ];
     if (isAdmin) {
         items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
@@ -141,63 +104,6 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
 }
 
 
-function MobileNavigation({ items }: { items: NavItem[] }) {
-    const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className='lg:hidden'>
-            <button
-                onClick={() => setIsOpen(true)}
-                aria-label='Open menu'
-                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
-            >
-                <Bars3Icon className='h-5 w-5 sm:h-6 sm:w-6' />
-            </button>
-            
-            {isOpen && (
-                <>
-                    <div className='fixed inset-0 z-[60] bg-black/50' onClick={() => setIsOpen(false)} />
-                    <div className='fixed inset-0 z-[70] h-full min-h-screen bg-white dark:bg-zinc-900 p-6 flex flex-col'>
-                        <div className='flex flex-row-reverse items-center justify-between mb-8'>
-                            <button 
-                                onClick={() => setIsOpen(false)}
-                                aria-label='Close menu' 
-                                className='p-2 -mr-2'
-                            >
-                                <XMarkIcon className='h-7 w-7 text-zinc-500 dark:text-zinc-400' />
-                            </button>
-                            <h2 className='text-lg font-semibold text-zinc-800 dark:text-zinc-200'>
-                                Menu
-                            </h2>
-                        </div>
-                        <nav className='flex-1 overflow-y-auto -mx-2'>
-                            <ul className='space-y-2'>
-                                {items.map((item) => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <li key={item.name}>
-                                            <button
-                                                onClick={() => {
-                                                    setIsOpen(false);
-                                                    navigate(item.to);
-                                                }}
-                                                className='flex items-center gap-4 px-6 py-4 text-base font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors w-full text-left'
-                                            >
-                                                {Icon && <Icon className='h-6 w-6 text-brand-600 dark:text-brand-300 flex-shrink-0' />}
-                                                <span>{item.name}</span>
-                                            </button>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </nav>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
 
 // function ThemeToggleButton() {
 //     const { theme, toggleTheme } = useTheme();
@@ -273,6 +179,7 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
                     avatar={getImagePath(user?.avatar)}
                     username={user?.username}
                     size={40}
+                    className='sm:!w-11 sm:!h-11 lg:!w-12 lg:!h-12'
                 />
             </button>
             {open && (
@@ -324,6 +231,8 @@ export type NavbarProps = {
     onLogout: () => void;
     brand?: React.ReactNode;
     onOpenSidebar: () => void;
+    onOpenDMs: () => void;
+    onOpenSearch: () => void;
 };
 
 export default function Navbar({
@@ -331,107 +240,104 @@ export default function Navbar({
     user,
     onLogout,
     brand,
-    onOpenSidebar
+    onOpenSidebar,
+    onOpenDMs,
+    onOpenSearch
 }: NavbarProps) {
-    const navItems = useMemo(
-        () => useAppNav(isLoggedIn, user?.admin),
-        [isLoggedIn, user]
-    );
-
-    const desktopNavItems = useMemo(() => useDesktopNavItems(), []);
+    const navigate = useNavigate();
     const userMenuItems = useMemo(() => useUserMenuItems(user?.admin), [user?.admin]);
+    const { state: notificationsState } = useNotifications();
 
-    const location = useLocation();
-    const { isInMobileChat } = useMobileChat();
-
-    // Hide navbar ONLY on mobile when in a chat conversation
-    // Check both URL (for direct navigation) and context (for in-app navigation)
-    const isInConversation = location.pathname.match(/^\/dms\/\d+$/) || isInMobileChat;
-    // Only hide if we're in a conversation AND on mobile (screen width < 1024px for 'lg' breakpoint)
-    const hideOnMobile = isInConversation;
+    // Count unread DM notifications
+    const unreadDMs = useMemo(() => {
+        return notificationsState.items.filter(
+            (n) => n.type === 'direct-message' && !n.isRead
+        ).length;
+    }, [notificationsState.items]);
 
     return (
         <>
-            <header className={clsx(
-                'sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 backdrop-blur-md',
-                hideOnMobile && 'hidden lg:flex'
-            )}>
-                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0'>
-                    <MobileNavigation items={navItems} />
+            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
+                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
                     <div className='flex-shrink-0'>
                         {brand || <></>}
                     </div>
-                    {isLoggedIn ? (
-                        <div className='hidden lg:flex items-center gap-2 ml-4'>
-                            {desktopNavItems.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.to}
-                                        className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
-                                    >
-                                        {Icon && <Icon className='h-4 w-4' />}
-                                        {item.name}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className='hidden lg:flex items-center gap-2 ml-4'>
-                            <Link
-                                to={routes.about}
-                                className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
-                            >
-                                <InformationCircleIcon className='h-4 w-4' />
-                                About
-                            </Link>
-                            <Link
-                                to={routes.donate}
-                                className='flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
-                            >
-                                <HeartIcon className='h-4 w-4' />
-                                Donate
-                            </Link>
-                        </div>
-                    )}
                 </div>
 
-                {!isLoggedIn ? (
-                    <div className='flex flex-1 justify-center items-center min-w-0 px-2'>
-                        <h1 className='text-zinc-800 dark:text-zinc-200 font-semibold text-center'>
-                            <span className='hidden xl:inline'>Welcome to the Kudos League Foundation!</span>
-                            <span className='hidden sm:inline xl:hidden'>Kudos League Foundation</span>
-                            <span className='inline sm:hidden'>Kudos League</span>
-                        </h1>
-                    </div>
-                ) : (
-                    <div className='flex flex-1 justify-center items-center min-w-0'>
-                        {/* Empty center space when logged in */}
-                    </div>
-                )}
+                <div className='flex flex-1 items-center min-w-0 px-2'>
+                    {isLoggedIn && (
+                        <div className='hidden lg:flex w-full justify-center'>
+                            <SearchBar className='w-full max-w-3xl' />
+                        </div>
+                    )}
+                    {/* The following block was removed:
+                    <button
+                        onClick={() => navigate(routes.donate)}
+                        className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
+                        aria-label='Donate'
+                    >
+                        <HeartIcon className='h-5 w-5 sm:h-6 sm:w-6 text-red-600' />
+                    </button>
+                    */}
+                </div>
 
-                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0'>
+                <div className='flex items-center gap-2 sm:gap-3 flex-shrink-0'>
                     {/* <ThemeToggleButton /> */}
 
                     {isLoggedIn ? (
                         <>
+                            {/* Create button - Desktop only */}
                             <Link
-                                to={routes.dms}
-                                aria-label='DMs'
-                                className='flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                                to={routes.createPost}
+                                className='hidden lg:flex items-center justify-center gap-1 rounded-full bg-brand-600 px-5 py-3 text-base font-medium text-white shadow-lg hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:bg-brand-400 dark:hover:bg-brand-300'
+                                aria-label='Create post'
                             >
-                                <ChatBubbleLeftRightIcon className='h-5 w-5 sm:h-5 sm:w-5' />
+                                Create
                             </Link>
-                            <div className='flex-shrink-0'>
+                            {/* Mobile Search Button */}
+                            <button
+                                onClick={onOpenSearch}
+                                className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
+                                aria-label='Search'
+                            >
+                                <MagnifyingGlassIcon className='h-5 w-5 sm:h-6 sm:w-6' />
+                            </button>
+                            {/* DMs button - Desktop only */}
+                            <button
+                                onClick={onOpenDMs}
+                                aria-label='DMs'
+                                className='hidden lg:flex relative h-12 w-12 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                            >
+                                <ChatBubbleLeftRightIcon className='h-6 w-6' />
+                                {unreadDMs > 0 && (
+                                    <span
+                                        className='absolute -top-1 -right-1 sm:-top-2 sm:-right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
+                                        aria-label={`${unreadDMs} unread messages`}
+                                    >
+                                        {unreadDMs > 9 ? '9+' : unreadDMs}
+                                    </span>
+                                )}
+                            </button>
+                            {/* Notifications - Desktop only */}
+                            <div className='hidden lg:block flex-shrink-0'>
                                 <NotificationsBell />
                             </div>
-                            <div className='flex-shrink-0'>
+                            <div className='flex-shrink-0 pr-2 sm:pr-4'>
                                 <UserMenu onLogout={onLogout} menuItems={userMenuItems} />
                             </div>
                         </>
                     ) : (
                         <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
+                            {/* Donate button added here for non-logged-in users */}
+                            <Link
+                                to={routes.donate}
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                                aria-label='Donate'
+                            >
+                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                                <span className='hidden sm:inline'>Donate</span>
+                            </Link>
+
                             <Link
                                 to={routes.login}
                                 className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
@@ -448,7 +354,6 @@ export default function Navbar({
                     )}
                 </div>
             </header>
-
         </>
     );
 }

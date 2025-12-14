@@ -56,6 +56,8 @@ export const routes = {
     signUp: '/signup' as const,
     forgotPassword: '/forgot-password' as const,
     resetPassword: '/reset-password' as const,
+    search: '/search' as const,
+    communities: '/communities' as const,
 
     user: makeParamProxy('/user/:id'),
     post: makeParamProxy('/post/:id'),

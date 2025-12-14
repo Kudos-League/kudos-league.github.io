@@ -3,6 +3,11 @@ import React from 'react';
 const About = () => {
     return (
         <div className='max-w-4xl mx-auto p-6 space-y-8'>
+            {/* Page Title */}
+            <h1 className='text-4xl font-bold text-center text-zinc-900 dark:text-white'>
+                Welcome to the Kudos League Foundation!
+            </h1>
+
             {/* Hero Section */}
             <div className='text-center space-y-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-8'>
                 <h1 className='text-4xl font-bold'>
@@ -205,19 +210,35 @@ const About = () => {
                     Ready to Join and Earn Kudos?
                 </h2>
                 <div className='space-x-4'>
-                    <a 
-                        href='/signup' 
+                    <a
+                        href='/signup'
                         className='inline-block bg-white text-emerald-600 px-6 py-2 rounded-lg font-bold hover:bg-emerald-50 transition-colors'
                     >
                         Join Now
                     </a>
-                    <a 
-                        href='/login' 
+                    <a
+                        href='/login'
                         className='inline-block border-2 border-white text-white px-6 py-2 rounded-lg font-bold hover:bg-white hover:text-emerald-600 transition-colors'
                     >
                         Log In
                     </a>
                 </div>
+            </div>
+
+            {/* Donation Section */}
+            <div className='text-center bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg p-8'>
+                <h2 className='text-3xl font-bold mb-4'>
+                    Support Our Mission
+                </h2>
+                <p className='text-lg mb-6 opacity-90'>
+                    Help us keep Kudos League free and open for everyone!
+                </p>
+                <a
+                    href='/donate'
+                    className='inline-block bg-white text-pink-600 px-8 py-3 rounded-lg font-bold text-lg hover:bg-pink-50 transition-all shadow-lg'
+                >
+                    Donate Now
+                </a>
             </div>
         </div>
     );
