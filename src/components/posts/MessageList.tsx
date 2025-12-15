@@ -26,6 +26,43 @@ const getDisplayName = (user: any) => {
     return user?.displayName || user?.name || user?.username || 'Unknown';
 };
 
+/**
+ * Helper function to format the time as "x time ago" (relative time).
+ * Note: For production use, consider a robust library like date-fns or moment for this, 
+ * but this simple implementation is sufficient for demonstration.
+ */
+const formatTimeAgo = (date: Date): string => {
+    try {
+        const dateObj = typeof date === 'string' ? new Date(date) : date; 
+        if (isNaN(dateObj.getTime())) return 'Unknown time';
+        
+        const seconds = Math.floor((new Date().getTime() - dateObj.getTime()) / 1000);
+
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + ' years ago';
+
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + ' months ago';
+
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + ' days ago';
+
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + ' hours ago';
+
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + ' minutes ago';
+
+        // Show 'Just now' or '1 second ago' for very recent posts
+        return seconds < 10 ? 'Just now' : Math.floor(seconds) + ' seconds ago';
+        
+    }
+    catch (e) {
+        return 'Unknown time';
+    }
+};
+
+
 const MessageList: React.FC<Props> = ({
     messages,
     title,
@@ -193,6 +230,9 @@ const MessageList: React.FC<Props> = ({
         const showEditButton = canEditMessage(msg);
         const showDeleteButton = canDeleteMessage(msg);
 
+        // --- USING THE NEW RELATIVE TIME FORMATTER ---
+        const timestamp = formatTimeAgo(msg.createdAt); 
+
         return (
             <div
                 key={msg.id}
@@ -200,9 +240,13 @@ const MessageList: React.FC<Props> = ({
                 className='border-t border-zinc-200 dark:border-zinc-700 py-3 first:border-t-0'
             >
                 <div className='mb-2 flex justify-between items-start'>
-                    <div>
+                    <div className='flex items-center gap-2'>
                         <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
                             <UserCard user={msg.author} />
+                        </span>
+                        {/* Display Relative Time */}
+                        <span className='text-xs text-zinc-500 dark:text-zinc-400'>
+                            {timestamp}
                         </span>
                     </div>
 
