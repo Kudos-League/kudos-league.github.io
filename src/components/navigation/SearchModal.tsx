@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useEvents } from '@/shared/api/queries/events';
+// import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 
 interface SearchModalProps {
@@ -23,20 +23,20 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
     const { data: searchResults = [], isFetching: searching } = useSearchPostsQuery(debouncedSearch);
     const { data: userSearchResults = [], isFetching: searchingUsers } = useSearchUsersQuery(debouncedSearch);
-    const { data: allEvents = [] } = useEvents();
+    // const { data: allEvents = [] } = useEvents();
 
     // Filter events client-side based on search text
-    const eventSearchResults = useMemo(() => {
-        if (!searchingActive) return [];
-        const searchLower = debouncedSearch.toLowerCase();
-        return allEvents.filter(event =>
-            event.title.toLowerCase().includes(searchLower) ||
-            event.description.toLowerCase().includes(searchLower) ||
-            event.location?.name?.toLowerCase().includes(searchLower)
-        );
-    }, [debouncedSearch, allEvents, searchingActive]);
+    // const eventSearchResults = useMemo(() => {
+    //     if (!searchingActive) return [];
+    //     const searchLower = debouncedSearch.toLowerCase();
+    //     return allEvents.filter(event =>
+    //         event.title.toLowerCase().includes(searchLower) ||
+    //         event.description.toLowerCase().includes(searchLower) ||
+    //         event.location?.name?.toLowerCase().includes(searchLower)
+    //     );
+    // }, [debouncedSearch, allEvents, searchingActive]);
 
-    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0;
+    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 // || eventSearchResults.length > 0;
 
     // Reset search when modal closes
     useEffect(() => {
@@ -215,7 +215,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     )}
 
                                     {/* Event Results */}
-                                    {eventSearchResults.length > 0 && (
+                                    {/* {eventSearchResults.length > 0 && (
                                         <div>
                                             <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
                                                 Events
@@ -252,7 +252,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                 ))}
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             )}
                         </div>
