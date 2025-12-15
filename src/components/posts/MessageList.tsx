@@ -21,6 +21,10 @@ interface Props {
     eventID?: number;
 }
 
+// CONSTANT FOR COLLAPSIBLE CONTENT
+const MAX_COMMENT_HEIGHT = '100px'; 
+const MAX_COMMENT_LINES = 5; // A visual guideline, not strictly enforced by this CSS method
+
 // Helper to get display name (prioritize displayName, fallback to name or username)
 const getDisplayName = (user: any) => {
     return user?.displayName || user?.name || user?.username || 'Unknown';
@@ -28,8 +32,6 @@ const getDisplayName = (user: any) => {
 
 /**
  * Helper function to format the time as "x time ago" (relative time).
- * Note: For production use, consider a robust library like date-fns or moment for this, 
- * but this simple implementation is sufficient for demonstration.
  */
 const formatTimeAgo = (date: Date): string => {
     try {
@@ -87,7 +89,11 @@ const MessageList: React.FC<Props> = ({
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    // Use HTMLTextAreaElement instead of HTMLInputElement for the ref
+    const inputRef = useRef<HTMLTextAreaElement>(null); 
+
+    // State to manage which messages are expanded (for the "show more" feature)
+    const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set());
 
     // Sorting messages by creation date (newest first)
     const processedMessages = useMemo(() => {
@@ -224,14 +230,44 @@ const MessageList: React.FC<Props> = ({
         for (const m of processedMessages) map.set(m.id, m);
         return map;
     }, [processedMessages]);
+    
+    // --- New Toggle Function ---
+    const toggleExpansion = (messageId: number) => {
+        setExpandedMessages(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(messageId)) {
+                newSet.delete(messageId);
+            }
+            else {
+                newSet.add(messageId);
+            }
+            return newSet;
+        });
+    };
+
+    // --- Message Content Ref/Tracker ---
+    const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
     const renderMessage = (msg: MessageDTO) => {
         const isEditing = editingMessageId === msg.id;
         const showEditButton = canEditMessage(msg);
         const showDeleteButton = canDeleteMessage(msg);
+        const timestamp = formatTimeAgo(msg.createdAt);
+        
+        const isExpanded = expandedMessages.has(msg.id);
+        
+        // This is a simple heuristic: if the message has more than 200 characters, we assume it's long enough to need collapsing.
+        const requiresCollapseHeuristic = msg.content.length > 200 || msg.content.split('\n').length > MAX_COMMENT_LINES;
+        
+        const contentRef = (el: HTMLDivElement) => {
+            if (el) {
+                messageRefs.current.set(msg.id, el);
+            }
+            else {
+                messageRefs.current.delete(msg.id);
+            }
+        };
 
-        // --- USING THE NEW RELATIVE TIME FORMATTER ---
-        const timestamp = formatTimeAgo(msg.createdAt); 
 
         return (
             <div
@@ -372,9 +408,34 @@ const MessageList: React.FC<Props> = ({
                         </p>
                     </div>
                 ) : (
-                    <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
-                        {msg.content}
-                    </TextWithLinks>
+                    <>
+                        <div 
+                            ref={contentRef}
+                            className='relative transition-max-height duration-300 ease-in-out'
+                            style={{
+                                maxHeight: isExpanded ? 'none' : MAX_COMMENT_HEIGHT,
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                                {msg.content}
+                            </TextWithLinks>
+                            
+                            {/* Gradient Overlay for collapsed state */}
+                            {!isExpanded && requiresCollapseHeuristic && (
+                                <div className='absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none' />
+                            )}
+                        </div>
+
+                        {requiresCollapseHeuristic && (
+                            <button
+                                onClick={() => toggleExpansion(msg.id)}
+                                className='mt-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline focus:outline-none'
+                            >
+                                {isExpanded ? 'Show less' : 'Show more'}
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
         );
@@ -384,8 +445,6 @@ const MessageList: React.FC<Props> = ({
         ? processedMessages
         : processedMessages.slice(0,3); // Show first 3 messages (newest)
     const hasMoreMessages = processedMessages.length > 3;
-
-    console.log({ processedMessages, displayedMessages, showAllMessages });
 
     return (
         <div>
@@ -420,23 +479,28 @@ const MessageList: React.FC<Props> = ({
                         </div>
                     )}
 
-                    <div className='flex items-center gap-2'>
-                        <input
-                            type='text'
-                            placeholder='Type a message...'
+                    {/* --- REPLACED INPUT WITH TEXTAREA --- */}
+                    <div className='flex items-end gap-2'>
+                        <textarea
+                            placeholder='Type a message (Shift+Enter for newline)'
                             value={messageContent}
                             onChange={(e) => setMessageContent(e.target.value)}
                             ref={inputRef}
+                            rows={1} // Start with 1 row
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
+                                // Submit on Enter, unless Shift is held
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault(); // Prevent default newline behavior
                                     handleSubmitMessage();
                                 }
+                                // Shift+Enter just inserts a newline (default behavior, no preventDefault needed)
                                 else if (e.key === 'Escape') {
                                     setReplyTo(null);
                                 }
                             }}
-                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            // Tailwind classes for textarea styling
+                            className='flex-1 px-3 py-2 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                            style={{ minHeight: '42px', maxHeight: '120px' }} // Set min/max height
                         />
                         <Button
                             onMouseDown={(e) => {
@@ -452,6 +516,11 @@ const MessageList: React.FC<Props> = ({
                     ➤
                         </Button>
                     </div>
+                    {/* --- END TEXTAREA REPLACEMENT --- */}
+
+                    <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-2 text-right'>
+                        Enter to send, Shift+Enter for new line
+                    </p>
 
 
                     {showSendMessage && replyTo && (
