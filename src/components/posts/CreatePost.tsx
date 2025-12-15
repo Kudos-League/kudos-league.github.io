@@ -26,7 +26,7 @@ type FormValues = {
     itemsLimit: number;
     files?: File[];
     tags: string[];
-    categoryID: number;
+    categoryID: number | null;
 };
 
 type Props = { setShowLoginForm: (show: boolean) => void };
@@ -40,7 +40,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         mode: 'onBlur',
         defaultValues: { 
             tags: [], 
-            categoryID: 0, 
+            categoryID: null, 
             type: 'gift',
             itemsLimit: 1
         }
@@ -66,6 +66,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
     const [toastMessage, setToastMessage] = React.useState<string | null>(null);
     const [toastType, setToastType] = React.useState<'success' | 'error'>('success');
+    const [placeholder, setPlaceholder] = React.useState<string>('1');
 
     React.useEffect(() => {
         form.setValue('type', postType);
@@ -289,9 +290,19 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     name='itemsLimit'
                     label=''
                     form={form}
-                    placeholder='1'
+                    placeholder={placeholder}
                     htmlInputType='number'
                     valueTransformer={(v) => (v === '' ? '' : Number(v))}
+                    onValueChange={(val) => {
+                        if (val !== '') {
+                            Number(val) < 1
+                                ? form.setValue('itemsLimit', 1)
+                                : form.setValue('itemsLimit', Number(val));
+                        } 
+                        else {
+                            setPlaceholder('');
+                        }
+                    }}
                     registerOptions={{
                         required: 'Quantity is required',
                         min: { value: 1, message: 'Quantity must be at least 1' },
@@ -317,7 +328,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     name='categoryID'
                     rules={{
                         required: 'Category is required - please select one from the dropdown',
-                        validate: (v) => (v && v !== 0) || 'Please select a category from the dropdown.'
+                        // Validation now checks for a truthy value (any ID > 0)
+                        validate: (v) => (v !== null) || 'Please select a category from the dropdown.'
                     }}
                     render={({ field }) => (
                         <DropdownPicker
@@ -325,9 +337,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 label: c.name,
                                 value: String(c.id)
                             }))}
-                            value={field.value ? String(field.value) : ''}
+                            // Cast null to empty string for components that expect string/''
+                            value={field.value !== null ? String(field.value) : ''} 
                             onChange={(val) => {
-                                const parsed = val ? parseInt(val) : 0;
+                                // If val is '', pass null to the form state
+                                const parsed = val ? parseInt(val) : null; 
                                 field.onChange(parsed);
                             }}
                             onBlur={field.onBlur}
