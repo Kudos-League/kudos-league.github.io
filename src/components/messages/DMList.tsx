@@ -23,22 +23,47 @@ interface DMItemProps {
 }
 
 const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile, unreadCount }) => {
-    const { data: latestMessage, isLoading } = useLatestChannelMessage(channel.id);
+    const {
+        latestMessage,
+        isLoading,
+        isFetched
+    } = useLatestChannelMessage(channel.id);
     const user = channel.otherUser;
     const hasUnread = unreadCount > 0;
 
-    const formatLastMessage = (lastMessage: any) => {
-        if (!lastMessage || !lastMessage.content) {
+    // Helper function to safely format message content if it exists
+    const formatMessageContent = (message: any): string => {
+        // Use optional chaining (?.) to safely access .content and .trim()
+        const content = message?.content?.trim();
+
+        if (!content) {
+            // Handle cases where the message exists but has no readable content (e.g., attachment-only message)
             return 'No messages yet';
         }
 
-        const content = lastMessage.content.trim();
         if (content.length <= 32) {
             return content;
         }
 
         return content.substring(0, 32) + '...';
     };
+
+    // Calculate the text to display in the list item
+    const lastMessageText = useMemo(() => {
+        if (isLoading) {
+            return 'Loading...';
+        }
+        if (isFetched && !latestMessage) {
+            return 'No messages yet';
+        }
+        if (latestMessage) {
+            // Use the safe formatting function
+            return formatMessageContent(latestMessage);
+        }
+        // Fallback for an unexpected state
+        return '';
+    }, [isLoading, isFetched, latestMessage]);
+
 
     const getMessageTimestamp = (lastMessage: any) => {
         if (!lastMessage) return null;
@@ -61,20 +86,21 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
         }
     };
 
-    const lastMessageText = formatLastMessage(latestMessage);
     const timestamp = getMessageTimestamp(latestMessage);
+
 
     return (
         <div
-            className={`flex items-center gap-3 rounded-lg transition-colors ${
+            className={`flex items-center gap-3 rounded-lg transition-colors cursor-pointer ${
                 isMobile ? 'p-4' : 'p-3'
             } ${
                 isSelected
                     ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
                     : hasUnread
-                        ? 'bg-blue-50 dark:bg-blue-900/20'
-                        : ''
+                        ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
             }`}
+            onClick={() => onSelect(channel)} // Make the whole item clickable
         >
             <div className='flex-1 min-w-0'>
                 <div className='flex justify-between items-baseline'>
@@ -101,10 +127,9 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                         )}
                     </div>
                 </div>
-                {/* Last message area - clickable for selecting conversation */}
+                {/* Last message area */}
                 <p
-                    onClick={() => onSelect(channel)}
-                    className={`truncate cursor-pointer hover:underline ${
+                    className={`truncate ${
                         hasUnread ? 'font-semibold' : ''
                     } ${
                         latestMessage?.content
@@ -112,7 +137,7 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                             : 'text-zinc-400 dark:text-zinc-500 italic'
                     } ${isMobile ? 'text-sm' : 'text-sm'}`}
                 >
-                    {isLoading ? 'Loading...' : lastMessageText}
+                    {lastMessageText}
                 </p>
             </div>
         </div>
@@ -178,7 +203,9 @@ const DMList: React.FC<Props> = ({
 
         notificationsState.items.forEach((notification) => {
             if (notification.type === 'direct-message' && !notification.isRead) {
-                const authorId = notification.message?.author?.id;
+                // Assuming `notification.message.author.id` is the ID of the user who sent the message
+                // which corresponds to the `otherUser.id` in a ChannelDTO for unread counts.
+                const authorId = notification.message?.author?.id; 
                 if (authorId) {
                     counts.set(authorId, (counts.get(authorId) || 0) + 1);
                 }
