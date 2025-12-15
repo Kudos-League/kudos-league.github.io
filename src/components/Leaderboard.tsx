@@ -244,7 +244,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     );
 
     return (
-        <div className={compact ? '' : 'max-w-3xl mx-auto p-6'}>
+        <div className={compact ? '' : 'max-w-3xl mx-auto p-6 overflow-y-auto max-h-64'}>
             <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
                 Most Kudos
             </h1>
