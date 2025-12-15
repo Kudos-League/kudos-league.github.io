@@ -44,7 +44,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const [nextCursor, setNextCursor] = useState<number | null>(null);
     const [hasMore, setHasMore] = useState(true);
 
+    // Ref for the intersection observer trigger
     const observerTarget = useRef<HTMLDivElement>(null);
+    // Ref for the scrollable container to attach the IntersectionObserver
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const getLabel = () =>
@@ -75,6 +78,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             setLeaderboard([]);
             setNextCursor(null);
             setHasMore(true);
+            // Scroll to top of the list when resetting on filter change
+            scrollContainerRef.current?.scrollTo(0, 0);
         }
 
         setError(null);
@@ -88,22 +93,15 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 }
             });
 
-            console.log('Leaderboard response:', response);
-            console.log('Response data:', response.data);
-            console.log('Data length:', response.data?.length);
-
             const newData = response.data || [];
             if (reset) {
-                console.log('Setting leaderboard (reset):', newData);
                 setLeaderboard(newData);
             }
             else {
                 const combined = [...leaderboard, ...newData];
-                console.log('Setting leaderboard (append):', combined);
                 setLeaderboard(combined);
             }
 
-            console.log('Next cursor:', response.nextCursor);
             setNextCursor(response.nextCursor ?? null);
             setHasMore(response.nextCursor !== null && response.nextCursor !== undefined);
         }
@@ -118,29 +116,37 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     };
 
     const loadMore = useCallback(async () => {
+        // Prevent loading more if already loading, no more items, or filters changed
         if (!hasMore || loadingMore || loading) return;
 
         setLoadingMore(true);
         await loadLeaderboard(false);
     }, [hasMore, loadingMore, loading, nextCursor, useLocal, timeFilter]);
 
+    // Effect to trigger load when filters change
     useEffect(() => {
         loadLeaderboard(true);
     }, [useLocal, timeFilter]);
 
+    // Effect for Infinite Scroll
     useEffect(() => {
-        console.log('Leaderboard state updated:', leaderboard);
-        console.log('Leaderboard length:', leaderboard?.length);
-    }, [leaderboard]);
+        const currentScrollContainer = scrollContainerRef.current;
+        
+        // Use the scroll container as the root for the observer if not in compact mode
+        const observerRoot = compact ? null : currentScrollContainer;
 
-    useEffect(() => {
+        // If in compact mode, we observe against the viewport (root: null)
+        // If not in compact mode (fixed height scroll), we observe against the container
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
                     loadMore();
                 }
             },
-            { threshold: 0.1 }
+            { 
+                root: observerRoot, // Use the scroll container as the viewport for observation
+                threshold: 0.1 
+            }
         );
 
         const currentTarget = observerTarget.current;
@@ -153,7 +159,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 observer.unobserve(currentTarget);
             }
         };
-    }, [loadMore, hasMore, loading, loadingMore]);
+    }, [loadMore, hasMore, loading, loadingMore, compact]); // Add compact to dependencies
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -171,6 +177,71 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showDropdown]);
+
+    const LeaderboardContent = (
+        <>
+            {/* Stacked List */}
+            <ul
+                role='list'
+                className={`divide-y divide-gray-200 dark:divide-white/10 ${compact ? 'mt-2' : 'mt-4'}`}
+            >
+                {leaderboard?.map((entry) => (
+                    <li
+                        key={entry.id}
+                        className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
+                            compact ? 'py-2 px-1' : 'py-5 px-2'
+                        }`}
+                        onClick={() => navigate(`/user/${entry.id}`)}
+                    >
+                        <div className='flex min-w-0 gap-x-2 flex-1'>
+                            <UserCard
+                                user={
+                                    {
+                                        ...entry,
+                                        kudos: entry.totalKudos
+                                    } as any as UserDTO
+                                }
+                                large={!compact}
+                                triggerVariant='avatar-name'
+                                subtitle={compact ? undefined : (entry.location?.name || '—')}
+                                centered={false}
+                                subtitleClassName='max-w-[180px]'
+                            />
+                        </div>
+
+                        <div className='flex shrink-0 flex-col items-end justify-center'>
+                            <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+                                {entry.totalKudos.toLocaleString()}
+                            </p>
+                            {!compact && (
+                                <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                    Kudos
+                                </p>
+                            )}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+
+            {/* Infinite scroll trigger */}
+            {hasMore && <div ref={observerTarget} className='h-10' />}
+
+            {/* Loading more indicator */}
+            {loadingMore && (
+                <div className='flex justify-center items-center py-4'>
+                    <div className='w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin' />
+                    <span className='ml-2 text-sm text-gray-500'>Loading more...</span>
+                </div>
+            )}
+
+            {/* End of list message */}
+            {!hasMore && leaderboard.length > 0 && (
+                <div className='text-center py-4 text-sm text-gray-500'>
+                    You&apos;ve reached the end of the leaderboard
+                </div>
+            )}
+        </>
+    );
 
     return (
         <div className={compact ? '' : 'max-w-3xl mx-auto p-6'}>
@@ -215,11 +286,9 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
                 {/* Local/Global Switch */}
                 <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
-                    {!compact && (
-                        <span className='text-sm'>
-                            {user?.location?.name || 'Local'}
-                        </span>
-                    )}
+                    <span className='text-sm'>
+                        {user?.location?.name || 'Local'}
+                    </span>
                     <label className='inline-flex items-center cursor-pointer'>
                         <input
                             type='checkbox'
@@ -266,70 +335,26 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 </div>
             )}
 
-            {/* Stacked List */}
+            {/* Leaderboard List Container */}
             {(!useLocal || hasLocation) && !loading && (
-                <>
-                    <ul
-                        role='list'
-                        className={`divide-y divide-gray-200 dark:divide-white/10 ${compact ? 'mt-2' : 'mt-4'}`}
-                    >
-                        {leaderboard?.map((entry) => (
-                            <li
-                                key={entry.id}
-                                className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
-                                    compact ? 'py-2 px-1' : 'py-5 px-2'
-                                }`}
-                                onClick={() => navigate(`/user/${entry.id}`)}
-                            >
-                                <div className='flex min-w-0 gap-x-2 flex-1'>
-                                    <UserCard
-                                        user={
-                                            {
-                                                ...entry,
-                                                kudos: entry.totalKudos
-                                            } as any as UserDTO
-                                        }
-                                        large={!compact}
-                                        triggerVariant='avatar-name'
-                                        subtitle={compact ? undefined : (entry.location?.name || '—')}
-                                        centered={false}
-                                        subtitleClassName='max-w-[180px]'
-                                    />
-                                </div>
-
-                                <div className='flex shrink-0 flex-col items-end justify-center'>
-                                    <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
-                                        {entry.totalKudos.toLocaleString()}
-                                    </p>
-                                    {!compact && (
-                                        <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                            Kudos
-                                        </p>
-                                    )}
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-
-                    {/* Infinite scroll trigger */}
-                    {hasMore && <div ref={observerTarget} className='h-10' />}
-
-                    {/* Loading more indicator */}
-                    {loadingMore && (
-                        <div className='flex justify-center items-center py-4'>
-                            <div className='w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin' />
-                            <span className='ml-2 text-sm text-gray-500'>Loading more...</span>
-                        </div>
-                    )}
-
-                    {/* End of list message */}
-                    {!hasMore && leaderboard.length > 0 && (
-                        <div className='text-center py-4 text-sm text-gray-500'>
-                            You&apos;ve reached the end of the leaderboard
-                        </div>
-                    )}
-                </>
+                <div 
+                    ref={scrollContainerRef}
+                    className={compact ? '' : 'max-h-[600px] overflow-y-auto custom-scrollbar'}
+                >
+                    {LeaderboardContent}
+                </div>
             )}
         </div>
     );
 }
+
+// NOTE: You might need to define 'custom-scrollbar' if you want a custom look, 
+// but on most modern browsers, overflow-y-auto will give you a scrollbar.
+// For demonstration, a simple utility class could be:
+// .custom-scrollbar::-webkit-scrollbar {
+//   width: 8px;
+// }
+// .custom-scrollbar::-webkit-scrollbar-thumb {
+//   background-color: #cbd5e1; /* gray-300 */
+//   border-radius: 4px;
+// }
