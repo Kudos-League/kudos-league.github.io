@@ -245,8 +245,8 @@ export default function Feed() {
                 </div>
 
                 {/* Leaderboard Section - Desktop */}
-                <div className='w-80 flex-shrink-0 self-start'>
-                    <div className='sticky top-20 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 shadow-sm'>
+                <div className='w-80 flex-shrink-0'>
+                    <div className='fixed top-40 right-12 w-80'>
                         <Leaderboard compact />
                     </div>
                 </div>
