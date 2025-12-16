@@ -244,7 +244,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     );
 
     return (
-        <div className={compact ? '' : 'max-w-3xl mx-auto p-6 overflow-y-auto max-h-64'}>
+        <div className={compact ? '' : 'sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
             <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
                 Most Kudos
             </h1>
@@ -337,24 +337,41 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
             {/* Leaderboard List Container */}
             {(!useLocal || hasLocation) && !loading && (
-                <div 
-                    ref={scrollContainerRef}
-                    className={compact ? '' : 'max-h-[600px] overflow-y-auto custom-scrollbar'}
-                >
-                    {LeaderboardContent}
-                </div>
+                <>
+                    <style>{`
+                        .leaderboard-scroll::-webkit-scrollbar {
+                            width: 8px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-track {
+                            background: rgba(0, 0, 0, 0.05);
+                            border-radius: 4px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-thumb {
+                            background: rgba(0, 0, 0, 0.2);
+                            border-radius: 4px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-thumb:hover {
+                            background: rgba(0, 0, 0, 0.3);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-track {
+                            background: rgba(255, 255, 255, 0.05);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-thumb {
+                            background: rgba(255, 255, 255, 0.2);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-thumb:hover {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+                    `}</style>
+                    <div
+                        ref={scrollContainerRef}
+                        className={compact ? '' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
+                        style={compact ? {} : { scrollbarGutter: 'stable' }}
+                    >
+                        {LeaderboardContent}
+                    </div>
+                </>
             )}
         </div>
     );
 }
-
-// NOTE: You might need to define 'custom-scrollbar' if you want a custom look, 
-// but on most modern browsers, overflow-y-auto will give you a scrollbar.
-// For demonstration, a simple utility class could be:
-// .custom-scrollbar::-webkit-scrollbar {
-//   width: 8px;
-// }
-// .custom-scrollbar::-webkit-scrollbar-thumb {
-//   background-color: #cbd5e1; /* gray-300 */
-//   border-radius: 4px;
-// }
