@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ChannelDTO } from '@/shared/api/types';
 import UserCard from '../users/UserCard';
-import { useLatestChannelMessage } from '@/shared/api/queries/messages';
+import { useLatestChannelMessage, qk } from '@/shared/api/queries/messages';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useWebSocketContext } from '@/contexts/WebSocketContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
     channels: ChannelDTO[];
@@ -30,6 +32,8 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
     } = useLatestChannelMessage(channel.id);
     const user = channel.otherUser;
     const hasUnread = unreadCount > 0;
+    const [isAnimating, setIsAnimating] = useState(false);
+    const prevMessageRef = React.useRef<string | null>(null);
 
     // Helper function to safely format message content if it exists
     const formatMessageContent = (message: any): string => {
@@ -63,6 +67,16 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
         // Fallback for an unexpected state
         return '';
     }, [isLoading, isFetched, latestMessage]);
+
+    // Trigger animation when message text changes
+    useEffect(() => {
+        if (prevMessageRef.current !== null && prevMessageRef.current !== lastMessageText && lastMessageText !== 'Loading...') {
+            setIsAnimating(true);
+            const timer = setTimeout(() => setIsAnimating(false), 500);
+            return () => clearTimeout(timer);
+        }
+        prevMessageRef.current = lastMessageText;
+    }, [lastMessageText]);
 
 
     const getMessageTimestamp = (lastMessage: any) => {
@@ -129,13 +143,15 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                 </div>
                 {/* Last message area */}
                 <p
-                    className={`truncate ${
+                    className={`truncate transition-all duration-300 ${
                         hasUnread ? 'font-semibold' : ''
                     } ${
                         latestMessage?.content
                             ? 'text-zinc-600 dark:text-zinc-400'
                             : 'text-zinc-400 dark:text-zinc-500 italic'
-                    } ${isMobile ? 'text-sm' : 'text-sm'}`}
+                    } ${isMobile ? 'text-sm' : 'text-sm'} ${
+                        isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                    }`}
                 >
                     {lastMessageText}
                 </p>
@@ -187,9 +203,34 @@ const DMList: React.FC<Props> = ({
     isLoading = false
 }) => {
     const { state: notificationsState } = useNotifications();
+    const { messages } = useWebSocketContext();
+    const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'dms' | 'groups'>('dms');
 
-    const filteredChannels = channels.filter((c) =>
+    // Refetch latest messages when a new message is received
+    useEffect(() => {
+        if (messages.length > 0) {
+            const latestMessage = messages[messages.length - 1];
+
+            // Invalidate queries for all DM channels to update latest messages
+            channels.forEach((channel) => {
+                queryClient.invalidateQueries({
+                    queryKey: qk.channelMessages(channel.id)
+                });
+            });
+        }
+    }, [messages, channels, queryClient]);
+
+    // Sort channels by most recent message first
+    const sortedChannels = useMemo(() => {
+        return [...channels].sort((a, b) => {
+            const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt || a.lastMessage.updatedAt || 0).getTime() : 0;
+            const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt || b.lastMessage.updatedAt || 0).getTime() : 0;
+            return dateB - dateA; // Most recent first
+        });
+    }, [channels]);
+
+    const filteredChannels = sortedChannels.filter((c) =>
         c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
