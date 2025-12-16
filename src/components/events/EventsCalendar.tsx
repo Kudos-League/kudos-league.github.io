@@ -34,6 +34,7 @@ export default function Events({ events }: Props) {
     const [selectedDateEvents, setSelectedDateEvents] = useState<
         EventDTO[] | null
     >(null);
+    const [eventFilter, setEventFilter] = useState<'all' | 'local' | 'global'>('all');
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -161,6 +162,16 @@ export default function Events({ events }: Props) {
         setSelectedDateEvents(findEventsOn(newDate)); // <-- update the list
     };
 
+    const filteredDateEvents = useMemo(() => {
+        if (!selectedDateEvents) return null;
+
+        if (eventFilter === 'all') return selectedDateEvents;
+        if (eventFilter === 'global') return selectedDateEvents.filter(e => e.isGlobal);
+        if (eventFilter === 'local') return selectedDateEvents.filter(e => !e.isGlobal);
+
+        return selectedDateEvents;
+    }, [selectedDateEvents, eventFilter]);
+
     /* ---------- render ---------- */
     return (
         <div className='max-w-5xl mx-auto p-4'>
@@ -192,17 +203,40 @@ export default function Events({ events }: Props) {
                         </Button>
                     </div>
 
-                    <Button onClick={() => setSelectedDateEvents(null)}>
-                        ← Back to calendar
-                    </Button>
+                    <div className='flex items-center gap-4 mb-4'>
+                        <Button onClick={() => setSelectedDateEvents(null)}>
+                            ← Back to calendar
+                        </Button>
 
-                    {selectedDateEvents.length === 0 ? (
+                        <div className='flex gap-2 ml-auto'>
+                            <Button
+                                onClick={() => setEventFilter('all')}
+                                className={eventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                            >
+                                All
+                            </Button>
+                            <Button
+                                onClick={() => setEventFilter('local')}
+                                className={eventFilter === 'local' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                            >
+                                Local
+                            </Button>
+                            <Button
+                                onClick={() => setEventFilter('global')}
+                                className={eventFilter === 'global' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                            >
+                                Global
+                            </Button>
+                        </div>
+                    </div>
+
+                    {filteredDateEvents && filteredDateEvents.length === 0 ? (
                         <p className='text-gray-500 italic'>
-                            No events on this date.
+                            No {eventFilter === 'all' ? '' : eventFilter} events on this date.
                         </p>
                     ) : (
                         <ul className='space-y-3 list-none'>
-                            {selectedDateEvents.map((ev) => (
+                            {filteredDateEvents?.map((ev) => (
                                 <EventCard
                                     key={ev.id}
                                     event={ev}

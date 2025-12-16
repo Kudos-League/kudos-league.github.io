@@ -1038,6 +1038,42 @@ export default function GanttEventsCalendar() {
                             </div>
                         )}
                     </div>
+
+                    <div className='flex flex-wrap gap-2 justify-center mb-4'>
+                        <button
+                            onClick={() => setLocationFilter('local')}
+                            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'local'
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 dark:shadow-green-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-green-500 dark:hover:border-green-500 hover:text-green-600 dark:hover:text-green-400'
+                            }`}
+                        >
+                            <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                            Local
+                        </button>
+                        <button
+                            onClick={() => setLocationFilter('global')}
+                            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'global'
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 dark:shadow-blue-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'
+                            }`}
+                        >
+                            <Globe className='w-3 h-3 sm:w-4 sm:h-4' />
+                            Global
+                        </button>
+                        <button
+                            onClick={() => setLocationFilter('all')}
+                            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 transform hover:scale-105 ${
+                                locationFilter === 'all'
+                                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/50 dark:shadow-purple-500/30'
+                                    : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-2 border-gray-300 dark:border-zinc-600 hover:border-purple-500 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400'
+                            }`}
+                        >
+                            <Filter className='w-3 h-3 sm:w-4 sm:h-4' />
+                            All
+                        </button>
+                    </div>
                 </div>
 
                 {selectedPeriodEvents.length === 0 ? (
