@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     format,
     startOfWeek,
@@ -11,7 +12,7 @@ import {
     endOfDay,
     isSameDay
 } from 'date-fns';
-import { Calendar, ChevronRight, MapPin, Globe, Filter, Search } from 'lucide-react';
+import { Calendar, ChevronRight, MapPin, Globe, Filter, Search, Plus } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 
 interface MobileEventListViewProps {
@@ -26,6 +27,7 @@ interface MobileEventListViewProps {
 type ViewType = 'week' | 'month' | 'year';
 
 export default function MobileEventListView({ events, onSelectPeriod, locationFilter, setLocationFilter, filterText, setFilterText }: MobileEventListViewProps) {
+    const navigate = useNavigate();
     const [viewType, setViewType] = React.useState<ViewType>('week');
     const [currentOffset, setCurrentOffset] = React.useState(0);
 
@@ -164,15 +166,24 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
             <div className="mb-4">
 
                 {/* Search Input */}
-                <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500" />
-                    <input
-                        type="text"
-                        value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        placeholder="Search events..."
-                        className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent"
-                    />
+                <div className="flex gap-2 mb-3">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500" />
+                        <input
+                            type="text"
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            placeholder="Search events..."
+                            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent"
+                        />
+                    </div>
+                    <button
+                        onClick={() => navigate('/create-event')}
+                        className="flex items-center justify-center px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors font-medium text-sm whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4 mr-1" />
+                        New
+                    </button>
                 </div>
 
                 {/* Combined Filters - Single Row with Separator */}
