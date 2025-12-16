@@ -373,93 +373,126 @@ export default function Chat({ channelType }: Props) {
     const pageContainerStyle: React.CSSProperties = channelType
         ? { boxSizing: 'border-box', height: '100%', minHeight: 0 }
         : showChatOnMobile && resolvedIsDM && window.innerWidth < 768
-            ? { boxSizing: 'border-box', height: '100dvh', minHeight: '100dvh' }
+            ? { boxSizing: 'border-box', height: '100vh', minHeight: '100vh' }
             : pageHeaderHeight > 0
                 ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
                 : { minHeight: '60vh', boxSizing: 'border-box' };
 
+    const useDynamicViewport = showChatOnMobile && resolvedIsDM && window.innerWidth < 768;
+    const useCalcWithHeader = pageHeaderHeight > 0 && !channelType && !useDynamicViewport;
+
     return (
-        <div style={pageContainerStyle} className='flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden'>
-            <div className='md:hidden w-full h-full min-h-0 overflow-hidden'>
-                <div className='flex flex-col h-full min-h-0 overflow-hidden'>
-                    <div className='flex items-center justify-between mb-2'>
+        <>
+            {/* CSS for dvh fallback support with safe area insets */}
+            <style>{`
+                .chat-container-dvh {
+                    /* Fallback for older browsers */
+                    height: 100vh;
+                    height: -webkit-fill-available;
+                    /* Modern browsers - accounts for mobile browser UI and safe areas */
+                    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                    min-height: 100vh;
+                    min-height: -webkit-fill-available;
+                    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                }
+                .chat-container-calc-dvh {
+                    /* Fallback with header calculation */
+                    height: calc(100vh - var(--header-height, 0px));
+                    /* Modern with dynamic viewport and safe area bottom */
+                    height: calc(100dvh - var(--header-height, 0px) - env(safe-area-inset-bottom, 0px));
+                }
+            `}</style>
+            <div
+                style={{
+                    ...pageContainerStyle,
+                    ...(useCalcWithHeader ? { '--header-height': `${pageHeaderHeight}px` } as any : {})
+                }}
+                className={`flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden ${
+                    useDynamicViewport ? 'chat-container-dvh' :
+                        useCalcWithHeader ? 'chat-container-calc-dvh' : ''
+                }`}
+            >
+                <div className='md:hidden w-full h-full min-h-0 overflow-hidden'>
+                    <div className='flex flex-col h-full min-h-0 overflow-hidden'>
+                        <div className='flex items-center justify-between mb-2'>
+                        </div>
+                        {!showChatOnMobile && isDMView ? (
+                            <DMList
+                                channels={channels}
+                                publicChannels={channelsQuery.data || []}
+                                onSelect={openChat}
+                                searchQuery={searchQuery}
+                                selectedChannel={selectedChannel}
+                                isMobile={true}
+                                isLoading={isLoadingChannels}
+                            />
+                        ) : (
+                            <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
+                                <ChatWindow
+                                    user={user}
+                                    channel={selectedChannel}
+                                    messages={messages}
+                                    onSend={sendMessage}
+                                    onBack={isDMView ? () => setShowChatOnMobile(false) : undefined}
+                                    isMobile={true}
+                                    allowEdit={true}
+                                    onEdit={handleEditMessage}
+                                    isLoading={isLoadingMessages}
+                                    hideHeader={!isDMView}
+                                />
+                            </div>
+                        )}
                     </div>
-                    {!showChatOnMobile && isDMView ? (
+                </div>
+
+                <div className='hidden md:flex w-full h-full min-h-0 overflow-hidden'>
+                    {isDMView && (
                         <DMList
                             channels={channels}
                             publicChannels={channelsQuery.data || []}
                             onSelect={openChat}
                             searchQuery={searchQuery}
                             selectedChannel={selectedChannel}
-                            isMobile={true}
+                            isMobile={false}
                             isLoading={isLoadingChannels}
                         />
-                    ) : (
-                        <div className='flex-1 min-h-0 flex flex-col overflow-hidden'>
-                            <ChatWindow
-                                user={user}
-                                channel={selectedChannel}
-                                messages={messages}
-                                onSend={sendMessage}
-                                onBack={isDMView ? () => setShowChatOnMobile(false) : undefined}
-                                isMobile={true}
-                                allowEdit={true}
-                                onEdit={handleEditMessage}
-                                isLoading={isLoadingMessages}
-                                hideHeader={!isDMView}
-                            />
-                        </div>
                     )}
-                </div>
-            </div>
 
-            <div className='hidden md:flex w-full h-full min-h-0 overflow-hidden'>
-                {isDMView && (
-                    <DMList
+                    <div className='flex-1 flex flex-col min-h-0 overflow-hidden'>
+                        <ChatWindow
+                            user={user}
+                            channel={selectedChannel}
+                            messages={messages}
+                            onSend={(text, replyToId) => sendMessage(text, replyToId)}
+                            onBack={() => {
+                                if (selectedChannel) leaveChannel(selectedChannel.id);
+                                setSelectedChannel(null);
+                            }}
+                            isMobile={false}
+                            onDelete={(m) => handleDeleteMessage(m.id)}
+                            allowDelete={true}
+                            allowEdit={true}
+                            onEdit={handleEditMessage}
+                            isLoading={isLoadingMessages}
+                        />
+                    </div>
+
+                    <ChannelDrawer
+                        open={drawerOpen}
+                        onClose={setDrawerOpen}
                         channels={channels}
-                        publicChannels={channelsQuery.data || []}
-                        onSelect={openChat}
-                        searchQuery={searchQuery}
-                        selectedChannel={selectedChannel}
-                        isMobile={false}
-                        isLoading={isLoadingChannels}
-                    />
-                )}
-
-                <div className='flex-1 flex flex-col min-h-0 overflow-hidden'>
-                    <ChatWindow
-                        user={user}
-                        channel={selectedChannel}
-                        messages={messages}
-                        onSend={(text, replyToId) => sendMessage(text, replyToId)}
-                        onBack={() => {
-                            if (selectedChannel) leaveChannel(selectedChannel.id);
-                            setSelectedChannel(null);
+                        onSelect={(c) => {
+                            if (c.type === 'dm') {
+                                const otherUser = (c as any).otherUser;
+                                if (otherUser) navigate(`/dms/${otherUser.id}`);
+                            }
+                            selectChannel(c);
+                            setShowChatOnMobile(true);
                         }}
-                        isMobile={false}
-                        onDelete={(m) => handleDeleteMessage(m.id)}
-                        allowDelete={true}
-                        allowEdit={true}
-                        onEdit={handleEditMessage}
-                        isLoading={isLoadingMessages}
+                        isDMView={isDMView}
                     />
                 </div>
-
-                <ChannelDrawer
-                    open={drawerOpen}
-                    onClose={setDrawerOpen}
-                    channels={channels}
-                    onSelect={(c) => {
-                        if (c.type === 'dm') {
-                            const otherUser = (c as any).otherUser;
-                            if (otherUser) navigate(`/dms/${otherUser.id}`);
-                        }
-                        selectChannel(c);
-                        setShowChatOnMobile(true);
-                    }}
-                    isDMView={isDMView}
-                />
             </div>
-        </div>
+        </>
     );
 }
