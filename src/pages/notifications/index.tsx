@@ -32,81 +32,43 @@ function HandshakeNotificationCard({
     userID?: number;
     notificationType: string;
 }) {
-    const navigate = useNavigate();
-    const { handshake, loading, error } = useCachedHandshake(handshakeID);
-
-    // Determine the other user ID
-    const otherUserID = handshake
-        ? (handshake.senderID === userID ? handshake.receiverID : handshake.senderID)
-        : undefined;
-
-    const { user: otherUser } = useCachedUser(otherUserID);
+    const [retryKey, setRetryKey] = useState(0);
+    const { handshake, loading, error, refetch } = useCachedHandshake(handshakeID);
 
     if (loading) {
         return (
-            <div className='text-sm text-zinc-600 dark:text-zinc-400 py-2'>
-                Loading handshake...
+            <div className='flex items-center justify-center py-8'>
+                <Spinner text='Loading handshake...' />
             </div>
         );
     }
 
     if (error || !handshake) {
         return (
-            <div className='text-sm text-red-600 dark:text-red-400 py-2'>
-                Failed to load handshake details
+            <div className='text-center py-4 space-y-3'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Failed to load handshake details
+                </p>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setRetryKey(prev => prev + 1);
+                        refetch?.();
+                    }}
+                    className='px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300'
+                >
+                    Retry
+                </button>
             </div>
         );
     }
 
-    const postTitle = handshake.post?.title || 'Post';
-    const postType = handshake.post?.type || 'request';
-
-    let descriptionText = '';
-    if (notificationType === NotificationType.HANDSHAKE_CREATED) {
-        descriptionText = postType === 'request' ? 'wants to help with' : 'wants to request';
-    }
-    else if (notificationType === NotificationType.HANDSHAKE_ACCEPTED) {
-        descriptionText = 'accepted your handshake on';
-    }
-    else if (notificationType === NotificationType.HANDSHAKE_COMPLETED) {
-        descriptionText = 'completed handshake on';
-    }
-    else if (notificationType === NotificationType.HANDSHAKE_CANCELLED) {
-        descriptionText = 'cancelled handshake on';
-    }
-
     return (
         <div onClick={(e) => e.stopPropagation()}>
-            {/* Descriptive header */}
-            {otherUser && (
-                <div className='mb-3 text-sm text-zinc-700 dark:text-zinc-300'>
-                    <span
-                        className='font-semibold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer'
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/user/${otherUser.id}`);
-                        }}
-                    >
-                        {otherUser.displayName || otherUser.username || 'User'}
-                    </span>
-                    {' '}{descriptionText}{' '}
-                    <span
-                        className='font-semibold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer'
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (handshake.post?.id) navigate(`/post/${handshake.post.id}`);
-                        }}
-                    >
-                        &quot;{postTitle}&quot;
-                    </span>
-                </div>
-            )}
-
-            {/* Full handshake card */}
             <HandshakeCard
                 handshake={handshake}
                 userID={userID}
-                showPostDetails={false}
+                showPostDetails={true}
             />
         </div>
     );
@@ -576,33 +538,20 @@ export default function NotificationsPage() {
 
                             return (
                                 <li key={notification.id}>
-                                    {isHandshake ? (
-                                        <div className={`w-full rounded-lg border px-4 py-4 transition hover:shadow-lg ${highlight}`}>
-                                            {renderNotificationContent(notification)}
-                                            {!notification.isRead && (
-                                                <div className='mt-3'>
-                                                    <span className='inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold bg-brand-600 text-white dark:bg-brand-500'>
-                                                        NEW
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <button
-                                            type='button'
-                                            onClick={() => handleOpen(notification)}
-                                            className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
-                                        >
-                                            {renderNotificationContent(notification)}
-                                            {!notification.isRead && (
-                                                <div className='mt-3'>
-                                                    <span className='inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold bg-brand-600 text-white dark:bg-brand-500'>
-                                                        NEW
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </button>
-                                    )}
+                                    <button
+                                        type='button'
+                                        onClick={() => handleOpen(notification)}
+                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
+                                    >
+                                        {renderNotificationContent(notification)}
+                                        {!notification.isRead && (
+                                            <div className='mt-3'>
+                                                <span className='inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold bg-brand-600 text-white dark:bg-brand-500'>
+                                                    NEW
+                                                </span>
+                                            </div>
+                                        )}
+                                    </button>
                                 </li>
                             );
                         })}
