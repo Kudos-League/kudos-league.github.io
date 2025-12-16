@@ -32,8 +32,7 @@ function HandshakeNotificationCard({
     userID?: number;
     notificationType: string;
 }) {
-    const [retryKey, setRetryKey] = useState(0);
-    const { handshake, loading, error, refetch } = useCachedHandshake(handshakeID);
+    const { handshake, loading, error } = useCachedHandshake(handshakeID);
 
     if (loading) {
         return (
@@ -45,20 +44,10 @@ function HandshakeNotificationCard({
 
     if (error || !handshake) {
         return (
-            <div className='text-center py-4 space-y-3'>
+            <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
                     Failed to load handshake details
                 </p>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setRetryKey(prev => prev + 1);
-                        refetch?.();
-                    }}
-                    className='px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300'
-                >
-                    Retry
-                </button>
             </div>
         );
     }
