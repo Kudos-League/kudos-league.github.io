@@ -350,28 +350,12 @@ export default function NotificationsPage() {
                 return <HandshakeNotificationCard handshakeID={handshakeID} userID={user?.id} notificationType={notification.type} />;
             }
 
-            // Fallback if no handshakeID
-            const meta = describeNotification(notification);
+            // If no handshakeID, show error
             return (
-                <div className='flex items-start gap-3'>
-                    <div className='flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center'>
-                        <Handshake className='w-5 h-5 text-blue-600 dark:text-blue-400' />
-                    </div>
-                    <div className='flex-1 min-w-0'>
-                        <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-                            {meta.title}
-                        </p>
-                        {meta.description && (
-                            <p className='text-sm text-zinc-700 dark:text-zinc-300 mt-1'>
-                                {meta.description}
-                            </p>
-                        )}
-                        {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 block'>
-                                {createdAt}
-                            </time>
-                        )}
-                    </div>
+                <div className='text-center py-4'>
+                    <p className='text-sm text-red-600 dark:text-red-400'>
+                        Missing handshake data
+                    </p>
                 </div>
             );
         }
