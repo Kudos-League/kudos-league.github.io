@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Filter, MessageSquare, Handshake, MessageCircle, X, MoreHorizontal } from 'lucide-react';
@@ -18,10 +18,77 @@ import UserCard from '@/components/users/UserCard';
 import { getImagePath } from '@/shared/api/config';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import type { HandshakeDTO } from '@/shared/api/types';
-import { useCachedHandshake, useCachedUser } from '@/contexts/DataCacheContext';
+import { useCachedHandshake, useCachedUser, useCachedPost } from '@/contexts/DataCacheContext';
 
 const PAGE_SIZE = 20;
 const historyQueryKey = ['notifications', 'history', PAGE_SIZE] as const;
+
+function HandshakeNotificationByPost({
+    postID,
+    userID,
+    notificationType
+}: {
+    postID: number;
+    userID: number;
+    notificationType: string;
+}) {
+    const { post, loading, error } = useCachedPost(postID);
+
+    console.log('[HandshakeNotificationByPost] Using cached post:', { postID, userID, notificationType, post, loading, error });
+
+    if (loading) {
+        return (
+            <div className='flex items-center justify-center py-8'>
+                <Spinner text='Loading handshake...' />
+            </div>
+        );
+    }
+
+    if (error || !post) {
+        return (
+            <div className='text-center py-4'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Failed to load handshake details
+                </p>
+            </div>
+        );
+    }
+
+    // Find the relevant handshake for this user
+    const handshakes = post.handshakes || [];
+    const relevantHandshake = handshakes.find((h: any) =>
+        h.senderID === userID || h.receiverID === userID
+    );
+
+    console.log('[HandshakeNotificationByPost] Looking for handshake:', {
+        userID,
+        handshakesCount: handshakes.length,
+        relevantHandshake
+    });
+
+    if (!relevantHandshake) {
+        console.error('[HandshakeNotificationByPost] No handshake found for user:', { userID, handshakes });
+        return (
+            <div className='text-center py-4'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Handshake not found
+                </p>
+            </div>
+        );
+    }
+
+    console.log('[HandshakeNotificationByPost] Rendering HandshakeCard with:', relevantHandshake);
+
+    return (
+        <div onClick={(e) => e.stopPropagation()}>
+            <HandshakeCard
+                handshake={{ ...relevantHandshake, post }}
+                userID={userID}
+                showPostDetails={true}
+            />
+        </div>
+    );
+}
 
 function HandshakeNotificationCard({
     handshakeID,
@@ -346,11 +413,29 @@ export default function NotificationsPage() {
             notification.type === NotificationType.HANDSHAKE_CANCELLED
         ) {
             const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
+            const postID = 'postID' in notification ? notification.postID : undefined;
+
+            console.log('[renderNotificationContent] Handshake notification:', {
+                type: notification.type,
+                handshakeID,
+                postID,
+                userID: user?.id,
+                notification
+            });
+
             if (handshakeID) {
+                console.log('[renderNotificationContent] Using HandshakeNotificationCard with handshakeID');
                 return <HandshakeNotificationCard handshakeID={handshakeID} userID={user?.id} notificationType={notification.type} />;
             }
 
-            // If no handshakeID, show error
+            // Fallback: try to fetch using postID
+            if (postID && user?.id) {
+                console.log('[renderNotificationContent] Using HandshakeNotificationByPost with postID');
+                return <HandshakeNotificationByPost postID={postID} userID={user.id} notificationType={notification.type} />;
+            }
+
+            // If no data available, show error
+            console.error('[renderNotificationContent] Handshake notification missing both handshakeID and postID:', notification);
             return (
                 <div className='text-center py-4'>
                     <p className='text-sm text-red-600 dark:text-red-400'>
