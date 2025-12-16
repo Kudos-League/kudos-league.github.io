@@ -40,10 +40,13 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const [useLocal, setUseLocal] = useState(false);
     const [timeFilter, setTimeFilter] = useState('all');
     const [showDropdown, setShowDropdown] = useState(false);
-    const [displayLimit, setDisplayLimit] = useState(10);
+    const [displayLimit, setDisplayLimit] = useState(20);
+    const [nextCursor, setNextCursor] = useState<number | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
@@ -53,7 +56,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
     console.log('Render - useLocal:', useLocal, 'hasLocation:', hasLocation, 'shouldRender:', !useLocal || hasLocation);
 
-    const loadLeaderboard = async () => {
+    const loadLeaderboard = async (reset = true) => {
         if (!user) {
             setError('Must be logged in.');
             return;
@@ -64,13 +67,19 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             setError(null); // Clear error, will show message in UI instead
             setLoading(false);
             setLeaderboard([]);
+            setNextCursor(null);
             return;
         }
 
-        setLoading(true);
-        setLeaderboard([]);
-        setDisplayLimit(10); // Reset display limit when filters change
-        scrollContainerRef.current?.scrollTo(0, 0);
+        if (reset) {
+            setLoading(true);
+            setLeaderboard([]);
+            setNextCursor(null);
+            scrollContainerRef.current?.scrollTo(0, 0);
+        }
+        else {
+            setLoadingMore(true);
+        }
 
         setError(null);
         try {
@@ -78,11 +87,18 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 params: {
                     local: useLocal,
                     time: timeFilter,
-                    limit: 100 // Load a reasonable amount upfront
+                    limit: 20,
+                    cursor: reset ? undefined : nextCursor
                 }
             });
 
-            setLeaderboard(response.data || []);
+            if (reset) {
+                setLeaderboard(response.data || []);
+            }
+            else {
+                setLeaderboard(prev => [...prev, ...(response.data || [])]);
+            }
+            setNextCursor(response.nextCursor);
         }
         catch (err) {
             console.error('Leaderboard error:', err);
@@ -90,6 +106,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         }
         finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
@@ -115,9 +132,35 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         };
     }, [showDropdown]);
 
-    const displayedUsers = leaderboard.slice(0, displayLimit);
-    const hasMore = leaderboard.length > displayLimit;
-    const canShowLess = displayLimit > 10;
+    // Infinite scroll observer
+    useEffect(() => {
+        const trigger = loadMoreTriggerRef.current;
+        if (!trigger) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const firstEntry = entries[0];
+                if (firstEntry.isIntersecting && nextCursor && !loadingMore && !loading) {
+                    loadLeaderboard(false);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(trigger);
+
+        return () => {
+            if (trigger) observer.unobserve(trigger);
+        };
+    }, [nextCursor, loadingMore, loading]);
+
+    // Get medal color for top 3 positions
+    const getMedalColor = (index: number) => {
+        if (index === 0) return 'text-yellow-500 dark:text-yellow-400'; // Gold
+        if (index === 1) return 'text-gray-400 dark:text-gray-300'; // Silver
+        if (index === 2) return 'text-amber-700 dark:text-amber-600'; // Bronze
+        return '';
+    };
 
     const LeaderboardContent = (
         <>
@@ -126,73 +169,61 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 role='list'
                 className={`divide-y divide-gray-200 dark:divide-white/10 ${compact ? 'mt-2' : 'mt-4'}`}
             >
-                {displayedUsers?.map((entry) => (
-                    <li
-                        key={entry.id}
-                        className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
-                            compact ? 'py-2 px-1' : 'py-5 px-2'
-                        }`}
-                        onClick={() => navigate(`/user/${entry.id}`)}
-                    >
-                        <div className='flex min-w-0 gap-x-2 flex-1'>
-                            <UserCard
-                                user={
-                                    {
-                                        ...entry,
-                                        kudos: entry.totalKudos
-                                    } as any as UserDTO
-                                }
-                                large={!compact}
-                                triggerVariant='avatar-name'
-                                subtitle={compact ? undefined : (entry.location?.name || '—')}
-                                centered={false}
-                                subtitleClassName='max-w-[180px]'
-                            />
-                        </div>
+                {leaderboard?.map((entry, index) => {
+                    const medalColor = getMedalColor(index);
+                    return (
+                        <li
+                            key={entry.id}
+                            className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
+                                compact ? 'py-2 px-1' : 'py-5 px-2'
+                            }`}
+                            onClick={() => navigate(`/user/${entry.id}`)}
+                        >
+                            <div className='flex min-w-0 gap-x-2 flex-1'>
+                                <UserCard
+                                    user={
+                                        {
+                                            ...entry,
+                                            kudos: entry.totalKudos
+                                        } as any as UserDTO
+                                    }
+                                    large={!compact}
+                                    triggerVariant='avatar-name'
+                                    subtitle={compact ? undefined : (entry.location?.name || '—')}
+                                    centered={false}
+                                    subtitleClassName='max-w-[180px]'
+                                    nameClassName={medalColor}
+                                />
+                            </div>
 
-                        <div className='flex shrink-0 flex-col items-end justify-center'>
-                            <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
-                                {entry.totalKudos.toLocaleString()}
-                            </p>
-                            {!compact && (
-                                <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    Kudos
+                            <div className='flex shrink-0 flex-col items-end justify-center'>
+                                <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+                                    {entry.totalKudos.toLocaleString()}
                                 </p>
-                            )}
-                        </div>
-                    </li>
-                ))}
+                                {!compact && (
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                        Kudos
+                                    </p>
+                                )}
+                            </div>
+                        </li>
+                    );
+                })}
             </ul>
 
-            {/* Show More / Show Less buttons */}
-            {!compact && (hasMore || canShowLess) && (
-                <div className='flex gap-2 justify-center py-4 border-t border-gray-200 dark:border-gray-700 mt-4'>
-                    {hasMore && (
-                        <button
-                            onClick={() => setDisplayLimit(prev => Math.min(prev + 10, leaderboard.length))}
-                            className='px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors text-sm'
-                        >
-                            Show More
-                        </button>
-                    )}
-                    {canShowLess && (
-                        <button
-                            onClick={() => {
-                                setDisplayLimit(prev => Math.max(prev - 10, 10));
-                                scrollContainerRef.current?.scrollTo(0, 0);
-                            }}
-                            className='px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors text-sm'
-                        >
-                            Show Less
-                        </button>
+            {/* Infinite scroll trigger */}
+            {nextCursor && (
+                <div ref={loadMoreTriggerRef} className={`flex items-center justify-center ${compact ? 'h-6' : 'h-10'}`}>
+                    {loadingMore && (
+                        <div className={`text-gray-500 ${compact ? 'text-xs' : 'text-sm'}`}>Loading more...</div>
                     )}
                 </div>
             )}
 
             {/* End of list message */}
-            {!hasMore && leaderboard.length > 0 && displayLimit >= leaderboard.length && (
-                <div className='text-center py-4 text-sm text-gray-500'>
-                    You&apos;ve reached the end of the leaderboard
+            {!nextCursor && leaderboard.length > 0 && (
+                <div className={`text-center text-gray-500 ${compact ? 'py-2 text-xs' : 'py-4 text-sm'}`}>
+                    You&apos;ve reached the end
                 </div>
             )}
         </>
@@ -320,8 +351,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     `}</style>
                     <div
                         ref={scrollContainerRef}
-                        className={compact ? '' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
-                        style={compact ? {} : { scrollbarGutter: 'stable' }}
+                        className={compact ? 'leaderboard-scroll max-h-[600px] overflow-y-auto pr-1' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
+                        style={{ scrollbarGutter: 'stable' }}
                     >
                         {LeaderboardContent}
                     </div>
