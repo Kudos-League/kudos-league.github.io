@@ -36,17 +36,12 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
     const [loading, setLoading] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [useLocal, setUseLocal] = useState(false);
     const [timeFilter, setTimeFilter] = useState('all');
     const [showDropdown, setShowDropdown] = useState(false);
-    const [nextCursor, setNextCursor] = useState<number | null>(null);
-    const [hasMore, setHasMore] = useState(true);
+    const [displayLimit, setDisplayLimit] = useState(10);
 
-    // Ref for the intersection observer trigger
-    const observerTarget = useRef<HTMLDivElement>(null);
-    // Ref for the scrollable container to attach the IntersectionObserver
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +53,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
     console.log('Render - useLocal:', useLocal, 'hasLocation:', hasLocation, 'shouldRender:', !useLocal || hasLocation);
 
-    const loadLeaderboard = async (reset = true) => {
+    const loadLeaderboard = async () => {
         if (!user) {
             setError('Must be logged in.');
             return;
@@ -69,18 +64,13 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             setError(null); // Clear error, will show message in UI instead
             setLoading(false);
             setLeaderboard([]);
-            setHasMore(false);
             return;
         }
 
-        if (reset) {
-            setLoading(true);
-            setLeaderboard([]);
-            setNextCursor(null);
-            setHasMore(true);
-            // Scroll to top of the list when resetting on filter change
-            scrollContainerRef.current?.scrollTo(0, 0);
-        }
+        setLoading(true);
+        setLeaderboard([]);
+        setDisplayLimit(10); // Reset display limit when filters change
+        scrollContainerRef.current?.scrollTo(0, 0);
 
         setError(null);
         try {
@@ -88,22 +78,11 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 params: {
                     local: useLocal,
                     time: timeFilter,
-                    limit: 20,
-                    cursor: reset ? undefined : nextCursor
+                    limit: 100 // Load a reasonable amount upfront
                 }
             });
 
-            const newData = response.data || [];
-            if (reset) {
-                setLeaderboard(newData);
-            }
-            else {
-                const combined = [...leaderboard, ...newData];
-                setLeaderboard(combined);
-            }
-
-            setNextCursor(response.nextCursor ?? null);
-            setHasMore(response.nextCursor !== null && response.nextCursor !== undefined);
+            setLeaderboard(response.data || []);
         }
         catch (err) {
             console.error('Leaderboard error:', err);
@@ -111,55 +90,13 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         }
         finally {
             setLoading(false);
-            setLoadingMore(false);
         }
     };
 
-    const loadMore = useCallback(async () => {
-        // Prevent loading more if already loading, no more items, or filters changed
-        if (!hasMore || loadingMore || loading) return;
-
-        setLoadingMore(true);
-        await loadLeaderboard(false);
-    }, [hasMore, loadingMore, loading, nextCursor, useLocal, timeFilter]);
-
     // Effect to trigger load when filters change
     useEffect(() => {
-        loadLeaderboard(true);
+        loadLeaderboard();
     }, [useLocal, timeFilter]);
-
-    // Effect for Infinite Scroll
-    useEffect(() => {
-        const currentScrollContainer = scrollContainerRef.current;
-        
-        // Use the scroll container as the root for the observer if not in compact mode
-        const observerRoot = compact ? null : currentScrollContainer;
-
-        // If in compact mode, we observe against the viewport (root: null)
-        // If not in compact mode (fixed height scroll), we observe against the container
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-                    loadMore();
-                }
-            },
-            { 
-                root: observerRoot, // Use the scroll container as the viewport for observation
-                threshold: 0.1 
-            }
-        );
-
-        const currentTarget = observerTarget.current;
-        if (currentTarget) {
-            observer.observe(currentTarget);
-        }
-
-        return () => {
-            if (currentTarget) {
-                observer.unobserve(currentTarget);
-            }
-        };
-    }, [loadMore, hasMore, loading, loadingMore, compact]); // Add compact to dependencies
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -178,6 +115,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         };
     }, [showDropdown]);
 
+    const displayedUsers = leaderboard.slice(0, displayLimit);
+    const hasMore = leaderboard.length > displayLimit;
+    const canShowLess = displayLimit > 10;
+
     const LeaderboardContent = (
         <>
             {/* Stacked List */}
@@ -185,7 +126,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 role='list'
                 className={`divide-y divide-gray-200 dark:divide-white/10 ${compact ? 'mt-2' : 'mt-4'}`}
             >
-                {leaderboard?.map((entry) => (
+                {displayedUsers?.map((entry) => (
                     <li
                         key={entry.id}
                         className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
@@ -223,19 +164,33 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 ))}
             </ul>
 
-            {/* Infinite scroll trigger */}
-            {hasMore && <div ref={observerTarget} className='h-10' />}
-
-            {/* Loading more indicator */}
-            {loadingMore && (
-                <div className='flex justify-center items-center py-4'>
-                    <div className='w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin' />
-                    <span className='ml-2 text-sm text-gray-500'>Loading more...</span>
+            {/* Show More / Show Less buttons */}
+            {!compact && (hasMore || canShowLess) && (
+                <div className='flex gap-2 justify-center py-4 border-t border-gray-200 dark:border-gray-700 mt-4'>
+                    {hasMore && (
+                        <button
+                            onClick={() => setDisplayLimit(prev => Math.min(prev + 10, leaderboard.length))}
+                            className='px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors text-sm'
+                        >
+                            Show More
+                        </button>
+                    )}
+                    {canShowLess && (
+                        <button
+                            onClick={() => {
+                                setDisplayLimit(prev => Math.max(prev - 10, 10));
+                                scrollContainerRef.current?.scrollTo(0, 0);
+                            }}
+                            className='px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors text-sm'
+                        >
+                            Show Less
+                        </button>
+                    )}
                 </div>
             )}
 
             {/* End of list message */}
-            {!hasMore && leaderboard.length > 0 && (
+            {!hasMore && leaderboard.length > 0 && displayLimit >= leaderboard.length && (
                 <div className='text-center py-4 text-sm text-gray-500'>
                     You&apos;ve reached the end of the leaderboard
                 </div>
