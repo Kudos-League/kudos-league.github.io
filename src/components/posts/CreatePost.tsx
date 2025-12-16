@@ -417,9 +417,32 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </div>
 
+            {/* Collect all form errors */}
+            {(() => {
+                const formErrors = Object.values(form.formState.errors)
+                    .map(error => error?.message)
+                    .filter(Boolean) as string[];
+                const allErrors = serverError ? [serverError, ...formErrors] : formErrors;
+
+                return allErrors.length > 0 ? (
+                    <div className='space-y-2'>
+                        {allErrors.map((error, idx) => (
+                            <Alert
+                                key={idx}
+                                type='danger'
+                                title='Error'
+                                message={error}
+                                show={true}
+                                closable={false}
+                            />
+                        ))}
+                    </div>
+                ) : null;
+            })()}
+
             <Button
                 type='submit'
-                className='mt-4'
+                className='w-full sm:w-auto'
                 disabled={createPost.isPending}
             >
                 {createPost.isPending ? 'Creating...' : 'Create'}
