@@ -270,15 +270,6 @@ export default function Navbar({
                             <SearchBar className='w-full max-w-3xl' />
                         </div>
                     )}
-                    {/* The following block was removed:
-                    <button
-                        onClick={() => navigate(routes.donate)}
-                        className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
-                        aria-label='Donate'
-                    >
-                        <HeartIcon className='h-5 w-5 sm:h-6 sm:w-6 text-red-600' />
-                    </button>
-                    */}
                 </div>
 
                 <div className='flex items-center gap-2 sm:gap-3 flex-shrink-0'>
@@ -286,6 +277,14 @@ export default function Navbar({
 
                     {isLoggedIn ? (
                         <>
+                            <Link
+                                to={routes.donate}
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                                aria-label='Donate'
+                            >
+                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                                <span className='hidden sm:inline'>Donate</span>
+                            </Link>
                             {/* Create button - Desktop only */}
                             <Link
                                 to={routes.createPost}
@@ -328,7 +327,6 @@ export default function Navbar({
                         </>
                     ) : (
                         <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
-                            {/* Donate button added here for non-logged-in users */}
                             <Link
                                 to={routes.donate}
                                 className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
