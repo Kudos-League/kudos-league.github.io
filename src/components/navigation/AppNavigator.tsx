@@ -38,23 +38,13 @@ const LegacySignUpRedirect = () => {
 };
 
 const HomeOrAbout = () => {
-    const { isLoggedIn, loading } = useAuth();
+    const { loading } = useAuth();
 
     // Show spinner while loading auth state
     if (loading) return <Spinner text='Loading...' />;
 
-    // Show home feed for logged-in users
-    if (isLoggedIn === true) {
-        return <Home />;
-    }
-
-    // Redirect to about page only if explicitly not logged in and not loading
-    if (isLoggedIn === false && !loading) {
-        return <Navigate to={routes.about} replace />;
-    }
-
-    // Fallback: show spinner if auth state is undefined/null
-    return <Spinner text='Loading...' />;
+    // Show home feed for all users (logged in or not)
+    return <Home />;
 };
 
 function AppNavigator() {
