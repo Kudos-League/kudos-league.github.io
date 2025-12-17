@@ -345,7 +345,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
 
                         {/* Last message preview - Compact on mobile */}
-                        {(status === 'accepted' || status === 'completed') && isParticipant && (
+                        {/* {(status === 'accepted' || status === 'completed') && isParticipant && (
                             <div
                                 className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-200"
                                 onClick={() => setIsChatOpen(true)}
@@ -381,7 +381,7 @@ const HandshakeCard: React.FC<Props> = ({
                                     </div>
                                 )}
                             </div>
-                        )}
+                        )} */}
                     </div>
                 )}
 
