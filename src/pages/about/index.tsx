@@ -11,7 +11,7 @@ const About = () => {
             {/* Hero Section */}
             <div className='text-center space-y-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-8'>
                 <h1 className='text-4xl font-bold'>
-                    🏆 EARN POINTS BY HELPING PEOPLE! 🏆
+                    EARN POINTS BY HELPING PEOPLE!
                 </h1>
                 <p className='text-xl opacity-90 max-w-3xl mx-auto'>
                     Kudos League is a platform created for people to give and receive help of any kind. 
@@ -25,7 +25,7 @@ const About = () => {
             {/* Free Platform Section */}
             <div className='bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg border-l-4 border-green-500'>
                 <h2 className='text-3xl font-bold mb-4 text-gray-900 dark:text-white flex items-center'>
-                    💰 WAIT, POINTS? DO I NEED TO PAY?
+                    WAIT, POINTS? DO I NEED TO PAY?
                 </h2>
                 <div className='text-2xl font-bold text-green-600 mb-4'>
                     Absolutely not!
@@ -46,7 +46,7 @@ const About = () => {
             {/* How It Works */}
             <div className='bg-gray-50 dark:bg-gray-900 rounded-lg p-8'>
                 <h2 className='text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center'>
-                    🔧 HOW DOES THE SITE WORK?
+                    HOW DOES THE SITE WORK?
                 </h2>
                 <p className='text-lg mb-6 text-gray-600 dark:text-gray-300'>
                     Glad you asked! Here&apos;s the simple process:
@@ -55,7 +55,7 @@ const About = () => {
                 <div className='grid md:grid-cols-2 gap-6 mb-6'>
                     <div className='bg-blue-100 dark:bg-blue-900/30 rounded-lg p-6'>
                         <h3 className='text-xl font-semibold mb-3 text-blue-800 dark:text-blue-300 flex items-center'>
-                            🙋‍♂️ ReQuest Help
+                            ReQuest Help 🙋‍♂️ 
                         </h3>
                         <p className='text-gray-700 dark:text-gray-300'>
                             Ask for help when you need something. Your post appears on the home page 
@@ -65,7 +65,7 @@ const About = () => {
                     
                     <div className='bg-green-100 dark:bg-green-900/30 rounded-lg p-6'>
                         <h3 className='text-xl font-semibold mb-3 text-green-800 dark:text-green-300 flex items-center'>
-                            🎁 Gift Help
+                            Gift Help 🎁 
                         </h3>
                         <p className='text-gray-700 dark:text-gray-300'>
                             Offer help when you have something to give. People who need what 
@@ -102,7 +102,7 @@ const About = () => {
             {/* Kudos Value Explanation */}
             <div className='bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg'>
                 <h2 className='text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center'>
-                    💧 HOW MUCH IS A POINT WORTH?
+                    HOW MUCH IS A POINT WORTH?
                 </h2>
                 <p className='text-lg mb-6 text-gray-600 dark:text-gray-300'>
                     Glad you asked! Let us explain with a simple analogy:
@@ -150,7 +150,7 @@ const About = () => {
             {/* Current Status & Future Plans */}
             <div className='bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-8 border border-yellow-200 dark:border-yellow-800'>
                 <h2 className='text-2xl font-bold mb-4 text-yellow-800 dark:text-yellow-300 flex items-center'>
-                    ⚠️ Current Status & Future Plans
+                    Current Status & Future Plans
                 </h2>
                 <div className='space-y-4 text-gray-700 dark:text-gray-300'>
                     <p>
@@ -179,7 +179,7 @@ const About = () => {
             {/* Open Source */}
             <div className='bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-8 text-center'>
                 <h2 className='text-3xl font-bold mb-4'>
-                    🔓 WE ARE GOING FREE AND OPEN SOURCE
+                    WE ARE GOING FREE AND OPEN SOURCE
                 </h2>
                 <p className='text-xl mb-4 opacity-90'>
                     Everything is better when it&apos;s free!
@@ -190,7 +190,7 @@ const About = () => {
             </div>
             <div className='bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white rounded-lg p-8 text-center shadow-xl space-y-6'>
                 <h2 className='text-4xl font-extrabold tracking-wider'>
-                    🤝 COMMUNITY DRIVEN
+                    COMMUNITY DRIVEN 🤝
                 </h2>
                 <p className='text-xl font-bold opacity-90'>
                     More Kudos = Higher chance of getting help!
