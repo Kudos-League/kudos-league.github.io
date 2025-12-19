@@ -196,15 +196,15 @@ const UserCard: React.FC<Props> = ({
             </div>
         );
 
-        if (triggerVariant === 'name') {
-            return <div className={wrapperClasses}>{content}</div>;
-        }
-
-        // 2. LIFT onClick handler to the trigger wrapper
+        // Apply onClick handler to all trigger variants
         return (
             <div className={wrapperClasses} onClick={handleNavigate}>
-                {avatar}
-                {content}
+                {triggerVariant === 'name' ? content : (
+                    <>
+                        {avatar}
+                        {content}
+                    </>
+                )}
             </div>
         );
     }, [
@@ -239,7 +239,7 @@ const UserCard: React.FC<Props> = ({
             <div
                 className={[
                     centered && subtitle
-                        ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                        ? 'inline-flex flex-col items-center text-center gap-2'
                         : 'inline-flex items-center gap-2',
                     'text-neutral-900 dark:text-neutral-100',
                     className
@@ -508,12 +508,12 @@ const UserCard: React.FC<Props> = ({
                 <div
                     className={[
                         centered && subtitle
-                            ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                            ? 'inline-flex flex-col items-center text-center gap-2'
                             : 'inline-flex items-center gap-2',
                         'text-neutral-900 dark:text-neutral-100',
                         // Applying the padding/margin trick to increase the HOVER area for Tippy
-                        'p-2', 
-                        '-m-2', 
+                        'p-2',
+                        '-m-2',
                         className
                     ].join(' ')}
                 >
