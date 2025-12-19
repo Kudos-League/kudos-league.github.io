@@ -82,6 +82,14 @@ export default function SearchBar({ onClose, autoFocus = false, className = '' }
                         setShowSearchDropdown(true);
                     }
                 }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchText.trim()) {
+                        e.preventDefault();
+                        navigate(`/search?q=${encodeURIComponent(searchText.trim())}`);
+                        setShowSearchDropdown(false);
+                        onClose?.();
+                    }
+                }}
                 className='w-full px-4 py-2 pr-10 lg:px-6 lg:py-3 lg:text-lg rounded-full bg-white/90 dark:bg-zinc-800/90 text-gray-900 dark:text-zinc-100 placeholder-gray-500 dark:placeholder-zinc-400 shadow-lg backdrop-blur-sm ring-1 ring-zinc-900/5 dark:ring-white/10 focus:outline-none focus:ring-zinc-900/10 dark:focus:ring-white/20 transition-all'
                 autoFocus={autoFocus}
             />
@@ -100,8 +108,8 @@ export default function SearchBar({ onClose, autoFocus = false, className = '' }
 
             {/* Search Results Dropdown */}
             {showSearchDropdown && searchingActive && (
-                <div className='absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 rounded-lg shadow-2xl border border-gray-200 dark:border-zinc-700 max-h-[70vh] overflow-y-auto z-[60]'>
-                    <div className='p-3 space-y-3'>
+                <div className='absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 rounded-lg shadow-2xl border border-gray-200 dark:border-zinc-700 max-h-[70vh] overflow-y-auto overflow-x-hidden z-[60]'>
+                    <div className='p-3 space-y-3 w-full'>
                         {/* Search Results */}
                         <div className='space-y-3'>
                             {/* User Results */}
