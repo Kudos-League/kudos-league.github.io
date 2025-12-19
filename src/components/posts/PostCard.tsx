@@ -118,7 +118,7 @@ export default function PostCard(props: Props) {
 
             {/* Distance indicator on mobile - bottom right */}
             {distance != null && (
-                <div className='sm:hidden absolute bottom-2 right-2'>
+                <div className='sm:hidden absolute bottom-2 right-2 mt-2'>
                     <Pill name={`${distance.toFixed(1)} km away`} />
                 </div>
             )}
