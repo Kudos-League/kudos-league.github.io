@@ -32,7 +32,6 @@ type NavItem = {
 function useUserMenuItems(isAdmin?: boolean): NavItem[] {
     const items: NavItem[] = [
         { name: 'About', to: routes.about, icon: InformationCircleIcon },
-        { name: 'Donate', to: routes.donate, icon: HeartIcon },
         { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
     ];
     if (isAdmin) {
