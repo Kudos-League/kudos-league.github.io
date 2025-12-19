@@ -37,7 +37,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
 
     return (
         <div className='space-y-4'>
-            {visibleHandshakes.reverse().map((handshake) => (
+            {visibleHandshakes.map((handshake) => (
                 handshake.post.isRequest ?
                     // If it's request
                     (<HandshakeCard
