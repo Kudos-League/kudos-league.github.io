@@ -492,7 +492,7 @@ const Profile: React.FC<Props> = ({
                 )}
 
                 {/* Accessibility Settings - Only for own profile */}
-                {/* {isSelf && (
+                {isSelf && (
                     <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-6'>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Accessibility
@@ -525,7 +525,7 @@ const Profile: React.FC<Props> = ({
                             </button>
                         </div>
                     </div>
-                )} */}
+                )}
 
                 {/* Log Past Gift button - available for all users on their own profile */}
                 {isSelf && (

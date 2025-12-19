@@ -49,3 +49,25 @@
 .dyslexic-font pre {
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
 }
+
+/* Dynamic Viewport Height with fallbacks for mobile and older browsers */
+.height-dvh {
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh; /* Modern browsers with dynamic viewport support */
+}
+
+/* Min height variant */
+.min-height-dvh {
+    min-height: 100vh; /* Fallback for older browsers */
+    min-height: 100dvh; /* Modern browsers with dynamic viewport support */
+}
+
+/* iOS-specific fallback using -webkit-fill-available */
+@supports (-webkit-touch-callout: none) {
+    .height-dvh {
+        height: -webkit-fill-available;
+    }
+    .min-height-dvh {
+        min-height: -webkit-fill-available;
+    }
+}

@@ -42,8 +42,16 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
-        <!-- OpenDyslexic Font for Accessibility -->
-        <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/opendyslexic" type="text/css"/>
+        <!-- OpenDyslexic Font for Accessibility (Local) -->
+        <style>
+            @font-face {
+                font-family: 'OpenDyslexicRegular';
+                src: url('%PUBLIC_URL%/OpenDyslexic-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
 
         <meta
             http-equiv="Content-Security-Policy"
