@@ -358,24 +358,25 @@ export default function NotificationsPage() {
         // Direct Message
         if (notification.type === NotificationType.DIRECT_MESSAGE) {
             const author = notification.message?.author;
+            const displayName = author?.displayName || author?.username || 'Someone';
             return (
                 <div className='flex items-start gap-3'>
                     {author && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                            <UserCard user={author} disableTooltip={true} />
+                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                            <UserCard user={author} triggerVariant='avatar-name' />
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
-                        <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-                            Sent you a message
+                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                            sent you a message
                         </p>
                         {notification.message?.content && (
-                            <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
-                                &quot;{notification.message.content}&quot;
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                                {notification.message.content}
                             </p>
                         )}
                         {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 block'>
+                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
                                 {createdAt}
                             </time>
                         )}
@@ -387,24 +388,25 @@ export default function NotificationsPage() {
         // Comment/Post Reply
         if (notification.type === NotificationType.POST_REPLY) {
             const author = notification.message?.author;
+            const displayName = author?.displayName || author?.username || 'Someone';
             return (
                 <div className='flex items-start gap-3'>
                     {author && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                            <UserCard user={author} disableTooltip={true} />
+                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                            <UserCard user={author} triggerVariant='avatar-name' />
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
-                        <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-                            Reply to your post
+                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                            replied to your post
                         </p>
                         {notification.message?.content && (
-                            <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
-                                &quot;{notification.message.content}&quot;
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                                {notification.message.content}
                             </p>
                         )}
                         {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 block'>
+                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
                                 {createdAt}
                             </time>
                         )}
