@@ -474,7 +474,11 @@ export default function SearchPage() {
                                 ) : userSearchResults.length > 0 ? (
                                     <div className='space-y-3 w-full'>
                                         {userSearchResults.map((user) => (
-                                            <div key={user.id} className='bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-3 hover:shadow-md transition-shadow'>
+                                            <div
+                                                key={user.id}
+                                                className='bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-3 hover:shadow-md transition-shadow cursor-pointer'
+                                                onClick={() => navigate(`/user/${user.id}`)}
+                                            >
                                                 <UserCard user={user} disableTooltip={true} />
                                             </div>
                                         ))}
