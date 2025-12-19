@@ -248,7 +248,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
             <div className={`flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>
                 {/* Time Filter Dropdown */}
-                <div className='relative' ref={dropdownRef}>
+                <div className='relative mr-2' ref={dropdownRef}>
                     <button
                         onClick={() => setShowDropdown((v) => !v)}
                         className={`bg-white dark:bg-zinc-800 border-2 border-gray-400 dark:border-zinc-600 text-gray-800 dark:text-zinc-200 rounded-lg flex items-center gap-1 hover:border-gray-500 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors shadow-sm ${
