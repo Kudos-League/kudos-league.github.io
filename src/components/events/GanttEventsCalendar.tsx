@@ -257,7 +257,10 @@ export default function GanttEventsCalendar() {
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
 
-    const { data: allEvents = [], isLoading, isError } = useEvents({ filter: 'all' });
+    const { data: allEvents = [], isLoading, isError } = useEvents({
+        filter: 'all',
+        local: locationFilter === 'local'
+    });
 
     const events = useMemo(() => {
         const now = new Date();
