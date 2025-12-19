@@ -81,11 +81,12 @@ function HandshakeNotificationByPost({
     console.log('[HandshakeNotificationByPost] Rendering HandshakeCard with:', relevantHandshake);
 
     return (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div>
             <HandshakeCard
                 handshake={{ ...relevantHandshake, post }}
                 userID={userID}
                 showPostDetails={true}
+                hideCardBorder={true}
             />
         </div>
     );
@@ -121,11 +122,12 @@ function HandshakeNotificationCard({
     }
 
     return (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div>
             <HandshakeCard
                 handshake={handshake}
                 userID={userID}
                 showPostDetails={true}
+                hideCardBorder={true}
             />
         </div>
     );
@@ -188,17 +190,17 @@ function describeNotification(notification: NotificationRecord) {
     case NotificationType.HANDSHAKE_CREATED:
         return {
             title: 'New handshake request',
-            description: 'Someone wants to handshake on your post.'
+            description: 'Someone wants to handshake on your post. Click to view details.'
         };
     case NotificationType.HANDSHAKE_ACCEPTED:
         return {
             title: 'Handshake accepted',
-            description: 'Your handshake request was accepted!'
+            description: 'Your handshake request was accepted! You can now coordinate the exchange.'
         };
     case NotificationType.HANDSHAKE_COMPLETED:
         return {
             title: 'Handshake completed',
-            description: 'The transaction has been completed.'
+            description: 'The transaction has been completed successfully.'
         };
     case NotificationType.HANDSHAKE_CANCELLED: {
         const noShow = 'noShowReported' in notification ? notification.noShowReported : false;
@@ -371,7 +373,7 @@ export default function NotificationsPage() {
                             sent you a message
                         </p>
                         {notification.message?.content && (
-                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
                                 {notification.message.content}
                             </p>
                         )}
@@ -401,7 +403,7 @@ export default function NotificationsPage() {
                             replied to your post
                         </p>
                         {notification.message?.content && (
-                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
                                 {notification.message.content}
                             </p>
                         )}
@@ -424,6 +426,7 @@ export default function NotificationsPage() {
         ) {
             const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
             const postID = 'postID' in notification ? notification.postID : undefined;
+            const meta = describeNotification(notification);
 
             console.log('[renderNotificationContent] Handshake notification:', {
                 type: notification.type,
@@ -433,24 +436,40 @@ export default function NotificationsPage() {
                 notification
             });
 
-            if (handshakeID) {
-                console.log('[renderNotificationContent] Using HandshakeNotificationCard with handshakeID');
-                return <HandshakeNotificationCard handshakeID={handshakeID} userID={user?.id} notificationType={notification.type} />;
-            }
-
-            // Fallback: try to fetch using postID
-            if (postID && user?.id) {
-                console.log('[renderNotificationContent] Using HandshakeNotificationByPost with postID');
-                return <HandshakeNotificationByPost postID={postID} userID={user.id} notificationType={notification.type} />;
-            }
-
-            // If no data available, show error
-            console.error('[renderNotificationContent] Handshake notification missing both handshakeID and postID:', notification);
-            return (
+            const handshakeContent = handshakeID ? (
+                <HandshakeNotificationCard handshakeID={handshakeID} userID={user?.id} notificationType={notification.type} />
+            ) : postID && user?.id ? (
+                <HandshakeNotificationByPost postID={postID} userID={user.id} notificationType={notification.type} />
+            ) : (
                 <div className='text-center py-4'>
                     <p className='text-sm text-red-600 dark:text-red-400'>
                         Missing handshake data
                     </p>
+                </div>
+            );
+
+            return (
+                <div className='flex flex-col gap-3'>
+                    <div className='flex items-start justify-between gap-3'>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+                                {meta.title}
+                            </p>
+                            {meta.description && (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
+                                    {meta.description}
+                                </p>
+                            )}
+                        </div>
+                        {createdAt && (
+                            <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                    <div>
+                        {handshakeContent}
+                    </div>
                 </div>
             );
         }
