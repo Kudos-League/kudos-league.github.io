@@ -29,6 +29,7 @@ export default function SearchPage() {
 
     const [searchText, setSearchText] = React.useState(queryParam);
     const [searchFilter, setSearchFilter] = React.useState<SearchFilterType>(filterParam);
+    const [forceSearch, setForceSearch] = React.useState(false);
 
     // Post filters
     const [postType, setPostType] = React.useState<PostFilterType>('all');
@@ -46,21 +47,24 @@ export default function SearchPage() {
 
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
+    // Use immediate search when forceSearch is true, otherwise use debounced
+    const effectiveSearch = forceSearch ? searchText : debouncedSearch;
+
     // Always show filters immediately if there's search text
-    const searchingActive = searchText.length >= 2;
+    const searchingActive = effectiveSearch.length >= 2 || (forceSearch && effectiveSearch.length >= 1);
 
     const { data: searchResults = [], isFetching: searching } =
-        useSearchPostsQuery(debouncedSearch);
+        useSearchPostsQuery(effectiveSearch);
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
-        useSearchUsersQuery(debouncedSearch);
+        useSearchUsersQuery(effectiveSearch);
 
     const { data: allEvents = [] } = useEvents();
 
     // Filter events client-side based on search text
     const eventSearchResults = useMemo(() => {
         if (!searchingActive) return [];
-        const searchLower = debouncedSearch.toLowerCase();
+        const searchLower = effectiveSearch.toLowerCase();
         let filtered = allEvents.filter(event =>
             event.title.toLowerCase().includes(searchLower) ||
             event.description.toLowerCase().includes(searchLower) ||
@@ -112,7 +116,7 @@ export default function SearchPage() {
         }
 
         return filtered;
-    }, [debouncedSearch, allEvents, searchingActive, eventLocation, eventTime]);
+    }, [effectiveSearch, allEvents, searchingActive, eventLocation, eventTime]);
 
     // Filter posts by type
     const filteredPosts = useMemo(() => {
@@ -161,7 +165,18 @@ export default function SearchPage() {
                         type='text'
                         placeholder='Search…'
                         value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
+                        onChange={(e) => {
+                            setSearchText(e.target.value);
+                            // Reset forceSearch when user types
+                            if (forceSearch) setForceSearch(false);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && searchText.trim()) {
+                                // Force immediate search by bypassing minimum length requirement
+                                e.preventDefault();
+                                setForceSearch(true);
+                            }
+                        }}
                         className='w-full border px-3 py-2 pr-10 rounded dark:bg-zinc-800 dark:border-zinc-700'
                         autoFocus
                     />
@@ -207,19 +222,7 @@ export default function SearchPage() {
                                 ({userSearchResults.length})
                             </span>
                         </button>
-                        <button
-                            onClick={() => setSearchFilter('events')}
-                            className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
-                                searchFilter === 'events'
-                                    ? 'bg-brand-600 dark:bg-brand-500 text-white font-semibold shadow-sm'
-                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
-                            }`}
-                        >
-                            Events
-                            <span className='ml-1.5 text-xs opacity-80'>
-                                ({eventSearchResults.length})
-                            </span>
-                        </button>
+
                     </div>
 
                     {/* Post Filters */}
@@ -469,9 +472,11 @@ export default function SearchPage() {
                                         Searching users...
                                     </div>
                                 ) : userSearchResults.length > 0 ? (
-                                    <div className='space-y-2'>
+                                    <div className='space-y-3 w-full'>
                                         {userSearchResults.map((user) => (
-                                            <UserCard key={user.id} user={user} />
+                                            <div key={user.id} className='bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-3 hover:shadow-md transition-shadow'>
+                                                <UserCard user={user} disableTooltip={true} />
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (
