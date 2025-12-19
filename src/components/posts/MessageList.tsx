@@ -463,7 +463,10 @@ const MessageList: React.FC<Props> = ({
 
 
                 {/* Should be sticky at the bottom*/}
-                <div className='sticky bottom-0'>
+                <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-2 pb-1'>
+                    {/* Gradient fade at the top for smoother transition */}
+                    <div className='absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-transparent via-white/50 to-white dark:via-gray-900/50 dark:to-gray-900 pointer-events-none -mt-6' />
+
                     {hasMoreMessages && (
                         <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
                             <Button
@@ -519,7 +522,7 @@ const MessageList: React.FC<Props> = ({
                     </div>
                     {/* --- END TEXTAREA REPLACEMENT --- */}
 
-                    <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-2 text-right'>
+                    <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
                         Ctrl+Enter or ➤ to send
                     </p>
 
