@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { CreateMessageDTO, MessageDTO } from '@/shared/api/types';
 import { useSendMessage, useUpdateMessage, useDeleteMessage } from '@/shared/api/mutations/messages';
 import { useAuth } from '@/contexts/useAuth';
@@ -6,7 +6,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
-import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowUturnLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface Props {
     messages: MessageDTO[];
@@ -90,7 +90,15 @@ const MessageList: React.FC<Props> = ({
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
     // Use HTMLTextAreaElement instead of HTMLInputElement for the ref
-    const inputRef = useRef<HTMLTextAreaElement>(null); 
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    // Helper function to auto-adjust textarea height
+    const adjustTextareaHeight = useCallback((textarea: HTMLTextAreaElement | null) => {
+        if (!textarea) return;
+        textarea.style.height = '42px';
+        const scrollHeight = textarea.scrollHeight;
+        textarea.style.height = Math.min(scrollHeight, 200) + 'px';
+    }, []); 
 
     // State to manage which messages are expanded (for the "show more" feature)
     const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set());
@@ -123,6 +131,10 @@ const MessageList: React.FC<Props> = ({
             callback?.(enriched);
             setMessageContent('');
             setReplyTo(null);
+            // Reset textarea height after message is sent
+            if (inputRef.current) {
+                inputRef.current.style.height = '42px';
+            }
         }
         catch (err) {
             console.error('Failed to send message:', err);
@@ -276,15 +288,9 @@ const MessageList: React.FC<Props> = ({
                 className='border-t border-zinc-200 dark:border-zinc-700 py-3 first:border-t-0'
             >
                 <div className='mb-2 flex justify-between items-start'>
-                    <div className='flex items-center gap-2'>
-                        <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                            <UserCard user={msg.author} />
-                        </span>
-                        {/* Display Relative Time */}
-                        <span className='text-xs text-zinc-500 dark:text-zinc-400'>
-                            {timestamp}
-                        </span>
-                    </div>
+                    <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
+                        <UserCard user={msg.author} />
+                    </span>
 
                     {/* Action buttons */}
                     <div className='flex gap-1'>
@@ -296,34 +302,42 @@ const MessageList: React.FC<Props> = ({
                                     setReplyTo(msg);
                                     setTimeout(() => inputRef.current?.focus(), 0);
                                 }}
-                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                className='p-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                             >
-                                <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
+                                <ArrowUturnLeftIcon className='w-5 h-5 text-zinc-700 dark:text-zinc-200' />
                             </button>
                         )}
                         {(showEditButton || showDeleteButton) && !isEditing && (
                             <>
                                 {showEditButton && (
-                                    <Button
+                                    <button
+                                        type='button'
+                                        title='Edit'
                                         onClick={() => handleEditStart(msg)}
-                                        className='text-xs'
+                                        className='p-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                     >
-                                        Edit
-                                    </Button>
+                                        <PencilIcon className='w-5 h-5 text-zinc-700 dark:text-zinc-200' />
+                                    </button>
                                 )}
                                 {showDeleteButton && (
-                                    <Button
+                                    <button
+                                        type='button'
+                                        title='Delete'
                                         onClick={() => handleDeleteClick(msg.id)}
-                                        variant='danger'
-                                        className='text-xs'
+                                        className='p-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                     >
-                                        Delete
-                                    </Button>
+                                        <TrashIcon className='w-5 h-5 text-red-600 dark:text-red-400' />
+                                    </button>
                                 )}
                             </>
                         )}
                     </div>
                 </div>
+
+                {/* Display Relative Time */}
+                <span className='text-xs text-zinc-500 dark:text-zinc-400 block mb-2'>
+                    {timestamp}
+                </span>
 
                 {/* Reply preview - WhatsApp style */}
                 {msg.replyToMessageID && (
@@ -373,9 +387,11 @@ const MessageList: React.FC<Props> = ({
                     <div className='space-y-2'>
                         <textarea
                             value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            onChange={(e) => {
+                                setEditContent(e.target.value);
+                            }}
+                            className='w-full p-2 border border-zinc-300 dark:border-zinc-600 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                            style={{ minHeight: '80px', height: '80px', overflow: 'hidden' }}
                             rows={3}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -461,7 +477,6 @@ const MessageList: React.FC<Props> = ({
 
                 {displayedMessages.map(renderMessage)}
 
-
                 {/* Should be sticky at the bottom*/}
                 <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-2 pb-1'>
                     {/* Gradient fade at the top for smoother transition */}
@@ -487,9 +502,12 @@ const MessageList: React.FC<Props> = ({
                         <textarea
                             placeholder='Write a comment...'
                             value={messageContent}
-                            onChange={(e) => setMessageContent(e.target.value)}
+                            onChange={(e) => {
+                                setMessageContent(e.target.value);
+                                adjustTextareaHeight(inputRef.current);
+                            }}
                             ref={inputRef}
-                            rows={1} // Start with 1 row
+                            rows={1}
                             onKeyDown={(e) => {
                                 // Submit on Ctrl+Enter
                                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -503,8 +521,8 @@ const MessageList: React.FC<Props> = ({
                                 // Enter just creates a new line (default behavior)
                             }}
                             // Tailwind classes for textarea styling
-                            className='flex-1 px-3 py-2 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
-                            style={{ minHeight: '42px', maxHeight: '120px' }} // Set min/max height
+                            className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                            style={{ minHeight: '42px', height: '42px', overflow: 'hidden' }}
                         />
                         <Button
                             onMouseDown={(e) => {
