@@ -655,92 +655,104 @@ export default function PostDetails(props: Props) {
     const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
     
     return (
-        <div className='max-w-4xl mx-auto p-4'>
-            {/* Header / Avatar */}
-            <UserCard user={postDetails.sender} large />
+        <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
+            {/* Header: User Card + Action Buttons */}
+            <div className='flex items-start justify-between mb-4 gap-4'>
+                <UserCard user={postDetails.sender} large />
 
-            {/* Post Title and Badges */}
-            <div className='mb-4'>
-                <div className='flex items-center gap-2'>
-                    {postDetails.status === 'closed' && (
-                        <Pill tone='danger'>CLOSED</Pill>
-                    )}
-                    <h1 className='text-2xl font-bold'>{postDetails.title}</h1>
-
-                    {user?.id === postDetails.sender?.id && (
+                {user?.id === postDetails.sender?.id && (
+                    <div className='flex gap-2 shrink-0'>
                         <EditPostButton onClick={handleStartEdit} />
-                    )}
-
-                    {postDetails.status !== 'closed' &&
-                        user?.id === postDetails.sender?.id && (
-                        <Button
-                            onClick={handleClosePost}
-                            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
-                            variant='danger'
-                        >
+                        {postDetails.status !== 'closed' && (
+                            <Button
+                                onClick={handleClosePost}
+                                className='inline-flex items-center gap-1 text-sm font-semibold'
+                                variant='danger'
+                            >
                                 Close Post
-                        </Button>
-                    )}
-                </div>
-
-                {postDetails.category?.name && (
-                    <p className='text-sm italic text-gray-600'>
-                        Category: {postDetails.category.name}
-                    </p>
+                            </Button>
+                        )}
+                    </div>
                 )}
-                <div className='flex flex-wrap items-center gap-2 mt-2'>
-                    <span
-                        className={`px-2 py-1 rounded text-white text-xs ${postDetails.type === 'request' ? 'bg-blue-500' : 'bg-green-500'}`}
-                    >
-                        {postDetails.type}
-                    </span>
-                    <span className='px-2 py-1 rounded bg-gray-700 text-white text-xs'>
-                        {postDetails.status}
-                    </span>
-                    <span className='px-2 py-1 rounded bg-gray-700 text-white text-xs'>
-                        Items: {typeof postDetails.itemsLimit === 'number' ? postDetails.itemsLimit : '∞'}
-                    </span>
-
-                    {postDetails.tags?.map((tag, i) => (
-                        <Pill key={i} name={tag.name} />
-                    ))}
-                </div>
             </div>
 
-            {/* Like, Dislike, Report */}
-            <div className='flex gap-4 items-center my-4 flex-wrap'>
-                <Button
+            {/* Title */}
+            <div className='mb-3'>
+                <h1 className='text-3xl font-bold text-gray-900 dark:text-gray-100'>
+                    {postDetails.title}
+                </h1>
+            </div>
+
+            {/* Primary Metadata: Type, Status, Category */}
+            <div className='flex flex-wrap items-center gap-2 mb-3'>
+                <Pill
+                    tone={postDetails.type === 'request' ? 'info' : 'success'}
+                    className='uppercase font-semibold'
+                >
+                    {postDetails.type}
+                </Pill>
+
+                {postDetails.status === 'closed' ? (
+                    <Pill tone='danger' className='uppercase font-semibold'>CLOSED</Pill>
+                ) : (
+                    <Pill tone='neutral' className='uppercase'>{postDetails.status}</Pill>
+                )}
+
+                {postDetails.category?.name && (
+                    <span className='text-sm text-gray-600 dark:text-gray-400 ml-1'>
+                        in <span className='font-medium'>{postDetails.category.name}</span>
+                    </span>
+                )}
+            </div>
+
+            {/* Secondary Metadata: Items + Tags */}
+            <div className='flex flex-wrap items-center gap-2 mb-4'>
+                {typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0 && (
+                    <span className='text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded'>
+                        {postDetails.itemsLimit} {postDetails.itemsLimit === 1 ? 'item' : 'items'} max
+                    </span>
+                )}
+
+                {postDetails.tags?.map((tag, i) => (
+                    <Pill key={i} name={tag.name} />
+                ))}
+            </div>
+
+            {/* Icon Actions: Like, Dislike, Report */}
+            <div className='flex gap-2 items-center mb-4'>
+                <button
                     onClick={handleLike}
                     disabled={liked === true}
-                    shape='pill'
-                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
-                        ${liked === true ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
+                    title='Like'
+                    className={`p-2 rounded-full transition ${
+                        liked === true
+                            ? 'bg-blue-500 text-white cursor-default'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600'
+                    }`}
                 >
-                    <HandThumbUpIcon className='w-4 h-4' />
-                    Like
-                </Button>
+                    <HandThumbUpIcon className='w-5 h-5' />
+                </button>
 
-                <Button
+                <button
                     onClick={handleDislike}
                     disabled={liked === false}
-                    shape='pill'
-                    variant='danger'
-                    className={`flex items-center gap-1 px-3 py-1 transition text-sm
-                    ${liked === false ? 'bg-gray-200 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                    title='Dislike'
+                    className={`p-2 rounded-full transition ${
+                        liked === false
+                            ? 'bg-red-500 text-white cursor-default'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600'
+                    }`}
                 >
-                    <HandThumbDownIcon className='w-4 h-4' />
-                    Dislike
-                </Button>
+                    <HandThumbDownIcon className='w-5 h-5' />
+                </button>
 
-                <Button
+                <button
                     onClick={() => setReportModalVisible(true)}
-                    variant='warning'
-                    shape='pill'
-                    className='flex items-center gap-1 text-sm'
+                    title='Report'
+                    className='p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
                 >
-                    <ExclamationTriangleIcon className='w-4 h-4' />
-                    Report
-                </Button>
+                    <ExclamationTriangleIcon className='w-5 h-5' />
+                </button>
             </div>
 
             {/* Body / Description - Enhanced Edit Form */}
@@ -770,7 +782,8 @@ export default function PostDetails(props: Props) {
                             Description
                         </label>
                         <textarea
-                            className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                             rows={4}
                             value={editData.body}
                             onChange={(e) =>
@@ -794,33 +807,7 @@ export default function PostDetails(props: Props) {
                         <label className='block text-sm font-medium mb-2'>
                             Location
                         </label>
-                        {user?.location?.regionID && (
-                            <div className='mb-3'>
-                                <Button
-                                    type='button'
-                                    onClick={() => {
-                                        if (user?.location) {
-                                            setEditData({
-                                                ...editData,
-                                                location: {
-                                                    regionID: user.location.regionID || null,
-                                                    name: user.location.name || null
-                                                }
-                                            });
-                                        }
-                                    }}
-                                    variant='secondary'
-                                    className='text-sm'
-                                >
-                                    📍 Use My Profile Location
-                                    {user.location.name && (
-                                        <span className='ml-1 opacity-75'>
-                                            ({user.location.name})
-                                        </span>
-                                    )}
-                                </Button>
-                            </div>
-                        )}
+
                         <MapDisplay
                             edit
                             regionID={editData.location?.regionID}
@@ -866,21 +853,24 @@ export default function PostDetails(props: Props) {
                     </div>
                 </div>
             ) : (
-                <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
-                    <TextWithLinks className='text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words'>
-                        {postDetails.body}
-                    </TextWithLinks>
-                    {postDetails.rewardOffers?.[0]?.kudosFinal && (
-                        <p className='mt-2 font-semibold text-blue-600 dark:text-blue-400'>
-                            Final Kudos:{' '}
-                            {postDetails.rewardOffers[0].kudosFinal}
-                        </p>
-                    )}
-                </div>
-            )}
+                <>
+                    {/* Images */}
+                    <ImageCarousel images={postDetails.images || []} />
 
-            {/* Images */}
-            <ImageCarousel images={postDetails.images || []} />
+                    {/* Body / Description */}
+                    <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
+                        <TextWithLinks className='text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words'>
+                            {postDetails.body}
+                        </TextWithLinks>
+                        {postDetails.rewardOffers?.[0]?.kudosFinal && (
+                            <p className='mt-2 font-semibold text-blue-600 dark:text-blue-400'>
+                                Final Kudos:{' '}
+                                {postDetails.rewardOffers[0].kudosFinal}
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
 
             {/* Map */}
             {postDetails.location?.regionID && (
@@ -1030,7 +1020,8 @@ export default function PostDetails(props: Props) {
                             Why are you reporting this post?
                         </p>
                         <textarea
-                            className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                            className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
+                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                             rows={4}
                             placeholder='Enter reason...'
                             value={reportReason}

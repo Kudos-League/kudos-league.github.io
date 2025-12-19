@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { endOfDay, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
+import { PencilSquareIcon, ArrowLeftIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,7 @@ function EditEventButton({ onClick }: { onClick: () => void }) {
 export default function EventDetails({ event, setEvent }: Props) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const [joining, setJoining] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -119,7 +121,7 @@ export default function EventDetails({ event, setEvent }: Props) {
             }
             catch (err) {
                 console.error('Error loading user info', err);
-                setError('Error loading user info');
+                setError('Couldn\'t get user info. User might\'ve been deleted.');
             }
         };
         fetchSender();
@@ -284,6 +286,16 @@ export default function EventDetails({ event, setEvent }: Props) {
 
     return (
         <div className='max-w-3xl mx-auto px-4 py-8 space-y-6'>
+            {/* Back Button */}
+            <Button
+                onClick={() => navigate(-1)}
+                variant='secondary'
+                className='inline-flex items-center gap-2'
+            >
+                <ArrowLeftIcon className='h-4 w-4' />
+                Back
+            </Button>
+
             {/* Event Header with Edit Button */}
             <div className='flex items-start justify-between'>
                 <div className='flex-1'>
@@ -292,14 +304,14 @@ export default function EventDetails({ event, setEvent }: Props) {
                             type='text'
                             value={editData.title}
                             onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                            className='text-2xl font-bold w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='text-2xl font-bold w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             placeholder='Event title'
                         />
                     ) : (
-                        <h1 className='text-2xl font-bold'>{event.title}</h1>
+                        <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>{event.title}</h1>
                     )}
                 </div>
-                
+
                 {isEventCreator && !isEditing && (
                     <EditEventButton onClick={handleStartEdit} />
                 )}
@@ -311,7 +323,8 @@ export default function EventDetails({ event, setEvent }: Props) {
                     <textarea
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                        className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                        className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                         rows={4}
                         placeholder='Event description'
                     />

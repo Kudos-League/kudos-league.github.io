@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -14,13 +14,22 @@ type LeaderboardUser = {
     avatar?: string | null;
 };
 
+type LeaderboardResponse = {
+    data: LeaderboardUser[];
+    nextCursor: number | null;
+};
+
 const TIME_FILTERS = [
     { label: 'All Time', value: 'all' },
     { label: 'This Month', value: 'month' },
     { label: 'This Week', value: 'week' }
 ];
 
-export default function Leaderboard() {
+type LeaderboardProps = {
+    compact?: boolean;
+};
+
+export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { location: browserLocation } = useLocation();
@@ -31,14 +40,29 @@ export default function Leaderboard() {
     const [useLocal, setUseLocal] = useState(false);
     const [timeFilter, setTimeFilter] = useState('all');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [displayLimit, setDisplayLimit] = useState(20);
+    const [nextCursor, setNextCursor] = useState<number | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
 
+    const getHeaderLabel = () => {
+        if (timeFilter === 'all') return 'Most Kudos';
+        const period = TIME_FILTERS.find((f) => f.value === timeFilter)?.label || '';
+        return compact ? period.replace('This ', '') : `Kudos ${period}`;
+    };
+
     // Check if we have any location available (saved or browser)
     const hasLocation = !!user?.location?.regionID || !!browserLocation;
 
-    const loadLeaderboard = async () => {
+    console.log('Render - useLocal:', useLocal, 'hasLocation:', hasLocation, 'shouldRender:', !useLocal || hasLocation);
+
+    const loadLeaderboard = async (reset = true) => {
         if (!user) {
             setError('Must be logged in.');
             return;
@@ -49,45 +73,190 @@ export default function Leaderboard() {
             setError(null); // Clear error, will show message in UI instead
             setLoading(false);
             setLeaderboard([]);
+            setNextCursor(null);
             return;
         }
 
-        setLoading(true);
+        if (reset) {
+            setLoading(true);
+            setLeaderboard([]);
+            setNextCursor(null);
+            scrollContainerRef.current?.scrollTo(0, 0);
+        }
+        else {
+            setLoadingMore(true);
+        }
+
         setError(null);
         try {
-            const data = await apiGet<LeaderboardUser[]>('/leaderboard', {
-                params: { local: useLocal, time: timeFilter }
+            const response = await apiGet<LeaderboardResponse>('/leaderboard', {
+                params: {
+                    local: useLocal,
+                    time: timeFilter,
+                    limit: 20,
+                    cursor: reset ? undefined : nextCursor
+                }
             });
-            setLeaderboard(data);
+
+            if (reset) {
+                setLeaderboard(response.data || []);
+            }
+            else {
+                setLeaderboard(prev => [...prev, ...(response.data || [])]);
+            }
+            setNextCursor(response.nextCursor);
         }
         catch (err) {
-            console.error(err);
+            console.error('Leaderboard error:', err);
             setError('Failed to load leaderboard');
         }
         finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    // Effect to trigger load when filters change
     useEffect(() => {
         loadLeaderboard();
     }, [useLocal, timeFilter]);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        }
+
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showDropdown]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const trigger = loadMoreTriggerRef.current;
+        if (!trigger) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const firstEntry = entries[0];
+                if (firstEntry.isIntersecting && nextCursor && !loadingMore && !loading) {
+                    loadLeaderboard(false);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(trigger);
+
+        return () => {
+            if (trigger) observer.unobserve(trigger);
+        };
+    }, [nextCursor, loadingMore, loading]);
+
+    // Get medal color for top 3 positions
+    const getMedalColor = (index: number) => {
+        if (index === 0) return 'text-yellow-500 dark:text-yellow-400'; // Gold
+        if (index === 1) return 'text-gray-400 dark:text-gray-300'; // Silver
+        if (index === 2) return 'text-amber-700 dark:text-amber-600'; // Bronze
+        return '';
+    };
+
+    const LeaderboardContent = (
+        <>
+            {/* Stacked List */}
+            <ul
+                role='list'
+                className={`divide-y divide-gray-200 dark:divide-white/10 ${compact ? 'mt-2' : 'mt-4'}`}
+            >
+                {leaderboard?.map((entry, index) => {
+                    const medalColor = getMedalColor(index);
+                    return (
+                        <li
+                            key={entry.id}
+                            className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
+                                compact ? 'py-2 px-1' : 'py-5 px-2'
+                            }`}
+                            onClick={() => navigate(`/user/${entry.id}`)}
+                        >
+                            <div className='flex min-w-0 gap-x-2 flex-1'>
+                                <UserCard
+                                    user={
+                                        {
+                                            ...entry,
+                                            kudos: entry.totalKudos
+                                        } as any as UserDTO
+                                    }
+                                    large={!compact}
+                                    triggerVariant='avatar-name'
+                                    subtitle={compact ? undefined : (entry.location?.name || '—')}
+                                    centered={false}
+                                    subtitleClassName='max-w-[180px]'
+                                    nameClassName={medalColor}
+                                />
+                            </div>
+
+                            <div className='flex shrink-0 flex-col items-end justify-center'>
+                                <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+                                    {entry.totalKudos.toLocaleString()}
+                                </p>
+                                {compact && timeFilter !== 'all' && (
+                                    <p className='text-[10px] text-gray-500 dark:text-gray-400'>
+                                        {timeFilter === 'week' ? 'this wk' : 'this mo'}
+                                    </p>
+                                )}
+                                {!compact && (
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                        {timeFilter === 'all' ? 'Kudos' : `This ${timeFilter === 'week' ? 'Week' : 'Month'}`}
+                                    </p>
+                                )}
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+
+            {/* Infinite scroll trigger */}
+            {nextCursor && (
+                <div ref={loadMoreTriggerRef} className={`flex items-center justify-center ${compact ? 'h-6' : 'h-10'}`}>
+                    {loadingMore && (
+                        <div className={`text-gray-500 ${compact ? 'text-xs' : 'text-sm'}`}>Loading more...</div>
+                    )}
+                </div>
+            )}
+
+            {/* End of list message */}
+            {!nextCursor && leaderboard.length > 0 && (
+                <div className={`text-center text-gray-500 ${compact ? 'py-2 text-xs' : 'py-4 text-sm'}`}>
+                    You&apos;ve reached the end
+                </div>
+            )}
+        </>
+    );
+
     return (
-        <div className='max-w-3xl mx-auto p-6'>
-            <h1 className='text-2xl font-bold text-center mb-6'>
-                High Score Board
+        <div className={compact ? 'ml-2' : 'ml-2 sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
+            <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
+                {getHeaderLabel()}
             </h1>
 
-            <div className='flex justify-between items-center mb-4 relative'>
+            <div className={`flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>
                 {/* Time Filter Dropdown */}
-                <div className='relative'>
+                <div className='relative mr-2' ref={dropdownRef}>
                     <button
                         onClick={() => setShowDropdown((v) => !v)}
-                        className='bg-white border-2 border-gray-400 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:border-gray-500 hover:bg-gray-50 transition-colors shadow-sm'
+                        className={`bg-white dark:bg-zinc-800 border-2 border-gray-400 dark:border-zinc-600 text-gray-800 dark:text-zinc-200 rounded-lg flex items-center gap-1 hover:border-gray-500 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors shadow-sm ${
+                            compact ? 'px-2 py-1 text-xs' : 'px-4 py-2'
+                        }`}
                     >
-                        <span className='font-medium'>{getLabel()}</span>
-                        <span className='text-xs text-gray-500'>▼</span>
+                        <span className='font-medium'>{compact ? getLabel().replace('This ', '') : getLabel()}</span>
+                        <span className='text-xs text-gray-500 dark:text-zinc-400'>▼</span>
                     </button>
 
                     {showDropdown && (
@@ -113,7 +282,7 @@ export default function Leaderboard() {
                 </div>
 
                 {/* Local/Global Switch */}
-                <div className='flex items-center gap-2'>
+                <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
                     <span className='text-sm'>
                         {user?.location?.name || 'Local'}
                     </span>
@@ -124,15 +293,19 @@ export default function Leaderboard() {
                             onChange={() => setUseLocal((v) => !v)}
                             className='sr-only'
                         />
-                        <div className='relative w-10 h-5 bg-gray-300 rounded-full shadow-inner'>
+                        <div className={`relative bg-gray-300 dark:bg-zinc-600 rounded-full shadow-inner ${
+                            compact ? 'w-8 h-4' : 'w-10 h-5'
+                        }`}>
                             <div
-                                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                                    useLocal ? '' : 'translate-x-5'
+                                className={`absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform ${
+                                    compact ? 'w-3 h-3' : 'w-4 h-4'
+                                } ${
+                                    useLocal ? '' : (compact ? 'translate-x-4' : 'translate-x-5')
                                 }`}
                             />
                         </div>
                     </label>
-                    <span className='text-sm'>Global</span>
+                    <span className={compact ? 'text-xs' : 'text-sm'}>Global</span>
                 </div>
             </div>
 
@@ -159,44 +332,42 @@ export default function Leaderboard() {
                 </div>
             )}
 
-            {/* Stacked List */}
-            {(!useLocal || hasLocation) && (
-                <ul
-                    role='list'
-                    className='divide-y divide-gray-200 dark:divide-white/10 mt-4'
-                >
-                    {leaderboard.map((entry) => (
-                        <li
-                            key={entry.id}
-                            className='flex justify-between gap-x-6 py-5 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded'
-                            onClick={() => navigate(`/user/${entry.id}`)}
-                        >
-                            <div className='flex min-w-0 gap-x-4 flex-1'>
-                                <UserCard
-                                    user={
-                                        {
-                                            ...entry,
-                                            kudos: entry.totalKudos
-                                        } as any as UserDTO
-                                    }
-                                    large
-                                    triggerVariant='avatar-name'
-                                    subtitle={entry.location?.name || '—'}
-                                    centered={false}
-                                    subtitleClassName='max-w-[180px]'
-                                />
-                            </div>
-
-                            <div className='flex shrink-0 flex-col items-end justify-center'>
-                                <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                    {entry.totalKudos.toLocaleString()}
-                                </p>
-                                <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    Kudos
-                                </p>
-                            </div>
-                        </li>                ))}
-                </ul>
+            {/* Leaderboard List Container */}
+            {(!useLocal || hasLocation) && !loading && (
+                <>
+                    <style>{`
+                        .leaderboard-scroll::-webkit-scrollbar {
+                            width: 8px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-track {
+                            background: rgba(0, 0, 0, 0.05);
+                            border-radius: 4px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-thumb {
+                            background: rgba(0, 0, 0, 0.2);
+                            border-radius: 4px;
+                        }
+                        .leaderboard-scroll::-webkit-scrollbar-thumb:hover {
+                            background: rgba(0, 0, 0, 0.3);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-track {
+                            background: rgba(255, 255, 255, 0.05);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-thumb {
+                            background: rgba(255, 255, 255, 0.2);
+                        }
+                        .dark .leaderboard-scroll::-webkit-scrollbar-thumb:hover {
+                            background: rgba(255, 255, 255, 0.3);
+                        }
+                    `}</style>
+                    <div
+                        ref={scrollContainerRef}
+                        className={compact ? 'leaderboard-scroll max-h-[600px] overflow-y-auto pr-1' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
+                        style={{ scrollbarGutter: 'stable' }}
+                    >
+                        {LeaderboardContent}
+                    </div>
+                </>
             )}
         </div>
     );

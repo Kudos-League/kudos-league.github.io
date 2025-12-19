@@ -8,6 +8,8 @@ import PublicOnly from './PublicOnly';
 import { routes } from '@/routes';
 import About from '@/pages/about';
 import GanttEventsCalendar from '../events/GanttEventsCalendar';
+import { useAuth } from '@/contexts/useAuth';
+import Communities from '../communities/Communities';
 
 const Home = lazy(() => import('@/pages/home'));
 const Result = lazy(() => import('@/pages/donate/result'));
@@ -23,6 +25,7 @@ const DonatePage = lazy(() => import('@/pages/donate'));
 const AdminDashboard = lazy(() => import('@/pages/admin'));
 const FeedbackPage = lazy(() => import('@/pages/feedback'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
+const SearchPage = lazy(() => import('@/pages/search'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
@@ -34,15 +37,33 @@ const LegacySignUpRedirect = () => {
     return <Navigate to={`${routes.signUp}${location.search}`} replace />;
 };
 
+const HomeOrAbout = () => {
+    const { loading } = useAuth();
+
+    // Show spinner while loading auth state
+    if (loading) return <Spinner text='Loading...' />;
+
+    // Show home feed for all users (logged in or not)
+    return <Home />;
+};
+
 function AppNavigator() {
     return (
         <Suspense fallback={<Spinner text='Loading app...' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About/>} />
-                    <Route path={routes.home} element={<Home />} />
+                    <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />
+                    <Route
+                        path={routes.search}
+                        element={
+                            <RequireAuth>
+                                <SearchPage />
+                            </RequireAuth>
+                        }
+                    />
 
                     <Route
                         path='/post/:id'
@@ -114,6 +135,14 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <Chat channelType='dm' />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.communities}
+                        element={
+                            <RequireAuth>
+                                <Communities />
                             </RequireAuth>
                         }
                     />

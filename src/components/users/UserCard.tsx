@@ -96,7 +96,7 @@ const UserCard: React.FC<Props> = ({
     subtitleClassName = '',
     disableTooltip = false,
     onAdminReportOpen,
-    showKudos = true
+    showKudos = false
 }) => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
@@ -113,41 +113,33 @@ const UserCard: React.FC<Props> = ({
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
     const kudos = typeof user?.kudos === 'number' ? user.kudos : 0;
+    
+    // 1. Define the handler that navigates to the profile
+    const handleNavigate = (e: React.MouseEvent) => {
+        // Prevent Tippy/other parent handlers from firing on this click
+        e.stopPropagation();
+        if (user?.id) {
+            navigate(`/user/${user.id}`);
+        }
+    }
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
             'font-semibold',
             large ? 'text-lg' : 'text-sm',
             'truncate',
-            'hover:underline',
-            'cursor-pointer',
+            // REMOVE hover:underline and cursor-pointer here
             nameClassName
         ].join(' ');
 
         const nameEl = (
             <span
                 className={baseNameClasses}
-                onClick={() => user?.id && navigate(`/user/${user.id}`)}
-                title={username ? displayName : undefined}
+                title={displayName ? displayName : username ? username : 'Anonymous'}
             >
-                {username ? (
-                    <>
-                        <span
-                            className='block group-hover:hidden'
-                            aria-hidden={true}
-                        >
-                            {displayName}
-                        </span>
-                        <span
-                            className='hidden group-hover:block truncate'
-                            aria-label={username}
-                        >
-                            {username}
-                        </span>
-                    </>
-                ) : (
-                    <span className='block'>{displayName}</span>
-                )}
+                <span>
+                    {displayName}
+                </span>
             </span>
         );
 
@@ -157,15 +149,21 @@ const UserCard: React.FC<Props> = ({
             </span>
         ) : null;
 
-        const wrapperClasses =
+        const wrapperClasses = [
             centered && subtitle
                 ? 'group inline-flex flex-col items-center text-center gap-1'
-                : 'group inline-flex items-center gap-2';
+                : 'group inline-flex items-center gap-2',
+            // 3. APPLY overall cursor/hover styles to the wrapper
+            'cursor-pointer',
+            'hover:underline decoration-neutral-900 dark:decoration-neutral-100',
+            // Ensure underline is only on text, not the avatar area
+            centered && subtitle ? '' : 'group-hover:[&>div:last-child>div>span:first-child]:underline'
+        ].join(' ');
 
         const avatar = (
             <div
-                onClick={() => user?.id && navigate(`/user/${user.id}`)}
-                className='cursor-pointer'
+                // REMOVE onClick here
+                className='' // cursor-pointer is now on the wrapper
             >
                 <AvatarComponent
                     username={displayName}
@@ -184,7 +182,7 @@ const UserCard: React.FC<Props> = ({
                 }
             >
                 {nameEl}
-                {/* {kudosEl} */}
+                {kudosEl}
                 {subtitle ? (
                     <div
                         className={[
@@ -198,14 +196,15 @@ const UserCard: React.FC<Props> = ({
             </div>
         );
 
-        if (triggerVariant === 'name') {
-            return <div className={wrapperClasses}>{content}</div>;
-        }
-
+        // Apply onClick handler to all trigger variants
         return (
-            <div className={wrapperClasses}>
-                {avatar}
-                {content}
+            <div className={wrapperClasses} onClick={handleNavigate}>
+                {triggerVariant === 'name' ? content : (
+                    <>
+                        {avatar}
+                        {content}
+                    </>
+                )}
             </div>
         );
     }, [
@@ -215,7 +214,7 @@ const UserCard: React.FC<Props> = ({
         user?.avatar,
         displayName,
         user?.username,
-        navigate,
+        handleNavigate, // Use the new handler
         subtitle,
         centered,
         nameClassName,
@@ -240,17 +239,20 @@ const UserCard: React.FC<Props> = ({
             <div
                 className={[
                     centered && subtitle
-                        ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                        ? 'inline-flex flex-col items-center text-center gap-2'
                         : 'inline-flex items-center gap-2',
                     'text-neutral-900 dark:text-neutral-100',
                     className
                 ].join(' ')}
+                onClick={handleNavigate} // Apply handler for non-Tippy case
             >
                 {trigger}
             </div>
         );
     }
 
+    // The Tippy trigger wrapper still needs the padding/margin trick to expand
+    // the *hover* area for the tooltip, but the click handling is now inside {trigger}.
     return (
         <>
             <Tippy
@@ -316,6 +318,7 @@ const UserCard: React.FC<Props> = ({
                                 <div className='min-w-0'>
                                     <div className='flex items-center gap-2'>
                                         <div className='flex items-center gap-2'>
+                                            {/* Note: Profile link inside the card remains a separate button */}
                                             <button
                                                 onClick={() =>
                                                     user.id &&
@@ -505,9 +508,12 @@ const UserCard: React.FC<Props> = ({
                 <div
                     className={[
                         centered && subtitle
-                            ? 'inline-flex w-full flex-col items-center text-center gap-2'
+                            ? 'inline-flex flex-col items-center text-center gap-2'
                             : 'inline-flex items-center gap-2',
                         'text-neutral-900 dark:text-neutral-100',
+                        // Applying the padding/margin trick to increase the HOVER area for Tippy
+                        'p-2',
+                        '-m-2',
                         className
                     ].join(' ')}
                 >

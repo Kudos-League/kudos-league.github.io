@@ -3,10 +3,15 @@ import React from 'react';
 const About = () => {
     return (
         <div className='max-w-4xl mx-auto p-6 space-y-8'>
+            {/* Page Title */}
+            <h1 className='text-4xl font-bold text-center text-zinc-900 dark:text-white'>
+                Welcome to the Kudos League Foundation!
+            </h1>
+
             {/* Hero Section */}
             <div className='text-center space-y-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-8'>
                 <h1 className='text-4xl font-bold'>
-                    🏆 EARN POINTS BY HELPING PEOPLE! 🏆
+                    EARN POINTS BY HELPING PEOPLE!
                 </h1>
                 <p className='text-xl opacity-90 max-w-3xl mx-auto'>
                     Kudos League is a platform created for people to give and receive help of any kind. 
@@ -20,7 +25,7 @@ const About = () => {
             {/* Free Platform Section */}
             <div className='bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg border-l-4 border-green-500'>
                 <h2 className='text-3xl font-bold mb-4 text-gray-900 dark:text-white flex items-center'>
-                    💰 WAIT, POINTS? DO I NEED TO PAY?
+                    WAIT, POINTS? DO I NEED TO PAY?
                 </h2>
                 <div className='text-2xl font-bold text-green-600 mb-4'>
                     Absolutely not!
@@ -41,7 +46,7 @@ const About = () => {
             {/* How It Works */}
             <div className='bg-gray-50 dark:bg-gray-900 rounded-lg p-8'>
                 <h2 className='text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center'>
-                    🔧 HOW DOES THE SITE WORK?
+                    HOW DOES THE SITE WORK?
                 </h2>
                 <p className='text-lg mb-6 text-gray-600 dark:text-gray-300'>
                     Glad you asked! Here&apos;s the simple process:
@@ -50,7 +55,7 @@ const About = () => {
                 <div className='grid md:grid-cols-2 gap-6 mb-6'>
                     <div className='bg-blue-100 dark:bg-blue-900/30 rounded-lg p-6'>
                         <h3 className='text-xl font-semibold mb-3 text-blue-800 dark:text-blue-300 flex items-center'>
-                            🙋‍♂️ ReQuest Help
+                            ReQuest Help 🙋‍♂️ 
                         </h3>
                         <p className='text-gray-700 dark:text-gray-300'>
                             Ask for help when you need something. Your post appears on the home page 
@@ -60,7 +65,7 @@ const About = () => {
                     
                     <div className='bg-green-100 dark:bg-green-900/30 rounded-lg p-6'>
                         <h3 className='text-xl font-semibold mb-3 text-green-800 dark:text-green-300 flex items-center'>
-                            🎁 Gift Help
+                            Gift Help 🎁 
                         </h3>
                         <p className='text-gray-700 dark:text-gray-300'>
                             Offer help when you have something to give. People who need what 
@@ -97,7 +102,7 @@ const About = () => {
             {/* Kudos Value Explanation */}
             <div className='bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg'>
                 <h2 className='text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center'>
-                    💧 HOW MUCH IS A POINT WORTH?
+                    HOW MUCH IS A POINT WORTH?
                 </h2>
                 <p className='text-lg mb-6 text-gray-600 dark:text-gray-300'>
                     Glad you asked! Let us explain with a simple analogy:
@@ -145,7 +150,7 @@ const About = () => {
             {/* Current Status & Future Plans */}
             <div className='bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-8 border border-yellow-200 dark:border-yellow-800'>
                 <h2 className='text-2xl font-bold mb-4 text-yellow-800 dark:text-yellow-300 flex items-center'>
-                    ⚠️ Current Status & Future Plans
+                    Current Status & Future Plans
                 </h2>
                 <div className='space-y-4 text-gray-700 dark:text-gray-300'>
                     <p>
@@ -162,19 +167,19 @@ const About = () => {
                         <li>Penalties for unrealistic Kudos offers (like 1,000,000 Kudos for an apple or 1 Kudos for a Ferrari)</li>
                     </ul>
                     
-                    <div className='bg-white dark:bg-gray-800 rounded-lg p-4 mt-4'>
-                        <p className='text-sm'>
+                    {/* <div className='bg-white dark:bg-gray-800 rounded-lg p-4 mt-4'>
+                        {/* <p className='text-sm'>
                             <strong>Note:</strong> You can edit the amount of Kudos you want to give at any time 
                             before the other person receives it. Mistakes happen, and we account for that!
-                        </p>
-                    </div>
+                        </p> 
+                    </div> */}
                 </div>
             </div>
 
             {/* Open Source */}
             <div className='bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-8 text-center'>
                 <h2 className='text-3xl font-bold mb-4'>
-                    🔓 WE ARE GOING FREE AND OPEN SOURCE
+                    WE ARE GOING FREE AND OPEN SOURCE
                 </h2>
                 <p className='text-xl mb-4 opacity-90'>
                     Everything is better when it&apos;s free!
@@ -185,7 +190,7 @@ const About = () => {
             </div>
             <div className='bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 text-white rounded-lg p-8 text-center shadow-xl space-y-6'>
                 <h2 className='text-4xl font-extrabold tracking-wider'>
-                    🤝 COMMUNITY DRIVEN
+                    COMMUNITY DRIVEN 🤝
                 </h2>
                 <p className='text-xl font-bold opacity-90'>
                     More Kudos = Higher chance of getting help!
@@ -205,19 +210,35 @@ const About = () => {
                     Ready to Join and Earn Kudos?
                 </h2>
                 <div className='space-x-4'>
-                    <a 
-                        href='/signup' 
+                    <a
+                        href='/signup'
                         className='inline-block bg-white text-emerald-600 px-6 py-2 rounded-lg font-bold hover:bg-emerald-50 transition-colors'
                     >
                         Join Now
                     </a>
-                    <a 
-                        href='/login' 
+                    <a
+                        href='/login'
                         className='inline-block border-2 border-white text-white px-6 py-2 rounded-lg font-bold hover:bg-white hover:text-emerald-600 transition-colors'
                     >
                         Log In
                     </a>
                 </div>
+            </div>
+
+            {/* Donation Section */}
+            <div className='text-center bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg p-8'>
+                <h2 className='text-3xl font-bold mb-4'>
+                    Support Our Mission
+                </h2>
+                <p className='text-lg mb-6 opacity-90'>
+                    Help us keep Kudos League free and open for everyone!
+                </p>
+                <a
+                    href='/donate'
+                    className='inline-block bg-white text-pink-600 px-8 py-3 rounded-lg font-bold text-lg hover:bg-pink-50 transition-all shadow-lg'
+                >
+                    Donate Now
+                </a>
             </div>
         </div>
     );

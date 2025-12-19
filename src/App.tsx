@@ -12,6 +12,10 @@ import { BlockedUsersProvider } from '@/contexts/useBlockedUsers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
+import { MobileChatProvider } from '@/contexts/MobileChatContext';
+import { DMsProvider } from '@/contexts/DMsContext';
+import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
+import { DataCacheProvider } from '@/contexts/DataCacheContext';
 import ConnectingOverlay from '@/components/common/ConnectingOverlay';
 
 import AppNavigator from '@/components/navigation/AppNavigator';
@@ -44,17 +48,25 @@ export default function App() {
             >
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
-                        <NotificationsProvider>
-                            <ThemeProvider>
-                                <WebSocketProvider>
-                                    <BlockedUsersProvider>
-                                        <AppCore />
-                                        <AlertHost />
-                                        <ConnectingOverlay />
-                                    </BlockedUsersProvider>
-                                </WebSocketProvider>
-                            </ThemeProvider>
-                        </NotificationsProvider>
+                        <DataCacheProvider>
+                            <NotificationsProvider>
+                                <AccessibilityProvider>
+                                    <ThemeProvider>
+                                        <MobileChatProvider>
+                                            <DMsProvider>
+                                                <WebSocketProvider>
+                                                    <BlockedUsersProvider>
+                                                        <AppCore />
+                                                        <AlertHost />
+                                                        <ConnectingOverlay />
+                                                    </BlockedUsersProvider>
+                                                </WebSocketProvider>
+                                            </DMsProvider>
+                                        </MobileChatProvider>
+                                    </ThemeProvider>
+                                </AccessibilityProvider>
+                            </NotificationsProvider>
+                        </DataCacheProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
                     </AuthProvider>
                 </QueryClientProvider>

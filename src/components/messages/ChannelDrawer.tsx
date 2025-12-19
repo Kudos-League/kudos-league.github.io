@@ -21,9 +21,9 @@ export default function ChannelDrawer({ open, onClose, channels, onSelect, isDMV
             <div className='relative flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl dark:bg-gray-800'>
                 <div className='px-4 sm:px-6'>
                     <div className='flex items-start justify-between'>
-                        <DialogTitle className='text-base font-semibold text-gray-900 dark:text-white'>
+                        {/* <DialogTitle className='text-base font-semibold text-gray-900 dark:text-white'>
                             {isDMView ? 'Direct messages' : 'Channels'}
-                        </DialogTitle>
+                        </DialogTitle> */}
                         <div className='ml-3 flex h-7 items-center'>
                             <button
                                 type='button'

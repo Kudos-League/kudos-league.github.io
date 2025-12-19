@@ -272,7 +272,8 @@ export default function CreateEvent() {
                     Description <span className='text-red-500'>*</span>
                 </label>
                 <textarea
-                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0)}
+                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0) + ' overflow-y-auto'}
+                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Enter event description'

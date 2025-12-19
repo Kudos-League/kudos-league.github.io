@@ -36,17 +36,26 @@
             content="Web site created using create-react-app"
         />
         <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+        <!-- OpenDyslexic Font for Accessibility (Local) -->
+        <style>
+            @font-face {
+                font-family: 'OpenDyslexicRegular';
+                src: url('%PUBLIC_URL%/OpenDyslexic-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
+
         <meta
             http-equiv="Content-Security-Policy"
-            content="
-            default-src 'self';
-            img-src 'self' data: blob: http://localhost:* https://maps.googleapis.com https://maps.gstatic.com https://lh3.googleusercontent.com https://kudos-dev.nyc3.cdn.digitaloceanspaces.com https://kudos-live.nyc3.cdn.digitaloceanspaces.com https://api-dev.kudosleague.org https://api.kudosleague.org https://cdn.discordapp.com images.unsplash.com;
-            font-src 'self' data: https://fonts.gstatic.com;
-            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-            script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com;
-            frame-src https://js.stripe.com;
-            connect-src 'self' ws://localhost:* http://localhost:* https://api-dev.kudosleague.org https://api.kudosleague.org https://maps.googleapis.com https://api.stripe.com https://ipapi.co wss://api-dev.kudosleague.org wss://api.kudosleague.org;
-          "
+            content="default-src 'self'; img-src 'self' data: blob: http://localhost:* https://maps.googleapis.com https://maps.gstatic.com https://lh3.googleusercontent.com https://kudos-dev.nyc3.cdn.digitaloceanspaces.com https://kudos-live.nyc3.cdn.digitaloceanspaces.com https://api-dev.kudosleague.org https://api.kudosleague.org https://cdn.discordapp.com images.unsplash.com source.unsplash.com avatars.dicebear.com api.dicebear.com loremflickr.com fastly.picsum.photos picsum.photos; font-src 'self' data: https://fonts.gstatic.com https://fontlibrary.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fontlibrary.org; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com; frame-src https://js.stripe.com; connect-src 'self' ws://localhost:* http://localhost:* https://api-dev.kudosleague.org https://api.kudosleague.org https://maps.googleapis.com https://api.stripe.com https://ipapi.co wss://api-dev.kudosleague.org wss://api.kudosleague.org https://places.googleapis.com;"
         />
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
         <title>Kudos League</title>
