@@ -60,7 +60,7 @@ export default function PostCard(props: Props) {
 
     return (
         <div
-            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer'
+            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 pb-4 sm:pb-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer'
             onClick={() => navigate(`/post/${id}`)}
         >
             <div className='flex justify-between items-start gap-2 sm:gap-4 w-full'>
@@ -96,7 +96,7 @@ export default function PostCard(props: Props) {
                             <Pill key={i} name={tag.name} />
                         ))}
                     </div>
-                    <TextWithLinks className='text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-3 mr-1 sm:mr-2 break-words'>
+                    <TextWithLinks className='text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-3 mr-1 sm:mr-2 break-words mt-4'>
                         {body}
                     </TextWithLinks>
                 </div>
@@ -116,15 +116,8 @@ export default function PostCard(props: Props) {
                 </div>
             </div>
 
-            {/* Distance indicator on mobile - bottom right */}
-            {distance != null && (
-                <div className='sm:hidden absolute bottom-2 right-2 mt-2'>
-                    <Pill name={`${distance.toFixed(1)} km away`} />
-                </div>
-            )}
-
             {viewerHandshake && showHandshakeShortcut && (
-                <div className='mt-4' onClick={(e) => e.stopPropagation()}>
+                <div className='mt-4 relative' onClick={(e) => e.stopPropagation()}>
                     {!viewerHandshake.cancelledAt && (
                         <HandshakeCard
                             handshake={{
@@ -136,6 +129,19 @@ export default function PostCard(props: Props) {
                             showSenderOrReceiver='sender'
                         />
                     )}
+                    {/* Distance indicator on top of handshake card on mobile */}
+                    {distance != null && (
+                        <div className='sm:hidden absolute -top-10 right-2 mt-2'>
+                            <Pill name={`${distance.toFixed(1)} km away`} />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Distance indicator on mobile - bottom right (only when no handshake card) */}
+            {distance != null && (!viewerHandshake || !showHandshakeShortcut) && (
+                <div className='sm:hidden absolute bottom-2 right-2 mt-4'>
+                    <Pill name={`${distance.toFixed(1)} km away`} />
                 </div>
             )}
         </div>
