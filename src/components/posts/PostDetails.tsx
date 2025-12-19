@@ -655,7 +655,7 @@ export default function PostDetails(props: Props) {
     const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
     
     return (
-        <div className='max-w-4xl mx-auto p-4'>
+        <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
             {/* Header: User Card + Action Buttons */}
             <div className='flex items-start justify-between mb-4 gap-4'>
                 <UserCard user={postDetails.sender} large />
