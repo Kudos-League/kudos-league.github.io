@@ -24,6 +24,7 @@ interface Props {
     showPostDetails?: boolean;
     onDelete?: (id: number) => void;
     showSenderOrReceiver?: 'sender' | 'receiver';
+    hideCardBorder?: boolean;
 }
 
 const HandshakeCard: React.FC<Props> = ({
@@ -31,7 +32,8 @@ const HandshakeCard: React.FC<Props> = ({
     userID,
     showPostDetails,
     onDelete,
-    showSenderOrReceiver = 'receiver'
+    showSenderOrReceiver = 'receiver',
+    hideCardBorder = false
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -275,7 +277,7 @@ const HandshakeCard: React.FC<Props> = ({
 
     return (
         <>
-            <div className="border border-gray-200 dark:border-gray-700 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4">
+            <div className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4`}>
                 {/* Header: User + Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div className="font-semibold flex-1 min-w-0">
@@ -299,7 +301,10 @@ const HandshakeCard: React.FC<Props> = ({
                         {canCancel && !stage.postIsPast && (
                             <Button
                                 variant="danger"
-                                onClick={handleCancelHandshake}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelHandshake();
+                                }}
                                 disabled={cancelling}
                                 className="text-xs"
                             >
@@ -314,7 +319,10 @@ const HandshakeCard: React.FC<Props> = ({
                     <div className="space-y-3">
                         {/* Post Details - Optimized for Mobile */}
                         <div
-                            onClick={() => navigate(`/post/${handshake.postID}`)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/post/${handshake.postID}`);
+                            }}
                             className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                         >
                             {/* Post Image/Preview - Larger on mobile */}
@@ -392,7 +400,10 @@ const HandshakeCard: React.FC<Props> = ({
                       (canUndoAccept && !stage.postIsPast)) && (
                         <Button
                             variant={canUndoAccept ? 'warning' : 'success'}
-                            onClick={canUndoAccept ? handleUndoAccept : handleAccept}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                canUndoAccept ? handleUndoAccept() : handleAccept();
+                            }}
                             disabled={processing}
                             className="w-full text-base py-3"
                         >
@@ -417,13 +428,19 @@ const HandshakeCard: React.FC<Props> = ({
                                 <input
                                     type="number"
                                     value={kudosValue}
-                                    onChange={(e) => setKudosValue(e.target.value)}
+                                    onChange={(e) => {
+                                        e.stopPropagation();
+                                        setKudosValue(e.target.value);
+                                    }}
                                     className="border border-green-300 dark:border-green-700 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 flex-1"
                                     placeholder="Enter amount"
                                 />
                                 <Button
                                     variant="success"
-                                    onClick={handleKudosSubmit}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleKudosSubmit();
+                                    }}
                                     disabled={submitting}
                                     className="px-6 py-3"
                                 >
