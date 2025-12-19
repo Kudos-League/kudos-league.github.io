@@ -90,6 +90,7 @@ export default function Chat({ channelType, initialUserId }: Props) {
     }, [messages]);
 
     const selectedChannelRef = useRef<ChannelDTO | null>(null);
+    const loadingChannelIdRef = useRef<number | null>(null);
 
     useEffect(() => {
         selectedChannelRef.current = selectedChannel;
@@ -97,6 +98,7 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
     const selectChannel = async (channel: ChannelDTO) => {
         setSelectedChannel(channel);
+        loadingChannelIdRef.current = channel.id;
 
         if (!token) {
             setPendingChannel(channel);
@@ -237,12 +239,16 @@ export default function Chat({ channelType, initialUserId }: Props) {
         latestMessagesRef.current = messages;
     }, [messages]);
 
-    // Turn off loading state when messages are loaded for the selected channel
+    // Turn off loading state when messages are loaded for the selected channel from backend
     useEffect(() => {
-        if (selectedChannel && messages.length >= 0 && isLoadingMessages) {
-            // Give a tiny delay to ensure messages have rendered
+        if (selectedChannel && isLoadingMessages && loadingChannelIdRef.current === selectedChannel.id) {
+            // Only turn off loading after we're sure the backend has responded
+            // This is indicated by the WebSocketContext updating the messages for this channel
+            // We use a delay to account for the async fetch completing
             const timer = setTimeout(() => {
-                setIsLoadingMessages(false);
+                if (loadingChannelIdRef.current === selectedChannel.id) {
+                    setIsLoadingMessages(false);
+                }
             }, 100);
             return () => clearTimeout(timer);
         }
