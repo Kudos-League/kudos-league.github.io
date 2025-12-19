@@ -482,21 +482,22 @@ const MessageList: React.FC<Props> = ({
                     {/* --- REPLACED INPUT WITH TEXTAREA --- */}
                     <div className='flex items-end gap-2'>
                         <textarea
-                            placeholder='Type a message (Shift+Enter for newline)'
+                            placeholder='Write a comment...'
                             value={messageContent}
                             onChange={(e) => setMessageContent(e.target.value)}
                             ref={inputRef}
                             rows={1} // Start with 1 row
                             onKeyDown={(e) => {
-                                // Submit on Enter, unless Shift is held
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault(); // Prevent default newline behavior
+                                // Submit on Ctrl+Enter
+                                if (e.key === 'Enter' && e.ctrlKey) {
+                                    e.preventDefault();
                                     handleSubmitMessage();
                                 }
-                                // Shift+Enter just inserts a newline (default behavior, no preventDefault needed)
+                                // Escape cancels reply
                                 else if (e.key === 'Escape') {
                                     setReplyTo(null);
                                 }
+                                // Enter just creates a new line (default behavior)
                             }}
                             // Tailwind classes for textarea styling
                             className='flex-1 px-3 py-2 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
@@ -519,7 +520,7 @@ const MessageList: React.FC<Props> = ({
                     {/* --- END TEXTAREA REPLACEMENT --- */}
 
                     <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-2 text-right'>
-                        Enter to send, Shift+Enter for new line
+                        Ctrl+Enter or ➤ to send
                     </p>
 
 
