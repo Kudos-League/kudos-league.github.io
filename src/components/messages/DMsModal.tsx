@@ -2,6 +2,7 @@ import React, { Fragment } from 'react';
 import { Dialog, DialogPanel, DialogBackdrop, TransitionChild } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Chat from './Chat';
+import { useDMs } from '@/contexts/DMsContext';
 
 interface DMsModalProps {
     open: boolean;
@@ -9,6 +10,7 @@ interface DMsModalProps {
 }
 
 export default function DMsModal({ open, onClose }: DMsModalProps) {
+    const { selectedUserId } = useDMs();
     // Define the custom width, now using a larger value (e.g., 40rem or 640px)
     // You can adjust this 'lg:w-[40rem]' value as needed.
     const customWidth = 'lg:w-[50rem]'; 
@@ -58,7 +60,7 @@ export default function DMsModal({ open, onClose }: DMsModalProps) {
 
                         {/* Chat content */}
                         <div className='flex-1 min-h-0 overflow-hidden'>
-                            <Chat channelType='dm' />
+                            <Chat channelType='dm' initialUserId={selectedUserId ?? undefined} />
                         </div>
                     </DialogPanel>
                 </TransitionChild>

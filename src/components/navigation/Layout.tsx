@@ -16,6 +16,7 @@ import DMsModal from '../messages/DMsModal';
 import SearchModal from './SearchModal';
 import MobileTabBar from './MobileTabBar';
 import { useAuth } from '@/contexts/useAuth';
+import { useDMs } from '@/contexts/DMsContext';
 
 type FooterLinkProps = {
     to: string;
@@ -85,9 +86,9 @@ const LayoutFooter: React.FC = () => {
 
 const Layout: React.FC = () => {
     const { isLoggedIn, user, logout } = useAuth();
+    const { isOpen: dmsModalOpen, openDMs, closeDMs } = useDMs();
     const [showDropdown, setShowDropdown] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [dmsModalOpen, setDmsModalOpen] = useState(false);
     const [searchModalOpen, setSearchModalOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
@@ -163,7 +164,7 @@ const Layout: React.FC = () => {
             {/* DMs Modal */}
             <DMsModal
                 open={dmsModalOpen}
-                onClose={() => setDmsModalOpen(false)}
+                onClose={closeDMs}
             />
 
             {/* Search Modal */}
@@ -176,7 +177,7 @@ const Layout: React.FC = () => {
             <div className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}>
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
-                    onOpenDMs={() => setDmsModalOpen(true)}
+                    onOpenDMs={() => openDMs()}
                     onOpenSearch={() => setSearchModalOpen(true)}
                     isLoggedIn={!!isLoggedIn}
                     user={user ?? undefined}

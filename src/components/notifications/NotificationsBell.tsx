@@ -7,6 +7,7 @@ import { routes } from '@/routes';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { useCachedHandshake, useCachedUser } from '@/contexts/DataCacheContext';
+import { useDMs } from '@/contexts/DMsContext';
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -113,6 +114,7 @@ export default function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { openDMs } = useDMs();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const hasLoggedMount = useRef(false);
     if (!hasLoggedMount.current) {
@@ -271,7 +273,15 @@ export default function NotificationsBell() {
         }
 
         if (n.type === 'direct-message') {
-            navigate(`/dms/${n.message?.author?.id ?? ''}`);
+            const authorId = n.message?.author?.id;
+            // On desktop (lg screens), open the DMs modal instead of navigating
+            const isDesktop = window.innerWidth >= 1024; // lg breakpoint
+            if (isDesktop && authorId) {
+                openDMs(authorId);
+            }
+            else {
+                navigate(`/dms/${authorId ?? ''}`);
+            }
         }
         else if (n.type === 'post-reply') {
             if (postID) {
@@ -564,13 +574,15 @@ export default function NotificationsBell() {
                             )}
                         </ul>
                         <div className='sticky bottom-0 border-t border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900 p-3 space-y-2'>
-                            <Link
-                                to={routes.notifications}
-                                onClick={() => setOpen(false)}
+                            <button
+                                onClick={() => {
+                                    navigate(routes.notifications);
+                                    setOpen(false);
+                                }}
                                 className='block w-full text-center py-2.5 px-4 text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 transition-colors'
                             >
                                 View all notifications
-                            </Link>
+                            </button>
                             <button
                                 onClick={() => {
                                     acknowledgeAll();

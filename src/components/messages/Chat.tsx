@@ -14,12 +14,14 @@ import { useDeleteMessage, useUpdateMessage } from '@/shared/api/mutations/messa
 import Button from '@/components/common/Button';
 
 type Props = {
-    channelType?: 'dm' | 'public'
+    channelType?: 'dm' | 'public';
+    initialUserId?: number;
 };
 
-export default function Chat({ channelType }: Props) {
+export default function Chat({ channelType, initialUserId }: Props) {
     const [pageHeaderHeight, setPageHeaderHeight] = useState<number>(0);
-    const { id: targetUserID } = useParams<{ id: string }>();
+    const { id: targetUserIDParam } = useParams<{ id: string }>();
+    const targetUserID = initialUserId?.toString() ?? targetUserIDParam;
     const { token, user } = useAuth();
     const { messages, setMessages, joinChannel, leaveChannel, send } = useWebSocketContext();
     const { setIsInMobileChat } = useMobileChat();

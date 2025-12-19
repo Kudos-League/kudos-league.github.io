@@ -51,6 +51,12 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
 
+    const getHeaderLabel = () => {
+        if (timeFilter === 'all') return 'Most Kudos';
+        const period = TIME_FILTERS.find((f) => f.value === timeFilter)?.label || '';
+        return compact ? period.replace('This ', '') : `Kudos ${period}`;
+    };
+
     // Check if we have any location available (saved or browser)
     const hasLocation = !!user?.location?.regionID || !!browserLocation;
 
@@ -200,9 +206,14 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                 <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
                                     {entry.totalKudos.toLocaleString()}
                                 </p>
+                                {compact && timeFilter !== 'all' && (
+                                    <p className='text-[10px] text-gray-500 dark:text-gray-400'>
+                                        {timeFilter === 'week' ? 'this wk' : 'this mo'}
+                                    </p>
+                                )}
                                 {!compact && (
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                        Kudos
+                                        {timeFilter === 'all' ? 'Kudos' : `This ${timeFilter === 'week' ? 'Week' : 'Month'}`}
                                     </p>
                                 )}
                             </div>
@@ -232,7 +243,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     return (
         <div className={compact ? '' : 'sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
             <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
-                Most Kudos
+                {getHeaderLabel()}
             </h1>
 
             <div className={`flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>

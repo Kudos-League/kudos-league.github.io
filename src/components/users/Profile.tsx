@@ -2,6 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+import { Clock, MapPin, Users } from 'lucide-react';
 
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 
@@ -14,7 +17,6 @@ import Spinner from '../common/Spinner';
 import UserCard from '@/components/users/UserCard';
 import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
-import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
@@ -42,6 +44,7 @@ const Profile: React.FC<Props> = ({
     const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const navigate = useNavigate();
     const location = useLocation();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const isSelf = currentUser?.id === user.id;
     const isFromConversation = location.state?.fromConversation || false;
@@ -111,9 +114,25 @@ const Profile: React.FC<Props> = ({
     }, [events]);
 
     const sortedHandshakes = useMemo(() => {
+        // Status priority: new (pending) > accepted > completed
+        const statusPriority: Record<string, number> = {
+            'new': 0,
+            'accepted': 1,
+            'completed': 2
+        };
+
         return [...handshakes]
             .filter((h) => !h.cancelledAt)
             .sort((a, b) => {
+                // First sort by status priority
+                const priorityA = statusPriority[a.status] ?? 999;
+                const priorityB = statusPriority[b.status] ?? 999;
+
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+
+                // Then sort by date (newest first within same status)
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
                 return dateB - dateA;
@@ -253,17 +272,65 @@ const Profile: React.FC<Props> = ({
 
         if (filter === 'events') {
             return (
-                <div className='grid gap-4 list-none'>
+                <ul className='space-y-2 sm:space-y-3 list-none'>
                     {sortedEvents.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
                             No events available.
                         </p>
                     ) : (
                         sortedEvents.map((event) => (
-                            <EventCard key={event.id} event={event} />
+                            <li
+                                key={event.id}
+                                onClick={() => navigate(`/event/${event.id}`)}
+                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                            >
+                                <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                    {event.location?.global ? (
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                            🌐 Global
+                                        </span>
+                                    ) : (
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                            📍 Local
+                                        </span>
+                                    )}
+                                </div>
+                                {event.description && (
+                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                )}
+                                <div className='space-y-0.5 sm:space-y-1'>
+                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                        <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                        <span className='truncate'>
+                                            {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                            {event.endTime
+                                                ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                : 'Ongoing'}
+                                        </span>
+                                    </p>
+                                    {event.location?.name && !event.location.global && (
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            {event.location.name}
+                                        </p>
+                                    )}
+                                    {event.creator && (
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <UserCard user={event.creator} />
+                                        </p>
+                                    )}
+                                    {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                        <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            </li>
                         ))
                     )}
-                </div>
+                </ul>
             );
         }
 
@@ -303,11 +370,59 @@ const Profile: React.FC<Props> = ({
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Events ({sortedEvents.length})
                         </h3>
-                        <div className='grid gap-4 list-none'>
+                        <ul className='space-y-2 sm:space-y-3 list-none'>
                             {sortedEvents.slice(0, 2).map((event) => (
-                                <EventCard key={event.id} event={event} />
+                                <li
+                                    key={event.id}
+                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                >
+                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                        {event.location?.global ? (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                🌐 Global
+                                            </span>
+                                        ) : (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                📍 Local
+                                            </span>
+                                        )}
+                                    </div>
+                                    {event.description && (
+                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                    )}
+                                    <div className='space-y-0.5 sm:space-y-1'>
+                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            <span className='truncate'>
+                                                {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                                {event.endTime
+                                                    ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                    : 'Ongoing'}
+                                            </span>
+                                        </p>
+                                        {event.location?.name && !event.location.global && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.location.name}
+                                            </p>
+                                        )}
+                                        {event.creator && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <UserCard user={event.creator} />
+                                            </p>
+                                        )}
+                                        {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                         {sortedEvents.length > 2 && (
                             <div className='mt-4 text-center'>
                                 <Button

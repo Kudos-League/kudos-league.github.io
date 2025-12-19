@@ -14,6 +14,7 @@ import {
 import { routes } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/useAuth';
+import { useDMs } from '@/contexts/DMsContext';
 import UserCard from '@/components/users/UserCard';
 import { getImagePath } from '@/shared/api/config';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
@@ -229,6 +230,7 @@ export default function NotificationsPage() {
     const navigate = useNavigate();
     const { markActed, acknowledgeAll } = useNotifications();
     const { user } = useAuth();
+    const { openDMs } = useDMs();
     const [filter, setFilter] = useState<NotificationFilter>('all');
 
     const {
@@ -294,9 +296,15 @@ export default function NotificationsPage() {
     const handleOpen = useCallback(
         (notification: NotificationRecord) => {
             if (notification.type === NotificationType.DIRECT_MESSAGE) {
-                navigate(
-                    `/dms/${notification.message?.author?.id ?? ''}`
-                );
+                const authorId = notification.message?.author?.id;
+                // On desktop (lg screens), open the DMs modal instead of navigating
+                const isDesktop = window.innerWidth >= 1024; // lg breakpoint
+                if (isDesktop && authorId) {
+                    openDMs(authorId);
+                }
+                else {
+                    navigate(`/dms/${authorId ?? ''}`);
+                }
             }
             else if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
@@ -335,7 +343,7 @@ export default function NotificationsPage() {
                 refetch();
             }
         },
-        [markActed, navigate, refetch]
+        [markActed, navigate, openDMs, refetch]
     );
 
     const errorMessage = error

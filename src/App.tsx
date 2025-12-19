@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { MobileChatProvider } from '@/contexts/MobileChatContext';
+import { DMsProvider } from '@/contexts/DMsContext';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import { DataCacheProvider } from '@/contexts/DataCacheContext';
 import ConnectingOverlay from '@/components/common/ConnectingOverlay';
@@ -52,13 +53,15 @@ export default function App() {
                                 <AccessibilityProvider>
                                     <ThemeProvider>
                                         <MobileChatProvider>
-                                            <WebSocketProvider>
-                                                <BlockedUsersProvider>
-                                                    <AppCore />
-                                                    <AlertHost />
-                                                    <ConnectingOverlay />
-                                                </BlockedUsersProvider>
-                                            </WebSocketProvider>
+                                            <DMsProvider>
+                                                <WebSocketProvider>
+                                                    <BlockedUsersProvider>
+                                                        <AppCore />
+                                                        <AlertHost />
+                                                        <ConnectingOverlay />
+                                                    </BlockedUsersProvider>
+                                                </WebSocketProvider>
+                                            </DMsProvider>
                                         </MobileChatProvider>
                                     </ThemeProvider>
                                 </AccessibilityProvider>
