@@ -224,7 +224,7 @@ export default function Feed() {
                                         className='fixed inset-0 z-10'
                                         onClick={() => setFilterOpen(false)}
                                     />
-                                    <div className='absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden'>
+                                    <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
                                         <button
                                             className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                                                 typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
@@ -421,7 +421,7 @@ export default function Feed() {
                                             className='fixed inset-0 z-10'
                                             onClick={() => setFilterOpen(false)}
                                         />
-                                        <div className='absolute right-0 mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden'>
+                                        <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
                                             <button
                                                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                                                     typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
