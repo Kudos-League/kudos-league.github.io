@@ -4,13 +4,70 @@ import Button from '@/components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import { useAuth } from '@/contexts/useAuth';
-import { MapPin, X, ChevronDown } from 'lucide-react';
+import { MapPin, X, ChevronDown, BookOpen, ArrowRight } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
+import { routes } from '@/routes';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
 type ViewType = 'posts' | 'leaderboard';
+
+// Component to show when user is not logged in or as info for logged in users
+function AboutCTA({ onDismiss, showDismiss = false }: { onDismiss?: () => void; showDismiss?: boolean }) {
+    const navigate = useNavigate();
+
+    return (
+        <div className='bg-gradient-to-br from-brand-50 to-blue-50 dark:from-brand-900/20 dark:to-blue-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-6 shadow-lg'>
+            <div className='flex items-start gap-4 mb-4'>
+                <div className='flex-shrink-0 w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-800 flex items-center justify-center'>
+                    <BookOpen className='w-6 h-6 text-brand-600 dark:text-brand-400' />
+                </div>
+                <div className='flex-1'>
+                    <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
+                        Welcome to Kudos League!
+                    </h3>
+                    <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4'>
+                        A community-driven platform for giving and receiving help. Share what you have, request what you need, and build meaningful connections.
+                    </p>
+                    <ul className='space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400'>
+                        <li className='flex items-start gap-2'>
+                            <span className='text-brand-600 dark:text-brand-400 mt-0.5'>✓</span>
+                            <span>Give items, skills, or time to others</span>
+                        </li>
+                        <li className='flex items-start gap-2'>
+                            <span className='text-brand-600 dark:text-brand-400 mt-0.5'>✓</span>
+                            <span>Request help from our community</span>
+                        </li>
+                        <li className='flex items-start gap-2'>
+                            <span className='text-brand-600 dark:text-brand-400 mt-0.5'>✓</span>
+                            <span>Earn kudos points for every contribution</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div className='space-y-2'>
+                <button
+                    onClick={() => navigate(routes.about)}
+                    className='w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg'
+                >
+                    <span>Learn More</span>
+                    <ArrowRight className='w-5 h-5' />
+                </button>
+
+                {showDismiss && onDismiss && (
+                    <button
+                        onClick={onDismiss}
+                        className='w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 py-2 transition-colors'
+                    >
+                        Don&apos;t show me this message
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function Feed() {
     const navigate = useNavigate();
@@ -24,6 +81,19 @@ export default function Feed() {
     const [filterOpen, setFilterOpen] = React.useState(false);
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
 
+    // Track if AboutCTA has been dismissed (for logged-in users)
+    const [aboutCTADismissed, setAboutCTADismissed] = React.useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('aboutCTA-dismissed') === 'true';
+        }
+        return false;
+    });
+
+    const handleDismissAboutCTA = () => {
+        setAboutCTADismissed(true);
+        localStorage.setItem('aboutCTA-dismissed', 'true');
+    };
+
     const apiParams = {
         includeSender: true,
         includeTags: true,
@@ -33,34 +103,41 @@ export default function Feed() {
 
     return (
         <div className='w-full max-w-7xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4'>
-            {/* Mobile View Tabs */}
-            <div className='lg:hidden flex border-b border-zinc-200 dark:border-zinc-700 mb-4'>
-                <button
-                    onClick={() => setActiveView('posts')}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                        activeView === 'posts'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
-                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-                    }`}
-                >
-                    Posts
-                </button>
-                <button
-                    onClick={() => setActiveView('leaderboard')}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                        activeView === 'leaderboard'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
-                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-                    }`}
-                >
-                    Leaderboard
-                </button>
-            </div>
+            {/* Mobile View Tabs - Only show when logged in */}
+            {user && (
+                <div className='lg:hidden flex border-b border-zinc-200 dark:border-zinc-700 mb-4'>
+                    <button
+                        onClick={() => setActiveView('posts')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeView === 'posts'
+                                ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                        }`}
+                    >
+                        Posts
+                    </button>
+                    <button
+                        onClick={() => setActiveView('leaderboard')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                            activeView === 'leaderboard'
+                                ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-600 dark:border-brand-400'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                        }`}
+                    >
+                        Leaderboard
+                    </button>
+                </div>
+            )}
 
             {/* Desktop Layout - Side by Side */}
             <div className='hidden lg:flex gap-6 items-start'>
                 {/* Posts Section */}
                 <div className='flex-1 space-y-4'>
+                    {/* About CTA for logged-in users */}
+                    {user && !aboutCTADismissed && (
+                        <AboutCTA showDismiss={true} onDismiss={handleDismissAboutCTA} />
+                    )}
+
                     <div className='flex flex-wrap items-center gap-2 mb-2'>
                         {/* <Button
                         onClick={() => {
@@ -247,15 +324,44 @@ export default function Feed() {
                 {/* Leaderboard Section - Desktop */}
                 <div className='w-80 flex-shrink-0'>
                     <div className='fixed top-40 right-12 w-80'>
-                        <Leaderboard compact />
+                        {user ? <Leaderboard compact /> : <AboutCTA />}
                     </div>
                 </div>
             </div>
 
             {/* Mobile View - Conditional Rendering */}
             <div className='lg:hidden'>
-                {activeView === 'posts' ? (
+                {!user ? (
+                    /* Not logged in - Show AboutCTA at top, then posts */
                     <>
+                        <div className='mb-6'>
+                            <AboutCTA />
+                        </div>
+
+                        <div className='mb-4 text-center'>
+                            <p className='text-sm text-gray-600 dark:text-gray-400 font-medium'>
+                                Below you can see what people are doing right now
+                            </p>
+                        </div>
+
+                        <div className='w-full overflow-x-hidden'>
+                            <PostsInfinite
+                                filters={apiParams}
+                                activeTab='all'
+                                ordering={typeOfOrdering}
+                            />
+                        </div>
+                    </>
+                ) : activeView === 'posts' ? (
+                    /* Logged in - Posts tab */
+                    <>
+                        {/* About CTA for logged-in users */}
+                        {!aboutCTADismissed && (
+                            <div className='mb-4'>
+                                <AboutCTA showDismiss={true} onDismiss={handleDismissAboutCTA} />
+                            </div>
+                        )}
+
                         <div className='flex flex-wrap items-center gap-2 mb-2'>
                             <div className='flex flex-wrap gap-2'>
                                 <Button
@@ -412,6 +518,7 @@ export default function Feed() {
                         </div>
                     </>
                 ) : (
+                    /* Logged in - Leaderboard tab */
                     <Leaderboard compact />
                 )}
             </div>
