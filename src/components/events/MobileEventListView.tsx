@@ -56,10 +56,29 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
                     const eventEnd = e.endTime ? new Date(e.endTime) : null;
 
                     if (!eventEnd) {
-                        return eventStart <= dayEnd;
+                        if (eventStart > dayEnd) return false;
+                    }
+                    else {
+                        if (eventStart > dayEnd || eventEnd < dayStart) return false;
                     }
 
-                    return eventStart <= dayEnd && eventEnd >= dayStart;
+                    if (filterText) {
+                        const searchLower = filterText.toLowerCase();
+                        const matchesSearch =
+                            e.title.toLowerCase().includes(searchLower) ||
+                            e.description.toLowerCase().includes(searchLower) ||
+                            e.location?.name?.toLowerCase().includes(searchLower);
+                        if (!matchesSearch) return false;
+                    }
+
+                    if (locationFilter === 'global') {
+                        return e.location?.global === true;
+                    }
+                    else if (locationFilter === 'local') {
+                        return e.location?.global !== true;
+                    }
+
+                    return true;
                 });
 
                 const isToday = isSameDay(dayStart, now);
@@ -89,10 +108,29 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
                     const eventEnd = e.endTime ? new Date(e.endTime) : null;
 
                     if (!eventEnd) {
-                        return eventStart <= dayEnd;
+                        if (eventStart > dayEnd) return false;
+                    }
+                    else {
+                        if (eventStart > dayEnd || eventEnd < dayStart) return false;
                     }
 
-                    return eventStart <= dayEnd && eventEnd >= dayStart;
+                    if (filterText) {
+                        const searchLower = filterText.toLowerCase();
+                        const matchesSearch =
+                            e.title.toLowerCase().includes(searchLower) ||
+                            e.description.toLowerCase().includes(searchLower) ||
+                            e.location?.name?.toLowerCase().includes(searchLower);
+                        if (!matchesSearch) return false;
+                    }
+
+                    if (locationFilter === 'global') {
+                        return e.location?.global === true;
+                    }
+                    else if (locationFilter === 'local') {
+                        return e.location?.global !== true;
+                    }
+
+                    return true;
                 });
 
                 const isToday = isSameDay(dayStart, now);
@@ -122,10 +160,29 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
                     const eventEnd = e.endTime ? new Date(e.endTime) : null;
 
                     if (!eventEnd) {
-                        return eventStart <= monthEnd;
+                        if (eventStart > monthEnd) return false;
+                    }
+                    else {
+                        if (eventStart > monthEnd || eventEnd < monthStart) return false;
                     }
 
-                    return eventStart <= monthEnd && eventEnd >= monthStart;
+                    if (filterText) {
+                        const searchLower = filterText.toLowerCase();
+                        const matchesSearch =
+                            e.title.toLowerCase().includes(searchLower) ||
+                            e.description.toLowerCase().includes(searchLower) ||
+                            e.location?.name?.toLowerCase().includes(searchLower);
+                        if (!matchesSearch) return false;
+                    }
+
+                    if (locationFilter === 'global') {
+                        return e.location?.global === true;
+                    }
+                    else if (locationFilter === 'local') {
+                        return e.location?.global !== true;
+                    }
+
+                    return true;
                 });
 
                 periodList.push({
@@ -140,7 +197,7 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
         }
 
         return periodList;
-    }, [events, viewType, currentOffset]);
+    }, [events, viewType, currentOffset, filterText, locationFilter]);
 
     const getViewLabel = () => {
         const now = new Date();
