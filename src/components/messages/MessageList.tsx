@@ -43,6 +43,8 @@ const MessageList: React.FC<Props> = ({
     );
     const [editContent, setEditContent] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Simple processing - just sort by ID
@@ -126,21 +128,23 @@ const MessageList: React.FC<Props> = ({
         setEditContent('');
     };
 
-    const handleDelete = async (messageId: number) => {
-        if (!token) return;
+    const handleDeleteClick = (messageId: number) => {
+        setMessageToDelete(messageId);
+        setShowDeleteModal(true);
+    };
 
-        // Simple confirmation
-        if (!window.confirm('Are you sure you want to delete this message?')) {
-            return;
-        }
+    const handleConfirmDelete = async () => {
+        if (!token || !messageToDelete) return;
 
         try {
-            await deleteMessageMutation.mutateAsync(messageId);
+            await deleteMessageMutation.mutateAsync(messageToDelete);
 
-            const original = processedMessages.find((m) => m.id === messageId);
+            const original = processedMessages.find((m) => m.id === messageToDelete);
             if (!original) {
-                onMessageDelete?.(messageId);
-                callback?.({ type: 'delete', messageId });
+                onMessageDelete?.(messageToDelete);
+                callback?.({ type: 'delete', messageId: messageToDelete });
+                setShowDeleteModal(false);
+                setMessageToDelete(null);
                 return;
             }
 
@@ -156,11 +160,15 @@ const MessageList: React.FC<Props> = ({
                 callback?.(enriched);
             }
 
-            onMessageDelete?.(messageId);
+            onMessageDelete?.(messageToDelete);
         }
         catch (err) {
             console.error('Failed to delete message:', err);
             alert('Failed to delete message. Please try again.');
+        }
+        finally {
+            setShowDeleteModal(false);
+            setMessageToDelete(null);
         }
     };
 
@@ -203,7 +211,8 @@ const MessageList: React.FC<Props> = ({
                                 <textarea
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
-                                    className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white'
+                                    className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
+                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                                     rows={3}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && e.ctrlKey) {
@@ -259,7 +268,7 @@ const MessageList: React.FC<Props> = ({
                                 )}
                                 {showDeleteButton && (
                                     <Button
-                                        onClick={() => { if (!msg.deletedAt) handleDelete(msg.id); }}
+                                        onClick={() => { if (!msg.deletedAt) handleDeleteClick(msg.id); }}
                                         variant='danger'
                                         className={`text-xs ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         disabled={Boolean(msg.deletedAt)}
@@ -327,7 +336,8 @@ const MessageList: React.FC<Props> = ({
                         <textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 overflow-y-auto'
+                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                             rows={3}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -421,10 +431,15 @@ const MessageList: React.FC<Props> = ({
                                     setReplyTo(null);
                                 }
                             }}
-                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300'
                         />
                         <Button
-                            onClick={handleSubmitMessage}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                if (messageContent.trim()) {
+                                    handleSubmitMessage();
+                                }
+                            }}
                             disabled={!messageContent.trim()}
                             className='w-10 h-10'
                             shape='circle'
@@ -458,6 +473,37 @@ const MessageList: React.FC<Props> = ({
                 >
                     Show less
                 </Button>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm'>
+                    <div className='bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl'>
+                        <h3 className='text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100'>
+                            Delete Message
+                        </h3>
+                        <p className='text-sm text-gray-600 dark:text-gray-300 mb-6'>
+                            Are you sure you want to delete this message? This action cannot be undone.
+                        </p>
+                        <div className='flex gap-3 justify-end'>
+                            <Button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setMessageToDelete(null);
+                                }}
+                                variant='secondary'
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleConfirmDelete}
+                                variant='danger'
+                            >
+                                Delete
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

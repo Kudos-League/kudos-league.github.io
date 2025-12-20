@@ -43,7 +43,6 @@ export const routes = {
     about: '/about' as const,
     donate: '/donate' as const,
     result: '/donate/result' as const,
-    ganttEvents: '/events/gantt' as const,
     events: '/events' as const,
     createEvent: '/create-event' as const,
     createPost: '/create-post' as const,
@@ -57,6 +56,8 @@ export const routes = {
     signUp: '/signup' as const,
     forgotPassword: '/forgot-password' as const,
     resetPassword: '/reset-password' as const,
+    search: '/search' as const,
+    communities: '/communities' as const,
 
     user: makeParamProxy('/user/:id'),
     post: makeParamProxy('/post/:id'),

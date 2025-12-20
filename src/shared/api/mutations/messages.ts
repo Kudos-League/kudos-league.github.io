@@ -40,7 +40,13 @@ export function useSendDirectMessage(recipientId?: number) {
         mutationFn: (payload) => apiMutate<MessageDTO, CreateMessageDTO>(`/users/${recipientId}/dm`, 'post', payload),
         onSuccess: (data) => {
             qc.invalidateQueries({ queryKey: ['channels'] });
-            if (data.channelID) qc.invalidateQueries({ queryKey: ['channel', data.channelID, 'messages'] });
+            if (data.channelID) {
+                // Invalidate full message list
+                qc.invalidateQueries({ queryKey: ['channel', data.channelID, 'messages'] });
+                
+                // 🚨 FIX 3: Invalidate the latest message for the newly created channel
+                qc.invalidateQueries({ queryKey: ['latestChannelMessage', data.channelID] });
+            }
         }
     });
 }

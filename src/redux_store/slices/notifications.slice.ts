@@ -11,6 +11,11 @@ const keyFallback = (n: NotificationRecord) => {
         return `dm:${n.message?.id ?? 'unknown'}:${ts}`;
     case NotificationType.POST_REPLY:
         return `post:${'postID' in n ? n.postID : 'unknown'}:${ts}`;
+    case NotificationType.HANDSHAKE_CREATED:
+    case NotificationType.HANDSHAKE_ACCEPTED:
+    case NotificationType.HANDSHAKE_COMPLETED:
+    case NotificationType.HANDSHAKE_CANCELLED:
+        return `handshake:${'handshakeID' in n ? n.handshakeID : 'unknown'}:${ts}`;
     default:
         return `${(n as any).type}:${JSON.stringify(n)}:${ts}`;
     }

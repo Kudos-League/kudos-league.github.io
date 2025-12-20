@@ -1,30 +1,26 @@
-import React, { Fragment, useState, useMemo, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
-    XMarkIcon, 
-    FlagIcon, 
-    Bars3Icon,
-    HomeIcon,
+    FlagIcon,
     ChatBubbleLeftRightIcon,
-    PlusCircleIcon,
     HeartIcon,
     TrophyIcon,
-    ChatBubbleBottomCenterTextIcon,
-    CalendarIcon,
     InformationCircleIcon,
-    UserPlusIcon,
     ArrowRightOnRectangleIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    UserCircleIcon,
+    MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import clsx from 'clsx';
 import { getImagePath } from '@/shared/api/config';
 import Avatar from '../users/Avatar';
 import { routes } from '@/routes';
-import FeedbackModal from '@/components/common/FeedbackModal';
-import { apiMutate } from '@/shared/api/apiClient';
 import NotificationsBell from '@/components/notifications/NotificationsBell';
+import SearchBar from './SearchBar';
+import { useNavigate } from 'react-router-dom';
 
 type NavItem = {
     name: string;
@@ -32,32 +28,16 @@ type NavItem = {
     icon?: React.ComponentType<{ className?: string }>;
 };
 
-function useAppNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
-    const base: NavItem[] = [{ name: 'Main', to: routes.home, icon: HomeIcon }];
-    if (isLoggedIn) {
-        base.push(
-            { name: 'DMs', to: routes.dms, icon: ChatBubbleLeftRightIcon },
-            { name: 'Create', to: routes.createPost, icon: PlusCircleIcon },
-            { name: 'Donate', to: routes.donate, icon: HeartIcon },
-            { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
-            { name: 'Feedback', to: routes.feedback, icon: FlagIcon },
-            { name: 'Forum', to: routes.chat, icon: ChatBubbleBottomCenterTextIcon },
-            { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'About', to: routes.about, icon: InformationCircleIcon },
-        );
-        if (isAdmin) {
-            base.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
-        }
+// User menu items for logged-in users
+function useUserMenuItems(isAdmin?: boolean): NavItem[] {
+    const items: NavItem[] = [
+        { name: 'About', to: routes.about, icon: InformationCircleIcon },
+        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
+    ];
+    if (isAdmin) {
+        items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
     }
-    else {
-        base.push(
-            { name: 'Donate', to: routes.donate, icon: HeartIcon },
-            { name: 'About', to: routes.about, icon: InformationCircleIcon },
-            { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
-            { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
-        );
-    }
-    return base;
+    return items;
 }
 
 function NavItemComponent({
@@ -82,15 +62,13 @@ function NavItemComponent({
                 className={clsx(
                     'group relative flex flex-col items-center justify-center transition-all duration-150',
                     isActive
-                        ? 'text-teal-500 dark:text-teal-400'
-                        : 'hover:text-teal-500 dark:hover:text-teal-400',
+                        ? 'text-brand-600 dark:text-brand-300'
+                        : 'hover:text-brand-600 dark:hover:text-brand-300',
                     className
                 )}
             >
                 {children}
-                {isActive && (
-                    <span className='absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-teal-500/0 via-teal-500/40 to-teal-500/0 dark:from-teal-400/0 dark:via-teal-400/40 dark:to-teal-400/0' />
-                )}
+
             </Link>
         </li>
     );
@@ -99,7 +77,7 @@ function NavItemComponent({
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
-        <nav className='hidden md:block'>
+        <nav className='hidden lg:block'>
             <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
                 {items.map((item) => (
                     <li key={item.name}>
@@ -111,11 +89,11 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
                                 <item.icon
                                     className={clsx(
                                         'h-5 w-5 mb-1 transition-colors duration-150',
-                                        'text-zinc-500 group-hover:text-teal-500 dark:text-zinc-400 dark:group-hover:text-teal-400'
+                                        'text-zinc-500 group-hover:text-brand-600 dark:text-zinc-400 dark:group-hover:text-brand-300'
                                     )}
                                 />
                             )}
-                            <span className='text-xs md:text-sm'>{item.name}</span>
+                            <span className='text-xs lg:text-sm'>{item.name}</span>
                         </NavItemComponent>
                     </li>
                 ))}
@@ -125,144 +103,120 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
 }
 
 
-function MobileNavigation({ items }: { items: NavItem[] }) {
-    const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
-    
-    return (
-        <div className='md:hidden'>
-            <button 
-                onClick={() => setIsOpen(true)}
-                aria-label='Open menu'
-                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
-            >
-                <Bars3Icon className='h-6 w-6' />
-            </button>
-            
-            {isOpen && (
-                <>
-                    <div className='fixed inset-0 z-[60] bg-black/50' onClick={() => setIsOpen(false)} />
-                    <div className='fixed inset-0 z-[70] h-full min-h-screen bg-white dark:bg-zinc-900 p-6 flex flex-col'>
-                        <div className='flex flex-row-reverse items-center justify-between mb-8'>
-                            <button 
-                                onClick={() => setIsOpen(false)}
-                                aria-label='Close menu' 
-                                className='p-2 -mr-2'
-                            >
-                                <XMarkIcon className='h-7 w-7 text-zinc-500 dark:text-zinc-400' />
-                            </button>
-                            <h2 className='text-lg font-semibold text-zinc-800 dark:text-zinc-200'>
-                                Menu
-                            </h2>
-                        </div>
-                        <nav className='flex-1 overflow-y-auto -mx-2'>
-                            <ul className='space-y-2'>
-                                {items.map((item) => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <li key={item.name}>
-                                            <button
-                                                onClick={() => {
-                                                    setIsOpen(false);
-                                                    navigate(item.to);
-                                                }}
-                                                className='flex items-center gap-4 px-6 py-4 text-base font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors w-full text-left'
-                                            >
-                                                {Icon && <Icon className='h-6 w-6 text-teal-600 dark:text-teal-400 flex-shrink-0' />}
-                                                <span>{item.name}</span>
-                                            </button>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </nav>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
 
-function ThemeToggleButton() {
-    const { theme, toggleTheme } = useTheme();
-    const other = theme === 'dark' ? 'light' : 'dark';
-    return (
-        <button
-            type='button'
-            aria-label={`Switch to ${other} theme`}
-            onClick={toggleTheme}
-            className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-300 dark:hover:bg-zinc-800'
-        >
-            <span className='block dark:hidden'>
-                <svg
-                    viewBox='0 0 24 24'
-                    aria-hidden='true'
-                    className='h-6 w-6 fill-zinc-100 stroke-zinc-500 transition group-hover:fill-zinc-200 group-hover:stroke-zinc-700'
-                >
-                    <path d='M8 12.25A4.25 4.25 0 0 1 12.25 8v0a4.25 4.25 0 0 1 4.25 4.25v0a4.25 4.25 0 0 1-4.25 4.25v0A4.25 4.25 0 0 1 8 12.25v0Z' />
-                    <path
-                        d='M12.25 3v1.5M21.5 12.25H20M18.791 18.791l-1.06-1.06M18.791 5.709l-1.06 1.06M12.25 20v1.5M4.5 12.25H3M6.77 6.77 5.709 5.709M6.77 17.73l-1.061 1.061'
-                        fill='none'
-                    />
-                </svg>
-            </span>
-            <span className='hidden dark:block'>
-                <svg
-                    viewBox='0 0 24 24'
-                    aria-hidden='true'
-                    className='h-6 w-6 fill-zinc-700 stroke-zinc-500 transition'
-                >
-                    <path
-                        d='M17.25 16.22a6.937 6.937 0 0 1-9.47-9.47 7.451 7.451 0 1 0 9.47 9.47ZM12.75 7C17 7 17 2.75 17 2.75S17 7 21.25 7C17 7 17 11.25 17 11.25S17 7 12.75 7Z'
-                        strokeWidth='1.5'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                    />
-                </svg>
-            </span>
-        </button>
-    );
-}
+// function ThemeToggleButton() {
+//     const { theme, toggleTheme } = useTheme();
+//     const other = theme === 'dark' ? 'light' : 'dark';
+//     return (
+//         <button
+//             type='button'
+//             aria-label={`Switch to ${other} theme`}
+//             onClick={toggleTheme}
+//             className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-300 dark:hover:bg-zinc-800'
+//         >
+//             <span className='block dark:hidden'>
+//                 <svg
+//                     viewBox='0 0 24 24'
+//                     aria-hidden='true'
+//                     className='h-6 w-6 fill-zinc-100 stroke-zinc-500 transition group-hover:fill-zinc-200 group-hover:stroke-zinc-700'
+//                 >
+//                     <path d='M8 12.25A4.25 4.25 0 0 1 12.25 8v0a4.25 4.25 0 0 1 4.25 4.25v0a4.25 4.25 0 0 1-4.25 4.25v0A4.25 4.25 0 0 1 8 12.25v0Z' />
+//                     <path
+//                         d='M12.25 3v1.5M21.5 12.25H20M18.791 18.791l-1.06-1.06M18.791 5.709l-1.06 1.06M12.25 20v1.5M4.5 12.25H3M6.77 6.77 5.709 5.709M6.77 17.73l-1.061 1.061'
+//                         fill='none'
+//                     />
+//                 </svg>
+//             </span>
+//             <span className='hidden dark:block'>
+//                 <svg
+//                     viewBox='0 0 24 24'
+//                     aria-hidden='true'
+//                     className='h-6 w-6 fill-zinc-700 stroke-zinc-500 transition'
+//                 >
+//                     <path
+//                         d='M17.25 16.22a6.937 6.937 0 0 1-9.47-9.47 7.451 7.451 0 1 0 9.47 9.47ZM12.75 7C17 7 17 2.75 17 2.75S17 7 21.25 7C17 7 17 11.25 17 11.25S17 7 12.75 7Z'
+//                         strokeWidth='1.5'
+//                         strokeLinecap='round'
+//                         strokeLinejoin='round'
+//                     />
+//                 </svg>
+//             </span>
+//         </button>
+//     );
+// }
 
-function UserMenu({ onLogout }: { onLogout: () => void }) {
+function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: NavItem[] }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
     const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        }
+
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [open]);
 
     return (
         <div className='relative' ref={menuRef}>
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}
-                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-600 shadow-lg backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200'
+                className='mt-1'
             >
                 <Avatar
                     avatar={getImagePath(user?.avatar)}
                     username={user?.username}
                     size={40}
+                    className='sm:!w-11 sm:!h-11 lg:!w-12 lg:!h-12'
                 />
             </button>
             {open && (
                 <div
                     id='profile-dropdown'
-                    className='absolute right-0 z-50 mt-2 w-40 rounded-lg bg-white shadow-lg ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:ring-white/10'
+                    className='absolute right-0 z-50 mt-2 w-56 rounded-lg bg-white shadow-lg ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:ring-white/10'
                 >
                     <Link
                         to={profileHref}
                         onClick={() => setOpen(false)}
-                        className='block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                        className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700 rounded-t-lg'
                     >
-                        Profile
+                        <UserCircleIcon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />
+                        <span>Profile</span>
                     </Link>
+                    {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.name}
+                                to={item.to}
+                                onClick={() => setOpen(false)}
+                                className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                            >
+                                {Icon && <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />}
+                                <span>{item.name}</span>
+                            </Link>
+                        );
+                    })}
                     <button
                         onClick={() => {
                             setOpen(false);
                             onLogout();
                         }}
-                        className='block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-zinc-100 dark:text-red-400 dark:hover:bg-zinc-700'
+                        className='flex items-center gap-3 w-full px-4 py-3 text-left text-base font-medium text-red-600 hover:bg-zinc-100 dark:text-red-400 dark:hover:bg-zinc-700 rounded-b-lg'
                     >
-                        Logout
+                        <ArrowRightOnRectangleIcon className='h-5 w-5' />
+                        <span>Logout</span>
                     </button>
                 </div>
             )}
@@ -276,6 +230,8 @@ export type NavbarProps = {
     onLogout: () => void;
     brand?: React.ReactNode;
     onOpenSidebar: () => void;
+    onOpenDMs: () => void;
+    onOpenSearch: () => void;
 };
 
 export default function Navbar({
@@ -283,52 +239,111 @@ export default function Navbar({
     user,
     onLogout,
     brand,
-    onOpenSidebar
+    onOpenSidebar,
+    onOpenDMs,
+    onOpenSearch
 }: NavbarProps) {
-    const navItems = useMemo(
-        () => useAppNav(isLoggedIn, user?.admin),
-        [isLoggedIn, user]
-    );
+    const navigate = useNavigate();
+    const userMenuItems = useMemo(() => useUserMenuItems(user?.admin), [user?.admin]);
+    const { state: notificationsState } = useNotifications();
 
+    // Count unread DM notifications
+    const unreadDMs = useMemo(() => {
+        return notificationsState.items.filter(
+            (n) => n.type === 'direct-message' && !n.isRead
+        ).length;
+    }, [notificationsState.items]);
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-2 bg-transparent px-4 py-4 backdrop-blur-md'>
-                <div className='flex items-center gap-2'>
-                    <MobileNavigation items={navItems} />
-                    {brand || <></>}
+            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
+                <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
+                    <div className='flex-shrink-0'>
+                        {brand || <></>}
+                    </div>
                 </div>
 
-                <div className='flex flex-1 justify-end md:justify-center'>
-                    <DesktopNavigation items={navItems} />
+                <div className='flex flex-1 items-center min-w-0 px-2'>
+                    {isLoggedIn && (
+                        <div className='hidden lg:flex w-full justify-center'>
+                            <SearchBar className='w-full max-w-3xl' />
+                        </div>
+                    )}
                 </div>
 
-                <div className='flex items-center gap-2'>
-                    <ThemeToggleButton />
+                <div className='flex items-center gap-2 sm:gap-3 flex-shrink-0'>
+                    {/* <ThemeToggleButton /> */}
 
                     {isLoggedIn ? (
                         <>
-                            <NotificationsBell />
-                            {/* <Link
-                                to={routes.feedback}
-                                aria-label='Feedback'
-                                className='flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                            <Link
+                                to={routes.donate}
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                                aria-label='Donate'
                             >
-                                <FlagIcon className='h-5 w-5' />
-                            </Link> */}
-                            <UserMenu onLogout={onLogout} />
+                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                                <span className='hidden sm:inline'>Donate</span>
+                            </Link>
+                            {/* Create button - Desktop only */}
+                            <Link
+                                to={routes.createPost}
+                                className='hidden lg:flex items-center justify-center gap-1 rounded-full bg-brand-600 px-5 py-3 text-base font-medium text-white shadow-lg hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:bg-brand-400 dark:hover:bg-brand-300'
+                                aria-label='Create post'
+                            >
+                                Create
+                            </Link>
+                            {/* Mobile Search Button */}
+                            <button
+                                onClick={onOpenSearch}
+                                className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
+                                aria-label='Search'
+                            >
+                                <MagnifyingGlassIcon className='h-5 w-5 sm:h-6 sm:w-6' />
+                            </button>
+                            {/* DMs button - Desktop only */}
+                            <button
+                                onClick={onOpenDMs}
+                                aria-label='DMs'
+                                className='hidden lg:flex relative h-12 w-12 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                            >
+                                <ChatBubbleLeftRightIcon className='h-6 w-6' />
+                                {unreadDMs > 0 && (
+                                    <span
+                                        className='absolute -top-1 -right-1 sm:-top-2 sm:-right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
+                                        aria-label={`${unreadDMs} unread messages`}
+                                    >
+                                        {unreadDMs > 9 ? '9+' : unreadDMs}
+                                    </span>
+                                )}
+                            </button>
+                            {/* Notifications - Desktop only */}
+                            <div className='hidden lg:block flex-shrink-0'>
+                                <NotificationsBell />
+                            </div>
+                            <div className='flex-shrink-0 pr-2 sm:pr-4'>
+                                <UserMenu onLogout={onLogout} menuItems={userMenuItems} />
+                            </div>
                         </>
                     ) : (
-                        <div className='flex items-center gap-1.5'>
+                        <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
+                            <Link
+                                to={routes.donate}
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                                aria-label='Donate'
+                            >
+                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                                <span className='hidden sm:inline'>Donate</span>
+                            </Link>
+
                             <Link
                                 to={routes.login}
-                                className='rounded-full bg-white/90 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
+                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'
                             >
                                 Login
                             </Link>
                             <Link
                                 to={routes.signUp}
-                                className='rounded-full bg-teal-500 px-3 py-2 text-s md:text-sm md:px-4 md:py-2 font-medium text-white shadow-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:bg-teal-600 dark:hover:bg-teal-500'
+                                className='rounded-full bg-brand-600 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-white shadow-lg hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:bg-brand-400 dark:hover:bg-brand-300 whitespace-nowrap'
                             >
                                 Register
                             </Link>
@@ -336,7 +351,6 @@ export default function Navbar({
                     )}
                 </div>
             </header>
-
         </>
     );
 }

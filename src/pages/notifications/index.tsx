@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Filter, MessageSquare, Handshake, MessageCircle, X, MoreHorizontal } from 'lucide-react';
 
 import Spinner from '@/components/common/Spinner';
 import Alert from '@/components/common/Alert';
@@ -12,9 +13,125 @@ import {
 } from '@/shared/api/types';
 import { routes } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useAuth } from '@/contexts/useAuth';
+import { useDMs } from '@/contexts/DMsContext';
+import UserCard from '@/components/users/UserCard';
+import { getImagePath } from '@/shared/api/config';
+import HandshakeCard from '@/components/handshakes/HandshakeCard';
+import type { HandshakeDTO } from '@/shared/api/types';
+import { useCachedHandshake, useCachedUser, useCachedPost } from '@/contexts/DataCacheContext';
 
 const PAGE_SIZE = 20;
 const historyQueryKey = ['notifications', 'history', PAGE_SIZE] as const;
+
+function HandshakeNotificationByPost({
+    postID,
+    userID,
+    notificationType
+}: {
+    postID: number;
+    userID: number;
+    notificationType: string;
+}) {
+    const { post, loading, error } = useCachedPost(postID);
+
+    console.log('[HandshakeNotificationByPost] Using cached post:', { postID, userID, notificationType, post, loading, error });
+
+    if (loading) {
+        return (
+            <div className='flex items-center justify-center py-8'>
+                <Spinner text='Loading handshake...' />
+            </div>
+        );
+    }
+
+    if (error || !post) {
+        return (
+            <div className='text-center py-4'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Failed to load handshake details
+                </p>
+            </div>
+        );
+    }
+
+    // Find the relevant handshake for this user
+    const handshakes = post.handshakes || [];
+    const relevantHandshake = handshakes.find((h: any) =>
+        h.senderID === userID || h.receiverID === userID
+    );
+
+    console.log('[HandshakeNotificationByPost] Looking for handshake:', {
+        userID,
+        handshakesCount: handshakes.length,
+        relevantHandshake
+    });
+
+    if (!relevantHandshake) {
+        console.error('[HandshakeNotificationByPost] No handshake found for user:', { userID, handshakes });
+        return (
+            <div className='text-center py-4'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Handshake not found
+                </p>
+            </div>
+        );
+    }
+
+    console.log('[HandshakeNotificationByPost] Rendering HandshakeCard with:', relevantHandshake);
+
+    return (
+        <div>
+            <HandshakeCard
+                handshake={{ ...relevantHandshake, post }}
+                userID={userID}
+                showPostDetails={true}
+                hideCardBorder={true}
+            />
+        </div>
+    );
+}
+
+function HandshakeNotificationCard({
+    handshakeID,
+    userID,
+    notificationType
+}: {
+    handshakeID: number;
+    userID?: number;
+    notificationType: string;
+}) {
+    const { handshake, loading, error } = useCachedHandshake(handshakeID);
+
+    if (loading) {
+        return (
+            <div className='flex items-center justify-center py-8'>
+                <Spinner text='Loading handshake...' />
+            </div>
+        );
+    }
+
+    if (error || !handshake) {
+        return (
+            <div className='text-center py-4'>
+                <p className='text-sm text-red-600 dark:text-red-400'>
+                    Failed to load handshake details
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <HandshakeCard
+                handshake={handshake}
+                userID={userID}
+                showPostDetails={true}
+                hideCardBorder={true}
+            />
+        </div>
+    );
+}
 
 function describeNotification(notification: NotificationRecord) {
     switch (notification.type) {
@@ -70,6 +187,30 @@ function describeNotification(notification: NotificationRecord) {
                 : 'Review in the admin dashboard.'
         };
     }
+    case NotificationType.HANDSHAKE_CREATED:
+        return {
+            title: 'New handshake request',
+            description: 'Someone wants to handshake on your post. Click to view details.'
+        };
+    case NotificationType.HANDSHAKE_ACCEPTED:
+        return {
+            title: 'Handshake accepted',
+            description: 'Your handshake request was accepted! You can now coordinate the exchange.'
+        };
+    case NotificationType.HANDSHAKE_COMPLETED:
+        return {
+            title: 'Handshake completed',
+            description: 'The transaction has been completed successfully.'
+        };
+    case NotificationType.HANDSHAKE_CANCELLED: {
+        const noShow = 'noShowReported' in notification ? notification.noShowReported : false;
+        return {
+            title: 'Handshake cancelled',
+            description: noShow
+                ? 'The handshake was cancelled due to a no-show.'
+                : 'The handshake was cancelled.'
+        };
+    }
     default:
         return {
             title: 'Notification',
@@ -85,9 +226,14 @@ function formatCreatedAt(value?: string) {
     return date.toLocaleString();
 }
 
+type NotificationFilter = 'all' | 'messages' | 'handshakes' | 'comments' | 'other';
+
 export default function NotificationsPage() {
     const navigate = useNavigate();
-    const { markActed } = useNotifications();
+    const { markActed, acknowledgeAll } = useNotifications();
+    const { user } = useAuth();
+    const { openDMs } = useDMs();
+    const [filter, setFilter] = useState<NotificationFilter>('all');
 
     const {
         data,
@@ -112,17 +258,55 @@ export default function NotificationsPage() {
     });
 
     const pages = data?.pages ?? [];
-    const items = useMemo(
+    const allItems = useMemo(
         () => pages.flatMap((page) => page.items),
         [pages]
     );
 
+    const items = useMemo(() => {
+        if (filter === 'all') return allItems;
+
+        return allItems.filter((item) => {
+            if (filter === 'messages') {
+                return item.type === NotificationType.DIRECT_MESSAGE;
+            }
+            if (filter === 'handshakes') {
+                return (
+                    item.type === NotificationType.HANDSHAKE_CREATED ||
+                    item.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                    item.type === NotificationType.HANDSHAKE_COMPLETED ||
+                    item.type === NotificationType.HANDSHAKE_CANCELLED
+                );
+            }
+            if (filter === 'comments') {
+                return item.type === NotificationType.POST_REPLY;
+            }
+            if (filter === 'other') {
+                return (
+                    item.type !== NotificationType.DIRECT_MESSAGE &&
+                    item.type !== NotificationType.POST_REPLY &&
+                    item.type !== NotificationType.HANDSHAKE_CREATED &&
+                    item.type !== NotificationType.HANDSHAKE_ACCEPTED &&
+                    item.type !== NotificationType.HANDSHAKE_COMPLETED &&
+                    item.type !== NotificationType.HANDSHAKE_CANCELLED
+                );
+            }
+            return true;
+        });
+    }, [allItems, filter]);
+
     const handleOpen = useCallback(
         (notification: NotificationRecord) => {
             if (notification.type === NotificationType.DIRECT_MESSAGE) {
-                navigate(
-                    `/dms/${notification.message?.author?.id ?? ''}`
-                );
+                const authorId = notification.message?.author?.id;
+                // On desktop (lg screens), open the DMs modal instead of navigating
+                const isDesktop = window.innerWidth >= 1024; // lg breakpoint
+                if (isDesktop && authorId) {
+                    openDMs(authorId);
+                }
+                else {
+                    navigate(`/dms/${authorId ?? ''}`);
+                }
             }
             else if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
@@ -139,6 +323,14 @@ export default function NotificationsPage() {
             ) {
                 navigate(routes.admin);
             }
+            else if (
+                notification.type === NotificationType.HANDSHAKE_CREATED ||
+                notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                notification.type === NotificationType.HANDSHAKE_COMPLETED ||
+                notification.type === NotificationType.HANDSHAKE_CANCELLED
+            ) {
+                navigate(`/post/${notification.postID}`);
+            }
 
             if (!notification.isActedOn) {
                 markActed(notification.id).catch((err) => {
@@ -153,7 +345,7 @@ export default function NotificationsPage() {
                 refetch();
             }
         },
-        [markActed, navigate, refetch]
+        [markActed, navigate, openDMs, refetch]
     );
 
     const errorMessage = error
@@ -162,15 +354,231 @@ export default function NotificationsPage() {
             : 'Something went wrong while loading notifications.'
         : '';
 
+    const renderNotificationContent = (notification: NotificationRecord) => {
+        const createdAt = formatCreatedAt(notification.createdAt);
+
+        // Direct Message
+        if (notification.type === NotificationType.DIRECT_MESSAGE) {
+            const author = notification.message?.author;
+            const displayName = author?.displayName || author?.username || 'Someone';
+            return (
+                <div className='flex items-start gap-3'>
+                    {author && (
+                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                            <UserCard user={author} triggerVariant='avatar-name' />
+                        </div>
+                    )}
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                            sent you a message
+                        </p>
+                        {notification.message?.content && (
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                                {notification.message.content}
+                            </p>
+                        )}
+                        {createdAt && (
+                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Comment/Post Reply
+        if (notification.type === NotificationType.POST_REPLY) {
+            const author = notification.message?.author;
+            const displayName = author?.displayName || author?.username || 'Someone';
+            return (
+                <div className='flex items-start gap-3'>
+                    {author && (
+                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                            <UserCard user={author} triggerVariant='avatar-name' />
+                        </div>
+                    )}
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                            replied to your post
+                        </p>
+                        {notification.message?.content && (
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                                {notification.message.content}
+                            </p>
+                        )}
+                        {createdAt && (
+                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Handshake notifications
+        if (
+            notification.type === NotificationType.HANDSHAKE_CREATED ||
+            notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+            notification.type === NotificationType.HANDSHAKE_COMPLETED ||
+            notification.type === NotificationType.HANDSHAKE_CANCELLED
+        ) {
+            const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
+            const postID = 'postID' in notification ? notification.postID : undefined;
+            const meta = describeNotification(notification);
+
+            console.log('[renderNotificationContent] Handshake notification:', {
+                type: notification.type,
+                handshakeID,
+                postID,
+                userID: user?.id,
+                notification
+            });
+
+            const handshakeContent = handshakeID ? (
+                <HandshakeNotificationCard handshakeID={handshakeID} userID={user?.id} notificationType={notification.type} />
+            ) : postID && user?.id ? (
+                <HandshakeNotificationByPost postID={postID} userID={user.id} notificationType={notification.type} />
+            ) : (
+                <div className='text-center py-4'>
+                    <p className='text-sm text-red-600 dark:text-red-400'>
+                        Missing handshake data
+                    </p>
+                </div>
+            );
+
+            return (
+                <div className='flex flex-col gap-3'>
+                    <div className='flex items-start justify-between gap-3'>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+                                {meta.title}
+                            </p>
+                            {meta.description && (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
+                                    {meta.description}
+                                </p>
+                            )}
+                        </div>
+                        {createdAt && (
+                            <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                    <div>
+                        {handshakeContent}
+                    </div>
+                </div>
+            );
+        }
+
+        // Default/Other notifications
+        const meta = describeNotification(notification);
+        return (
+            <div className='flex flex-col gap-2'>
+                <div className='flex items-start justify-between gap-3'>
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+                            {meta.title}
+                        </p>
+                        {meta.description && (
+                            <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
+                                {meta.description}
+                            </p>
+                        )}
+                    </div>
+                    {createdAt && (
+                        <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
+                            {createdAt}
+                        </time>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className='mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8'>
-            <h1 className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>
-                Notifications
-            </h1>
-            <p className='mt-1 text-sm text-zinc-600 dark:text-zinc-400'>
-                Review every notification, including those you have already
-                acknowledged.
-            </p>
+            {/* Filter buttons */}
+            <div className="w-full mb-2">
+                <div className="flex w-full border-b border-zinc-200 dark:border-zinc-700">
+                    {[
+                        { key: 'all', label: 'All', Icon: Filter },
+                        { key: 'messages', label: 'Messages', Icon: MessageSquare },
+                        { key: 'handshakes', label: 'Handshakes', Icon: Handshake },
+                        { key: 'comments', label: 'Comments', Icon: MessageCircle },
+                        { key: 'other', label: 'Other', Icon: MoreHorizontal},
+                    ].map(({ key, label, Icon }) => {
+                        const isActive = filter === key
+
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setFilter(key as NotificationFilter)}
+                                className={`
+                        group
+                        flex flex-1
+                        flex-col sm:flex-row
+                        items-center justify-center
+                        gap-1 sm:gap-2
+                        py-2 sm:py-2.5
+                        text-xs sm:text-sm
+                        font-medium
+                        transition-colors
+                        border-b-2
+                        -mb-px
+
+                        ${isActive
+                                ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                : 'border-transparent text-zinc-500 hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-300'}
+                    `}
+                            >
+                                {Icon && (
+                                    <Icon
+                                        className={`
+                                w-5 h-5 sm:w-4 sm:h-4
+                                transition-opacity
+                                ${isActive ? 'opacity-100' : 'opacity-70'}
+                            `}
+                                    />
+                                )}
+
+                                {/* Label */}
+                                <span
+                                    className="
+                            leading-none
+                            sm:inline
+                            hidden xs:inline
+                        "
+                                >
+                                    {label}
+                                </span>
+                            </button>
+                        )
+                    })}
+                </div>
+            </div>
+
+
+            
+            <button
+                onClick={acknowledgeAll}
+                className="
+                    w-full mb-3
+                    text-xs font-medium
+                    text-zinc-500 dark:text-zinc-400
+                    hover:text-zinc-700 dark:hover:text-zinc-200
+                    hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50
+                    py-2 rounded-md
+                    transition
+                "
+            >
+                Mark all as read
+            </button>
+
+
 
             {isLoading ? (
                 <div className='mt-8'>
@@ -187,7 +595,7 @@ export default function NotificationsPage() {
                         <button
                             type='button'
                             onClick={() => refetch()}
-                            className='rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900'
+                            className='rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900'
                         >
                             Try again
                         </button>
@@ -203,64 +611,33 @@ export default function NotificationsPage() {
                 </div>
             ) : (
                 <>
-                    <ul className='mt-6 space-y-3'>
+                    <ul className='mt-6 space-y-3 mb-8'>
                         {items.map((notification) => {
-                            const meta = describeNotification(notification);
-                            const createdAt = formatCreatedAt(
-                                notification.createdAt
-                            );
-                            const highlight = notification.isRead
-                                ? 'border-zinc-200/70 bg-white dark:border-zinc-700/60 dark:bg-zinc-900/60'
-                                : 'border-teal-300/70 bg-teal-50/70 dark:border-teal-900/50 dark:bg-teal-900/40';
+                            const highlight = !notification.isRead
+                                ? 'border-l-4 border-l-brand-600 dark:border-l-brand-400 bg-brand-50/80 dark:bg-brand-900/30 shadow-md'
+                                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900';
+
+                            const isHandshake =
+                                notification.type === NotificationType.HANDSHAKE_CREATED ||
+                                notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                                notification.type === NotificationType.HANDSHAKE_COMPLETED ||
+                                notification.type === NotificationType.HANDSHAKE_CANCELLED;
 
                             return (
                                 <li key={notification.id}>
                                     <button
                                         type='button'
                                         onClick={() => handleOpen(notification)}
-                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
+                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
                                     >
-                                        <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-                                            <div>
-                                                <div className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-                                                    {meta.title}
-                                                </div>
-                                                {meta.description && (
-                                                    <div className='mt-1 text-sm text-zinc-600 dark:text-zinc-400'>
-                                                        {meta.description}
-                                                    </div>
-                                                )}
+                                        {renderNotificationContent(notification)}
+                                        {!notification.isRead && (
+                                            <div className='mt-3'>
+                                                <span className='inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold bg-brand-600 text-white dark:bg-brand-500'>
+                                                    NEW
+                                                </span>
                                             </div>
-                                            {createdAt && (
-                                                <time className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
-                                                    {createdAt}
-                                                </time>
-                                            )}
-                                        </div>
-                                        <div className='mt-3 flex flex-wrap gap-2'>
-                                            <span
-                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                    notification.isRead
-                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                        : 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300'
-                                                }`}
-                                            >
-                                                {notification.isRead
-                                                    ? 'Read'
-                                                    : 'Unread'}
-                                            </span>
-                                            <span
-                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                    notification.isActedOn
-                                                        ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700/70 dark:text-zinc-100'
-                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                                }`}
-                                            >
-                                                {notification.isActedOn
-                                                    ? 'Completed'
-                                                    : 'Pending'}
-                                            </span>
-                                        </div>
+                                        )}
                                     </button>
                                 </li>
                             );
@@ -273,7 +650,7 @@ export default function NotificationsPage() {
                                 type='button'
                                 onClick={() => fetchNextPage()}
                                 disabled={isFetchingNextPage}
-                                className='inline-flex items-center rounded-md border border-transparent bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:focus:ring-offset-zinc-900'
+                                className='inline-flex items-center rounded-md border border-transparent bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:focus:ring-offset-zinc-900'
                             >
                                 {isFetchingNextPage
                                     ? 'Loading…'

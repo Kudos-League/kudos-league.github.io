@@ -158,6 +158,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 else if (normalized.type === NotificationType.SITE_FEEDBACK) {
                     pushAlert({ type: 'info', message: 'New site feedback submitted.' });
                 }
+                else if (normalized.type === NotificationType.HANDSHAKE_CREATED) {
+                    pushAlert({ type: 'info', message: 'New handshake request on your post!' });
+                }
+                else if (normalized.type === NotificationType.HANDSHAKE_ACCEPTED) {
+                    pushAlert({ type: 'success', message: 'Your handshake request was accepted!' });
+                }
+                else if (normalized.type === NotificationType.HANDSHAKE_COMPLETED) {
+                    pushAlert({ type: 'success', message: 'Handshake completed!' });
+                }
+                else if (normalized.type === NotificationType.HANDSHAKE_CANCELLED) {
+                    const noShow = 'noShowReported' in normalized ? normalized.noShowReported : false;
+                    const msg = noShow
+                        ? 'Handshake cancelled due to no-show.'
+                        : 'Handshake cancelled.';
+                    pushAlert({ type: 'warning', message: msg });
+                }
                 else if ((normalized as any).type === NotificationType.USER_BANNED || (normalized as any).type === 'user-banned') {
                     const banEnd = (normalized as any).banEndDate || (normalized as any).payload?.banEndDate;
                     const until = banEnd ? ` until ${new Date(banEnd).toLocaleString()}` : '';

@@ -11,6 +11,7 @@ interface HandshakesProps {
     onHandshakeCreated?: (handshake: HandshakeDTO) => void;
     showPostDetails?: boolean;
     onHandshakeDeleted?: (id: number) => void;
+    showSenderOrReceiver?: 'sender' | 'receiver';
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -20,7 +21,8 @@ const Handshakes: React.FC<HandshakesProps> = ({
     onShowAll,
     onHandshakeCreated,
     showPostDetails,
-    onHandshakeDeleted
+    onHandshakeDeleted,
+    showSenderOrReceiver
 }) => {
     // Filter out cancelled handshakes
     const activeHandshakes = handshakes.filter(
@@ -35,7 +37,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
 
     return (
         <div className='space-y-4'>
-            {visibleHandshakes.reverse().map((handshake) => (
+            {visibleHandshakes.map((handshake) => (
                 handshake.post.isRequest ?
                     // If it's request
                     (<HandshakeCard
@@ -45,6 +47,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
+                        showSenderOrReceiver={showSenderOrReceiver}
                     />) :
                     // If it's gift
                     (<HandshakeCard
@@ -54,6 +57,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                         onHandshakeCreated={onHandshakeCreated}
                         showPostDetails={showPostDetails}
                         onDelete={onHandshakeDeleted}
+                        showSenderOrReceiver={showSenderOrReceiver}
                     />)
             ))}
 

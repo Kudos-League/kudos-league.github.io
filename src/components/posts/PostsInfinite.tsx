@@ -3,6 +3,7 @@ import { usePostsInfiniteQuery } from '@/shared/api/queries/posts';
 import PostsContainer from './PostsContainer';
 import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -22,16 +23,17 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
-    // Pass ordering to the API along with other filters
-    const queryFilters = React.useMemo(
-        () => ({
-            ...filters,
+    const safeIncomingFilters = React.useMemo(() => ({ ...(filters ?? {}) }), [filters]);
+
+    const queryFilters = React.useMemo(() => {
+        const sort: 'date' | 'tags' | 'location' | 'kudos' = ordering.type === 'distance' ? 'location' : ordering.type;
+        return {
+            ...safeIncomingFilters,
             includeSender: true,
-            orderBy: ordering.type,
-            orderDir: ordering.order
-        }),
-        [filters, ordering]
-    );
+            sort,
+            order: ordering.order
+        };
+    }, [safeIncomingFilters, ordering]);
 
     const {
         data,
@@ -50,7 +52,6 @@ export default function PostsInfinite({
     // Only filter by type, let backend handle sorting
     const visible = React.useMemo(() => {
         if (activeTab === 'all') return flat;
-        
         return flat.filter(
             (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
         );
@@ -86,15 +87,28 @@ export default function PostsInfinite({
     return (
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
-            <div className='mt-4 flex justify-center'>
+            <div className='mt-4 flex flex-col items-center'>
                 {isFetchingNextPage && <Spinner text='Loading more...' />}
+                {hasNextPage && !isFetchingNextPage && (
+                    <div className='flex flex-col items-center gap-2 py-4'>
+                        <ChevronDownIcon
+                            className='w-6 h-6 text-brand-500 dark:text-brand-400 animate-bounce'
+                            style={{
+                                animation: 'bounce 2s ease-in-out infinite'
+                            }}
+                        />
+                        <span className='text-sm text-gray-500 dark:text-gray-400'>
+                            Scroll for more
+                        </span>
+                    </div>
+                )}
                 {hasNextPage && (
-                    <div 
-                        ref={sentinelRef} 
-                        style={{ 
-                            height: 1, 
+                    <div
+                        ref={sentinelRef}
+                        style={{
+                            height: 1,
                             width: 1
-                        }} 
+                        }}
                     />
                 )}
                 {!hasNextPage && !isFetchingNextPage && <div className='h-2' />}

@@ -48,6 +48,7 @@ export type PostDTO = {
     rewardOffers?: RewardOfferDTO[];
     messages?: MessageDTO[];
     tags?: Tag[];
+    distance?: number | null;
 };
 
 export interface CustomFile extends File {
@@ -188,6 +189,7 @@ export type EventDTO = {
     startTime: string;
     endTime: string;
     creatorID: number | null;
+    creator?: UserDTO | null;
     createdAt: string;
     updatedAt: string;
     content?: string;
@@ -381,7 +383,11 @@ export const NotificationType = {
     PAST_GIFT: 'past-gift',
     BUG_REPORT: 'bug-report',
     SITE_FEEDBACK: 'site-feedback',
-    USER_BANNED: 'user-banned'
+    USER_BANNED: 'user-banned',
+    HANDSHAKE_CREATED: 'handshake-created',
+    HANDSHAKE_ACCEPTED: 'handshake-accepted',
+    HANDSHAKE_COMPLETED: 'handshake-completed',
+    HANDSHAKE_CANCELLED: 'handshake-cancelled'
 } as const;
 
 export type NotificationTypeKeys =
@@ -405,7 +411,11 @@ export type NotificationPayload =
     | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
     | { type: typeof NotificationType.PAST_GIFT; postID: number }
     | { type: typeof NotificationType.BUG_REPORT; feedbackID: number }
-    | { type: typeof NotificationType.SITE_FEEDBACK; feedbackID: number };
+    | { type: typeof NotificationType.SITE_FEEDBACK; feedbackID: number }
+    | { type: typeof NotificationType.HANDSHAKE_CREATED; postID: number; handshakeID: number }
+    | { type: typeof NotificationType.HANDSHAKE_ACCEPTED; postID: number; handshakeID: number }
+    | { type: typeof NotificationType.HANDSHAKE_COMPLETED; postID: number; handshakeID: number }
+    | { type: typeof NotificationType.HANDSHAKE_CANCELLED; postID: number; handshakeID: number; noShowReported?: boolean };
 
 export type NotificationRecord = NotificationPayload & {
     id: number;

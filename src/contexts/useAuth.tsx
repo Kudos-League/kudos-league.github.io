@@ -49,6 +49,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const qc = useQueryClient();
 
+    const clearPostsCache = React.useCallback(() => {
+        try {
+            qc.removeQueries({
+                predicate: (query) => {
+                    const k = query.queryKey;
+                    if (!Array.isArray(k) || k.length === 0) return false;
+                    const first = k[0];
+                    if (typeof first !== 'string') return false;
+                    return first === 'posts';
+                }
+            });
+        }
+        catch (err) {
+            console.warn('Failed to clear posts cache:', err);
+        }
+    }, [qc]);
+
     type LoginData = { token: string; user?: { username?: string } };
     type LoginPayload = { username?: string; password?: string; token?: string };
 
@@ -94,6 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             dispatch(updateAuth(newAuthState));
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
             setAuthToken(newAuthState.token);
+            clearPostsCache();
             try {
                 await qc.fetchQuery({ queryKey: ['user', 'me'], queryFn: () => apiGet<UserDTO>('/users/me') });
                 const cached = qc.getQueryData<UserDTO>(['user', 'me']);
@@ -144,6 +162,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const bootstrap = async () => {
+            console.log('[AUTH DEBUG] Bootstrap starting...');
             setLoading(true);
             try {
                 const url = new URL(window.location.href);
@@ -154,6 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     pathName === '/reset-password' || pathName === '/forgot-password';
 
                 if (tokenFromQuery && !isPasswordFlow) {
+                    console.log('[AUTH DEBUG] Found token in query params');
                     try {
                         await loginHandler({ token: tokenFromQuery });
                         url.searchParams.delete('token');
@@ -167,9 +187,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+                console.log('[AUTH DEBUG] Checking localStorage, found:', !!stored);
                 if (stored) {
                     const cached = JSON.parse(stored) as AuthState;
                     if (cached.token) {
+                        console.log('[AUTH DEBUG] Setting auth state from localStorage');
                         setAuthState(cached);
                         dispatch(updateAuth(cached));
                     }
@@ -192,6 +214,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 dispatch(updateAuth({} as any));
             }
             finally {
+                console.log('[AUTH DEBUG] Bootstrap finished, setting loading to false');
                 setLoading(false);
             }
         };
@@ -204,6 +227,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserProfile(null);
         dispatch(updateAuth({} as any));
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        clearPostsCache();
         clearAlerts();
     };
 
@@ -246,6 +270,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserProfile((prev) => (prev ? { ...prev, ...updated } : prev));
     };
 
+    // Keep loading true until we have both token AND user profile (or confirmed no token)
+    const isActuallyLoading = loading || (!!token && (!userProfile || userQuery.isLoading));
+
+    // Debug logging
+    useEffect(() => {
+        console.log('[AUTH DEBUG]', {
+            loading,
+            isActuallyLoading,
+            hasToken: !!token,
+            hasUserProfile: !!userProfile,
+            isLoggedIn: !!userProfile,
+            userQueryIsLoading: userQuery.isLoading,
+            userQueryIsError: userQuery.isError,
+            userQueryData: !!userQuery.data
+        });
+    }, [loading, isActuallyLoading, token, userProfile, userQuery.isLoading, userQuery.isError, userQuery.data]);
+
     return (
         <AuthContext.Provider
             value={{
@@ -254,7 +295,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 isLoggedIn: !!userProfile,
                 user: userProfile,
                 name: userProfile?.displayName ?? userProfile?.username ?? '',
-                loading,
+                loading: isActuallyLoading,
                 login: loginHandler,
                 logout: logoutHandler,
                 register: signUpHandler,

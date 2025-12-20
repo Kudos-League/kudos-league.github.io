@@ -1,17 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+import { Clock, MapPin, Users } from 'lucide-react';
 
 import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
 
 import { useAuth } from '@/contexts/useAuth';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
-import { apiMutate } from '@/shared/api/apiClient';
+import UserCard from '@/components/users/UserCard';
+import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
-import EventCard from '@/components/events/EventCard';
 import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
@@ -36,10 +41,16 @@ const Profile: React.FC<Props> = ({
     setUser
 }) => {
     const { user: currentUser, token } = useAuth();
+    const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const navigate = useNavigate();
+    const location = useLocation();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const isSelf = currentUser?.id === user.id;
+    const isFromConversation = location.state?.fromConversation || false;
+    const showBackButton = !isSelf || isFromConversation;
     const [editing, setEditing] = useState(false);
+    const [showBlockedUsers, setShowBlockedUsers] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -53,6 +64,37 @@ const Profile: React.FC<Props> = ({
     const [reportFiles, setReportFiles] = useState<File[]>([]);
     const [reportServerError, setReportServerError] = useState<string | null>(null);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
+    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
+
+    // Fetch blocked users details
+    React.useEffect(() => {
+        if (!isSelf || !blockedUsers || blockedUsers.length === 0) {
+            setBlockedUsersDetails([]);
+            return;
+        }
+
+        const fetchBlockedUsers = async () => {
+            try {
+                const usersData = await Promise.all(
+                    blockedUsers.map(async (userId) => {
+                        try {
+                            return await apiGet<UserDTO>(`/users/${userId}`);
+                        }
+                        catch (err) {
+                            console.error(`Failed to fetch user ${userId}`, err);
+                            return null;
+                        }
+                    })
+                );
+                setBlockedUsersDetails(usersData.filter((u): u is UserDTO => u !== null));
+            }
+            catch (err) {
+                console.error('Failed to fetch blocked users', err);
+            }
+        };
+
+        fetchBlockedUsers();
+    }, [blockedUsers, isSelf]);
 
     // Sort all arrays chronologically (latest first)
     const sortedPosts = useMemo(() => {
@@ -72,9 +114,25 @@ const Profile: React.FC<Props> = ({
     }, [events]);
 
     const sortedHandshakes = useMemo(() => {
+        // Status priority: new (pending) > accepted > completed
+        const statusPriority: Record<string, number> = {
+            'new': 0,
+            'accepted': 1,
+            'completed': 2
+        };
+
         return [...handshakes]
             .filter((h) => !h.cancelledAt)
             .sort((a, b) => {
+                // First sort by status priority
+                const priorityA = statusPriority[a.status] ?? 999;
+                const priorityB = statusPriority[b.status] ?? 999;
+
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+
+                // Then sort by date (newest first within same status)
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
                 return dateB - dateA;
@@ -214,17 +272,65 @@ const Profile: React.FC<Props> = ({
 
         if (filter === 'events') {
             return (
-                <div className='grid gap-4 list-none'>
+                <ul className='space-y-2 sm:space-y-3 list-none'>
                     {sortedEvents.length === 0 ? (
                         <p className='text-center text-gray-500 dark:text-gray-400'>
                             No events available.
                         </p>
                     ) : (
                         sortedEvents.map((event) => (
-                            <EventCard key={event.id} event={event} />
+                            <li
+                                key={event.id}
+                                onClick={() => navigate(`/event/${event.id}`)}
+                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                            >
+                                <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                    {event.location?.global ? (
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                            🌐 Global
+                                        </span>
+                                    ) : (
+                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                            📍 Local
+                                        </span>
+                                    )}
+                                </div>
+                                {event.description && (
+                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                )}
+                                <div className='space-y-0.5 sm:space-y-1'>
+                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                        <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                        <span className='truncate'>
+                                            {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                            {event.endTime
+                                                ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                : 'Ongoing'}
+                                        </span>
+                                    </p>
+                                    {event.location?.name && !event.location.global && (
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            {event.location.name}
+                                        </p>
+                                    )}
+                                    {event.creator && (
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <UserCard user={event.creator} />
+                                        </p>
+                                    )}
+                                    {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                        <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                            <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            </li>
                         ))
                     )}
-                </div>
+                </ul>
             );
         }
 
@@ -264,11 +370,59 @@ const Profile: React.FC<Props> = ({
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Events ({sortedEvents.length})
                         </h3>
-                        <div className='grid gap-4 list-none'>
+                        <ul className='space-y-2 sm:space-y-3 list-none'>
                             {sortedEvents.slice(0, 2).map((event) => (
-                                <EventCard key={event.id} event={event} />
+                                <li
+                                    key={event.id}
+                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                >
+                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                        {event.location?.global ? (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                🌐 Global
+                                            </span>
+                                        ) : (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                📍 Local
+                                            </span>
+                                        )}
+                                    </div>
+                                    {event.description && (
+                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                    )}
+                                    <div className='space-y-0.5 sm:space-y-1'>
+                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            <span className='truncate'>
+                                                {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                                {event.endTime
+                                                    ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                    : 'Ongoing'}
+                                            </span>
+                                        </p>
+                                        {event.location?.name && !event.location.global && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.location.name}
+                                            </p>
+                                        )}
+                                        {event.creator && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <UserCard user={event.creator} />
+                                            </p>
+                                        )}
+                                        {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                         {sortedEvents.length > 2 && (
                             <div className='mt-4 text-center'>
                                 <Button
@@ -295,6 +449,7 @@ const Profile: React.FC<Props> = ({
                             showAll={false}
                             onShowAll={() => setFilter('handshakes')}
                             showPostDetails
+                            showSenderOrReceiver='sender'
                         />
                     </div>
                 )}
@@ -313,6 +468,16 @@ const Profile: React.FC<Props> = ({
 
     return (
         <div className='max-w-5xl mx-auto'>
+            {showBackButton && (
+                <button
+                    onClick={() => navigate(-1)}
+                    className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                    aria-label='Go back'
+                >
+                    <ArrowLeftIcon className='w-5 h-5' />
+                    <span className='font-medium'>Back</span>
+                </button>
+            )}
             <div className='bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg px-4 sm:px-6 lg:px-8 py-8 space-y-8'>
                 <ProfileHeader
                     user={user}
@@ -326,16 +491,57 @@ const Profile: React.FC<Props> = ({
                     <InviteManager />
                 )}
 
+                {/* Accessibility Settings - Only for own profile */}
+                {isSelf && (
+                    <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-6'>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
+                            Accessibility
+                        </h3>
+                        <div className='flex items-center justify-between'>
+                            <div className='flex-1'>
+                                <label htmlFor='dyslexic-font-toggle' className='text-sm font-medium text-gray-700 dark:text-gray-200'>
+                                    OpenDyslexic Font
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Use a font designed to increase readability for readers with dyslexia
+                                </p>
+                            </div>
+                            <button
+                                id='dyslexic-font-toggle'
+                                role='switch'
+                                aria-checked={useDyslexicFont}
+                                onClick={() => setUseDyslexicFont(!useDyslexicFont)}
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                                    useDyslexicFont ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        useDyslexicFont ? 'translate-x-5' : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Log Past Gift button - available for all users on their own profile */}
+                {isSelf && (
+                    <div className='flex justify-center'>
+                        <Button
+                            onClick={() => setShowPastGiftModal(true)}
+                            className='!bg-brand-600 !text-white'
+                        >
+                            Log Past Gift
+                        </Button>
+                    </div>
+                )}
+
                 {!isSelf && (
                     <div className='flex justify-center'>
                         <div className='flex gap-3'>
-                            <Button
-                                onClick={() => setShowPastGiftModal(true)}
-                                className='!bg-teal-600 !text-white'
-                            >
-                                Log Past Gift
-                            </Button>
-
                             <Button
                                 onClick={() => setShowReportModal(true)}
                                 className='!bg-red-600 !text-white'
@@ -450,6 +656,79 @@ const Profile: React.FC<Props> = ({
                     </div>
                 )}
 
+                {/* Blocked Users Section - Only for own profile */}
+                {isSelf && (
+                    <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden'>
+                        <button
+                            onClick={() => setShowBlockedUsers(!showBlockedUsers)}
+                            className='w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors'
+                        >
+                            <div className='flex items-center gap-2'>
+                                <span className='text-red-600 dark:text-red-400 text-lg'>🔐</span>
+                                <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
+                                    Blocked Users
+                                </span>
+                                {blockedUsersDetails.length > 0 && (
+                                    <span className='px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full'>
+                                        {blockedUsersDetails.length}
+                                    </span>
+                                )}
+                            </div>
+                            <svg
+                                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${showBlockedUsers ? 'rotate-180' : ''}`}
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'
+                            >
+                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                            </svg>
+                        </button>
+
+                        {showBlockedUsers && (
+                            <div className='border-t border-gray-200 dark:border-white/10 p-4'>
+                                {blockingLoading ? (
+                                    <div className='text-center py-4'>
+                                        <Spinner text='Loading blocked users...' />
+                                    </div>
+                                ) : blockedUsersDetails.length === 0 ? (
+                                    <p className='text-center text-gray-500 dark:text-gray-400 py-4 text-sm'>
+                                        No blocked users
+                                    </p>
+                                ) : (
+                                    <div className='space-y-3'>
+                                        {blockedUsersDetails.map((blockedUser) => (
+                                            <div
+                                                key={blockedUser.id}
+                                                className='flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'
+                                            >
+                                                <div className='flex items-center gap-3 flex-1 min-w-0'>
+                                                    <UserCard user={blockedUser} />
+                                                </div>
+                                                <Button
+                                                    onClick={async () => {
+                                                        if (blockingLoading) return;
+                                                        try {
+                                                            await unblock(blockedUser.id);
+                                                        }
+                                                        catch (err) {
+                                                            console.error('Failed to unblock user', err);
+                                                        }
+                                                    }}
+                                                    variant='secondary'
+                                                    className='text-xs shrink-0 ml-3'
+                                                    disabled={blockingLoading}
+                                                >
+                                                    Unblock
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Filter Buttons */}
                 <div className='flex flex-wrap gap-3 justify-center'>
                     {availableFilters.map((filterType) => {
@@ -497,7 +776,8 @@ const Profile: React.FC<Props> = ({
                                 onChange={(e) => setReportReason(e.target.value)}
                             />
                             <textarea
-                                className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                                className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                                 rows={4}
                                 placeholder='Optional details...'
                                 value={reportNotes}
