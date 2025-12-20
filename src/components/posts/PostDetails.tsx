@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/solid';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
@@ -656,6 +656,16 @@ export default function PostDetails(props: Props) {
     
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
+            {/* Back Button */}
+            <button
+                onClick={() => navigate(-1)}
+                className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                aria-label='Go back'
+            >
+                <ArrowLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
+            </button>
+
             {/* Header: User Card + Action Buttons */}
             <div className='flex items-start justify-between mb-4 gap-4'>
                 <UserCard user={postDetails.sender} large />

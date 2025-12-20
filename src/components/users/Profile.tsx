@@ -449,7 +449,6 @@ const Profile: React.FC<Props> = ({
                             showAll={false}
                             onShowAll={() => setFilter('handshakes')}
                             showPostDetails
-                            showSenderOrReceiver='sender'
                         />
                     </div>
                 )}
@@ -491,6 +490,21 @@ const Profile: React.FC<Props> = ({
                     <InviteManager />
                 )}
 
+                {/* Log Past Gift button - available for all users on their own profile */}
+                {isSelf && (
+                    <div className='flex flex-col items-center gap-2'>
+                        <Button
+                            onClick={() => setShowPastGiftModal(true)}
+                            className='!bg-brand-600 !text-white'
+                        >
+                            Log Past Gift
+                        </Button>
+                        <p className='text-sm text-gray-600 dark:text-gray-400'>
+                            Post a good deed that you made previously
+                        </p>
+                    </div>
+                )}
+
                 {/* Accessibility Settings - Only for own profile */}
                 {isSelf && (
                     <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-6'>
@@ -524,18 +538,6 @@ const Profile: React.FC<Props> = ({
                                 />
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {/* Log Past Gift button - available for all users on their own profile */}
-                {isSelf && (
-                    <div className='flex justify-center'>
-                        <Button
-                            onClick={() => setShowPastGiftModal(true)}
-                            className='!bg-brand-600 !text-white'
-                        >
-                            Log Past Gift
-                        </Button>
                     </div>
                 )}
 
