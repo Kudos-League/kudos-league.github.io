@@ -277,11 +277,14 @@ const HandshakeCard: React.FC<Props> = ({
 
     return (
         <>
-            <div className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4`}>
+            <div
+                onClick={() => navigate(`/post/${handshake.postID}`)}
+                className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4 cursor-pointer`}
+            >
                 {/* Header: User + Status Badge */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                     <div className="font-semibold flex-1 min-w-0">
-                        <UserCard user={showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails} />
+                        <UserCard user={userID && handshake.senderID === userID ? receiverUser : userID && handshake.receiverID === userID ? senderUser : showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails} />
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
@@ -318,13 +321,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {showPostDetails && (
                     <div className="space-y-3">
                         {/* Post Details - Optimized for Mobile */}
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/post/${handshake.postID}`);
-                            }}
-                            className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                        >
+                        <div className="flex gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
                             {/* Post Image/Preview - Larger on mobile */}
                             <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                                 {showBodyInImageBox ? (
@@ -396,7 +393,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {/* Actions Row */}
                 <div className="space-y-3">
                     {/* Accept/Undo Button - Full width on mobile */}
-                    {((canAccept && !stage.postIsPast && userID === handshake.receiverID && handshake.status === 'new') ||
+                    {((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
                       (canUndoAccept && !stage.postIsPast)) && (
                         <Button
                             variant={canUndoAccept ? 'warning' : 'success'}
