@@ -64,8 +64,18 @@ export default function UserProfile() {
                 }
 
                 if (isViewingOwnProfile && !handshakes.length) {
-                    const fetchedHandshakes = await apiGet<HandshakeDTO[]>(`/handshakes/by-sender/${targetUserID}`);
-                    setHandshakes(fetchedHandshakes);
+                    const [sentHandshakes, receivedHandshakes] = await Promise.all([
+                        apiGet<HandshakeDTO[]>(`/handshakes/by-sender/${targetUserID}`),
+                        apiGet<HandshakeDTO[]>(`/handshakes/by-receiver/${targetUserID}`)
+                    ]);
+
+                    // Combine and deduplicate handshakes (by ID)
+                    const allHandshakes = [...sentHandshakes, ...receivedHandshakes];
+                    const uniqueHandshakes = Array.from(
+                        new Map(allHandshakes.map(h => [h.id, h])).values()
+                    );
+
+                    setHandshakes(uniqueHandshakes);
                 }
             }
             catch (e) {
