@@ -23,7 +23,7 @@ export default function Spinner({
         <div
             className={`flex items-center justify-center h-full w-full p-3 ${className}`}
         >
-            <div className='flex flex-col items-center gap-4 mt-8'>
+            <div className='flex flex-col items-center gap-4'>
                 <div className='relative'>
                     {/* Outer spinning ring */}
                     <div
