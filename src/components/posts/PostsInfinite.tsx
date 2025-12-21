@@ -81,14 +81,14 @@ export default function PostsInfinite({
         return () => observer.disconnect();
     }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-    if (isLoading) return <Spinner />;
+    if (isLoading) return <Spinner size='2xl' />;
     if (isError) return <Alert type='danger' message='Failed to load posts.' />;
 
     return (
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex flex-col items-center'>
-                {isFetchingNextPage && <Spinner text='Loading more...' />}
+                {isFetchingNextPage && <Spinner text='Loading more...' size='2xl' />}
                 {hasNextPage && !isFetchingNextPage && (
                     <div className='flex flex-col items-center gap-2 py-4'>
                         <ChevronDownIcon
