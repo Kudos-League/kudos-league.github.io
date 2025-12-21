@@ -20,7 +20,7 @@ function AboutCTA({ onDismiss, showDismiss = false }: { onDismiss?: () => void; 
     return (
         <div className='bg-gradient-to-br from-brand-50 to-blue-50 dark:from-brand-900/20 dark:to-blue-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-6 shadow-lg'>
             <div className='flex items-start gap-4 mb-4'>
-                <div className='flex-shrink-0 w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-800 flex items-center justify-center'>
+                <div className='hidden sm:flex flex-shrink-0 w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-800 items-center justify-center'>
                     <BookOpen className='w-6 h-6 text-brand-600 dark:text-brand-400' />
                 </div>
                 <div className='flex-1'>
