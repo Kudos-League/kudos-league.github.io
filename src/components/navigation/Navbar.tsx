@@ -282,7 +282,7 @@ export default function Navbar({
                                 aria-label='Donate'
                             >
                                 <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span className='hidden sm:inline'>Donate</span>
+                                <span>Donate</span>
                             </Link>
                             {/* Create button - Desktop only */}
                             <Link
@@ -332,7 +332,7 @@ export default function Navbar({
                                 aria-label='Donate'
                             >
                                 <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span className='hidden sm:inline'>Donate</span>
+                                <span>Donate</span>
                             </Link>
 
                             <Link
