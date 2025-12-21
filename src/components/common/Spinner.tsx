@@ -21,7 +21,7 @@ export default function Spinner({
 
     return (
         <div
-            className={`flex items-center justify-center h-full w-full p-3 ${className}`}
+            className={`flex items-center justify-center min-h-screen w-full p-3 ${className}`}
         >
             <div className='flex flex-col items-center gap-4'>
                 <div className='relative'>
