@@ -3,11 +3,13 @@ import React from 'react';
 export default function Spinner({
     text = '',
     className = '',
-    size = 'xl'
+    size = 'xl',
+    variant = 'inline'
 }: {
     text?: string;
     className?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+    variant?: 'inline' | 'fullscreen';
 }) {
     const sizeConfig = {
         sm: { size: 'w-8 h-8', border: 'border-2' },
@@ -19,9 +21,13 @@ export default function Spinner({
 
     const { size: sizeClass, border } = sizeConfig[size];
 
+    const containerClass = variant === 'fullscreen'
+        ? 'flex items-center justify-center min-h-screen w-full p-3'
+        : 'flex items-center justify-center h-full w-full p-3';
+
     return (
         <div
-            className={`flex items-center justify-center min-h-screen w-full p-3 ${className}`}
+            className={`${containerClass} ${className}`}
         >
             <div className='flex flex-col items-center gap-4'>
                 <div className='relative'>

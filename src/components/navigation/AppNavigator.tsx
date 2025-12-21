@@ -42,7 +42,7 @@ const HomeOrAbout = () => {
     const { loading } = useAuth();
 
     // Show spinner while loading auth state
-    if (loading) return <Spinner text='Loading...' />;
+    if (loading) return <Spinner text='Loading...' variant='fullscreen' />;
 
     // Show home feed for all users (logged in or not)
     return <Home />;
@@ -50,7 +50,7 @@ const HomeOrAbout = () => {
 
 function AppNavigator() {
     return (
-        <Suspense fallback={<Spinner text='Loading app...' />}>
+        <Suspense fallback={<Spinner text='Loading app...' variant='fullscreen' />}>
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About/>} />
