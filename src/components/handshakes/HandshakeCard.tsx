@@ -463,7 +463,7 @@ const HandshakeCard: React.FC<Props> = ({
                                     disabled={cancelling}
                                     className={compact ? 'text-xs py-2 px-3' : 'text-base py-3'}
                                 >
-                                    {cancelling ? (compact ? 'Cancelling' : 'Cancelling…') : 'Cancel'}
+                                    {cancelling ? (compact ? 'Cancelling' : 'Cancelling…') : 'Cancel Handshake'}
                                 </Button>
                             )}
                         </div>
