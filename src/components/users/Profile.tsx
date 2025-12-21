@@ -300,7 +300,7 @@ const Profile: React.FC<Props> = ({
                                     <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
                                 )}
                                 <div className='space-y-0.5 sm:space-y-1'>
-                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2 mb-2'>
                                         <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                         <span className='truncate'>
                                             {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
@@ -316,7 +316,7 @@ const Profile: React.FC<Props> = ({
                                         </p>
                                     )}
                                     {event.creator && (
-                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
                                             <UserCard user={event.creator} />
                                         </p>
                                     )}

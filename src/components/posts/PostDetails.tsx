@@ -820,45 +820,6 @@ export default function PostDetails(props: Props) {
                 </div>
             </div>
 
-            {/* User Interaction Actions (Like, Dislike, Report) */}
-            {!isPostOwner && (
-                <div className='flex gap-2 items-center mb-4'>
-                    <button
-                        onClick={handleLike}
-                        disabled={liked === true}
-                        title='Like'
-                        className={`p-2 rounded-full transition ${
-                            liked === true
-                                ? 'bg-blue-500 text-white cursor-default'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600'
-                        }`}
-                    >
-                        <HandThumbUpIcon className='w-5 h-5' />
-                    </button>
-
-                    <button
-                        onClick={handleDislike}
-                        disabled={liked === false}
-                        title='Dislike'
-                        className={`p-2 rounded-full transition ${
-                            liked === false
-                                ? 'bg-red-500 text-white cursor-default'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600'
-                        }`}
-                    >
-                        <HandThumbDownIcon className='w-5 h-5' />
-                    </button>
-
-                    <button
-                        onClick={() => setReportModalVisible(true)}
-                        title='Report'
-                        className='p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
-                    >
-                        <ExclamationTriangleIcon className='w-5 h-5' />
-                    </button>
-                </div>
-            )}
-
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
                 <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100 relative'>
@@ -1068,6 +1029,20 @@ export default function PostDetails(props: Props) {
                             </p>
                         )}
                     </div>
+
+                    {/* User Interaction Actions (Report) */}
+                    {!isPostOwner && (
+                        <div className='flex gap-2 items-center mb-6'>
+                            <button
+                                onClick={() => setReportModalVisible(true)}
+                                title='Report'
+                                className='px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition flex items-center gap-2'
+                            >
+                                <ExclamationTriangleIcon className='w-5 h-5' />
+                                <span>Report</span>
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
 

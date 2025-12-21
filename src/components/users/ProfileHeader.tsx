@@ -135,11 +135,12 @@ const ProfileHeader: React.FC<Props> = ({
                             )}
                         </>
                     ) : (
-                        currentUser?.id === targetUser.id && (
-                            <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
-                            Location: not submitted. Please edit your profile to add one.
-                            </p>
-                        )
+                        <p className='text-gray-500 dark:text-gray-400 text-sm text-left'>
+                            {currentUser?.id === targetUser.id
+                                ? 'Location: not submitted. Please edit your profile to add one.'
+                                : 'No location provided'
+                            }
+                        </p>
                     )}
                 </div>
             </div>

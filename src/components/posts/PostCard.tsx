@@ -130,6 +130,7 @@ export default function PostCard(props: Props) {
                             showPostDetails={false}
                             showSenderOrReceiver='sender'
                             compact={true}
+                            hideCardBorder={true}
                         />
                     )}
                 </div>

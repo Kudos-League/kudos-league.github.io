@@ -218,7 +218,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     };
 
     return (
-        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh' serverError={serverError}>
+        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh mt-4 mb-4' serverError={serverError}>
             <div className='flex gap-3'>
                 <Button
                     variant={postType === 'gift' ? 'primary' : 'secondary'}
@@ -338,11 +338,15 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 value: String(c.id)
                             }))}
                             // Cast null to empty string for components that expect string/''
-                            value={field.value !== null ? String(field.value) : ''} 
+                            value={field.value !== null ? String(field.value) : ''}
                             onChange={(val) => {
                                 // If val is '', pass null to the form state
-                                const parsed = val ? parseInt(val) : null; 
+                                const parsed = val ? parseInt(val) : null;
                                 field.onChange(parsed);
+                                // Clear the error immediately after selection
+                                if (parsed !== null) {
+                                    form.clearErrors('categoryID');
+                                }
                             }}
                             onBlur={field.onBlur}
                             placeholder={catsLoading ? 'Loading…' : '⚠️ Select a category (required)'}
@@ -360,7 +364,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     accept='image/*'
                     multiple
                     onChange={handleImageUpload}
-                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
+                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}
                 />
                 {selectedImages.length > 0 && (
