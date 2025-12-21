@@ -64,7 +64,7 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
     };
 
     return (
-        <div className={`relative w-full mx-auto mb-6 overflow-hidden ${fullResolution ? 'min-w-[320px]' : 'max-w-2xl h-60'}`}>
+        <div className={`relative w-full mx-auto mb-6 overflow-hidden ${fullResolution ? '' : 'max-w-2xl h-60'}`}>
             <div
                 className={`flex transition-transform duration-300 ease-in-out ${fullResolution ? 'w-full' : 'h-full'}`}
                 style={trackStyle}
@@ -75,11 +75,11 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
                         className={fullResolution ? 'w-full' : 'h-full'}
                         style={{ width: `${100 / total}%` }}
                     >
-                        <div className='w-full h-full flex items-center justify-center'>
+                        <div className='w-full h-full flex items-center justify-center overflow-hidden'>
                             <img
                                 src={getImagePath(src)}
                                 alt={`Post Image ${i + 1}`}
-                                className={fullResolution ? 'w-full h-auto object-contain rounded-lg' : 'max-h-60 w-auto h-full object-contain rounded-lg'}
+                                className={fullResolution ? 'max-w-full h-auto object-contain rounded-lg' : 'max-h-60 w-auto h-full object-contain rounded-lg'}
                                 onError={() => onImgError(orig)}
                             />
                         </div>
