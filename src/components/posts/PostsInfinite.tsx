@@ -88,7 +88,7 @@ export default function PostsInfinite({
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex flex-col items-center'>
-                {isFetchingNextPage && <Spinner text='Loading more...' size='xl' />}
+                {isFetchingNextPage && <Spinner text='Loading more...' size='xl' className='mt-8' />}
                 {hasNextPage && !isFetchingNextPage && (
                     <div className='flex flex-col items-center gap-2 py-4'>
                         <ChevronDownIcon
