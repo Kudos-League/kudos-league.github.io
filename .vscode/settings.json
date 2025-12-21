@@ -23,6 +23,6 @@
     "vs-code-prettier-eslint.prettierLast": true,
 
     // Optional: Auto-save behavior
-    "files.autoSave": "onFocusChange",
+    "files.autoSave": "off",
     "files.eol": "\n"
 }

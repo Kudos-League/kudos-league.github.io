@@ -14,6 +14,8 @@ import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { apiMutate } from '@/shared/api/apiClient';
+import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
+import { getImagePath } from '@/shared/api/config';
 import {
     useUpdatePost,
     useLikePost,
@@ -49,7 +51,8 @@ function EditPostButton({ onClick }: { onClick: () => void }) {
     return (
         <Button
             onClick={onClick}
-            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
+            className='inline-flex items-center gap-1 text-sm font-semibold'
+            variant='secondary'
         >
             <PencilSquareIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
             Edit
@@ -84,6 +87,9 @@ export default function PostDetails(props: Props) {
         location: null as LocationDTO | null,
         itemsLimit: '' as string
     });
+    const [editImages, setEditImages] = useState<File[]>([]);
+    const [editImageError, setEditImageError] = useState<string | null>(null);
+    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedImage] = useState<string | null>(null);
     const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -447,8 +453,54 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const validateFiles = (files?: File[]) => {
+        if (!files) return null;
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
+        return null;
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+        const updated = [...editImages, ...Array.from(files)];
+        const fileError = validateFiles(updated);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+        setEditImages(updated);
+        setEditImageError(null);
+        e.target.value = '';
+    };
+
+    const removeEditImage = (idx: number) => {
+        setEditImages((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const removeExistingImage = (idx: number) => {
+        setDeletedImageIndices((prev) => {
+            const next = new Set(prev);
+            next.add(idx);
+            return next;
+        });
+    };
+
+    const createImagePreview = (f: File) => URL.createObjectURL(f);
+
     const handleStartEdit = () => {
         if (!postDetails) return;
+
+        const isMobile = window.innerWidth < 768; // md breakpoint
+
+        if (isMobile) {
+            navigate(`/post/${postDetails.id}/edit`);
+            return;
+        }
 
         setEditData({
             title: postDetails.title,
@@ -460,14 +512,23 @@ export default function PostDetails(props: Props) {
                     ? String(postDetails.itemsLimit)
                     : ''
         });
+        setEditImages([]);
+        setEditImageError(null);
+        setDeletedImageIndices(new Set());
         setIsEditing(true);
     };
 
     const handleSaveEdit = async () => {
         if (!postDetails) return;
 
+        const fileError = validateFiles(editImages);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+
         try {
-            const updateData: Partial<UpdatePostDTO> = {
+            const updateData: any = {
                 title: editData.title,
                 body: editData.body,
                 tags: editData.tags
@@ -484,15 +545,29 @@ export default function PostDetails(props: Props) {
             if (limitStr === '') updateData.itemsLimit = null;
             else if (/^\d+$/.test(limitStr)) updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
 
+            if (editImages.length > 0) {
+                updateData.files = editImages;
+            }
+
+            // Send remaining images (with deleted ones filtered out)
+            if (deletedImageIndices.size > 0) {
+                const remainingImages = postDetails.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
+                updateData.images = remainingImages;
+            }
+
             const updated = await updatePostMut.mutateAsync({
                 id: postDetails.id,
                 data: updateData
             });
             setPostDetails({ ...postDetails, ...updated });
+            setEditImages([]);
+            setEditImageError(null);
+            setDeletedImageIndices(new Set());
             setIsEditing(false);
         }
         catch (err) {
             console.error('Failed to save changes', err);
+            setEditImageError(err instanceof Error ? err.message : 'Failed to save changes');
         }
     };
 
@@ -659,24 +734,27 @@ export default function PostDetails(props: Props) {
             {/* Back Button */}
             <button
                 onClick={() => navigate(-1)}
-                className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                className='mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200'
                 aria-label='Go back'
             >
-                <ArrowLeftIcon className='w-5 h-5' />
-                <span className='font-medium'>Back</span>
+                <ArrowLeftIcon className='w-5 h-5 stroke-2' />
+                <span className='text-sm font-medium'>Back</span>
             </button>
 
-            {/* Header: User Card + Action Buttons */}
-            <div className='flex items-start justify-between mb-4 gap-4'>
-                <UserCard user={postDetails.sender} large />
+            {/* Header: User Card and Action Buttons */}
+            <div className='flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3 sm:gap-4'>
+                <div className='flex-1 min-w-0'>
+                    <UserCard user={postDetails.sender} large />
+                </div>
 
-                {user?.id === postDetails.sender?.id && (
-                    <div className='flex gap-2 shrink-0'>
+                {/* Post Owner Actions */}
+                {isPostOwner && (
+                    <div className='flex flex-row gap-2 flex-shrink-0'>
                         <EditPostButton onClick={handleStartEdit} />
                         {postDetails.status !== 'closed' && (
                             <Button
                                 onClick={handleClosePost}
-                                className='inline-flex items-center gap-1 text-sm font-semibold'
+                                className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
                                 variant='danger'
                             >
                                 Close Post
@@ -687,88 +765,119 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Title */}
-            <div className='mb-3'>
-                <h1 className='text-3xl font-bold text-gray-900 dark:text-gray-100'>
+            <div className='mb-4'>
+                <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 break-words'>
                     {postDetails.title}
                 </h1>
             </div>
 
-            {/* Primary Metadata: Type, Status, Category */}
-            <div className='flex flex-wrap items-center gap-2 mb-3'>
-                <Pill
-                    tone={postDetails.type === 'request' ? 'info' : 'success'}
-                    className='uppercase font-semibold'
-                >
-                    {postDetails.type}
-                </Pill>
+            {/* Metadata Card - Redesigned with Mobile Optimization */}
+            <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 mb-4 shadow-sm'>
+                <div className='flex flex-wrap gap-2 sm:gap-3 items-center'>
+                    {/* Type Badge */}
+                    <Pill
+                        tone={postDetails.type === 'request' ? 'info' : 'success'}
+                        className='uppercase font-semibold text-xs'
+                    >
+                        {postDetails.type}
+                    </Pill>
 
-                {postDetails.status === 'closed' ? (
-                    <Pill tone='danger' className='uppercase font-semibold'>CLOSED</Pill>
-                ) : (
-                    <Pill tone='neutral' className='uppercase'>{postDetails.status}</Pill>
-                )}
+                    {/* Status Badge */}
+                    {postDetails.status === 'closed' ? (
+                        <Pill tone='danger' className='uppercase font-semibold text-xs'>CLOSED</Pill>
+                    ) : (
+                        <Pill tone='neutral' className='uppercase text-xs'>{postDetails.status}</Pill>
+                    )}
 
-                {postDetails.category?.name && (
-                    <span className='text-sm text-gray-600 dark:text-gray-400 ml-1'>
-                        in <span className='font-medium'>{postDetails.category.name}</span>
-                    </span>
-                )}
+                    {/* Category */}
+                    {postDetails.category?.name && (
+                        <div className='flex items-center gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2.5 sm:px-3 py-1 rounded-full'>
+                            <span className='font-medium'>{postDetails.category.name}</span>
+                        </div>
+                    )}
+
+                    {/* Items Limit */}
+                    {typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0 && (
+                        <div className='flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 sm:px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800'>
+                            <span className='font-medium'>
+                                {postDetails.itemsLimit} {postDetails.itemsLimit === 1 ? 'item' : 'items'} max
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Tags - Full width on mobile for better readability */}
+                    {postDetails.tags && postDetails.tags.length > 0 && (
+                        <>
+                            {/* Visual break on mobile */}
+                            <div className='w-full sm:hidden'></div>
+                            <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
+                                {postDetails.tags.map((tag, i) => (
+                                    <Pill key={i} name={tag.name} />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
-            {/* Secondary Metadata: Items + Tags */}
-            <div className='flex flex-wrap items-center gap-2 mb-4'>
-                {typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0 && (
-                    <span className='text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded'>
-                        {postDetails.itemsLimit} {postDetails.itemsLimit === 1 ? 'item' : 'items'} max
-                    </span>
-                )}
+            {/* User Interaction Actions (Like, Dislike, Report) */}
+            {!isPostOwner && (
+                <div className='flex gap-2 items-center mb-4'>
+                    <button
+                        onClick={handleLike}
+                        disabled={liked === true}
+                        title='Like'
+                        className={`p-2 rounded-full transition ${
+                            liked === true
+                                ? 'bg-blue-500 text-white cursor-default'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600'
+                        }`}
+                    >
+                        <HandThumbUpIcon className='w-5 h-5' />
+                    </button>
 
-                {postDetails.tags?.map((tag, i) => (
-                    <Pill key={i} name={tag.name} />
-                ))}
-            </div>
+                    <button
+                        onClick={handleDislike}
+                        disabled={liked === false}
+                        title='Dislike'
+                        className={`p-2 rounded-full transition ${
+                            liked === false
+                                ? 'bg-red-500 text-white cursor-default'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600'
+                        }`}
+                    >
+                        <HandThumbDownIcon className='w-5 h-5' />
+                    </button>
 
-            {/* Icon Actions: Like, Dislike, Report */}
-            <div className='flex gap-2 items-center mb-4'>
-                <button
-                    onClick={handleLike}
-                    disabled={liked === true}
-                    title='Like'
-                    className={`p-2 rounded-full transition ${
-                        liked === true
-                            ? 'bg-blue-500 text-white cursor-default'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600'
-                    }`}
-                >
-                    <HandThumbUpIcon className='w-5 h-5' />
-                </button>
-
-                <button
-                    onClick={handleDislike}
-                    disabled={liked === false}
-                    title='Dislike'
-                    className={`p-2 rounded-full transition ${
-                        liked === false
-                            ? 'bg-red-500 text-white cursor-default'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600'
-                    }`}
-                >
-                    <HandThumbDownIcon className='w-5 h-5' />
-                </button>
-
-                <button
-                    onClick={() => setReportModalVisible(true)}
-                    title='Report'
-                    className='p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
-                >
-                    <ExclamationTriangleIcon className='w-5 h-5' />
-                </button>
-            </div>
+                    <button
+                        onClick={() => setReportModalVisible(true)}
+                        title='Report'
+                        className='p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
+                    >
+                        <ExclamationTriangleIcon className='w-5 h-5' />
+                    </button>
+                </div>
+            )}
 
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100'>
-                    <h3 className='text-lg font-semibold'>Edit Post</h3>
+                <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100 relative'>
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            setEditImages([]);
+                            setEditImageError(null);
+                            setDeletedImageIndices(new Set());
+                        }}
+                        className='absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                        aria-label='Close edit form'
+                        title='Close'
+                    >
+                        <svg className='w-5 h-5 text-gray-500 dark:text-gray-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                        </svg>
+                    </button>
+                    <h3 className='text-lg font-semibold pr-8'>Edit Post</h3>
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
@@ -850,13 +959,93 @@ export default function PostDetails(props: Props) {
                         </p>
                     </div>
 
+                    <div className='w-full overflow-hidden box-border'>
+                        <label className='block text-sm font-semibold mb-2'>
+                            Images ({(postDetails.images?.length || 0) - deletedImageIndices.size + editImages.length}/{MAX_FILE_COUNT})
+                        </label>
+                        {editImageError && (
+                            <p className='text-sm text-red-600 dark:text-red-400 mb-2'>{editImageError}</p>
+                        )}
+                        <input
+                            type='file'
+                            accept='image/*'
+                            multiple
+                            onChange={handleImageUpload}
+                            className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
+                            disabled={((postDetails.images?.length || 0) - deletedImageIndices.size + editImages.length) >= MAX_FILE_COUNT}
+                        />
+                        {((postDetails.images && postDetails.images.length > 0) || editImages.length > 0) && (
+                            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
+                                {/* Existing images from the post */}
+                                {postDetails.images?.map((url, index) => {
+                                    if (deletedImageIndices.has(index)) return null;
+                                    const imagePath = getImagePath(url);
+                                    if (!imagePath) return null;
+                                    return (
+                                        <div key={`existing-${index}`} className='relative group'>
+                                            <img
+                                                src={imagePath}
+                                                alt={`Image ${index + 1}`}
+                                                className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                            />
+                                            <Button
+                                                type='button'
+                                                shape='circle'
+                                                variant='danger'
+                                                onClick={() => removeExistingImage(index)}
+                                                className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                                title='Remove image'
+                                            >
+                                                ×
+                                            </Button>
+                                            <div className='absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded'>
+                                                Current
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {/* New images being added */}
+                                {editImages.map((file, index) => (
+                                    <div key={`new-${index}`} className='relative group'>
+                                        <img
+                                            src={createImagePreview(file)}
+                                            alt={`Preview ${index + 1}`}
+                                            className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                        />
+                                        <Button
+                                            type='button'
+                                            shape='circle'
+                                            variant='danger'
+                                            onClick={() => removeEditImage(index)}
+                                            className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                            title='Remove image'
+                                        >
+                                            ×
+                                        </Button>
+                                        <div className='absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded'>
+                                            New
+                                        </div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                                            {file.name}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className='flex gap-3 pt-4'>
                         <Button variant='success' onClick={handleSaveEdit}>
                             Save Changes
                         </Button>
                         <Button
                             variant='secondary'
-                            onClick={() => setIsEditing(false)}
+                            onClick={() => {
+                                setIsEditing(false);
+                                setEditImages([]);
+                                setEditImageError(null);
+                                setDeletedImageIndices(new Set());
+                            }}
                         >
                             Cancel
                         </Button>

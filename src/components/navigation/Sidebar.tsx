@@ -102,7 +102,15 @@ function NavList({
                     <li key={item.name}>
                         <Link
                             to={item.to}
-                            onClick={onClick}
+                            onClick={(e) => {
+                                if (active) {
+                                    e.preventDefault();
+                                    window.location.reload();
+                                } 
+                                else {
+                                    onClick?.();
+                                }
+                            }}
                             className={classNames(
                                 active
                                     ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
@@ -232,6 +240,12 @@ export default function AppSidebar({
                                     <Link
                                         key={item.name}
                                         to={item.to}
+                                        onClick={(e) => {
+                                            if (active) {
+                                                e.preventDefault();
+                                                window.location.reload();
+                                            }
+                                        }}
                                         className={classNames(
                                             'flex flex-col items-center justify-center gap-1 p-3 rounded-xl transition-all duration-200 w-16',
                                             active

@@ -25,6 +25,7 @@ interface Props {
     onDelete?: (id: number) => void;
     showSenderOrReceiver?: 'sender' | 'receiver';
     hideCardBorder?: boolean;
+    compact?: boolean;
 }
 
 const HandshakeCard: React.FC<Props> = ({
@@ -33,7 +34,8 @@ const HandshakeCard: React.FC<Props> = ({
     showPostDetails,
     onDelete,
     showSenderOrReceiver = 'receiver',
-    hideCardBorder = false
+    hideCardBorder = false,
+    compact = false
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -279,42 +281,26 @@ const HandshakeCard: React.FC<Props> = ({
         <>
             <div
                 onClick={() => navigate(`/post/${handshake.postID}`)}
-                className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4 cursor-pointer`}
+                className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} ${compact ? 'p-3 sm:p-3' : 'p-4 sm:p-6'} rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${compact ? 'space-y-2' : 'space-y-4'} cursor-pointer`}
             >
                 {/* Header: User + Status Badge */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                <div className="flex items-center justify-between gap-2">
                     <div className="font-semibold flex-1 min-w-0">
-                        <UserCard user={userID && handshake.senderID === userID ? receiverUser : userID && handshake.receiverID === userID ? senderUser : showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails} />
+                        <UserCard user={userID && handshake.senderID === userID ? receiverUser : userID && handshake.receiverID === userID ? senderUser : showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails && !compact} />
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Status badge */}
-                        <Pill
-                            tone={
-                                status === 'new' ? 'warning' :
-                                    status === 'accepted' ? 'info' :
-                                        status === 'completed' ? 'success' :
-                                            'neutral'
-                            }
-                            className="uppercase font-semibold"
-                        >
-                            {status === 'new' ? 'Pending' : status}
-                        </Pill>
-
-                        {canCancel && !stage.postIsPast && (
-                            <Button
-                                variant="danger"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCancelHandshake();
-                                }}
-                                disabled={cancelling}
-                                className="text-xs"
-                            >
-                                {cancelling ? 'Cancelling…' : 'Cancel'}
-                            </Button>
-                        )}
-                    </div>
+                    {/* Status badge */}
+                    <Pill
+                        tone={
+                            status === 'new' ? 'warning' :
+                                status === 'accepted' ? 'info' :
+                                    status === 'completed' ? 'success' :
+                                        'neutral'
+                        }
+                        className={`uppercase font-semibold ${compact ? 'text-xs' : ''} flex-shrink-0`}
+                    >
+                        {status === 'new' ? 'Pending' : status}
+                    </Pill>
                 </div>
 
                 {/* Content: Post Details + Message Preview */}
@@ -391,37 +377,110 @@ const HandshakeCard: React.FC<Props> = ({
                 )}
 
                 {/* Actions Row */}
-                <div className="space-y-3">
-                    {/* Accept/Undo Button - Full width on mobile */}
-                    {((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
-                      (canUndoAccept && !stage.postIsPast)) && (
-                        <Button
-                            variant={canUndoAccept ? 'warning' : 'success'}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                canUndoAccept ? handleUndoAccept() : handleAccept();
-                            }}
-                            disabled={processing}
-                            className="w-full text-base py-3"
-                        >
-                            {processing ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    {canUndoAccept ? 'Undoing...' : 'Accepting...'}
-                                </span>
-                            ) : (
-                                canUndoAccept ? 'Undo Accept' : 'Accept Offer'
+                <div className={compact ? 'space-y-2' : 'space-y-3'}>
+                    {/* Status Message */}
+                    {status === 'new' && (
+                        <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <p className={`${compact ? 'text-sm' : 'text-base'} text-amber-800 dark:text-amber-300`}>
+                                {userID === handshake.senderID ? (
+                                    handshake.post.type === 'request' ? (
+                                        <><span className="font-semibold">You requested this item.</span> Waiting for the poster to accept.</>
+                                    ) : (
+                                        <><span className="font-semibold">You offered to take this item.</span> Waiting for the poster to accept.</>
+                                    )
+                                ) : userID === handshake.receiverID ? (
+                                    handshake.post.type === 'request' ? (
+                                        <><span className="font-semibold">This user is offering this item.</span> Accept to coordinate the exchange.</>
+                                    ) : (
+                                        <><span className="font-semibold">This user wants this item.</span> Accept to coordinate the exchange.</>
+                                    )
+                                ) : (
+                                    handshake.post.type === 'request' ? (
+                                        'Someone is offering this item to the poster.'
+                                    ) : (
+                                        'Someone wants this item from the poster.'
+                                    )
+                                )}
+                            </p>
+                        </div>
+                    )}
+
+                    {status === 'accepted' && !canComplete && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}>
+                                {userIsItemReceiver ? (
+                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive the item, you can assign kudos below.</>
+                                ) : (
+                                    <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? 'Waiting for the receiver to confirm they got the item.' : 'Both parties are coordinating the exchange.'}</>
+                                )}
+                            </p>
+                        </div>
+                    )}
+
+                    {status === 'completed' && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}>
+                                <span className="font-semibold">Handshake completed!</span> {userID === gifterID ? 'You received kudos for this exchange.' : 'You sent kudos to complete this exchange.'}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Action Buttons Row */}
+                    {(((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
+                      (canUndoAccept && !stage.postIsPast)) || (canCancel && !stage.postIsPast)) && (
+                        <div className="flex items-center gap-2">
+                            {/* Accept/Undo Button */}
+                            {((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
+                              (canUndoAccept && !stage.postIsPast)) && (
+                                <Button
+                                    variant={canUndoAccept ? 'warning' : 'success'}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        canUndoAccept ? handleUndoAccept() : handleAccept();
+                                    }}
+                                    disabled={processing}
+                                    className={`flex-1 ${compact ? 'text-xs py-2 px-2' : 'text-base py-3'}`}
+                                >
+                                    {processing ? (
+                                        <span className="flex items-center justify-center gap-1">
+                                            <div className={`border-2 border-white border-t-transparent rounded-full animate-spin ${compact ? 'w-3 h-3' : 'w-5 h-5'}`}></div>
+                                            {compact ? (canUndoAccept ? 'Undoing' : 'Accept') : (canUndoAccept ? 'Undoing...' : 'Accepting...')}
+                                        </span>
+                                    ) : (
+                                        compact ? (canUndoAccept ? 'Undo' : 'Accept') : (canUndoAccept ? 'Undo Accept' : 'Accept Offer')
+                                    )}
+                                </Button>
                             )}
-                        </Button>
+
+                            {/* Cancel Button */}
+                            {canCancel && !stage.postIsPast && (
+                                <Button
+                                    variant="danger"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCancelHandshake();
+                                    }}
+                                    disabled={cancelling}
+                                    className={compact ? 'text-xs py-2 px-3' : 'text-base py-3'}
+                                >
+                                    {cancelling ? (compact ? 'Cancelling' : 'Cancelling…') : 'Cancel'}
+                                </Button>
+                            )}
+                        </div>
                     )}
 
                     {/* Kudos Assignment - Better mobile layout */}
                     {canComplete && (
-                        <div className="flex flex-col gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
-                            <label className="text-base font-semibold text-green-800 dark:text-green-300">
-                                Assign Kudos to Complete
-                            </label>
-                            <div className="flex gap-3">
+                        <div className={`flex flex-col ${compact ? 'gap-2 p-3' : 'gap-3 p-4'} bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800`}>
+                            <div className="space-y-1">
+                                <label className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-green-800 dark:text-green-300 block`}>
+                                    Send Kudos to Complete Exchange
+                                </label>
+                                <p className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}>
+                                    You received the item! Send kudos as a thank you to the {handshake.post.type === 'request' ? 'giver' : 'poster'}.
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
                                 <input
                                     type="number"
                                     value={kudosValue}
@@ -429,8 +488,10 @@ const HandshakeCard: React.FC<Props> = ({
                                         e.stopPropagation();
                                         setKudosValue(e.target.value);
                                     }}
-                                    className="border border-green-300 dark:border-green-700 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 flex-1"
-                                    placeholder="Enter amount"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onFocus={(e) => e.stopPropagation()}
+                                    className={`border border-green-300 dark:border-green-700 rounded-lg ${compact ? 'px-3 py-2 text-sm' : 'px-4 py-3 text-base'} focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-800 flex-1 min-w-0`}
+                                    placeholder="Enter kudos amount"
                                 />
                                 <Button
                                     variant="success"
@@ -439,27 +500,18 @@ const HandshakeCard: React.FC<Props> = ({
                                         handleKudosSubmit();
                                     }}
                                     disabled={submitting}
-                                    className="px-6 py-3"
+                                    className={`${compact ? 'px-3 py-2 text-xs' : 'px-6 py-3'} flex-shrink-0`}
                                 >
                                     {submitting ? (
-                                        <span className="flex items-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            Sending...
+                                        <span className="flex items-center gap-1">
+                                            <div className={`border-2 border-white border-t-transparent rounded-full animate-spin ${compact ? 'w-3 h-3' : 'w-4 h-4'}`}></div>
+                                            {compact ? 'Sending' : 'Sending...'}
                                         </span>
                                     ) : (
-                                        'Submit'
+                                        compact ? 'Send' : 'Send Kudos'
                                     )}
                                 </Button>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Waiting Message - Full width */}
-                    {canUndoAccept && status === 'accepted' && !stage.postIsPast && !canComplete && (
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <p className="text-base text-blue-700 dark:text-blue-300 text-center">
-                                ⏳ Waiting for the user to receive the item
-                            </p>
                         </div>
                     )}
                 </div>

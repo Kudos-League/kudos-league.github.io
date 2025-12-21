@@ -60,7 +60,7 @@ export default function PostCard(props: Props) {
 
     return (
         <div
-            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer'
+            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden'
             onClick={() => navigate(`/post/${id}`)}
         >
 
@@ -119,7 +119,7 @@ export default function PostCard(props: Props) {
 
             {/* HandshakeCard below image */}
             {viewerHandshake && showHandshakeShortcut && (
-                <div onClick={(e) => e.stopPropagation()}>
+                <div onClick={(e) => e.stopPropagation()} className='mt-4'>
                     {!viewerHandshake.cancelledAt && (
                         <HandshakeCard
                             handshake={{
@@ -129,6 +129,7 @@ export default function PostCard(props: Props) {
                             userID={user?.id}
                             showPostDetails={false}
                             showSenderOrReceiver='sender'
+                            compact={true}
                         />
                     )}
                 </div>

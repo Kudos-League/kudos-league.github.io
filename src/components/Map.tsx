@@ -711,9 +711,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         top: 10,
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        zIndex: 5,
-                        width: 300
+                        zIndex: 5
                     }}
+                    className='w-[90%] max-w-[300px]'
                 >
                     <SearchInput
                         value={searchInput}

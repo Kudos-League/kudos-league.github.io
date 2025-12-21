@@ -14,6 +14,7 @@ import Communities from '../communities/Communities';
 const Home = lazy(() => import('@/pages/home'));
 const Result = lazy(() => import('@/pages/donate/result'));
 const Post = lazy(() => import('@/pages/post'));
+const EditPost = lazy(() => import('@/pages/post/edit'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
 const EventDetails = lazy(() => import('@/pages/event'));
@@ -70,6 +71,15 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <Post />
+                            </RequireAuth>
+                        }
+                    />
+
+                    <Route
+                        path='/post/:id/edit'
+                        element={
+                            <RequireAuth>
+                                <EditPost />
                             </RequireAuth>
                         }
                     />

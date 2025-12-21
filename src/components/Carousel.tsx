@@ -1,5 +1,6 @@
 import { getImagePath } from '@/shared/api/config';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import Button from './common/Button';
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [idx, setIdx] = useState(0);
+    const [lastManualChange, setLastManualChange] = useState(0);
 
     const valid = useMemo(() => {
         return images
@@ -27,11 +29,13 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     const goRight = useCallback(() => {
         if (total === 0) return;
         setIdx((i) => (i + 1) % total);
+        setLastManualChange(Date.now());
     }, [total]);
 
     const goLeft = useCallback(() => {
         if (total === 0) return;
         setIdx((i) => (i - 1 + total) % total);
+        setLastManualChange(Date.now());
     }, [total]);
 
     const onImgError = useCallback((origIndex: number) => {
@@ -45,9 +49,11 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     useEffect(() => {
         if (total <= 1) return undefined;
 
-        const timer = setInterval(goRight, interval);
+        const timer = setInterval(() => {
+            setIdx((i) => (i + 1) % total);
+        }, interval);
         return () => clearInterval(timer);
-    }, [goRight, interval, total]);
+    }, [interval, total, lastManualChange]);
 
     if (total === 0) return null;
 
@@ -82,25 +88,21 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
 
             {total > 1 && (
                 <>
-                    <Button
-                        className='absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10'
-                        variant='icon'
-                        shape='circle'
+                    <button
+                        className='absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 text-gray-800 dark:text-gray-200 hover:scale-110'
                         onClick={goLeft}
                         aria-label='Previous image'
                     >
-                        &#8592;
-                    </Button>
+                        <ChevronLeftIcon className='w-6 h-6' />
+                    </button>
 
-                    <Button
-                        className='absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10'
-                        variant='icon'
-                        shape='circle'
+                    <button
+                        className='absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 text-gray-800 dark:text-gray-200 hover:scale-110'
                         onClick={goRight}
                         aria-label='Next image'
                     >
-                        &#8594;
-                    </Button>
+                        <ChevronRightIcon className='w-6 h-6' />
+                    </button>
 
                     <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/40 px-2 py-1 rounded text-xs text-white'>
                         {idx + 1}/{total}

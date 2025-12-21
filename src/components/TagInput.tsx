@@ -187,14 +187,14 @@ const TagInput: React.FC<TagInputProps> = ({
     return (
         <div className={`w-full space-y-3 ${className ? className : ''}`}>
             <label className='text-sm font-semibold'>Tags</label>
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 w-full'>
                 <input
                     ref={inputRef}
                     type='text'
                     value={currentTagInput}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    className='flex-1 border rounded px-3 py-2'
+                    className='flex-1 min-w-0 border rounded px-3 py-2'
                     placeholder='Enter tag and press Add'
                     autoComplete='off'
                 />
@@ -202,6 +202,7 @@ const TagInput: React.FC<TagInputProps> = ({
                     type="button"
                     onClick={handleAddTag}
                     disabled={!currentTagInput.trim() || isLoading}
+                    className='flex-shrink-0'
                 >
                     Add
                 </Button>

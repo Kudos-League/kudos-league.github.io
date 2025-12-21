@@ -98,6 +98,12 @@ export default function MobileTabBar() {
                         <Link
                             key={tab.path}
                             to={tab.path}
+                            onClick={(e) => {
+                                if (active) {
+                                    e.preventDefault();
+                                    window.location.reload();
+                                }
+                            }}
                             className={clsx(
                                 'relative flex flex-1 flex-col items-center justify-center py-2 transition-colors duration-150',
                                 active
