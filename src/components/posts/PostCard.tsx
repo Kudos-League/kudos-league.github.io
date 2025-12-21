@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getImagePath } from '@/shared/api/config';
 import UserCard from '@/components/users/UserCard';
 import { PostDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
@@ -8,6 +7,7 @@ import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import Pill from '@/components/common/Pill';
 import TextWithLinks from '../common/TextWithLinks';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
+import ImageCarousel from '@/components/Carousel';
 
 function truncateBody(body: string, max = 100) {
     return body.length <= max ? body : body.slice(0, max) + '…';
@@ -43,18 +43,10 @@ export default function PostCard(props: Props) {
 
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [imgError, setImgError] = useState(false);
 
     console.log('PostCard - Post ID:', id, 'Images:', images, 'Images length:', images?.length);
 
-    const imageSrc = fake
-        ? images?.[0]
-        : images?.[0]
-            ? getImagePath(images[0])
-            : undefined;
-    const showBodyInImageBox = imgError || !images?.length || !imageSrc;
-
-    console.log('PostCard - Post ID:', id, 'imageSrc:', imageSrc, 'showBodyInImageBox:', showBodyInImageBox);
+    const hasImages = images && images.length > 0;
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
@@ -100,15 +92,10 @@ export default function PostCard(props: Props) {
                 </h2>
             </div>
 
-            {/* Image */}
-            {!showBodyInImageBox && (
-                <div className='w-full mb-3 sm:mb-4 rounded-lg overflow-hidden'>
-                    <img
-                        src={imageSrc}
-                        alt={title}
-                        className='w-full aspect-video object-cover'
-                        onError={() => setImgError(true)}
-                    />
+            {/* Image Carousel */}
+            {hasImages && (
+                <div className='w-full mb-3 sm:mb-4 px-0 sm:px-4' onClick={(e) => e.stopPropagation()}>
+                    <ImageCarousel images={images} fullResolution={true} />
                 </div>
             )}
 

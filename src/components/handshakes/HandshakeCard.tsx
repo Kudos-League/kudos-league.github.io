@@ -439,7 +439,7 @@ const HandshakeCard: React.FC<Props> = ({
                                         canUndoAccept ? handleUndoAccept() : handleAccept();
                                     }}
                                     disabled={processing}
-                                    className={`flex-1 ${compact ? 'text-xs py-2 px-2' : 'text-base py-3'}`}
+                                    className={`flex-1 ${compact ? 'text-sm py-3 px-4' : 'text-base py-3 px-6'}`}
                                 >
                                     {processing ? (
                                         <span className="flex items-center justify-center gap-1">
@@ -461,7 +461,7 @@ const HandshakeCard: React.FC<Props> = ({
                                         handleCancelHandshake();
                                     }}
                                     disabled={cancelling}
-                                    className={compact ? 'text-xs py-2 px-3' : 'text-base py-3'}
+                                    className={compact ? 'text-sm py-3 px-4' : 'text-base py-3 px-6'}
                                 >
                                     {cancelling ? (compact ? 'Cancelling' : 'Cancelling…') : 'Cancel Handshake'}
                                 </Button>
@@ -500,7 +500,7 @@ const HandshakeCard: React.FC<Props> = ({
                                         handleKudosSubmit();
                                     }}
                                     disabled={submitting}
-                                    className={`${compact ? 'px-3 py-2 text-xs' : 'px-6 py-3'} flex-shrink-0`}
+                                    className={`${compact ? 'px-4 py-3 text-sm' : 'px-6 py-3'} flex-shrink-0`}
                                 >
                                     {submitting ? (
                                         <span className="flex items-center gap-1">

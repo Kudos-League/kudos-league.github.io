@@ -1,7 +1,6 @@
 import { getImagePath } from '@/shared/api/config';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
-import Button from './common/Button';
 
 type Props = {
     images: string[];
@@ -13,6 +12,8 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [idx, setIdx] = useState(0);
     const [lastManualChange, setLastManualChange] = useState(0);
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
     const valid = useMemo(() => {
         return images
@@ -27,16 +28,18 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
         if (idx > total - 1) setIdx(total - 1);
     }, [total, idx]);
 
-    const goRight = useCallback(() => {
+    const goRight = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
         if (total === 0) return;
         setIdx((i) => (i + 1) % total);
         setLastManualChange(Date.now());
+        e.currentTarget.blur();
     }, [total]);
 
-    const goLeft = useCallback(() => {
+    const goLeft = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
         if (total === 0) return;
         setIdx((i) => (i - 1 + total) % total);
         setLastManualChange(Date.now());
+        e.currentTarget.blur();
     }, [total]);
 
     const onImgError = useCallback((origIndex: number) => {
@@ -46,6 +49,41 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
             return next;
         });
     }, []);
+
+    // Minimum swipe distance (in px)
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        const mockEvent = {
+            currentTarget: {
+                blur: () => {
+                    // No-op for swipe gestures
+                }
+            }
+        } as React.MouseEvent<HTMLButtonElement>;
+
+        if (isLeftSwipe) {
+            goRight(mockEvent);
+        }
+        if (isRightSwipe) {
+            goLeft(mockEvent);
+        }
+    };
 
     useEffect(() => {
         if (total <= 1) return undefined;
@@ -64,7 +102,12 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
     };
 
     return (
-        <div className={`relative w-full mx-auto mb-6 overflow-hidden ${fullResolution ? '' : 'max-w-2xl h-60'}`}>
+        <div
+            className={`group relative w-full mx-auto mb-6 overflow-hidden ${fullResolution ? '' : 'max-w-2xl h-60'}`}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             <div
                 className={`flex transition-transform duration-300 ease-in-out ${fullResolution ? 'w-full' : 'h-full'}`}
                 style={trackStyle}
@@ -89,24 +132,29 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolutio
 
             {total > 1 && (
                 <>
+                    {/* Left navigation - desktop circular button, mobile gradient area */}
                     <button
-                        className='absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 text-gray-800 dark:text-gray-200 hover:scale-110'
+                        className='absolute left-0 top-0 h-full w-16 md:left-3 md:top-1/2 md:-translate-y-1/2 md:w-12 md:h-12 bg-gradient-to-r from-black/20 to-transparent md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-md hover:from-black/30 md:hover:bg-white md:dark:hover:bg-gray-900 md:rounded-full md:shadow-xl flex items-center justify-center md:justify-center transition-all duration-300 text-white md:text-gray-700 md:dark:text-gray-200 md:hover:scale-105 md:opacity-0 md:hover:opacity-100 md:group-hover:opacity-100 md:focus:opacity-100 md:border md:border-gray-200/50 md:dark:border-gray-700/50'
                         onClick={goLeft}
                         aria-label='Previous image'
                     >
-                        <ChevronLeftIcon className='w-6 h-6' />
+                        <ChevronLeftIcon className='w-8 h-8 md:w-7 md:h-7 ml-2 md:ml-0' />
                     </button>
 
+                    {/* Right navigation - desktop circular button, mobile gradient area */}
                     <button
-                        className='absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 text-gray-800 dark:text-gray-200 hover:scale-110'
+                        className='absolute right-0 top-0 h-full w-16 md:right-3 md:top-1/2 md:-translate-y-1/2 md:w-12 md:h-12 bg-gradient-to-l from-black/20 to-transparent md:bg-white/80 md:dark:bg-gray-900/80 md:backdrop-blur-md hover:from-black/30 md:hover:bg-white md:dark:hover:bg-gray-900 md:rounded-full md:shadow-xl flex items-center justify-center md:justify-center transition-all duration-300 text-white md:text-gray-700 md:dark:text-gray-200 md:hover:scale-105 md:opacity-0 md:hover:opacity-100 md:group-hover:opacity-100 md:focus:opacity-100 md:border md:border-gray-200/50 md:dark:border-gray-700/50'
                         onClick={goRight}
                         aria-label='Next image'
                     >
-                        <ChevronRightIcon className='w-6 h-6' />
+                        <ChevronRightIcon className='w-8 h-8 md:w-7 md:h-7 mr-2 md:mr-0' />
                     </button>
 
-                    <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/40 px-2 py-1 rounded text-xs text-white'>
-                        {idx + 1}/{total}
+                    {/* Image counter */}
+                    <div className='absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 dark:bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-white shadow-lg border border-white/10'>
+                        <span className='tabular-nums'>{idx + 1}</span>
+                        <span className='mx-1 text-white/60'>/</span>
+                        <span className='tabular-nums text-white/80'>{total}</span>
                     </div>
                 </>
             )}
