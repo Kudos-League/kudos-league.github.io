@@ -1054,7 +1054,7 @@ export default function PostDetails(props: Props) {
             ) : (
                 <>
                     {/* Images */}
-                    <ImageCarousel images={postDetails.images || []} />
+                    <ImageCarousel images={postDetails.images || []} fullResolution={true} />
 
                     {/* Body / Description */}
                     <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>

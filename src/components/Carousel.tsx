@@ -6,9 +6,10 @@ import Button from './common/Button';
 type Props = {
     images: string[];
     interval?: number;
+    fullResolution?: boolean;
 };
 
-const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
+const ImageCarousel: React.FC<Props> = ({ images, interval = 5000, fullResolution = false }) => {
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [idx, setIdx] = useState(0);
     const [lastManualChange, setLastManualChange] = useState(0);
@@ -63,22 +64,22 @@ const ImageCarousel: React.FC<Props> = ({ images, interval = 5000 }) => {
     };
 
     return (
-        <div className='relative w-full max-w-2xl mx-auto h-60 mb-6 overflow-hidden'>
+        <div className={`relative w-full mx-auto mb-6 overflow-hidden ${fullResolution ? 'min-w-[320px]' : 'max-w-2xl h-60'}`}>
             <div
-                className='h-full flex transition-transform duration-300 ease-in-out'
+                className={`flex transition-transform duration-300 ease-in-out ${fullResolution ? 'w-full' : 'h-full'}`}
                 style={trackStyle}
             >
                 {valid.map(({ src, orig }, i) => (
                     <div
                         key={`${orig}-${src}`}
-                        className='h-full'
+                        className={fullResolution ? 'w-full' : 'h-full'}
                         style={{ width: `${100 / total}%` }}
                     >
                         <div className='w-full h-full flex items-center justify-center'>
                             <img
                                 src={getImagePath(src)}
                                 alt={`Post Image ${i + 1}`}
-                                className='max-h-60 w-auto h-full object-contain rounded-lg'
+                                className={fullResolution ? 'w-full h-auto object-contain rounded-lg' : 'max-h-60 w-auto h-full object-contain rounded-lg'}
                                 onError={() => onImgError(orig)}
                             />
                         </div>
