@@ -80,6 +80,9 @@ export default function Feed() {
     });
     const [filterOpen, setFilterOpen] = React.useState(false);
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
+    const [windowWidth, setWindowWidth] = React.useState(
+        typeof window !== 'undefined' ? window.innerWidth : 0
+    );
 
     // Track if AboutCTA has been dismissed (for logged-in users)
     const [aboutCTADismissed, setAboutCTADismissed] = React.useState(() => {
@@ -93,6 +96,16 @@ export default function Feed() {
         setAboutCTADismissed(true);
         localStorage.setItem('aboutCTA-dismissed', 'true');
     };
+
+    // Listen for window resize events
+    React.useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const apiParams = {
         includeSender: true,
@@ -207,7 +220,7 @@ export default function Feed() {
                                 onClick={() => setFilterOpen((v) => !v)}
                                 className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors mb-2'
                             >
-                                {typeof window !== 'undefined' && window.innerWidth > 768 ? (
+                                {windowWidth > 768 ? (
                                     `Order by: ${
                                         typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
                                             typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
@@ -224,7 +237,7 @@ export default function Feed() {
                                         className='fixed inset-0 z-10'
                                         onClick={() => setFilterOpen(false)}
                                     />
-                                    <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                    <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
                                         <button
                                             className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                                                 typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
@@ -386,7 +399,7 @@ export default function Feed() {
                                     onClick={() => setFilterOpen((v) => !v)}
                                     className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
                                 >
-                                    {typeof window !== 'undefined' && window.innerWidth > 768 ? (
+                                    {windowWidth > 768 ? (
                                         `Order by: ${
                                             typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
                                                 typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
@@ -403,7 +416,7 @@ export default function Feed() {
                                             className='fixed inset-0 z-10'
                                             onClick={() => setFilterOpen(false)}
                                         />
-                                        <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                        <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
                                             <button
                                                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                                                     typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
@@ -545,7 +558,7 @@ export default function Feed() {
                                     onClick={() => setFilterOpen((v) => !v)}
                                     className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
                                 >
-                                    {typeof window !== 'undefined' && window.innerWidth > 768 ? (
+                                    {windowWidth > 768 ? (
                                         `Order by: ${
                                             typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
                                                 typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
@@ -562,7 +575,7 @@ export default function Feed() {
                                             className='fixed inset-0 z-10'
                                             onClick={() => setFilterOpen(false)}
                                         />
-                                        <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                        <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
                                             <button
                                                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                                                     typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
