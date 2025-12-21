@@ -344,10 +344,151 @@ export default function Feed() {
                             </p>
                         </div>
 
+                        <div className='flex flex-wrap items-center gap-2 mb-2'>
+                            <div className='flex flex-wrap gap-2'>
+                                <Button
+                                    onClick={() => setActiveTab('all')}
+                                    variant='secondary'
+                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'all'
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    All
+                                </Button>
+                                <Button
+                                    onClick={() => setActiveTab('gifts')}
+                                    variant='secondary'
+                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'gifts'
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Gifts
+                                </Button>
+                                <Button
+                                    onClick={() => setActiveTab('requests')}
+                                    variant='secondary'
+                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'requests'
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Requests
+                                </Button>
+                            </div>
+
+                            <div className='relative sm:ml-auto'>
+                                <button
+                                    onClick={() => setFilterOpen((v) => !v)}
+                                    className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
+                                >
+                                    {typeof window !== 'undefined' && window.innerWidth > 768 ? (
+                                        `Order by: ${
+                                            typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
+                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
+                                                    typeOfOrdering.type === 'distance' ? 'Closest' :
+                                                        'Most Kudos'
+                                        }`
+                                    ) : 'Order'}
+
+                                    <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {filterOpen && (
+                                    <>
+                                        <div
+                                            className='fixed inset-0 z-10'
+                                            onClick={() => setFilterOpen(false)}
+                                        />
+                                        <div className={`absolute ${typeof window !== 'undefined' && window.innerWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'date', order: 'desc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                                Newest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'date', order: 'asc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                                Oldest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'distance'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setShowLocationWarning(true);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                                Closest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'kudos'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'kudos', order: 'desc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                                Most Kudos
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {showLocationWarning && (
+                            <div className='bg-blue-50 border border-blue-400 rounded-lg p-4 flex items-start gap-3 dark:bg-blue-900/30 dark:border-blue-800'>
+                                <MapPin className='w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0' />
+                                <div className='flex-1'>
+                                    <h4 className='font-semibold text-blue-900 dark:text-blue-300 mb-1'>Location Required</h4>
+                                    <p className='text-sm text-blue-800 dark:text-blue-400'>
+                                        To sort by distance, you need to set your location in your profile first.
+                                        Please log in and add your location to use this feature.
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={() => setShowLocationWarning(false)}
+                                    variant='secondary'
+                                    className='flex-shrink-0'
+                                >
+                                    <X className='w-4 h-4' />
+                                </Button>
+                            </div>
+                        )}
+
                         <div className='w-full overflow-x-hidden'>
                             <PostsInfinite
                                 filters={apiParams}
-                                activeTab='all'
+                                activeTab={activeTab}
                                 ordering={typeOfOrdering}
                             />
                         </div>

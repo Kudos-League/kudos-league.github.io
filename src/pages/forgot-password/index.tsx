@@ -28,8 +28,8 @@ export default function ForgotPasswordPage() {
         return (
             <Auth title='Check your email'>
                 <div className='space-y-4'>
-                    <p className='text-sm text-gray-600 dark:text-gray-300'>
-                        If an account exists for {email}, you’ll receive an
+                    <p className='text-sm text-gray-200 dark:text-gray-300'>
+                        If an account exists for {email}, you&apos;ll receive an
                         email with a link to reset your password.
                     </p>
                     <Button

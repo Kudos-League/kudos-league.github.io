@@ -76,7 +76,7 @@ export function TinyHelpLink({
         <button
             type='button'
             onClick={onClick}
-            className='font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm/6'
+            className='font-semibold text-indigo-300 hover:text-indigo-200 dark:text-indigo-300 dark:hover:text-indigo-200 text-sm/6'
         >
             {children}
         </button>

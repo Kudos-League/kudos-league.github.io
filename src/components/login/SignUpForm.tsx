@@ -37,7 +37,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     if (!inviteToken) {
         return (
             <Auth title='Invite Required'>
-                <div className='space-y-4 text-sm text-gray-600 dark:text-gray-300'>
+                <div className='space-y-4 text-sm text-gray-200 dark:text-gray-300'>
                     <p>
                         Kudos is currently invite-only. Ask an existing member to share an invite link with you to create an account.
                     </p>
@@ -138,12 +138,12 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     {isVerifying ? 'Loading...' : 'Sign Up'}
                 </Button>
 
-                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                <p className='text-center text-sm/6 text-gray-200 dark:text-gray-300'>
                     or sign up with
                 </p>
                 <OAuthGroup inviteToken={inviteToken} emailToken={emailToken} />
 
-                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                <p className='text-center text-sm/6 text-gray-200 dark:text-gray-300'>
                     Already have an account?{' '}
                     <TinyHelpLink onClick={() => navigate('/login')}>
                         Log In
