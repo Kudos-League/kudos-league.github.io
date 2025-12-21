@@ -1173,7 +1173,7 @@ export default function PostDetails(props: Props) {
             {/* Comments */}
             <div className='p-4 mb-6'>
                 <MessageList
-                    title='Comments'
+                    title=''
                     messages={postDetails.messages || []}
                     callback={(response) =>
                         setPostDetails((prev: PostDTO) =>
