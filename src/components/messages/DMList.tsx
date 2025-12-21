@@ -5,6 +5,7 @@ import { useLatestChannelMessage, qk } from '@/shared/api/queries/messages';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/useAuth';
 
 interface Props {
     channels: ChannelDTO[];
@@ -31,9 +32,11 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
         isFetched
     } = useLatestChannelMessage(channel.id);
     const user = channel.otherUser;
+    const { user: currentUser } = useAuth();
     const hasUnread = unreadCount > 0;
     const [isAnimating, setIsAnimating] = useState(false);
     const prevMessageRef = React.useRef<string | null>(null);
+    const [displayedMessage, setDisplayedMessage] = useState<string>('');
 
     // Helper function to safely format message content if it exists
     const formatMessageContent = (message: any): string => {
@@ -45,11 +48,16 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
             return 'No messages yet';
         }
 
-        if (content.length <= 32) {
-            return content;
-        }
+        // Determine sender prefix
+        const isCurrentUser = message.authorID === currentUser?.id;
+        const senderPrefix = isCurrentUser ? 'You: ' : `${user?.username}: `;
+        const maxContentLength = 32 - senderPrefix.length;
 
-        return content.substring(0, 32) + '...';
+        const truncatedContent = content.length <= maxContentLength
+            ? content
+            : content.substring(0, maxContentLength) + '...';
+
+        return senderPrefix + truncatedContent;
     };
 
     // Calculate the text to display in the list item
@@ -68,11 +76,25 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
         return '';
     }, [isLoading, isFetched, latestMessage]);
 
+    // Initialize displayedMessage on first render
+    useEffect(() => {
+        if (!displayedMessage && lastMessageText) {
+            setDisplayedMessage(lastMessageText);
+        }
+    }, [lastMessageText, displayedMessage]);
+
     // Trigger animation when message text changes
     useEffect(() => {
         if (prevMessageRef.current !== null && prevMessageRef.current !== lastMessageText && lastMessageText !== 'Loading...') {
+            // First, make the message fainter immediately
             setIsAnimating(true);
-            const timer = setTimeout(() => setIsAnimating(false), 500);
+
+            // Then update the content and fade back in
+            const timer = setTimeout(() => {
+                setDisplayedMessage(lastMessageText);
+                setIsAnimating(false);
+            }, 150); // Update content mid-animation
+
             return () => clearTimeout(timer);
         }
         prevMessageRef.current = lastMessageText;
@@ -105,13 +127,13 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
 
     return (
         <div
-            className={`flex items-center gap-3 rounded-lg transition-colors cursor-pointer ${
+            className={`flex items-center gap-3 rounded-lg transition-all cursor-pointer ${
                 isMobile ? 'p-4' : 'p-3'
             } ${
                 isSelected
                     ? 'bg-brand-100 dark:bg-brand-800 text-brand-900 dark:text-brand-100'
                     : hasUnread
-                        ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 border-l-4 border-brand-500 dark:border-brand-400 shadow-sm'
                         : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
             }`}
             onClick={() => onSelect(channel)} // Make the whole item clickable
@@ -120,8 +142,8 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                 <div className='flex justify-between items-baseline'>
                     {/* UserCard is clickable for profile */}
                     <div className={`truncate ${
-                        hasUnread ? 'font-bold' : 'font-semibold'
-                    } text-zinc-900 dark:text-zinc-100 ${
+                        hasUnread ? 'font-extrabold text-brand-900 dark:text-brand-100' : 'font-semibold text-zinc-900 dark:text-zinc-100'
+                    } ${
                         isMobile ? 'text-base' : 'text-sm'
                     }`}>
                         <UserCard user={user} />
@@ -135,7 +157,7 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                             </span>
                         )}
                         {hasUnread && (
-                            <span className='inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-brand-600 dark:bg-brand-500 text-white text-xs font-semibold'>
+                            <span className='inline-flex items-center justify-center min-w-[22px] h-6 px-2 rounded-full bg-brand-600 dark:bg-brand-500 text-white text-xs font-bold shadow-md ring-2 ring-white dark:ring-zinc-900 animate-pulse'>
                                 {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                         )}
@@ -144,16 +166,14 @@ const DMItem: React.FC<DMItemProps> = ({ channel, onSelect, isSelected, isMobile
                 {/* Last message area */}
                 <p
                     className={`truncate transition-all duration-300 ${
-                        hasUnread ? 'font-semibold' : ''
+                        hasUnread ? 'font-bold text-zinc-800 dark:text-zinc-200' : 'text-zinc-600 dark:text-zinc-400'
                     } ${
-                        latestMessage?.content
-                            ? 'text-zinc-600 dark:text-zinc-400'
-                            : 'text-zinc-400 dark:text-zinc-500 italic'
+                        !latestMessage?.content && 'text-zinc-400 dark:text-zinc-500 italic'
                     } ${isMobile ? 'text-sm' : 'text-sm'} ${
                         isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                     }`}
                 >
-                    {lastMessageText}
+                    {displayedMessage}
                 </p>
             </div>
         </div>
@@ -243,10 +263,10 @@ const DMList: React.FC<Props> = ({
         const counts = new Map<number, number>();
 
         notificationsState.items.forEach((notification) => {
-            if (notification.type === 'direct-message' && !notification.isRead) {
+            if (notification.type === 'direct-message' && !notification.isActedOn) {
                 // Assuming `notification.message.author.id` is the ID of the user who sent the message
                 // which corresponds to the `otherUser.id` in a ChannelDTO for unread counts.
-                const authorId = notification.message?.author?.id; 
+                const authorId = notification.message?.author?.id;
                 if (authorId) {
                     counts.set(authorId, (counts.get(authorId) || 0) + 1);
                 }

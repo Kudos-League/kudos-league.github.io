@@ -32,8 +32,12 @@ export default function MobileTabBar() {
         ).length;
     }, [notificationsState.items]);
 
-    // Count total unread notifications
-    const unreadNotifications = notificationsState.unread;
+    // Count unread notifications excluding direct messages
+    const unreadNotifications = useMemo(() => {
+        return notificationsState.items.filter(
+            (n) => n.type !== 'direct-message' && !n.isRead
+        ).length;
+    }, [notificationsState.items]);
 
     const tabs = [
         {

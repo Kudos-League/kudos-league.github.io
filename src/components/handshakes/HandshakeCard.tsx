@@ -26,6 +26,7 @@ interface Props {
     showSenderOrReceiver?: 'sender' | 'receiver';
     hideCardBorder?: boolean;
     compact?: boolean;
+    onInteraction?: () => void;
 }
 
 const HandshakeCard: React.FC<Props> = ({
@@ -35,7 +36,8 @@ const HandshakeCard: React.FC<Props> = ({
     onDelete,
     showSenderOrReceiver = 'receiver',
     hideCardBorder = false,
-    compact = false
+    compact = false,
+    onInteraction
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -137,6 +139,7 @@ const HandshakeCard: React.FC<Props> = ({
             setIsChatOpen(true);
             setToastType('success');
             setToastMessage('Handshake accepted! You can now chat and coordinate the exchange.');
+            onInteraction?.();
             return true;
         }
         catch (err) {
@@ -159,6 +162,7 @@ const HandshakeCard: React.FC<Props> = ({
             setStatus('new');
             setToastType('success');
             setToastMessage('Handshake acceptance undone. Status reverted to pending.');
+            onInteraction?.();
         }
         catch (err) {
             console.error('Failed to undo accept', err);
@@ -217,6 +221,7 @@ const HandshakeCard: React.FC<Props> = ({
             onDelete?.(handshake.id);
             setToastType('success');
             setToastMessage('Handshake cancelled successfully.');
+            onInteraction?.();
         }
         catch (err) {
             console.error('Failed to cancel handshake', err);

@@ -534,7 +534,7 @@ export default function Feed() {
                                     variant='secondary'
                                     className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
                                         activeTab === 'gifts'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            ? 'border-blue-500 bg-blue-50 text-brand-700'
                                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                     }`}
                                 >
@@ -545,7 +545,7 @@ export default function Feed() {
                                     variant='secondary'
                                     className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
                                         activeTab === 'requests'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            ? 'border-blue-500 bg-blue-50 text-brand-700'
                                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                     }`}
                                 >

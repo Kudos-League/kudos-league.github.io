@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from 'redux_store/store';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     pushOne as pushAction,
@@ -26,6 +27,8 @@ type Ctx = {
     push: (n: NotificationRecord) => void;
     acknowledgeAll: () => Promise<void>;
     markActed: (id: number) => Promise<void>;
+    hasNewNotifications: boolean;
+    clearNewNotifications: () => void;
 };
 
 const NotificationsContext = createContext<Ctx | null>(null);
@@ -36,6 +39,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     const dispatch = useDispatch();
     const state = useSelector((s: RootState) => s.notifications);
     const { user, token, logout } = useAuth();
+    const queryClient = useQueryClient();
+    const [hasNewNotifications, setHasNewNotifications] = React.useState(false);
 
     const joinedUserId = useRef<number | null>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -131,6 +136,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 isActedOn: normalized.isActedOn
             });
             dispatch(pushAction(normalized));
+
+            // Set flag to show "new notifications" banner
+            setHasNewNotifications(true);
 
             try {
                 if (normalized.type === 'direct-message') {
@@ -288,15 +296,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             acknowledgeAll: async () => {
                 debug('acknowledgeAll triggered');
                 await dispatch(acknowledgeAllThunk() as any);
+                // Invalidate notifications history query to update the UI
+                queryClient.invalidateQueries({ queryKey: ['notifications', 'history'] });
                 debug('acknowledgeAll completed');
             },
             markActed: async (id) => {
                 debug('markActed triggered', { id });
                 await dispatch(markNotificationActed(id) as any);
                 debug('markActed completed', { id });
+            },
+            hasNewNotifications,
+            clearNewNotifications: () => {
+                setHasNewNotifications(false);
+                queryClient.invalidateQueries({ queryKey: ['notifications', 'history'] });
             }
         }),
-        [debug, dispatch, state]
+        [debug, dispatch, state, queryClient, hasNewNotifications]
     );
 
     return (

@@ -7,7 +7,6 @@ import { routes } from '@/routes';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { useCachedHandshake, useCachedUser } from '@/contexts/DataCacheContext';
-import { useDMs } from '@/contexts/DMsContext';
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -114,7 +113,6 @@ export default function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { openDMs } = useDMs();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const hasLoggedMount = useRef(false);
     if (!hasLoggedMount.current) {
@@ -126,23 +124,31 @@ export default function NotificationsBell() {
     );
     const { items, unread, loaded } = state;
 
-    // Sort notifications by timestamp (most recent first)
+    // Calculate unread count excluding direct messages
+    const unreadCountWithoutDMs = useMemo(() => {
+        return items.filter(item => item.type !== 'direct-message' && !item.isRead).length;
+    }, [items]);
+
+    // Sort notifications by timestamp (most recent first), excluding direct messages
     const sortedItems = useMemo(() => {
-        return [...items].sort((a, b) => {
+        // Filter out direct messages - they should only appear in the messages section
+        const itemsWithoutDMs = items.filter(item => item.type !== 'direct-message');
+
+        return [...itemsWithoutDMs].sort((a, b) => {
             // Try different possible timestamp field names
             const getTimestamp = (n: any) => {
                 const timestamp = n.createdAt || n.timestamp || n.created || n.date || n.updatedAt;
                 return timestamp ? new Date(timestamp).getTime() : 0;
             };
-            
+
             const timeA = getTimestamp(a);
             const timeB = getTimestamp(b);
-            
+
             // If no timestamps, sort by ID (higher ID = more recent)
             if (!timeA && !timeB) {
                 return (b.id || 0) - (a.id || 0);
             }
-            
+
             return timeB - timeA; // Descending order (newest first)
         });
     }, [items]);
@@ -272,18 +278,7 @@ export default function NotificationsBell() {
             });
         }
 
-        if (n.type === 'direct-message') {
-            const authorId = n.message?.author?.id;
-            // On desktop (lg screens), open the DMs modal instead of navigating
-            const isDesktop = window.innerWidth >= 1024; // lg breakpoint
-            if (isDesktop && authorId) {
-                openDMs(authorId);
-            }
-            else {
-                navigate(`/dms/${authorId ?? ''}`);
-            }
-        }
-        else if (n.type === 'post-reply') {
+        if (n.type === 'post-reply') {
             if (postID) {
                 navigate(`/post/${postID}`);
             }
@@ -344,12 +339,12 @@ export default function NotificationsBell() {
                     className='relative flex h-9 w-9 sm:h-10 sm:w-10 lg:h-12 lg:w-12 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >
                     <BellIcon className='h-5 w-5 sm:h-6 sm:w-6 lg:h-6 lg:w-6' aria-hidden='true' />
-                    {state.unread > 0 && (
+                    {unreadCountWithoutDMs > 0 && (
                         <span
                             className='absolute -top-1 -right-1 sm:-top-2 sm:-right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
-                            aria-label={`${state.unread} unread notifications`}
+                            aria-label={`${unreadCountWithoutDMs} unread notifications`}
                         >
-                            {state.unread > 9 ? '9+' : state.unread}
+                            {unreadCountWithoutDMs > 9 ? '9+' : unreadCountWithoutDMs}
                         </span>
                     )}
                 </button>
@@ -410,21 +405,7 @@ export default function NotificationsBell() {
                                                 New
                                             </span>
                                         )}
-                                        {n.type === 'direct-message' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium pr-12'>
-                                                        New DM from <UserCard user={n.message?.author} triggerVariant='name' />
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    {n.message?.content}
-                                                </div>
-                                            </div>
-                                        ) : n.type === 'post-reply' ? (
+                                        {n.type === 'post-reply' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                                                     <div className='text-sm md:text-sm font-medium pr-12'>

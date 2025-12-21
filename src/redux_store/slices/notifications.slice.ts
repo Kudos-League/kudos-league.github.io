@@ -117,7 +117,7 @@ const notificationsSlice = createSlice({
                 state.error = action.error.message;
             })
             .addCase(acknowledgeAll.fulfilled, (state) => {
-                state.items = state.items.map((item) => ({ ...item, isRead: true }));
+                state.items = state.items.map((item) => ({ ...item, isRead: true, isActedOn: true }));
                 state.unread = 0;
             })
             .addCase(markNotificationActed.fulfilled, (state, action) => {
