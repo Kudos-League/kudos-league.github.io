@@ -1056,7 +1056,7 @@ export default function NotificationsPage() {
                                                 disabled={!hasUnread}
                                             >
                                                 <Check className='w-3 h-3' />
-                                                {!hasUnread ? 'Read' : isGrouped ? 'Mark all as read' : 'Mark as read'}
+                                                {!hasUnread ? 'Read' : isGrouped ? 'Mark as read' : 'Mark as read'}
                                             </button>
                                         </div>
                                     </button>

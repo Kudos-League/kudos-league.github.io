@@ -106,8 +106,8 @@ export default function PostsInfinite({
                     <div
                         ref={sentinelRef}
                         style={{
-                            height: 1,
-                            width: 1
+                            height: 200,
+                            width: '100%'
                         }}
                     />
                 )}
