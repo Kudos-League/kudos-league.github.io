@@ -23,6 +23,7 @@ import queryClient from './shared/api/client';
 import Spinner from './components/common/Spinner';
 import Alert from './components/common/Alert';
 import AlertHost from '@/components/common/AlertHost';
+import DevToolsPanel from '@/components/dev/DevToolsPanel';
 
 function ErrorFallback({ error }: { error: string[] }) {
     return (
@@ -59,6 +60,7 @@ export default function App() {
                                                         <AppCore />
                                                         <AlertHost />
                                                         <ConnectingOverlay />
+                                                        <DevToolsPanel />
                                                     </BlockedUsersProvider>
                                                 </WebSocketProvider>
                                             </DMsProvider>
