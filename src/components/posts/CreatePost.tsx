@@ -218,7 +218,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     };
 
     return (
-        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh mt-4 mb-4' serverError={serverError}>
+        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-2 sm:mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh mt-4 mb-4' serverError={serverError}>
             <div className='flex gap-3'>
                 <Button
                     variant={postType === 'gift' ? 'primary' : 'secondary'}

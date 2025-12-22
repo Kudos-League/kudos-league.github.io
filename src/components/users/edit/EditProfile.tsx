@@ -25,6 +25,7 @@ import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
 import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import UserCard from '@/components/users/UserCard';
 
 const bustCache = (u: string) =>
@@ -44,6 +45,7 @@ const EditProfile: React.FC<Props> = ({
 }) => {
     const auth = useAuth();
     const { user, updateUser: updateUserCache } = auth;
+    const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const wasInvited = !!targetUser.invitedByUserID;
     const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
     const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
@@ -909,6 +911,41 @@ const EditProfile: React.FC<Props> = ({
                                     </OAuthConnectButton>
                                 )}
                             </div>
+                        </div>
+                    </SettingsSection>
+                )}
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Accessibility'
+                        description='Customize your experience for better readability.'
+                    >
+                        <div className='flex items-center justify-between'>
+                            <div className='flex-1'>
+                                <label htmlFor='dyslexic-font-toggle' className='text-sm font-medium text-gray-700 dark:text-gray-200'>
+                                    OpenDyslexic Font
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Use a font designed to increase readability for readers with dyslexia
+                                </p>
+                            </div>
+                            <button
+                                id='dyslexic-font-toggle'
+                                role='switch'
+                                aria-checked={useDyslexicFont}
+                                onClick={() => setUseDyslexicFont(!useDyslexicFont)}
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                                    useDyslexicFont ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        useDyslexicFont ? 'translate-x-5' : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
                         </div>
                     </SettingsSection>
                 )}

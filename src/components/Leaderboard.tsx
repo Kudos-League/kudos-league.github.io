@@ -181,7 +181,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                         <li
                             key={entry.id}
                             className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
-                                compact ? 'py-2 px-1' : 'py-5 px-2'
+                                compact ? 'py-2 px-1' : 'py-7 px-2'
                             }`}
                             onClick={() => navigate(`/user/${entry.id}`)}
                         >
@@ -195,7 +195,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                     }
                                     large={!compact}
                                     triggerVariant='avatar-name'
-                                    subtitle={compact ? undefined : (entry.location?.name || '—')}
+                                    subtitle={entry.location?.name || '—'}
                                     centered={false}
                                     subtitleClassName='max-w-[180px]'
                                     nameClassName={medalColor}

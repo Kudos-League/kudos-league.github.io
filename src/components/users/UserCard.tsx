@@ -65,6 +65,7 @@ interface Props {
     disableTooltip?: boolean;
     onAdminReportOpen?: (userID: number) => void;
     showKudos?: boolean;
+    compact?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -96,7 +97,8 @@ const UserCard: React.FC<Props> = ({
     subtitleClassName = '',
     disableTooltip = false,
     onAdminReportOpen,
-    showKudos = false
+    showKudos = false,
+    compact = false
 }) => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
@@ -143,7 +145,7 @@ const UserCard: React.FC<Props> = ({
             </span>
         );
 
-        const kudosEl = showKudos ? (
+        const kudosEl = showKudos && !compact ? (
             <span className='text-xs text-gray-500 dark:text-gray-400 font-normal'>
                 {kudos} Kudos
             </span>
@@ -168,7 +170,7 @@ const UserCard: React.FC<Props> = ({
                 <AvatarComponent
                     username={displayName}
                     avatar={user?.avatar ? getImagePath(user.avatar) : null}
-                    size={large ? 48 : 28}
+                    size={compact ? 24 : large ? 48 : 28}
                 />
             </div>
         );
@@ -210,6 +212,7 @@ const UserCard: React.FC<Props> = ({
     }, [
         triggerVariant,
         large,
+        compact,
         user?.id,
         user?.avatar,
         displayName,

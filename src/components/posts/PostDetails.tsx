@@ -7,6 +7,7 @@ import MapDisplay from '@/components/Map';
 import MessageList from '@/components/posts/MessageList';
 // import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
+import ImageModalCarousel from '@/components/ImageModalCarousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
@@ -90,8 +91,8 @@ export default function PostDetails(props: Props) {
     const [editImages, setEditImages] = useState<File[]>([]);
     const [editImageError, setEditImageError] = useState<string | null>(null);
     const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedImage] = useState<string | null>(null);
+    const [imageModalVisible, setImageModalVisible] = useState(false);
+    const [imageModalIndex, setImageModalIndex] = useState(0);
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [showAllHandshakes, setShowAllHandshakes] = useState(false);
@@ -1015,7 +1016,16 @@ export default function PostDetails(props: Props) {
             ) : (
                 <>
                     {/* Images */}
-                    <ImageCarousel images={postDetails.images || []} fullResolution={true} />
+                    <div className='mb-6'>
+                        <ImageCarousel
+                            images={postDetails.images || []}
+                            variant='postDetails'
+                            onImageClick={(index) => {
+                                setImageModalVisible(true);
+                                setImageModalIndex(index);
+                            }}
+                        />
+                    </div>
 
                     {/* Body / Description */}
                     <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
@@ -1256,23 +1266,13 @@ export default function PostDetails(props: Props) {
                 </div>
             )}
 
-            {/* Image Modal */}
-            {modalVisible && selectedImage && (
-                <div className='fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center'>
-                    <div className='relative'>
-                        <img
-                            src={selectedImage}
-                            alt='Preview'
-                            className='max-w-full max-h-[90vh] rounded shadow-lg'
-                        />
-                        <Button
-                            onClick={() => setModalVisible(false)}
-                            className='absolute top-2 right-2 text-white bg-black bg-opacity-50 px-3 py-1 rounded hover:bg-opacity-75'
-                        >
-                            Close
-                        </Button>
-                    </div>
-                </div>
+            {/* Image Modal Carousel */}
+            {imageModalVisible && postDetails.images && postDetails.images.length > 0 && (
+                <ImageModalCarousel
+                    images={postDetails.images}
+                    initialIndex={imageModalIndex}
+                    onClose={() => setImageModalVisible(false)}
+                />
             )}
         </div>
     );

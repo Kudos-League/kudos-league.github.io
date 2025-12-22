@@ -30,7 +30,7 @@ function AboutCTA({ onDismiss, showDismiss = false }: { onDismiss?: () => void; 
                     <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4'>
                         A community-driven platform for giving and receiving help. Share what you have, request what you need, and build meaningful connections.
                     </p>
-                    <ul className='space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400'>
+                    <ul className='hidden sm:flex sm:flex-col sm:space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400'>
                         <li className='flex items-start gap-2'>
                             <span className='text-brand-600 dark:text-brand-400 mt-0.5'>✓</span>
                             <span>Give items, skills, or time to others</span>
