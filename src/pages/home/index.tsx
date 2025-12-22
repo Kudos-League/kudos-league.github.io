@@ -4,7 +4,7 @@ import Button from '@/components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import { useAuth } from '@/contexts/useAuth';
-import { MapPin, X, ChevronDown, BookOpen, ArrowRight } from 'lucide-react';
+import { MapPin, X, ChevronDown, BookOpen, ArrowRight, Plus } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import { routes } from '@/routes';
 
@@ -149,6 +149,16 @@ export default function Feed() {
                     {/* About CTA for logged-in users */}
                     {user && !aboutCTADismissed && (
                         <AboutCTA showDismiss={true} onDismiss={handleDismissAboutCTA} />
+                    )}
+
+                    {user && (
+                        <button
+                            onClick={() => navigate(routes.createPost)}
+                            className='w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-brand-600 dark:border-brand-400 text-brand-600 dark:text-brand-400 font-semibold rounded-lg hover:bg-brand-50 dark:hover:bg-brand-950/20 transition-all duration-200 mb-4'
+                        >
+                            <Plus className='w-5 h-5' />
+                            <span>Create Post</span>
+                        </button>
                     )}
 
                     <div className='flex flex-wrap items-center gap-2 mb-2'>
@@ -515,6 +525,14 @@ export default function Feed() {
                                 <AboutCTA showDismiss={true} onDismiss={handleDismissAboutCTA} />
                             </div>
                         )}
+
+                        <button
+                            onClick={() => navigate(routes.createPost)}
+                            className='w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-brand-600 dark:border-brand-400 text-brand-600 dark:text-brand-400 font-semibold rounded-lg hover:bg-brand-50 dark:hover:bg-brand-950/20 transition-all duration-200 mb-4'
+                        >
+                            <Plus className='w-5 h-5' />
+                            <span>Create Post</span>
+                        </button>
 
                         <div className='flex flex-wrap items-center gap-2 mb-2'>
                             <div className='flex flex-wrap gap-2'>

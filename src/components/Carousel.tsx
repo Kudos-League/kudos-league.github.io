@@ -170,14 +170,14 @@ const ImageCarousel: React.FC<Props> = ({
                     <div className='absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white border border-white/20 tabular-nums'>
                         {idx + 1} / {total}
                     </div>
-
-                    {/* User Prompt */}
-                    {!isPostCard && (
-                        <div className='absolute top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-white/80 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity'>
-                            Click to expand
-                        </div>
-                    )}
                 </>
+            )}
+
+            {/* User Prompt - Show for postDetails regardless of image count */}
+            {!isPostCard && (
+                <div className='absolute top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-white/80 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 pointer-events-none opacity-100 transition-opacity'>
+                    Click to show full image
+                </div>
             )}
         </div>
     );

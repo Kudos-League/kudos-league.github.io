@@ -106,7 +106,7 @@ const ImageModalCarousel: React.FC<Props> = ({ images, initialIndex = 0, onClose
                 </button>
 
                 {/* Image Container */}
-                <div className='relative w-full h-full flex items-center justify-center overflow-hidden rounded-lg'>
+                <div className='relative w-full h-full flex items-center justify-center overflow-hidden rounded-lg' onClick={(e) => e.stopPropagation()}>
                     {valid[idx] && (
                         <img
                             src={getImagePath(valid[idx].src)}

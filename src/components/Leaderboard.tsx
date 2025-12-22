@@ -241,12 +241,12 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     );
 
     return (
-        <div className={compact ? 'ml-2' : 'ml-2 sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
+        <div className={compact ? 'ml-8' : 'ml-8 sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
             <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
                 {getHeaderLabel()}
             </h1>
 
-            <div className={`flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>
+            <div className={`ml-4 flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>
                 {/* Time Filter Dropdown */}
                 <div className='relative mr-2' ref={dropdownRef}>
                     <button
