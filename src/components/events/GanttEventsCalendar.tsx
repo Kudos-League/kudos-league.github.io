@@ -1280,7 +1280,7 @@ export default function GanttEventsCalendar() {
                             <div className='flex items-center justify-between'>
                                 <h3 className='text-sm sm:text-base font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
                                     <Calendar className='w-4 h-4' />
-                                Jump to Period
+                                Jump/Select Range
                                 </h3>
                                 <button
                                     onClick={() => setShowPeriodPicker(false)}
