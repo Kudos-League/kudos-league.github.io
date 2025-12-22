@@ -34,7 +34,7 @@ export default function ConnectingOverlay() {
             >
                 <div className='flex items-start gap-3 rounded-xl bg-white dark:bg-neutral-900 shadow-lg ring-1 ring-black/10 dark:ring-white/10 p-4'>
                     <div className='shrink-0 mt-0.5'>
-                        <Spinner text={null} />
+                        <Spinner text={null} size='sm' />
                     </div>
                     <div className='min-w-0'>
                         <p className='text-sm font-medium text-neutral-900 dark:text-neutral-100'>
