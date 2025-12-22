@@ -77,7 +77,7 @@ export default function App() {
 
 function AppCore() {
     const { loading } = useAuth();
-    if (loading) return <Spinner text='Logging in...' />;
+    if (loading) return <Spinner text='Logging in...' variant='fullscreen' />;
 
     return (
         <BrowserRouter>
