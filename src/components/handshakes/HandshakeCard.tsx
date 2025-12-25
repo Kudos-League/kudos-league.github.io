@@ -238,6 +238,9 @@ const HandshakeCard: React.FC<Props> = ({
     };
 
     const handleKudosSubmit = async () => {
+        // Prevent submission if already completed or submitting
+        if (status === 'completed' || submitting) return;
+
         if (!kudosValue || isNaN(Number(kudosValue))) {
             setError('Enter a valid kudos number.');
             setToastType('error');
@@ -249,9 +252,8 @@ const HandshakeCard: React.FC<Props> = ({
         try {
             const dto: any = {
                 postID: handshake.postID,
-                amount: Number(kudosValue),
-                currency: 'kudos',
                 kudos: Number(kudosValue),
+                currency: 'kudos',
                 receiverID: gifterID
             };
             await createOfferMutation.mutateAsync(dto);
@@ -389,15 +391,15 @@ const HandshakeCard: React.FC<Props> = ({
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-amber-800 dark:text-amber-300`}>
                                 {userID === handshake.senderID ? (
                                     handshake.post.type === 'request' ? (
-                                        <><span className="font-semibold">You requested this item.</span> Waiting for the poster to accept.</>
+                                        <><span className="font-semibold">You offered help to this user.</span> Waiting for the poster to accept.</>
                                     ) : (
-                                        <><span className="font-semibold">You offered to take this item.</span> Waiting for the poster to accept.</>
+                                        <><span className="font-semibold">You asked for help.</span> Waiting for the poster to accept.</>
                                     )
                                 ) : userID === handshake.receiverID ? (
                                     handshake.post.type === 'request' ? (
-                                        <><span className="font-semibold">This user is offering this item.</span> Accept to coordinate the exchange.</>
+                                        <><span className="font-semibold">This user is offering help.</span> Accept to coordinate the exchange.</>
                                     ) : (
-                                        <><span className="font-semibold">This user wants this item.</span> Accept to coordinate the exchange.</>
+                                        <><span className="font-semibold">This user wants your help.</span> Accept to coordinate the exchange.</>
                                     )
                                 ) : (
                                     handshake.post.type === 'request' ? (
@@ -414,9 +416,9 @@ const HandshakeCard: React.FC<Props> = ({
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}>
                                 {userIsItemReceiver ? (
-                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive the item, you can assign kudos below.</>
+                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive help, you can assign kudos below.</>
                                 ) : (
-                                    <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? 'Waiting for the receiver to confirm they got the item.' : 'Both parties are coordinating the exchange.'}</>
+                                    <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? 'Waiting for the receiver to confirm they received the help' : 'Both parties are coordinating the exchange.'}</>
                                 )}
                             </p>
                         </div>
@@ -431,7 +433,7 @@ const HandshakeCard: React.FC<Props> = ({
                     )}
 
                     {/* Action Buttons Row */}
-                    {(((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
+                    {status !== 'completed' && (((canAccept && !stage.postIsPast && userID === handshake.receiverID && status === 'new') ||
                       (canUndoAccept && !stage.postIsPast)) || (canCancel && !stage.postIsPast)) && (
                         <div className="flex items-center gap-2">
                             {/* Accept/Undo Button */}
@@ -475,14 +477,14 @@ const HandshakeCard: React.FC<Props> = ({
                     )}
 
                     {/* Kudos Assignment - Better mobile layout */}
-                    {canComplete && (
+                    {canComplete && status !== 'completed' && (
                         <div className={`flex flex-col ${compact ? 'gap-2 p-3' : 'gap-3 p-4'} bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800`}>
                             <div className="space-y-1">
                                 <label className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-green-800 dark:text-green-300 block`}>
                                     Send Kudos to Complete Exchange
                                 </label>
                                 <p className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}>
-                                    You received the item! Send kudos as a thank you to the {handshake.post.type === 'request' ? 'giver' : 'poster'}.
+                                    You received help! Send kudos as a thank you to the {handshake.post.type === 'request' ? 'giver' : 'poster'}.
                                 </p>
                             </div>
                             <div className="flex gap-2">

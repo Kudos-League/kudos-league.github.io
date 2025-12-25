@@ -126,9 +126,8 @@ export interface SendCommentDTO {
 
 export type CreateRewardOfferDTO = {
     postID: number;
-    amount: number;
-    currency: string;
     kudos: number;
+    currency: string;
     receiverID?: number;
     senderID?: number;
 };

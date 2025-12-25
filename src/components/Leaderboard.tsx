@@ -283,7 +283,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
                 {/* Local/Global Switch */}
                 <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
-                    <span className='text-sm'>
+                    <span className='text-sm truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px] lg:max-w-[240px]' title={user?.location?.name || 'Local'}>
                         {user?.location?.name || 'Local'}
                     </span>
                     <label className='inline-flex items-center cursor-pointer'>

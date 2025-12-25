@@ -1,5 +1,4 @@
 import React from 'react';
-import EventsCarousel from '@/components/events/EventsCarousel';
 import Button from '@/components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import PostsInfinite from '@/components/posts/PostsInfinite';
@@ -7,6 +6,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { MapPin, X, ChevronDown, BookOpen, ArrowRight, Plus } from 'lucide-react';
 import Leaderboard from '@/components/Leaderboard';
 import { routes } from '@/routes';
+import { MagnifyingGlassIcon as MagnifyingGlassIconHeroicons } from '@heroicons/react/24/outline';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -161,41 +161,14 @@ export default function Feed() {
                         </button>
                     )}
 
-                    <div className='flex flex-wrap items-center gap-2 mb-2'>
-                        {/* <Button
-                        onClick={() => {
-                            setTypeOfOrdering({ type: 'date', order: 'desc' });
-                            setShowLocationWarning(false);
-                        }}
-                        variant='secondary'
-                        className='text-sm border'
-                    >
-                        Sort by date
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            if (!user?.location?.name) {
-                                setShowLocationWarning(true);
-                                return;
-                            }
-                            setTypeOfOrdering({
-                                type: 'distance',
-                                order: 'asc'
-                            });
-                            setShowLocationWarning(false);
-                        }}
-                        variant='secondary'
-                        className='text-sm border'
-                    >
-                        Sort by distance
-                    </Button> */}
+                    <div className='flex items-center justify-between gap-2 mb-2'>
                         <div className='flex flex-wrap gap-2'>
                             <Button
                                 onClick={() => setActiveTab('all')}
                                 variant='secondary'
                                 className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                    activeTab === 'all' 
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    activeTab === 'all'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                                         : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                 }`}
                             >
@@ -205,8 +178,8 @@ export default function Feed() {
                                 onClick={() => setActiveTab('gifts')}
                                 variant='secondary'
                                 className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                    activeTab === 'gifts' 
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    activeTab === 'gifts'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                                         : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                 }`}
                             >
@@ -216,8 +189,8 @@ export default function Feed() {
                                 onClick={() => setActiveTab('requests')}
                                 variant='secondary'
                                 className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                    activeTab === 'requests' 
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    activeTab === 'requests'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                                         : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                                 }`}
                             >
@@ -225,93 +198,104 @@ export default function Feed() {
                             </Button>
                         </div>
 
-                        <div className='relative sm:ml-auto'>
-                            <button
-                                onClick={() => setFilterOpen((v) => !v)}
-                                className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors mb-2'
-                            >
-                                {windowWidth > 768 ? (
-                                    `Order by: ${
-                                        typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
-                                            typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
-                                                typeOfOrdering.type === 'distance' ? 'Closest' :
-                                                    'Most Kudos'
-                                    }`
-                                ) : 'Order'}
+                        <div className='flex items-center gap-2 ml-auto'>
+                            <div className='relative'>
+                                <button
+                                    onClick={() => setFilterOpen((v) => !v)}
+                                    className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors mb-2'
+                                >
+                                    {windowWidth > 768 ? (
+                                        `Order by: ${
+                                            typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
+                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
+                                                    typeOfOrdering.type === 'distance' ? 'Closest' :
+                                                        'Most Kudos'
+                                        }`
+                                    ) : 'Order'}
 
-                                <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {filterOpen && (
-                                <>
-                                    <div
-                                        className='fixed inset-0 z-10'
-                                        onClick={() => setFilterOpen(false)}
-                                    />
-                                    <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
-                                        <button
-                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
-                                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                    : 'text-zinc-700 dark:text-zinc-300'
-                                            }`}
-                                            onClick={() => {
-                                                setTypeOfOrdering({ type: 'date', order: 'desc' });
-                                                setShowLocationWarning(false);
-                                                setFilterOpen(false);
-                                            }}
-                                        >
-                                    Newest
-                                        </button>
-                                        <button
-                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
-                                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                    : 'text-zinc-700 dark:text-zinc-300'
-                                            }`}
-                                            onClick={() => {
-                                                setTypeOfOrdering({ type: 'date', order: 'asc' });
-                                                setShowLocationWarning(false);
-                                                setFilterOpen(false);
-                                            }}
-                                        >
-                                    Oldest
-                                        </button>
-                                        <button
-                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                typeOfOrdering.type === 'distance'
-                                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                    : 'text-zinc-700 dark:text-zinc-300'
-                                            }`}
-                                            onClick={() => {
-                                                if (!user?.location?.name) {
-                                                    setShowLocationWarning(true);
+                                    <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {filterOpen && (
+                                    <>
+                                        <div
+                                            className='fixed inset-0 z-10'
+                                            onClick={() => setFilterOpen(false)}
+                                        />
+                                        <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'date', order: 'desc' });
+                                                    setShowLocationWarning(false);
                                                     setFilterOpen(false);
-                                                    return;
-                                                }
-                                                setTypeOfOrdering({ type: 'distance', order: 'asc' });
-                                                setShowLocationWarning(false);
-                                                setFilterOpen(false);
-                                            }}
-                                        >
-                                    Closest
-                                        </button>
-                                        <button
-                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                typeOfOrdering.type === 'kudos'
-                                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                    : 'text-zinc-700 dark:text-zinc-300'
-                                            }`}
-                                            onClick={() => {
-                                                setTypeOfOrdering({ type: 'kudos', order: 'desc' });
-                                                setShowLocationWarning(false);
-                                                setFilterOpen(false);
-                                            }}
-                                        >
-                                    Most Kudos
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                                                }}
+                                            >
+                                            Newest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'date', order: 'asc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                            Oldest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'distance'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    if (!user?.location?.name) {
+                                                        setShowLocationWarning(true);
+                                                        setFilterOpen(false);
+                                                        return;
+                                                    }
+                                                    setTypeOfOrdering({ type: 'distance', order: 'asc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                            Closest
+                                            </button>
+                                            <button
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                    typeOfOrdering.type === 'kudos'
+                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                        : 'text-zinc-700 dark:text-zinc-300'
+                                                }`}
+                                                onClick={() => {
+                                                    setTypeOfOrdering({ type: 'kudos', order: 'desc' });
+                                                    setShowLocationWarning(false);
+                                                    setFilterOpen(false);
+                                                }}
+                                            >
+                                            Most Kudos
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Search button - to the right of Order by */}
+                            <button
+                                onClick={() => navigate('/search')}
+                                className='flex sm:hidden h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                                aria-label='Search'
+                            >
+                                <MagnifyingGlassIconHeroicons className='h-5 w-5' />
+                            </button>
                         </div>
                     </div>
 
@@ -404,87 +388,91 @@ export default function Feed() {
                                 </Button>
                             </div>
 
-                            <div className='relative sm:ml-auto'>
-                                <button
-                                    onClick={() => setFilterOpen((v) => !v)}
-                                    className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
-                                >
-                                    {windowWidth > 768 ? (
-                                        `Order by: ${
-                                            typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
-                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
-                                                    typeOfOrdering.type === 'distance' ? 'Closest' :
-                                                        'Most Kudos'
-                                        }`
-                                    ) : 'Order'}
+                            <div className='flex items-center gap-2 sm:ml-auto'>
+                                <div className='relative'>
+                                    <button
+                                        onClick={() => setFilterOpen((v) => !v)}
+                                        className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
+                                    >
+                                        {windowWidth > 768 ? (
+                                            `Order by: ${
+                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
+                                                        typeOfOrdering.type === 'distance' ? 'Closest' :
+                                                            'Most Kudos'
+                                            }`
+                                        ) : 'Order'}
 
-                                    <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {filterOpen && (
-                                    <>
-                                        <div
-                                            className='fixed inset-0 z-10'
-                                            onClick={() => setFilterOpen(false)}
-                                        />
-                                        <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'date', order: 'desc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {filterOpen && (
+                                        <>
+                                            <div
+                                                className='fixed inset-0 z-10'
+                                                onClick={() => setFilterOpen(false)}
+                                            />
+                                            <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'date', order: 'desc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Newest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'date', order: 'asc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'date', order: 'asc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Oldest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'distance'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setShowLocationWarning(true);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'distance'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setShowLocationWarning(true);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Closest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'kudos'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'kudos', order: 'desc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'kudos'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'kudos', order: 'desc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Most Kudos
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Search button - to the right of Order by */}
                             </div>
                         </div>
 
@@ -571,93 +559,106 @@ export default function Feed() {
                                 </Button>
                             </div>
 
-                            <div className='relative sm:ml-auto'>
-                                <button
-                                    onClick={() => setFilterOpen((v) => !v)}
-                                    className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
-                                >
-                                    {windowWidth > 768 ? (
-                                        `Order by: ${
-                                            typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
-                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
-                                                    typeOfOrdering.type === 'distance' ? 'Closest' :
-                                                        'Most Kudos'
-                                        }`
-                                    ) : 'Order'}
+                            <div className='flex items-center gap-2 sm:ml-auto'>
+                                <div className='relative'>
+                                    <button
+                                        onClick={() => setFilterOpen((v) => !v)}
+                                        className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
+                                    >
+                                        {windowWidth > 768 ? (
+                                            `Order by: ${
+                                                typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc' ? 'Newest' :
+                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc' ? 'Oldest' :
+                                                        typeOfOrdering.type === 'distance' ? 'Closest' :
+                                                            'Most Kudos'
+                                            }`
+                                        ) : 'Order'}
 
-                                    <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {filterOpen && (
-                                    <>
-                                        <div
-                                            className='fixed inset-0 z-10'
-                                            onClick={() => setFilterOpen(false)}
-                                        />
-                                        <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'date', order: 'desc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
-                                                Newest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'date', order: 'asc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
-                                                Oldest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'distance'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    if (!user?.location?.name) {
-                                                        setShowLocationWarning(true);
+
+
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {filterOpen && (
+                                        <>
+                                            <div
+                                                className='fixed inset-0 z-10'
+                                                onClick={() => setFilterOpen(false)}
+                                            />
+                                            <div className={`absolute ${windowWidth >= 373 ? 'right-0' : 'left-0'} mt-2 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden`}>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'date', order: 'desc' });
+                                                        setShowLocationWarning(false);
                                                         setFilterOpen(false);
-                                                        return;
-                                                    }
-                                                    setTypeOfOrdering({ type: 'distance', order: 'asc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                                    }}
+                                                >
+                                                Newest
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'date', order: 'asc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
+                                                Oldest
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'distance'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        if (!user?.location?.name) {
+                                                            setShowLocationWarning(true);
+                                                            setFilterOpen(false);
+                                                            return;
+                                                        }
+                                                        setTypeOfOrdering({ type: 'distance', order: 'asc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Closest
-                                            </button>
-                                            <button
-                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                    typeOfOrdering.type === 'kudos'
-                                                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                }`}
-                                                onClick={() => {
-                                                    setTypeOfOrdering({ type: 'kudos', order: 'desc' });
-                                                    setShowLocationWarning(false);
-                                                    setFilterOpen(false);
-                                                }}
-                                            >
+                                                </button>
+                                                <button
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                                                        typeOfOrdering.type === 'kudos'
+                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
+                                                            : 'text-zinc-700 dark:text-zinc-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setTypeOfOrdering({ type: 'kudos', order: 'desc' });
+                                                        setShowLocationWarning(false);
+                                                        setFilterOpen(false);
+                                                    }}
+                                                >
                                                 Most Kudos
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Search button - to the right of Order by */}
+                                <button
+                                    onClick={() => navigate('/search')}
+                                    className='flex sm:hidden h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                                    aria-label='Search'
+                                >
+                                    <MagnifyingGlassIconHeroicons className='h-5 w-5' />
+                                </button>
                             </div>
                         </div>
 

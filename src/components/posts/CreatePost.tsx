@@ -221,12 +221,14 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-2 sm:mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh mt-4 mb-4' serverError={serverError}>
             <div className='flex gap-3'>
                 <Button
+                    type='button'
                     variant={postType === 'gift' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('gift')}
                 >
                     Give stuff
                 </Button>
                 <Button
+                    type='button'
                     variant={postType === 'request' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('request')}
                 >
@@ -285,7 +287,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
-            <FormField name='itemsLimit' label='Number of Items *' helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}?`}>
+            <FormField name='itemsLimit' label='Number of Items *' helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}? 0 for unlimited. 1 in case of doubt or not applicable.`}>
                 <Input
                     name='itemsLimit'
                     label=''
@@ -295,8 +297,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     valueTransformer={(v) => (v === '' ? '' : Number(v))}
                     onValueChange={(val) => {
                         if (val !== '') {
-                            Number(val) < 1
-                                ? form.setValue('itemsLimit', 1)
+                            Number(val) < 0
+                                ? form.setValue('itemsLimit', 0)
                                 : form.setValue('itemsLimit', Number(val));
                         } 
                         else {
@@ -349,7 +351,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 }
                             }}
                             onBlur={field.onBlur}
-                            placeholder={catsLoading ? 'Loading…' : '⚠️ Select a category (required)'}
+                            placeholder={catsLoading ? 'Loading…' : ' Select a category'}
                         />
                     )}
                 />

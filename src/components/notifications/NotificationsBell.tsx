@@ -251,13 +251,6 @@ export default function NotificationsBell() {
         });
     }, [debug, items, loaded, unread]);
 
-    useEffect(() => {
-        if (!open || unread === 0) return;
-        debug('auto acknowledging new notifications while open', { unread });
-        acknowledgeAll().catch((err) => {
-            console.error('Failed to acknowledge notifications while open', err);
-        });
-    }, [acknowledgeAll, debug, open, unread]);
 
     const go = (n: NotificationRecord) => {
         // Extract postID from various possible locations
@@ -324,17 +317,7 @@ export default function NotificationsBell() {
                     type='button'
                     aria-label='Notifications'
                     onClick={() =>
-                        setOpen((prev) => {
-                            const next = !prev;
-                            debug('toggle dropdown', { from: prev, to: next, unread });
-                            if (!prev && next && unread > 0) {
-                                debug('acknowledging notifications on open', { pending: unread });
-                                acknowledgeAll().catch((err) => {
-                                    console.error('Failed to acknowledge notifications', err);
-                                });
-                            }
-                            return next;
-                        })
+                        setOpen((prev) => !prev)
                     }
                     className='relative flex h-9 w-9 sm:h-10 sm:w-10 lg:h-12 lg:w-12 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >

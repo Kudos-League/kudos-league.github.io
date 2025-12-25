@@ -17,6 +17,7 @@ interface SearchModalProps {
 export default function SearchModal({ open, onClose }: SearchModalProps) {
     const navigate = useNavigate();
     const [searchText, setSearchText] = useState('');
+    const inputRef = React.useRef<HTMLInputElement>(null);
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
     const searchingActive = debouncedSearch.length >= 2;
@@ -38,10 +39,21 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
     const hasResults = userSearchResults.length > 0 || searchResults.length > 0 // || eventSearchResults.length > 0;
 
-    // Reset search when modal closes
+    // Reset search when modal closes, and focus input when modal opens
     useEffect(() => {
         if (!open) {
             setSearchText('');
+        }
+        else {
+            // Focus input after modal animation completes (300ms based on the transition duration)
+            // This will automatically trigger the mobile keyboard
+            setTimeout(() => {
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                    // Ensure cursor is at the end and input is ready
+                    inputRef.current.setSelectionRange(0, 0);
+                }
+            }, 300);
         }
     }, [open]);
 
@@ -92,6 +104,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                             <div className='relative'>
                                 <MagnifyingGlassIcon className='absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400' />
                                 <input
+                                    ref={inputRef}
                                     type='text'
                                     placeholder='Search users, posts, events…'
                                     value={searchText}

@@ -44,8 +44,8 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
     const postIsPast = !!handshake?.post?.isPast;
 
     const canAccept = (() => {
-        return !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && handshake?.post?.type &&
-        handshake?.post?.type === 'gift' ? postSenderID === currentUserId : receiverID === currentUserId
+        // Only the post creator (User A) can accept, regardless of gift or request type
+        return !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && postSenderID === currentUserId;
     })();
 
     const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
@@ -68,13 +68,10 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
     const canComplete = (() => {
         if (status !== 'accepted') return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
-        if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && receiverID === currentUserId;
-        }
-        if (handshake.post.type === 'gift') {
-            return receiverID !== undefined && receiverID !== currentUserId;
-        }
-        return false;
+        // Only the item receiver can complete the exchange and give kudos
+        // For requests: post creator receives the item (can complete)
+        // For gifts: sender receives the item (can complete)
+        return currentUserId === itemReceiverID;
     })();
 
 

@@ -11,8 +11,10 @@ import ImageModalCarousel from '@/components/ImageModalCarousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
+import DropdownPicker from '@/components/forms/DropdownPicker';
 import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import { useCategories } from '@/shared/api/queries/categories';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { apiMutate } from '@/shared/api/apiClient';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
@@ -29,7 +31,8 @@ import type {
     CreateHandshakeDTO,
     PostDTO,
     LocationDTO,
-    UpdatePostDTO
+    UpdatePostDTO,
+    CategoryDTO
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
@@ -80,12 +83,15 @@ export default function PostDetails(props: Props) {
     const likeMut = useLikePost();
     const reportMut = useReportPost();
     const createHsMut = useCreateHandshake();
+    const { data: categories = [] } = useCategories();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({
         title: '',
         body: '',
         tags: [] as string[],
+        type: 'gift' as 'gift' | 'request',
+        categoryID: null as number | null,
         location: null as LocationDTO | null,
         itemsLimit: '' as string
     });
@@ -508,6 +514,8 @@ export default function PostDetails(props: Props) {
             title: postDetails.title,
             body: postDetails.body,
             tags: postDetails.tags?.map((tag) => tag.name) || [],
+            type: postDetails.type as 'gift' | 'request',
+            categoryID: postDetails.category?.id || null,
             location: postDetails.location || null,
             itemsLimit:
                 typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0
@@ -533,7 +541,9 @@ export default function PostDetails(props: Props) {
             const updateData: any = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags
+                tags: editData.tags,
+                type: editData.type,
+                categoryID: editData.categoryID
             };
 
             if (
@@ -860,6 +870,51 @@ export default function PostDetails(props: Props) {
                     </button>
                     <h3 className='text-lg font-semibold pr-8'>Edit Post</h3>
 
+                    <div className='flex gap-3'>
+                        <Button
+                            variant={editData.type === 'gift' ? 'primary' : 'secondary'}
+                            onClick={() =>
+                                setEditData({
+                                    ...editData,
+                                    type: 'gift'
+                                })
+                            }
+                        >
+                            Give stuff
+                        </Button>
+                        <Button
+                            variant={editData.type === 'request' ? 'primary' : 'secondary'}
+                            onClick={() =>
+                                setEditData({
+                                    ...editData,
+                                    type: 'request'
+                                })
+                            }
+                        >
+                            Request stuff
+                        </Button>
+                    </div>
+
+                    <div>
+                        <label className='block text-sm font-medium mb-1'>
+                            Category
+                        </label>
+                        <DropdownPicker
+                            options={categories.map((c: CategoryDTO) => ({
+                                label: c.name,
+                                value: String(c.id)
+                            }))}
+                            value={editData.categoryID !== null ? String(editData.categoryID) : ''}
+                            onChange={(val) => {
+                                const parsed = val ? parseInt(val) : null;
+                                setEditData({
+                                    ...editData,
+                                    categoryID: parsed
+                                });
+                            }}
+                        />
+                    </div>
+
                     <div>
                         <label className='block text-sm font-medium mb-1'>
                             Title
@@ -920,7 +975,7 @@ export default function PostDetails(props: Props) {
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
-                            Number of items (leave blank for unlimited)
+                            Number of items if applicable (leave blank for unlimited, 1 in case of doubt or non applicable)
                         </label>
                         <input
                             className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'

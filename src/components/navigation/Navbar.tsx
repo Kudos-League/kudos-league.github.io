@@ -8,8 +8,7 @@ import {
     InformationCircleIcon,
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
-    UserCircleIcon,
-    MagnifyingGlassIcon
+    UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -258,15 +257,23 @@ export default function Navbar({
         <>
             <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
-                    <div className='flex-shrink-0'>
+                    <div className='flex-shrink-0 mr-2'>
                         {brand || <></>}
                     </div>
+                    <Link
+                        to={routes.donate}
+                        className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                        aria-label='Donate'
+                    >
+                        <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                        <span>Donate</span>
+                    </Link>
                 </div>
 
                 <div className='flex flex-1 items-center min-w-0 px-2'>
                     {isLoggedIn && (
-                        <div className='hidden lg:flex w-full justify-center'>
-                            <SearchBar className='w-full max-w-3xl' />
+                        <div className='flex w-full justify-center'>
+                            <SearchBar className='w-full max-w-3xl' onOpenSearchModal={onOpenSearch} />
                         </div>
                     )}
                 </div>
@@ -276,14 +283,6 @@ export default function Navbar({
 
                     {isLoggedIn ? (
                         <>
-                            <Link
-                                to={routes.donate}
-                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
-                                aria-label='Donate'
-                            >
-                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span>Donate</span>
-                            </Link>
                             {/* Create button - Desktop only */}
                             <Link
                                 to={routes.createPost}
@@ -292,14 +291,7 @@ export default function Navbar({
                             >
                                 Create
                             </Link>
-                            {/* Mobile Search Button */}
-                            <button
-                                onClick={onOpenSearch}
-                                className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
-                                aria-label='Search'
-                            >
-                                <MagnifyingGlassIcon className='h-5 w-5 sm:h-6 sm:w-6' />
-                            </button>
+                            {/* Mobile Search Button - Hidden since SearchBar is always visible */}
                             {/* DMs button - Desktop only */}
                             <button
                                 onClick={onOpenDMs}
@@ -326,15 +318,6 @@ export default function Navbar({
                         </>
                     ) : (
                         <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
-                            <Link
-                                to={routes.donate}
-                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
-                                aria-label='Donate'
-                            >
-                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span>Donate</span>
-                            </Link>
-
                             <Link
                                 to={routes.login}
                                 className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'

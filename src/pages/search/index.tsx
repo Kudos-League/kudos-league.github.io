@@ -151,14 +151,14 @@ export default function SearchPage() {
         <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4'>
             <div className='flex flex-col gap-4'>
                 <div className='flex items-center gap-3'>
-                    {/* <button
+                    <button
                         onClick={() => navigate(-1)}
                         className='flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
                         aria-label='Go back'
                     >
                         <ArrowLeft className='w-5 h-5' />
                         <span className='font-medium'>Back</span>
-                    </button> */}
+                    </button>
                 </div>
                 <div className='relative'>
                     <input

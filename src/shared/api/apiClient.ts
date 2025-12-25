@@ -22,7 +22,15 @@ export async function apiMutate<T, B>(
     opts?: { as?: 'json' | 'form' | 'auto'; params?: any; headers?: any }
 ) {
     try {
+        console.log(`[apiMutate] Calling ${method.toUpperCase()} ${url}`);
+        console.log('[apiMutate] Body:', body);
+        console.log('[apiMutate] Options:', opts);
+
         const { data, headers } = buildBody(body, opts?.as ?? 'auto');
+
+        console.log('[apiMutate] After buildBody - data type:', data instanceof FormData ? 'FormData' : typeof data);
+        console.log('[apiMutate] Headers:', headers);
+
         const res = await http.request<T>({
             url,
             method,
@@ -30,9 +38,12 @@ export async function apiMutate<T, B>(
             params: opts?.params,
             headers: { ...opts?.headers, ...headers }
         });
+
+        console.log('[apiMutate] Response received:', res.data);
         return res.data;
     }
     catch (err) {
+        console.error('[apiMutate] Error occurred:', err);
         throw extractApiErrors(err);
     }
 }

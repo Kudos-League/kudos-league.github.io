@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/useAuth';
 import {
     useUpdatePost
 } from '@/shared/api/mutations/posts';
+import { useCategories } from '@/shared/api/queries/categories';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { getImagePath } from '@/shared/api/config';
@@ -14,9 +15,11 @@ import { getImagePath } from '@/shared/api/config';
 import type {
     PostDTO,
     LocationDTO,
-    UpdatePostDTO
+    UpdatePostDTO,
+    CategoryDTO
 } from '@/shared/api/types';
 import Button from '../common/Button';
+import DropdownPicker from '@/components/forms/DropdownPicker';
 
 interface Props {
     post: PostDTO;
@@ -32,12 +35,15 @@ export default function PostEditForm({
     const navigate = useNavigate();
     const { user } = useAuth();
     const updatePostMut = useUpdatePost();
+    const { data: categories = [] } = useCategories();
 
     const [editData, setEditData] = useState({
         title: post.title,
         body: post.body,
         tags: post.tags?.map((tag) => tag.name) || [],
         location: post.location || null as LocationDTO | null,
+        type: post.type as 'gift' | 'request',
+        categoryID: post.category?.id || null as number | null,
         itemsLimit:
             typeof post.itemsLimit === 'number' && post.itemsLimit > 0
                 ? String(post.itemsLimit)
@@ -118,7 +124,9 @@ export default function PostEditForm({
             const updateData: any = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags
+                tags: editData.tags,
+                type: editData.type,
+                categoryID: editData.categoryID
             };
 
             if (
@@ -134,12 +142,21 @@ export default function PostEditForm({
 
             // Send new files to upload
             if (editImages.length > 0) {
+                console.log('[Images] New images to upload:', editImages.length, editImages);
                 updateData.files = editImages;
+            }
+            else {
+                console.log('[Images] No new images to upload');
             }
 
             // Always send remaining images (with deleted ones filtered out)
             const remainingImages = post.images?.filter((url) => !deletedImageUrls.has(url)) || [];
+            console.log('[Images] Post original images:', post.images);
+            console.log('[Images] Deleted image URLs:', Array.from(deletedImageUrls));
+            console.log('[Images] Remaining images to keep:', remainingImages);
             updateData.images = remainingImages;
+            console.log('[Images] Final updateData.images:', updateData.images);
+            console.log('[Images] Final updateData.files:', updateData.files);
 
             const updated = await updatePostMut.mutateAsync({
                 id: post.id,
@@ -193,6 +210,53 @@ export default function PostEditForm({
             {/* Edit Form */}
             <div className='bg-white dark:bg-gray-800 p-6 rounded-lg space-y-4 text-gray-900 dark:text-gray-100 w-full overflow-x-hidden box-border'>
                 <h1 className='text-2xl font-bold mb-6'>Edit Post</h1>
+
+                <div className='flex gap-3'>
+                    <Button
+                        variant={editData.type === 'gift' ? 'primary' : 'secondary'}
+                        onClick={() =>
+                            setEditData({
+                                ...editData,
+                                type: 'gift'
+                            })
+                        }
+                        disabled={isSaving}
+                    >
+                        Give stuff
+                    </Button>
+                    <Button
+                        variant={editData.type === 'request' ? 'primary' : 'secondary'}
+                        onClick={() =>
+                            setEditData({
+                                ...editData,
+                                type: 'request'
+                            })
+                        }
+                        disabled={isSaving}
+                    >
+                        Request stuff
+                    </Button>
+                </div>
+
+                <div>
+                    <label className='block text-sm font-medium mb-1'>
+                        Category
+                    </label>
+                    <DropdownPicker
+                        options={categories.map((c: CategoryDTO) => ({
+                            label: c.name,
+                            value: String(c.id)
+                        }))}
+                        value={editData.categoryID !== null ? String(editData.categoryID) : ''}
+                        onChange={(val) => {
+                            const parsed = val ? parseInt(val) : null;
+                            setEditData({
+                                ...editData,
+                                categoryID: parsed
+                            });
+                        }}
+                    />
+                </div>
 
                 <div className='w-full box-border'>
                     <label className='block text-sm font-medium mb-1'>
@@ -274,7 +338,7 @@ export default function PostEditForm({
 
                 <div>
                     <label className='block text-sm font-medium mb-1'>
-                        Number of items (leave blank for unlimited)
+                        Number of items if applicable (leave blank for unlimited, 1 in case of doubt or not applicable)
                     </label>
                     <input
                         className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'

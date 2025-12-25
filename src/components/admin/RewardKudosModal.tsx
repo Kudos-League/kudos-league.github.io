@@ -61,7 +61,7 @@ export default function RewardKudosModal({
                        bg-black/60'
             role='dialog'
             aria-modal='true'
-            aria-label={`Resolve item ${reportId}`}
+            aria-label={`Resolve help ${reportId}`}
         >
             <div
                 className='w-full max-w-md rounded-2xl p-5 shadow-xl
@@ -70,7 +70,7 @@ export default function RewardKudosModal({
                            light:border light:border-gray-200
                            dark:border dark:border-neutral-800'
             >
-                <h2 className='text-lg font-semibold'>Resolve Item</h2>
+                <h2 className='text-lg font-semibold'>Resolve Help</h2>
                 <p
                     className='mt-1 text-sm
                                light:text-gray-600

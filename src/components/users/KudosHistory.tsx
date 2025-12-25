@@ -105,8 +105,6 @@ function renderMetadata(item: KudosHistoryDTO) {
     }
 
     if (item.source === 'reward-offer') {
-        const kudosFinal = Number(metadata.kudosFinal);
-        const hasFinal = Number.isFinite(kudosFinal);
         const kudosOffered = Number(metadata.kudosOffered);
         const hasOffered = Number.isFinite(kudosOffered);
 
@@ -117,10 +115,10 @@ function renderMetadata(item: KudosHistoryDTO) {
                         Status: {String(metadata.status)}
                     </div>
                 ) : null}
-                {hasFinal ? (
-                    <div className='text-sm'>Final kudos: {kudosFinal}</div>
+                {typeof item.total === 'number' ? (
+                    <div className='text-sm'>Final kudos: {item.total}</div>
                 ) : null}
-                {!hasFinal && hasOffered ? (
+                {typeof item.total !== 'number' && hasOffered ? (
                     <div className='text-sm'>Offered kudos: {kudosOffered}</div>
                 ) : null}
             </>

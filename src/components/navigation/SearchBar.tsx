@@ -11,9 +11,10 @@ interface SearchBarProps {
     onClose?: () => void;
     autoFocus?: boolean;
     className?: string;
+    onOpenSearchModal?: () => void;
 }
 
-export default function SearchBar({ onClose, autoFocus = false, className = '' }: SearchBarProps) {
+export default function SearchBar({ onClose, autoFocus = false, className = '', onOpenSearchModal }: SearchBarProps) {
     const navigate = useNavigate();
     const [searchText, setSearchText] = React.useState('');
     const [showSearchDropdown, setShowSearchDropdown] = React.useState(false);
@@ -77,8 +78,15 @@ export default function SearchBar({ onClose, autoFocus = false, className = '' }
                 placeholder='Search…'
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
+                onClick={() => {
+                    // On mobile (< lg), open the search modal instead of dropdown
+                    if (window.innerWidth < 1024 && onOpenSearchModal) {
+                        onOpenSearchModal();
+                    }
+                }}
                 onFocus={() => {
-                    if (searchingActive && (userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0)) {
+                    // Only show dropdown on desktop (lg and above)
+                    if (window.innerWidth >= 1024 && searchingActive && (userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0)) {
                         setShowSearchDropdown(true);
                     }
                 }}
