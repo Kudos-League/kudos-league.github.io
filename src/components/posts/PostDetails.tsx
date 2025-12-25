@@ -561,11 +561,9 @@ export default function PostDetails(props: Props) {
                 updateData.files = editImages;
             }
 
-            // Send remaining images (with deleted ones filtered out)
-            if (deletedImageIndices.size > 0) {
-                const remainingImages = postDetails.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
-                updateData.images = remainingImages;
-            }
+            // Always send remaining images (with deleted ones filtered out)
+            const remainingImages = postDetails.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
+            updateData.images = remainingImages;
 
             const updated = await updatePostMut.mutateAsync({
                 id: postDetails.id,
