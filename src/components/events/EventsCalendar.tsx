@@ -209,6 +209,9 @@ export default function Events({ events }: Props) {
                         </Button>
 
                         <div className='flex gap-2 ml-auto'>
+                            <Button onClick={() => navigate(`/create-event?startDate=${viewDate?.toISOString()}&endDate=${viewDate?.toISOString()}`)}>
+                                + New Event
+                            </Button>
                             <Button
                                 onClick={() => setEventFilter('all')}
                                 className={eventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}

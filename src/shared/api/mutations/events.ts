@@ -18,8 +18,11 @@ export function useCreateEvent(p0: { onSuccess: () => void; }) {
             );
         },
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qk.event(created.id as number), created);
+            // Refetch after a delay to allow backend to process
+            setTimeout(() => {
+                qc.invalidateQueries({ queryKey: ['events'] });
+            }, 1000);
             p0?.onSuccess?.();
         }
     });
@@ -78,7 +81,7 @@ export const useUpdateEvent = () => {
         onSuccess: (updatedEvent) => {
             // Update the specific event in the cache
             queryClient.setQueryData(['event', updatedEvent.id], updatedEvent);
-            
+
             // Invalidate events list to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['events'] });
         },
@@ -87,3 +90,18 @@ export const useUpdateEvent = () => {
         }
     });
 };
+
+export function useDeleteEvent() {
+    const { token } = useAuth();
+    const qc = useQueryClient();
+
+    return useMutation<EventDTO, string[], number>({
+        mutationFn: async (eventId) => {
+            if (!token) throw ['Not authenticated'];
+            return apiMutate<EventDTO, void>(`/events/${eventId}`, 'delete');
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['events'] });
+        }
+    });
+}

@@ -9,6 +9,7 @@ import {
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
+
 import AvatarComponent from '@/components/users/Avatar';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '@/components/common/Pill';
@@ -47,25 +48,25 @@ const SocialBadgeIcon = ({ src, alt, bg, label }: { src?: string; alt: string; b
 type TriggerVariant = 'name' | 'avatar-name';
 
 interface Props {
-    user?: UserDTO;
-    reportsThisMonth?: number;
-    large?: boolean;
-    triggerVariant?: TriggerVariant;
-    className?: string;
-    hoverDelayOpenMs?: number;
-    hoverDelayCloseMs?: number;
-    panelWidth?: number;
-    sideOffset?: number;
-    interactive?: boolean;
-    triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
-    subtitle?: React.ReactNode;
-    centered?: boolean;
-    nameClassName?: string;
-    subtitleClassName?: string;
-    disableTooltip?: boolean;
-    onAdminReportOpen?: (userID: number) => void;
-    showKudos?: boolean;
-    compact?: boolean;
+  user?: UserDTO;
+  reportsThisMonth?: number;
+  large?: boolean;
+  triggerVariant?: TriggerVariant;
+  className?: string;
+  hoverDelayOpenMs?: number;
+  hoverDelayCloseMs?: number;
+  panelWidth?: number;
+  sideOffset?: number;
+  interactive?: boolean;
+  triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
+  subtitle?: React.ReactNode;
+  centered?: boolean;
+  nameClassName?: string;
+  subtitleClassName?: string;
+  disableTooltip?: boolean;
+  onAdminReportOpen?: (userID: number) => void;
+  showKudos?: boolean;
+  compact?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -104,7 +105,7 @@ const UserCard: React.FC<Props> = ({
     const { user: currentUser } = useAuth();
     const [adminReportOpen, setAdminReportOpen] = useState(false);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
-    
+
     // Detect mobile devices
     const isMobile = useMemo(() => {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -115,10 +116,10 @@ const UserCard: React.FC<Props> = ({
     const username = user?.username;
     const displayName = user?.displayName || username || 'Anonymous';
     const kudos = typeof user?.kudos === 'number' ? user.kudos : 0;
-    
+
     // 1. Define the handler that navigates to the profile
     const handleNavigate = (e: React.MouseEvent) => {
-        // Prevent Tippy/other parent handlers from firing on this click
+    // Prevent Tippy/other parent handlers from firing on this click
         e.stopPropagation();
         if (user?.id) {
             navigate(`/user/${user.id}`);
@@ -229,13 +230,13 @@ const UserCard: React.FC<Props> = ({
     // useBlockedUsers handles fetching and state
 
     const tippyTrigger =
-        triggerMode === 'hover'
-            ? 'mouseenter'
-            : triggerMode === 'click'
-                ? 'click'
-                : triggerMode === 'focus'
-                    ? 'focus'
-                    : 'mouseenter focus';
+    triggerMode === 'hover'
+        ? 'mouseenter'
+        : triggerMode === 'click'
+            ? 'click'
+            : triggerMode === 'focus'
+                ? 'focus'
+                : 'mouseenter focus';
 
     if (disableTooltip || isMobile) {
         return (
@@ -301,11 +302,11 @@ const UserCard: React.FC<Props> = ({
                             "data-[open='true']:translate-y-0"
                         ].join(' ')}
                         style={
-                        {
-                            ['--card-w' as any]: `${panelWidth}px`
-                        } as React.CSSProperties
+              {
+                  ['--card-w' as any]: `${panelWidth}px`
+              } as React.CSSProperties
                         }
-                        onClick ={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                     >
                         {user ? (
                             <div className='flex items-start gap-3'>
@@ -325,7 +326,7 @@ const UserCard: React.FC<Props> = ({
                                             <button
                                                 onClick={() =>
                                                     user.id &&
-                                                    navigate(`/user/${user.id}`)
+                          navigate(`/user/${user.id}`)
                                                 }
                                                 className='text-sm font-bold hover:underline truncate'
                                                 title={username ?? 'View profile'}
@@ -383,7 +384,7 @@ const UserCard: React.FC<Props> = ({
                                                         <ShieldCheckIcon className='h-4 w-4' />
                                                     }
                                                 >
-                                                    Verified
+                          Verified
                                                 </Pill>
                                             ) : (
                                                 <Pill
@@ -393,7 +394,7 @@ const UserCard: React.FC<Props> = ({
                                                         <ShieldExclamationIcon className='h-4 w-4' />
                                                     }
                                                 >
-                                                    Not Verified
+                          Not Verified
                                                 </Pill>
                                             )}
                                             <div className='ml-1 inline-flex items-center gap-1'>
@@ -420,7 +421,7 @@ const UserCard: React.FC<Props> = ({
                                     <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
                                         <div className='truncate'>
                                             <span className='opacity-70'>
-                                            Kudos:
+                        Kudos:
                                             </span>{' '}
                                             {typeof user.kudos === 'number'
                                                 ? user.kudos
@@ -428,14 +429,14 @@ const UserCard: React.FC<Props> = ({
                                         </div>
                                         <div className='truncate'>
                                             <span className='opacity-70'>
-                                            Joined:
+                        Joined:
                                             </span>{' '}
                                             {fmtDate(user.createdAt) || '—'}
                                         </div>
                                         {user.email ? (
                                             <div className='truncate col-span-2'>
                                                 <span className='opacity-70'>
-                                                Email:
+                          Email:
                                                 </span>{' '}
                                                 {user.email}
                                             </div>
@@ -446,13 +447,13 @@ const UserCard: React.FC<Props> = ({
                                         <button
                                             onClick={() =>
                                                 user.id &&
-                                                navigate(`/user/${user.id}`)
+                        navigate(`/user/${user.id}`)
                                             }
                                             className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                             bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
                                             hover:opacity-90 active:opacity-80 transition'
                                         >
-                                            View Profile
+                      View Profile
                                         </button>
                                         {currentUser && user?.id && currentUser.id !== user.id && (
                                             <div className='inline-block ml-2'>
@@ -472,7 +473,7 @@ const UserCard: React.FC<Props> = ({
                                                         bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700
                                                         hover:opacity-90 active:opacity-80 transition'
                                                     >
-                                                        Unblock
+                            Unblock
                                                     </button>
                                                 ) : (
                                                     <button
@@ -489,7 +490,7 @@ const UserCard: React.FC<Props> = ({
                                                         className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                                         bg-red-600 text-white hover:opacity-90 active:opacity-80 transition'
                                                     >
-                                                        Block
+                            Block
                                                     </button>
                                                 )}
                                             </div>
@@ -501,7 +502,7 @@ const UserCard: React.FC<Props> = ({
                             <div className='flex items-center justify-center py-6'>
                                 <div className='h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin' />
                                 <span className='ml-2 text-xs text-neutral-600 dark:text-neutral-300'>
-                                    Loading...
+                  Loading...
                                 </span>
                             </div>
                         )}

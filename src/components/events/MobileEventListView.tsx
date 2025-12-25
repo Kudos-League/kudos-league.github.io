@@ -43,9 +43,8 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
         }> = [];
 
         if (viewType === 'week') {
-            // Show 7 days starting from current week + offset
-            const baseStart = startOfWeek(now, { weekStartsOn: 0 });
-            const weekStart = addDays(baseStart, currentOffset * 7);
+            // Show 7 days starting from today (when offset=0) + offset
+            const weekStart = addDays(startOfDay(now), currentOffset * 7);
 
             for (let i = 0; i < 7; i++) {
                 const dayStart = startOfDay(addDays(weekStart, i));
@@ -95,11 +94,10 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
             }
         } 
         else if (viewType === 'month') {
-            // Show 30 days starting from current month + offset
-            const baseStart = startOfMonth(now);
-            const monthStart = addMonths(baseStart, currentOffset);
+            // Show 31 days starting from today (when offset=0) + offset
+            const monthStart = addDays(startOfDay(now), currentOffset * 31);
 
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 31; i++) {
                 const dayStart = startOfDay(addDays(monthStart, i));
                 const dayEnd = endOfDay(addDays(monthStart, i));
 
@@ -341,7 +339,8 @@ export default function MobileEventListView({ events, onSelectPeriod, locationFi
                 <div className="flex justify-between items-center gap-2">
                     <button
                         onClick={() => setCurrentOffset(prev => prev - 1)}
-                        className="px-3 py-2 bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-zinc-600"
+                        disabled={currentOffset === 0}
+                        className="px-3 py-2 bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         ← Previous
                     </button>

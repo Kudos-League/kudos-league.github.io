@@ -451,11 +451,16 @@ const EditProfile: React.FC<Props> = ({
             console.log('Submitting payload:', payload); // DEBUG: See what's being sent
         
             const updatedUser = await updateUserMutation.mutateAsync(payload);
-        
+
             console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
             if (updatedUser?.id && updatedUser.id === auth.user?.id) {
-                updateUserCache(updatedUser);
+                // Apply cache busting to avatar URL so the navbar shows the updated image
+                const userToCache = {
+                    ...updatedUser,
+                    avatar: updatedUser.avatar ? bustCache(updatedUser.avatar) : null
+                };
+                updateUserCache(userToCache);
             }
 
             if (updatedUser?.id && setTargetUser) {

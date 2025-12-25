@@ -48,12 +48,13 @@ interface Props {
     fetchPostDetails?: (id: number) => void;
 }
 
-function EditPostButton({ onClick }: { onClick: () => void }) {
+function EditPostButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
     return (
         <Button
             onClick={onClick}
             className='inline-flex items-center gap-1 text-sm font-semibold'
             variant='secondary'
+            disabled={disabled}
         >
             <PencilSquareIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
             Edit
@@ -732,6 +733,20 @@ export default function PostDetails(props: Props) {
     
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
+            {/* Overlay when editing */}
+            {isEditing && (
+                <div
+                    className='fixed inset-0 z-50 bg-black/50 cursor-pointer'
+                    onClick={() => {
+                        setIsEditing(false);
+                        setEditImages([]);
+                        setEditImageError(null);
+                        setDeletedImageIndices(new Set());
+                    }}
+                    style={{ pointerEvents: 'auto' }}
+                />
+            )}
+
             {/* Back Button */}
             <button
                 onClick={() => navigate(-1)}
@@ -751,12 +766,13 @@ export default function PostDetails(props: Props) {
                 {/* Post Owner Actions */}
                 {isPostOwner && (
                     <div className='flex flex-row gap-2 flex-shrink-0'>
-                        <EditPostButton onClick={handleStartEdit} />
+                        <EditPostButton onClick={handleStartEdit} disabled={isEditing} />
                         {postDetails.status !== 'closed' && (
                             <Button
                                 onClick={handleClosePost}
                                 className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
                                 variant='danger'
+                                disabled={isEditing}
                             >
                                 Close Post
                             </Button>
@@ -823,7 +839,10 @@ export default function PostDetails(props: Props) {
 
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100 relative'>
+                <div
+                    className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg space-y-4 text-gray-900 dark:text-gray-100 z-50 fixed top-20 left-4 right-4 max-w-4xl mx-auto w-[calc(100%-2rem)] max-h-[calc(100vh-8rem)] overflow-y-auto'
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <button
                         onClick={() => {
                             setIsEditing(false);
@@ -1082,7 +1101,7 @@ export default function PostDetails(props: Props) {
                     {showAcceptHighestKudosButton && (
                         <Button
                             onClick={handleAcceptHighestKudos}
-                            disabled={acceptingHighestKudos}
+                            disabled={acceptingHighestKudos || isEditing}
                             variant='success'
                             className='flex items-center gap-2'
                         >
@@ -1133,14 +1152,14 @@ export default function PostDetails(props: Props) {
 
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some((h: any) => 
+                    !postDetails.handshakes?.some((h: any) =>
                         h.senderID === user?.id && h.status !== 'cancelled'
                     ) &&
                     (
                         <div className='mt-4 flex justify-center'>
                             <Button
                                 onClick={handleSubmitHandshake}
-                                disabled={creatingHandshake}
+                                disabled={creatingHandshake || isEditing}
                             >
                                 {creatingHandshake
                                     ? 'Creating...'
@@ -1174,9 +1193,9 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user}
-                    allowDelete={!!user}
-                    allowEdit={!!user}
+                    showSendMessage={!!user && !isEditing}
+                    allowDelete={!!user && !isEditing}
+                    allowEdit={!!user && !isEditing}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
                 />

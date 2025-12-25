@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { endOfDay } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { CreateEventDTO, LocationDTO } from '@/shared/api/types';
 import UniversalDatePicker from '@/components/DatePicker';
@@ -13,6 +14,7 @@ export default function CreateEvent() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
 
     const createEvent = useCreateEvent({
         onSuccess: () => {
@@ -31,8 +33,33 @@ export default function CreateEvent() {
     const now = new Date();
     const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    const [startDate, setStartDate] = useState(now);
-    const [endDate, setEndDate] = useState<Date | null>(oneDayLater);
+    // Parse dates from query params if available
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+
+    let initialStartDate: Date;
+    let initialEndDate: Date;
+
+    if (startDateParam && endDateParam) {
+        // When dates are pre-filled from calendar:
+        // - Start time: max of (5 minutes from now, start of the period)
+        // - End time: end of the provided end date
+        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+        const periodStartDate = new Date(startDateParam);
+        const periodEndDate = new Date(endDateParam);
+
+        // Use the later of: 5 minutes from now, or the period start date
+        initialStartDate = fiveMinutesFromNow > periodStartDate ? fiveMinutesFromNow : periodStartDate;
+        initialEndDate = endOfDay(periodEndDate);
+    }
+    else {
+        // Default behavior when no dates provided
+        initialStartDate = now;
+        initialEndDate = oneDayLater;
+    }
+
+    const [startDate, setStartDate] = useState(initialStartDate);
+    const [endDate, setEndDate] = useState<Date | null>(initialEndDate);
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
     const dateValidation = useMemo(() => {
@@ -311,10 +338,9 @@ export default function CreateEvent() {
                         <label className='block font-semibold'>
                             Pick a Location
                         </label>
-                        <p className='text-yellow-700 text-sm font-medium flex items-center'>
-                            <span className='mr-2'>⚠️</span>
-                            The &nbsp;<u>EXACT</u>&nbsp; event location will be
-                            visible to all participants.
+                        <p className='text-yellow-700 text-sm font-medium flex items-start gap-2'>
+                            <span className='flex-shrink-0'>⚠️</span>
+                            <span>The <u>EXACT</u> event location will be visible to all participants.</span>
                         </p>
                         <div className='border-2 rounded-lg overflow-hidden'>
                             <MapDisplay

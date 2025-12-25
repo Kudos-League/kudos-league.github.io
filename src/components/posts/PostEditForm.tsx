@@ -8,7 +8,7 @@ import {
     useUpdatePost
 } from '@/shared/api/mutations/posts';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { getImagePath } from '@/shared/api/config';
 
 import type {
@@ -46,7 +46,8 @@ export default function PostEditForm({
     const [editImages, setEditImages] = useState<File[]>([]);
     const [editImageError, setEditImageError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
+    const [deletedImageUrls, setDeletedImageUrls] = useState<Set<string>>(new Set());
+    const [showLocationEditor, setShowLocationEditor] = useState(false);
 
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
@@ -77,10 +78,10 @@ export default function PostEditForm({
         setEditImages((prev) => prev.filter((_, i) => i !== idx));
     };
 
-    const removeExistingImage = (idx: number) => {
-        setDeletedImageIndices((prev) => {
+    const removeExistingImage = (imageUrl: string) => {
+        setDeletedImageUrls((prev) => {
             const next = new Set(prev);
-            next.add(idx);
+            next.add(imageUrl);
             return next;
         });
     };
@@ -136,12 +137,9 @@ export default function PostEditForm({
                 updateData.files = editImages;
             }
 
-            // Send remaining images (with deleted ones filtered out)
-            // Backend expects images as an array, but toFormData will wrap arrays of primitives in an array structure
-            if (deletedImageIndices.size > 0) {
-                const remainingImages = post.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
-                updateData.images = remainingImages;
-            }
+            // Always send remaining images (with deleted ones filtered out)
+            const remainingImages = post.images?.filter((url) => !deletedImageUrls.has(url)) || [];
+            updateData.images = remainingImages;
 
             const updated = await updatePostMut.mutateAsync({
                 id: post.id,
@@ -150,7 +148,7 @@ export default function PostEditForm({
             setPostDetails({ ...post, ...updated });
             setEditImages([]);
             setEditImageError(null);
-            setDeletedImageIndices(new Set());
+            setDeletedImageUrls(new Set());
             navigate(`/post/${post.id}`);
         }
         catch (err) {
@@ -184,7 +182,8 @@ export default function PostEditForm({
             {/* Back Button */}
             <button
                 onClick={handleCancel}
-                className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                disabled={isSaving}
+                className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                 aria-label='Go back'
             >
                 <ArrowLeftIcon className='w-5 h-5' />
@@ -200,7 +199,7 @@ export default function PostEditForm({
                         Title
                     </label>
                     <input
-                        className='w-full box-border border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                        className='w-full box-border border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
                         value={editData.title}
                         onChange={(e) =>
                             setEditData({
@@ -209,6 +208,7 @@ export default function PostEditForm({
                             })
                         }
                         placeholder='Enter post title'
+                        disabled={isSaving}
                     />
                 </div>
 
@@ -217,7 +217,7 @@ export default function PostEditForm({
                         Description
                     </label>
                     <textarea
-                        className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
+                        className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed'
                         style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
                         rows={4}
                         value={editData.body}
@@ -228,6 +228,7 @@ export default function PostEditForm({
                             })
                         }
                         placeholder='Enter post description'
+                        disabled={isSaving}
                     />
                 </div>
 
@@ -239,18 +240,36 @@ export default function PostEditForm({
                 </div>
 
                 <div>
-                    <label className='block text-sm font-medium mb-2'>
-                        Location
-                    </label>
+                    <button
+                        type='button'
+                        onClick={() => setShowLocationEditor(!showLocationEditor)}
+                        className='w-full flex items-center justify-between px-4 py-3 bg-brand-50 dark:bg-brand-900/20 border-2 border-brand-500 dark:border-brand-400 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors'
+                    >
+                        <span className='text-sm font-semibold text-brand-700 dark:text-brand-300'>
+                            Change Location
+                        </span>
+                        <ChevronDownIcon
+                            className={`w-5 h-5 text-brand-600 dark:text-brand-400 transition-transform ${showLocationEditor ? 'rotate-180' : ''}`}
+                        />
+                    </button>
 
-                    <MapDisplay
-                        edit
-                        regionID={editData.location?.regionID}
-                        height={300}
-                        exactLocation={isPostOwner}
-                        onLocationChange={handleLocationChange}
-                        shouldSavedLocationButton={true}
-                    />
+                    {showLocationEditor && (
+                        <div className='mt-4'>
+                            <MapDisplay
+                                edit
+                                regionID={editData.location?.regionID}
+                                coordinates={editData.location ? {
+                                    latitude: editData.location.latitude,
+                                    longitude: editData.location.longitude,
+                                    name: editData.location.name
+                                } : null}
+                                height={300}
+                                exactLocation={isPostOwner}
+                                onLocationChange={handleLocationChange}
+                                shouldSavedLocationButton={true}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div>
@@ -277,7 +296,7 @@ export default function PostEditForm({
 
                 <div className='w-full overflow-hidden box-border'>
                     <label className='block text-sm font-semibold mb-2'>
-                        Images ({(post.images?.length || 0) - deletedImageIndices.size + editImages.length}/{MAX_FILE_COUNT})
+                        Images ({(post.images?.length || 0) - deletedImageUrls.size + editImages.length}/{MAX_FILE_COUNT})
                     </label>
                     {editImageError && (
                         <p className='text-sm text-red-600 dark:text-red-400 mb-2'>{editImageError}</p>
@@ -287,28 +306,28 @@ export default function PostEditForm({
                         accept='image/*'
                         multiple
                         onChange={handleImageUpload}
-                        className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
-                        disabled={((post.images?.length || 0) - deletedImageIndices.size + editImages.length) >= MAX_FILE_COUNT}
+                        className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'
+                        disabled={((post.images?.length || 0) - deletedImageUrls.size + editImages.length) >= MAX_FILE_COUNT || isSaving}
                     />
                     {((post.images && post.images.length > 0) || editImages.length > 0) && (
                         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
                             {/* Existing images from the post */}
-                            {post.images?.map((url, index) => {
-                                if (deletedImageIndices.has(index)) return null;
+                            {post.images?.map((url) => {
+                                if (deletedImageUrls.has(url)) return null;
                                 const imagePath = getImagePath(url);
                                 if (!imagePath) return null;
                                 return (
-                                    <div key={`existing-${index}`} className='relative group'>
+                                    <div key={`existing-${url}`} className='relative group'>
                                         <img
                                             src={imagePath}
-                                            alt={`Image ${index + 1}`}
+                                            alt={`Existing image`}
                                             className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
                                         />
                                         <Button
                                             type='button'
                                             shape='circle'
                                             variant='danger'
-                                            onClick={() => removeExistingImage(index)}
+                                            onClick={() => removeExistingImage(url)}
                                             className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
                                             title='Remove image'
                                         >

@@ -23,7 +23,7 @@ import {
     endOfDay
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
+import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight, Globe, Plus } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
@@ -239,13 +239,20 @@ export default function GanttEventsCalendar() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('week');
+    // Initialize state from localStorage
+    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>(() => {
+        const saved = localStorage.getItem('events_timeRange');
+        return (saved as 'week' | 'month' | 'year' | 'all') || 'week';
+    });
     const [filterText, setFilterText] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
     const [viewDate, setViewDate] = useState<Date | null>(null);
     const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | 'quarter' | null>(null);
     const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
-    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>('local');
+    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>(() => {
+        const saved = localStorage.getItem('events_locationFilter');
+        return (saved as 'all' | 'local' | 'global') || 'local';
+    });
     const [periodOffset, setPeriodOffset] = useState(0);
     const [visibleEventCount, setVisibleEventCount] = useState(10);
     const [useCustomRange, setUseCustomRange] = useState(false);
@@ -257,9 +264,20 @@ export default function GanttEventsCalendar() {
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
 
+    // Persist timeRange to localStorage
+    useEffect(() => {
+        localStorage.setItem('events_timeRange', timeRange);
+    }, [timeRange]);
+
+    // Persist locationFilter to localStorage
+    useEffect(() => {
+        localStorage.setItem('events_locationFilter', locationFilter);
+    }, [locationFilter]);
+
     const { data: allEvents = [], isLoading, isError } = useEvents({
         filter: 'all',
-        local: locationFilter === 'local'
+        local: locationFilter === 'local',
+        radiusKm: locationFilter === 'local' ? 25 : undefined
     });
 
     const events = useMemo(() => {
@@ -302,14 +320,18 @@ export default function GanttEventsCalendar() {
         let start: Date, end: Date;
 
         switch (timeRange) {
-        case 'week':
-            start = addWeeks(startOfWeek(now, { weekStartsOn: 0 }), periodOffset);
-            end = endOfWeek(start, { weekStartsOn: 0 });
+        case 'week': {
+            // Week view: always 7 days starting from today (when offset=0)
+            start = addDays(now, periodOffset * 7);
+            end = addDays(start, 7);
             break;
-        case 'month':
-            start = startOfMonth(addMonths(now, periodOffset));
-            end = endOfMonth(addMonths(now, periodOffset));
+        }
+        case 'month': {
+            // Month view: always 31 days starting from today (when offset=0)
+            start = addDays(now, periodOffset * 31);
+            end = addDays(start, 31);
             break;
+        }
         case 'year':
             start = startOfYear(addYears(now, periodOffset));
             end = endOfYear(addYears(now, periodOffset));
@@ -344,16 +366,12 @@ export default function GanttEventsCalendar() {
                 if (!matchesSearch) return false;
             }
 
-            if (locationFilter === 'global') {
-                return event.location?.global === true;
-            }
-            else if (locationFilter === 'local') {
-                return event.location?.global !== true;
-            }
-
+            // Location filtering is now done by the backend based on user's location and radius
+            // When local=true, backend filters by distance (25km)
+            // When local=false, all events are shown regardless of location
             return true;
         });
-    }, [events, filterText, locationFilter]);
+    }, [events, filterText]);
 
     const timeUnit: TimeUnit = useMemo(() => {
         if (containerWidth === 0) return 'days';
@@ -891,7 +909,7 @@ export default function GanttEventsCalendar() {
 
     const getViewPeriodLabel = () => {
         if (!viewDate) return '';
-        
+
         if (showingRangeEvents) {
             const { start, end } = dateRange;
             if (useCustomRange) {
@@ -899,7 +917,7 @@ export default function GanttEventsCalendar() {
             }
             return getPeriodLabel();
         }
-        
+
         if (viewPeriodType === 'day') {
             return format(viewDate, 'PPP');
         }
@@ -916,6 +934,41 @@ export default function GanttEventsCalendar() {
             const quarter = Math.floor(viewDate.getMonth() / 3) + 1;
             const year = format(viewDate, 'yyyy');
             return `Q${quarter} ${year}`;
+        }
+    };
+
+    const getEndDate = () => {
+        if (!viewDate) return new Date();
+
+        if (viewPeriodType === 'day') {
+            return endOfDay(viewDate);
+        }
+        else if (viewPeriodType === 'week') {
+            return endOfWeek(viewDate, { weekStartsOn: 0 });
+        }
+        else if (viewPeriodType === 'month') {
+            return endOfMonth(viewDate);
+        }
+        else {
+            // quarter
+            return endOfQuarter(viewDate);
+        }
+    };
+
+    const getCreateEventDates = () => {
+        if (showingRangeEvents && dateRange) {
+            // For range view, pass the full range
+            return {
+                startDate: dateRange.start.toISOString(),
+                endDate: dateRange.end.toISOString()
+            };
+        }
+        else {
+            // For day view, pass viewDate as both start and end
+            return {
+                startDate: viewDate?.toISOString() || new Date().toISOString(),
+                endDate: getEndDate().toISOString()
+            };
         }
     };
 
@@ -997,11 +1050,21 @@ export default function GanttEventsCalendar() {
             <div className='max-w-5xl mx-auto p-3 sm:p-4'>
                 <div className='flex flex-col gap-3 sm:gap-4 mb-4'>
                     <div className='flex flex-col items-start gap-2 sm:gap-3'>
-                        <Button onClick={handleBackToGantt} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
-                            <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
-                            <span className='hidden sm:inline'>Back to Calendar</span>
-                            <span className='sm:hidden'>Back</span>
-                        </Button>
+                        <div className='flex gap-2 w-full justify-between'>
+                            <Button onClick={handleBackToGantt} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
+                                <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <span className='hidden sm:inline'>Back to Calendar</span>
+                                <span className='sm:hidden'>Back</span>
+                            </Button>
+                            <Button onClick={() => {
+                                const dates = getCreateEventDates();
+                                navigate(`/create-event?startDate=${dates.startDate}&endDate=${dates.endDate}`);
+                            }} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
+                                <Plus className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <span className='hidden sm:inline'>New Event</span>
+                                <span className='sm:hidden'>New</span>
+                            </Button>
+                        </div>
                         
                         {!showingRangeEvents ? (
                             <div className='flex items-center justify-between gap-3 sm:gap-4 w-full'>
@@ -1457,7 +1520,8 @@ export default function GanttEventsCalendar() {
                             <div className='flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-zinc-800 dark:to-zinc-800/50 p-2 sm:p-3 border-b dark:border-zinc-700'>
                                 <button
                                     onClick={handleNavigatePrevious}
-                                    className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors'
+                                    disabled={periodOffset === 0}
+                                    className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                                 >
                                     <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-zinc-100' />
                                 </button>

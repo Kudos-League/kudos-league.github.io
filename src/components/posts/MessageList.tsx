@@ -498,52 +498,55 @@ const MessageList: React.FC<Props> = ({
                     )}
 
                     {/* --- REPLACED INPUT WITH TEXTAREA --- */}
-                    <div className='flex items-end gap-2'>
-                        <textarea
-                            placeholder='Write a comment...'
-                            value={messageContent}
-                            onChange={(e) => {
-                                setMessageContent(e.target.value);
-                                adjustTextareaHeight(inputRef.current);
-                            }}
-                            ref={inputRef}
-                            rows={1}
-                            onKeyDown={(e) => {
-                                // Submit on Ctrl+Enter
-                                if (e.key === 'Enter' && e.ctrlKey) {
-                                    e.preventDefault();
-                                    handleSubmitMessage();
-                                }
-                                // Escape cancels reply
-                                else if (e.key === 'Escape') {
-                                    setReplyTo(null);
-                                }
-                                // Enter just creates a new line (default behavior)
-                            }}
-                            // Tailwind classes for textarea styling
-                            className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                            style={{ minHeight: '42px', height: '42px', overflow: 'hidden' }}
-                        />
-                        <Button
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                if (messageContent.trim()) {
-                                    handleSubmitMessage();
-                                }
-                            }}
-                            disabled={!messageContent.trim()}
-                            className='w-10 h-10'
-                            shape='circle'
-                        >
-                    ➤
-                        </Button>
-                    </div>
-                    {/* --- END TEXTAREA REPLACEMENT --- */}
+                    {showSendMessage && (
+                        <>
+                            <div className='flex items-end gap-2'>
+                                <textarea
+                                    placeholder='Write a comment...'
+                                    value={messageContent}
+                                    onChange={(e) => {
+                                        setMessageContent(e.target.value);
+                                        adjustTextareaHeight(inputRef.current);
+                                    }}
+                                    ref={inputRef}
+                                    rows={1}
+                                    onKeyDown={(e) => {
+                                        // Submit on Ctrl+Enter
+                                        if (e.key === 'Enter' && e.ctrlKey) {
+                                            e.preventDefault();
+                                            handleSubmitMessage();
+                                        }
+                                        // Escape cancels reply
+                                        else if (e.key === 'Escape') {
+                                            setReplyTo(null);
+                                        }
+                                        // Enter just creates a new line (default behavior)
+                                    }}
+                                    // Tailwind classes for textarea styling
+                                    className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                                    style={{ minHeight: '42px', height: '42px', overflow: 'hidden' }}
+                                />
+                                <Button
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        if (messageContent.trim()) {
+                                            handleSubmitMessage();
+                                        }
+                                    }}
+                                    disabled={!messageContent.trim()}
+                                    className='w-10 h-10'
+                                    shape='circle'
+                                >
+                            ➤
+                                </Button>
+                            </div>
+                            {/* --- END TEXTAREA REPLACEMENT --- */}
 
-                    <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
-                        Ctrl+Enter or ➤ to send
-                    </p>
-
+                            <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
+                                Ctrl+Enter or ➤ to send
+                            </p>
+                        </>
+                    )}
 
                     {showSendMessage && replyTo && (
                         <div className='flex flex-col pt-3 gap-2'>

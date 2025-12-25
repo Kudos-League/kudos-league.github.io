@@ -86,4 +86,4 @@ function AppCore() {
     );
 }
 
-// noop 
+// noop

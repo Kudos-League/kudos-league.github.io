@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { endOfDay, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { PencilSquareIcon, ArrowLeftIcon } from '@heroicons/react/24/solid';
+import { PencilSquareIcon, ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { EventDTO, LocationDTO, MessageDTO, UserDTO } from '@/shared/api/types';
-import { useJoinEvent } from '@/shared/api/mutations/events';
+import { useJoinEvent, useDeleteEvent } from '@/shared/api/mutations/events';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
@@ -41,6 +42,19 @@ function EditEventButton({ onClick }: { onClick: () => void }) {
     );
 }
 
+function DeleteEventButton({ onClick }: { onClick: () => void }) {
+    return (
+        <Button
+            onClick={onClick}
+            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
+            variant='danger'
+        >
+            <TrashIcon className='h-4 w-4 shrink-0' aria-hidden='true' />
+            Delete Event
+        </Button>
+    );
+}
+
 export default function EventDetails({ event, setEvent }: Props) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
@@ -59,6 +73,8 @@ export default function EventDetails({ event, setEvent }: Props) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [eventCreator, setEventCreator] = useState<UserDTO | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const eventStartDate = useMemo(() => new Date(event.startTime), [event.startTime]);
@@ -249,6 +265,7 @@ export default function EventDetails({ event, setEvent }: Props) {
     };
 
     const joinMutation = useJoinEvent(event.id);
+    const deleteMutation = useDeleteEvent();
 
     const handleJoin = async () => {
         if (!user || !event.id) return;
@@ -267,6 +284,31 @@ export default function EventDetails({ event, setEvent }: Props) {
             setJoining(false);
         }
     };
+
+    const handleDeleteEvent = async () => {
+        if (!event.id) return;
+        setDeleting(true);
+        setError(null);
+        try {
+            await deleteMutation.mutateAsync(event.id);
+            navigate(-1);
+        }
+        catch (err: any) {
+            console.error('Delete failed:', err);
+            setError(err?.message || 'Failed to delete event');
+            setDeleting(false);
+        }
+    };
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (showDeleteConfirm) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showDeleteConfirm]);
 
     const handleLeave = async () => {
         if (!user || !event.id) return;
@@ -313,9 +355,43 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </div>
 
                 {isEventCreator && !isEditing && (
-                    <EditEventButton onClick={handleStartEdit} />
+                    <div className='flex items-center gap-2'>
+                        <EditEventButton onClick={handleStartEdit} />
+                        <DeleteEventButton onClick={() => setShowDeleteConfirm(true)} />
+                    </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && createPortal(
+                <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+                    <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full p-6'>
+                        <h2 className='text-lg font-bold text-gray-900 dark:text-gray-100 mb-4'>Delete Event</h2>
+                        <p className='text-gray-700 dark:text-gray-300 mb-6'>
+                            Are you sure you want to delete this event? This action cannot be undone.
+                        </p>
+                        <div className='flex gap-3'>
+                            <Button
+                                onClick={handleDeleteEvent}
+                                disabled={deleting}
+                                variant='danger'
+                                className='flex-1'
+                            >
+                                {deleting ? 'Deleting...' : 'Delete'}
+                            </Button>
+                            <Button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deleting}
+                                variant='secondary'
+                                className='flex-1'
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Event Description */}
             {isEditing ? (

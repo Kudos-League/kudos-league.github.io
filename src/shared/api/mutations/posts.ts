@@ -176,10 +176,13 @@ export function useCreatePost() {
                 as: 'form'
             }),
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: ['posts'] });
             qc.setQueryData<PostDTO[]>(['posts'], (prev) =>
                 prev ? [created, ...prev] : [created]
             );
+            // Refetch after a delay to allow backend to process
+            setTimeout(() => {
+                qc.invalidateQueries({ queryKey: ['posts'] });
+            }, 1000);
             pushAlert({ type: 'success', message: 'Post created.' });
         },
         onError: (err) => {
