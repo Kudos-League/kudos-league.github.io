@@ -47,3 +47,38 @@ export function useListDevPosts() {
         }
     });
 }
+
+export function useCreatePostAsUser() {
+    return useMutation<
+        PostDTO,
+        Error,
+        {
+            title: string;
+            body: string;
+            categoryID: number;
+            type: 'request' | 'gift';
+            userId: number;
+            files?: File[];
+            location?: any;
+            tags?: string[];
+        }
+    >({
+        mutationFn: (payload) =>
+            apiMutate<PostDTO, any>(
+                '/dev/posts/as-user',
+                'post',
+                payload,
+                { as: 'form' }
+            ),
+        onSuccess: () => {
+            pushAlert({
+                type: 'success',
+                message: 'Post created successfully'
+            });
+        },
+        onError: (err: any) => {
+            const message = err?.response?.data?.message || err?.message || 'Failed to create post';
+            pushAlert({ type: 'danger', message });
+        }
+    });
+}
