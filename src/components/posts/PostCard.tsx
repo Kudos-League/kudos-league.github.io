@@ -38,7 +38,8 @@ export default function PostCard(props: Props) {
         tags = [],
         fake,
         showHandshakeShortcut = false,
-        distance
+        distance,
+        type
     } = props;
 
     const { user } = useAuth();
@@ -98,8 +99,17 @@ export default function PostCard(props: Props) {
                 </span>
             </div>
 
-            {/* Tags */}
-            <div className='mb-2 flex flex-wrap gap-1'>
+            {/* Tags and Type Badge */}
+            <div className='mb-2 flex flex-wrap gap-1 items-center'>
+                {type && (
+                    <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
+                        type === 'gift'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    }`}>
+                        {type.toUpperCase()}
+                    </span>
+                )}
                 {tags.map((tag, i) => (
                     <Pill key={i} name={tag.name} />
                 ))}
