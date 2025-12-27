@@ -242,7 +242,7 @@ export default function DevToolsPanel() {
     // Unified layout for all devices
     if (layoutMode === 'fullscreen') {
         return createPortal(
-            <div className='fixed inset-0 z-50 bg-white dark:bg-slate-800 flex flex-col'>
+            <div className='fixed inset-0 z-50 bg-white dark:bg-slate-800 flex flex-col overflow-hidden'>
                 {renderContent()}
             </div>,
             document.body
@@ -252,7 +252,7 @@ export default function DevToolsPanel() {
     if (layoutMode === 'bottom' && isOpen) {
         return (
             <>
-                <div className='fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-purple-200 dark:border-purple-900 flex flex-col' style={{ height: `${panelHeight}px` }}>
+                <div className='fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden' style={{ height: `${panelHeight}px` }}>
                     {/* Resize handle */}
                     <div
                         onMouseDown={handleResizeStart}
@@ -270,7 +270,7 @@ export default function DevToolsPanel() {
     if (layoutMode === 'right' && isOpen) {
         return (
             <>
-                <div className='fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-slate-800 border-l border-purple-200 dark:border-purple-900 flex flex-col' style={{ width: `${panelWidth}px` }}>
+                <div className='fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-slate-800 border-l border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden' style={{ width: `${panelWidth}px` }}>
                     {/* Resize handle */}
                     <div
                         onMouseDown={handleResizeStart}
