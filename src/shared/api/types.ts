@@ -24,6 +24,9 @@ export type LocationDTO = {
     global?: boolean;
     latitude?: number | null;
     longitude?: number | null;
+    // Fuzzed coordinates for privacy (approximate location display)
+    fuzzedLatitude?: number | null;
+    fuzzedLongitude?: number | null;
 };
 
 export type PostDTO = {
@@ -32,7 +35,6 @@ export type PostDTO = {
     senderID: number;
     title: string;
     body: string;
-    isRequest: boolean;
     isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';

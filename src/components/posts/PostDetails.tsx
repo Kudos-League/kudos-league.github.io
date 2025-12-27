@@ -639,22 +639,6 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    const canSeeExactLocation = (() => {
-        if (!postDetails || !user?.id) return false;
-        const isPostOwner = user.id === postDetails.sender?.id;
-        if (isPostOwner) return true;
-
-        const handshakes = postDetails.handshakes || [];
-        return handshakes.some((h: any) => {
-            const status = h?.status;
-            if (status !== 'accepted' && status !== 'completed') return false;
-            const senderID =
-                typeof h?.senderID === 'number'
-                    ? h.senderID
-                    : Number(h?.senderID);
-            return senderID === user.id;
-        });
-    })();
 
     if (loading) {
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
@@ -1129,12 +1113,19 @@ export default function PostDetails(props: Props) {
             )}
 
             {/* Map */}
-            {postDetails.location?.regionID && (
+            {(postDetails.location?.regionID || (postDetails.location?.latitude && postDetails.location?.longitude)) && (
                 <div className='mb-6 flex justify-center'>
                     <MapDisplay
                         edit={false}
-                        regionID={postDetails.location.regionID}
-                        exactLocation={canSeeExactLocation}
+                        regionID={postDetails.location?.regionID}
+                        coordinates={
+                            postDetails.location?.latitude && postDetails.location?.longitude
+                                ? {
+                                    latitude: postDetails.location.latitude,
+                                    longitude: postDetails.location.longitude
+                                }
+                                : undefined
+                        }
                         onLocationChange={handleLocationChange}
                         width={500}
                         height={300}

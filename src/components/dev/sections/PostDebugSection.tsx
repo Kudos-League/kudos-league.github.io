@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCreatePost } from '@/shared/api/mutations/posts';
 import { useCreatePostAsUser } from '@/shared/api/mutations/dev';
 import { useCategories } from '@/shared/api/queries/categories';
 import { useAuth } from '@/contexts/useAuth';
-import { useSearchUsersQuery } from '@/shared/api/queries/users';
+import { useSearchUsersQuery, useAllUsersQuery } from '@/shared/api/queries/users';
 import { apiMutate } from '@/shared/api/apiClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { pushAlert } from '@/components/common/alertBus';
 
 const SEED_IMAGES_DIR = '/seed-images/';
 
@@ -14,7 +16,89 @@ type LocationMode = 'user' | 'random';
 type DescriptionMode = 'short' | 'long' | 'custom' | 'random';
 type CountMode = '1' | '5' | '10' | 'custom';
 type TagsMode = 'off' | 'random' | 'custom';
-type NavField = 'count' | 'type' | 'category' | 'user' | 'description' | 'images' | 'location' | 'tags' | 'create';
+type HandshakesMode = 'off' | 'add' | 'random';
+type HandshakeCountMode = 'off' | '1' | '3' | '5' | 'random';
+type HandshakeStateMode = 'new' | 'accepted' | 'completed' | 'random';
+type HandshakeSenderMode = 'random' | 'current';
+type NavField = 'count' | 'type' | 'category' | 'user' | 'description' | 'images' | 'location' | 'tags' | 'handshakes' | 'handshakes-count' | 'handshakes-state' | 'handshakes-sender' | 'create' | 'random' | 'delete';
+
+interface FormState {
+    countMode: CountMode;
+    customCount: number;
+    customDescription: string;
+    descriptionMode: DescriptionMode;
+    imageCount: number;
+    includeLocation: boolean;
+    locationMode: LocationMode;
+    tagsMode: TagsMode;
+    customTags: string;
+    selectedCategory: number | undefined;
+    postType: PostType;
+    userMode: UserMode;
+    userSearchQuery: string;
+    selectedUserId: number | undefined;
+    handshakesMode: HandshakesMode;
+    handshakeCountMode: HandshakeCountMode;
+    handshakeStateMode: HandshakeStateMode;
+    handshakeSenderMode: HandshakeSenderMode;
+}
+
+const PRESET_CONFIGS: Record<string, Partial<FormState>> = {
+    'Quick Gift': {
+        countMode: '1',
+        postType: 'gift',
+        descriptionMode: 'short',
+        imageCount: 1,
+        includeLocation: false,
+        tagsMode: 'off',
+        handshakesMode: 'off'
+    },
+    'Random Spam': {
+        countMode: 'custom',
+        customCount: 10,
+        postType: 'random',
+        descriptionMode: 'random',
+        imageCount: 5,
+        includeLocation: true,
+        locationMode: 'random',
+        tagsMode: 'random',
+        handshakesMode: 'random',
+        handshakeCountMode: 'random',
+        handshakeStateMode: 'random',
+        handshakeSenderMode: 'random'
+    },
+    'Bulk Test': {
+        countMode: 'custom',
+        customCount: 20,
+        postType: 'random',
+        descriptionMode: 'long',
+        imageCount: 3,
+        includeLocation: false,
+        tagsMode: 'off',
+        handshakesMode: 'off'
+    },
+    'Tagged Posts': {
+        countMode: '5',
+        postType: 'random',
+        descriptionMode: 'short',
+        imageCount: 1,
+        includeLocation: false,
+        tagsMode: 'random',
+        handshakesMode: 'off'
+    },
+    'With Handshakes': {
+        countMode: '5',
+        postType: 'random',
+        descriptionMode: 'random',
+        imageCount: 3,
+        includeLocation: false,
+        tagsMode: 'off',
+        handshakesMode: 'add',
+        handshakeCountMode: 'random',
+        handshakeStateMode: 'new',
+        handshakeSenderMode: 'random'
+    }
+};
 
 const SHORT_DESCRIPTIONS = [
     'Great item to share',
@@ -33,30 +117,86 @@ const LONG_DESCRIPTIONS = [
     'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.'
 ];
 
-export default function PostDebugSection() {
-    const [countMode, setCountMode] = useState<'1' | '5' | '10' | 'custom'>('1');
-    const [customCount, setCustomCount] = useState(1);
-    const [customDescription, setCustomDescription] = useState('');
-    const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('short');
-    const [imageCount, setImageCount] = useState(1);
-    const [includeLocation, setIncludeLocation] = useState(false);
-    const [locationMode, setLocationMode] = useState<LocationMode>('user');
-    const [tagsMode, setTagsMode] = useState<TagsMode>('off');
-    const [customTags, setCustomTags] = useState('');
-    const [seedImages, setSeedImages] = useState<string[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
-    const [postType, setPostType] = useState<PostType>('gift');
-    const [userMode, setUserMode] = useState<UserMode>('current');
-    const [userSearchQuery, setUserSearchQuery] = useState('');
-    const [selectedUserId, setSelectedUserId] = useState<number | undefined>();
-    const [selectedUserName, setSelectedUserName] = useState<string | undefined>();
-    const [activeField, setActiveField] = useState<NavField>('count');
+const STORAGE_KEY = 'kudos-dev-tools-state';
+const LAST_SELECTION_KEY = 'kudos-dev-tools-last-selection';
 
+const getInitialState = (): FormState => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+    }
+    catch (e) {
+        console.warn('Failed to load saved state:', e);
+    }
+    return {
+        countMode: '1',
+        customCount: 1,
+        customDescription: '',
+        descriptionMode: 'short',
+        imageCount: 1,
+        includeLocation: false,
+        locationMode: 'user',
+        tagsMode: 'off',
+        customTags: '',
+        selectedCategory: undefined,
+        postType: 'gift',
+        userMode: 'current',
+        userSearchQuery: '',
+        selectedUserId: undefined,
+        handshakesMode: 'off',
+        handshakeCountMode: 'off',
+        handshakeStateMode: 'new',
+        handshakeSenderMode: 'random'
+    };
+};
+
+const getLastSelection = (): NavField | null => {
+    try {
+        return localStorage.getItem(LAST_SELECTION_KEY) as NavField | null;
+    }
+    catch (e) {
+        return null;
+    }
+};
+
+export default function PostDebugSection() {
+    const initialState = getInitialState();
+    const [countMode, setCountMode] = useState<'1' | '5' | '10' | 'custom'>(initialState.countMode);
+    const [customCount, setCustomCount] = useState(initialState.customCount);
+    const [customDescription, setCustomDescription] = useState(initialState.customDescription);
+    const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>(initialState.descriptionMode);
+    const [imageCount, setImageCount] = useState(initialState.imageCount);
+    const [includeLocation, setIncludeLocation] = useState(initialState.includeLocation);
+    const [locationMode, setLocationMode] = useState<LocationMode>(initialState.locationMode);
+    const [tagsMode, setTagsMode] = useState<TagsMode>(initialState.tagsMode);
+    const [customTags, setCustomTags] = useState(initialState.customTags);
+    const [seedImages, setSeedImages] = useState<string[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialState.selectedCategory);
+    const [postType, setPostType] = useState<PostType>(initialState.postType);
+    const [userMode, setUserMode] = useState<UserMode>(initialState.userMode);
+    const [userSearchQuery, setUserSearchQuery] = useState(initialState.userSearchQuery);
+    const [selectedUserId, setSelectedUserId] = useState<number | undefined>(initialState.selectedUserId);
+    const [selectedUserName, setSelectedUserName] = useState<string | undefined>();
+    const [handshakesMode, setHandshakesMode] = useState<HandshakesMode>(initialState.handshakesMode);
+    const [handshakeCountMode, setHandshakeCountMode] = useState<HandshakeCountMode>(initialState.handshakeCountMode);
+    const [handshakeStateMode, setHandshakeStateMode] = useState<HandshakeStateMode>(initialState.handshakeStateMode);
+    const [handshakeSenderMode, setHandshakeSenderMode] = useState<HandshakeSenderMode>(initialState.handshakeSenderMode);
+
+    const lastSelection = getLastSelection();
+    const [activeField, setActiveField] = useState<NavField>(lastSelection || 'count');
+    const fieldRefs = React.useRef<Partial<Record<NavField, HTMLDivElement | HTMLButtonElement | null>>>({});
+    const randomButtonRef = React.useRef<HTMLButtonElement>(null);
+    const deleteButtonRef = React.useRef<HTMLButtonElement>(null);
+
+    const qc = useQueryClient();
     const { mutate: createPost, isPending: isCreatingPost } = useCreatePost();
     const { mutate: createPostAsUser, isPending: isCreatingPostAsUser } = useCreatePostAsUser();
     const { data: categories } = useCategories();
     const { user } = useAuth();
     const { data: searchResults } = useSearchUsersQuery(userSearchQuery);
+    const { data: allUsers } = useAllUsersQuery();
 
     // Load available seed images on component mount
     useEffect(() => {
@@ -79,6 +219,53 @@ export default function PostDebugSection() {
 
         loadSeedImages();
     }, []);
+
+    // Save state to localStorage whenever it changes
+    useEffect(() => {
+        const state: FormState = {
+            countMode,
+            customCount,
+            customDescription,
+            descriptionMode,
+            imageCount,
+            includeLocation,
+            locationMode,
+            tagsMode,
+            customTags,
+            selectedCategory,
+            postType,
+            userMode,
+            userSearchQuery,
+            selectedUserId,
+            handshakesMode,
+            handshakeCountMode,
+            handshakeStateMode,
+            handshakeSenderMode
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }, [countMode, customCount, customDescription, descriptionMode, imageCount, includeLocation, locationMode, tagsMode, customTags, selectedCategory, postType, userMode, userSearchQuery, selectedUserId, handshakesMode, handshakeCountMode, handshakeStateMode, handshakeSenderMode]);
+
+    // Save active field selection and scroll into view
+    useEffect(() => {
+        localStorage.setItem(LAST_SELECTION_KEY, activeField);
+
+        // Scroll the active field into view
+        let fieldElement: HTMLElement | null = null;
+
+        if (activeField === 'random') {
+            fieldElement = randomButtonRef.current;
+        }
+        else if (activeField === 'delete') {
+            fieldElement = deleteButtonRef.current;
+        }
+        else {
+            fieldElement = fieldRefs.current[activeField];
+        }
+
+        if (fieldElement) {
+            fieldElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+    }, [activeField]);
 
     const getRandomSeedImages = (count: number): string[] => {
         if (seedImages.length === 0) return [];
@@ -124,8 +311,9 @@ export default function PostDebugSection() {
     };
 
     const getRandomUserId = (): number | undefined => {
-        if (searchResults && searchResults.length > 0) {
-            const availableUsers = searchResults.filter(u => u.id !== user?.id);
+        const usersToChooseFrom = allUsers || searchResults;
+        if (usersToChooseFrom && usersToChooseFrom.length > 0) {
+            const availableUsers = usersToChooseFrom.filter(u => u.id !== user?.id);
             if (availableUsers.length > 0) {
                 return availableUsers[Math.floor(Math.random() * availableUsers.length)].id;
             }
@@ -169,8 +357,35 @@ export default function PostDebugSection() {
                 return;
             }
 
-            const fields: NavField[] = ['count', 'type', 'category', 'user', 'description', 'images', 'location', 'tags', 'create'];
-            const currentIndex = fields.indexOf(activeField);
+            // 'q' key to return to last selected field
+            if (e.key === 'q' || e.key === 'Q') {
+                e.preventDefault();
+                const lastSel = getLastSelection();
+                if (lastSel && lastSel !== activeField) {
+                    setActiveField(lastSel);
+                }
+                return;
+            }
+
+            const allFields: NavField[] = ['count', 'type', 'category', 'user', 'description', 'images', 'location', 'tags', 'handshakes', 'handshakes-count', 'handshakes-state', 'handshakes-sender', 'create', 'random', 'delete'];
+
+            // Filter out handshake sub-fields if not in 'add' mode
+            const fields = allFields.filter(f => {
+                if (f.startsWith('handshakes-') && handshakesMode !== 'add') {
+                    return false;
+                }
+                return true;
+            });
+
+            let currentIndex = fields.indexOf(activeField);
+
+            // If current field is not in filtered list (e.g., was a sub-field but mode changed), find nearest valid field
+            if (currentIndex === -1) {
+                currentIndex = fields.indexOf('handshakes');
+                if (currentIndex === -1) {
+                    currentIndex = 0;
+                }
+            }
 
             // Arrow keys for navigation
             if (e.key === 'ArrowDown') {
@@ -196,12 +411,18 @@ export default function PostDebugSection() {
                 if (activeField === 'create') {
                     handleCreatePosts();
                 }
+                else if (activeField === 'random') {
+                    handleRandomizeAll();
+                }
+                else if (activeField === 'delete') {
+                    handleDeleteFakePosts();
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyPress);
         return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [isPending, activeField, postType, userMode, descriptionMode, imageCount, includeLocation, locationMode, countMode, customCount, tagsMode, customTags]);
+    }, [isPending, activeField, postType, userMode, descriptionMode, imageCount, includeLocation, locationMode, countMode, customCount, tagsMode, customTags, handshakesMode, handshakeCountMode, handshakeStateMode, handshakeSenderMode]);
 
     const handleRandomizeField = () => {
         switch (activeField) {
@@ -238,6 +459,22 @@ export default function PostDebugSection() {
         }
         case 'tags': {
             setTagsMode('random');
+            break;
+        }
+        case 'handshakes': {
+            setHandshakesMode('random');
+            break;
+        }
+        case 'handshakes-count': {
+            setHandshakeCountMode('random');
+            break;
+        }
+        case 'handshakes-state': {
+            setHandshakeStateMode('random');
+            break;
+        }
+        case 'handshakes-sender': {
+            setHandshakeSenderMode('random');
             break;
         }
         case 'create': {
@@ -317,6 +554,33 @@ export default function PostDebugSection() {
             setTagsMode(modes[nextIndex]);
             break;
         }
+        case 'handshakes': {
+            const modes: Array<HandshakesMode> = ['off', 'add', 'random'];
+            const currentIndex = modes.indexOf(handshakesMode);
+            setHandshakesMode(modes[(currentIndex + 1) % modes.length]);
+            break;
+        }
+        case 'handshakes-count': {
+            const modes: Array<HandshakeCountMode> = ['off', '1', '3', '5', 'random'];
+            const currentIndex = modes.indexOf(handshakeCountMode);
+            const nextIndex = (currentIndex + 1) % modes.length;
+            setHandshakeCountMode(modes[nextIndex]);
+            break;
+        }
+        case 'handshakes-state': {
+            const modes: Array<HandshakeStateMode> = ['new', 'accepted', 'completed', 'random'];
+            const currentIndex = modes.indexOf(handshakeStateMode);
+            const nextIndex = (currentIndex + 1) % modes.length;
+            setHandshakeStateMode(modes[nextIndex]);
+            break;
+        }
+        case 'handshakes-sender': {
+            const modes: Array<HandshakeSenderMode> = ['random', 'current'];
+            const currentIndex = modes.indexOf(handshakeSenderMode);
+            const nextIndex = (currentIndex + 1) % modes.length;
+            setHandshakeSenderMode(modes[nextIndex]);
+            break;
+        }
         }
     };
 
@@ -393,6 +657,33 @@ export default function PostDebugSection() {
             setTagsMode(modes[prevIndex]);
             break;
         }
+        case 'handshakes': {
+            const modes: Array<HandshakesMode> = ['off', 'add', 'random'];
+            const currentIndex = modes.indexOf(handshakesMode);
+            setHandshakesMode(modes[(currentIndex - 1 + modes.length) % modes.length]);
+            break;
+        }
+        case 'handshakes-count': {
+            const modes: Array<HandshakeCountMode> = ['off', '1', '3', '5', 'random'];
+            const currentIndex = modes.indexOf(handshakeCountMode);
+            const prevIndex = (currentIndex - 1 + modes.length) % modes.length;
+            setHandshakeCountMode(modes[prevIndex]);
+            break;
+        }
+        case 'handshakes-state': {
+            const modes: Array<HandshakeStateMode> = ['new', 'accepted', 'completed', 'random'];
+            const currentIndex = modes.indexOf(handshakeStateMode);
+            const prevIndex = (currentIndex - 1 + modes.length) % modes.length;
+            setHandshakeStateMode(modes[prevIndex]);
+            break;
+        }
+        case 'handshakes-sender': {
+            const modes: Array<HandshakeSenderMode> = ['random', 'current'];
+            const currentIndex = modes.indexOf(handshakeSenderMode);
+            const prevIndex = (currentIndex - 1 + modes.length) % modes.length;
+            setHandshakeSenderMode(modes[prevIndex]);
+            break;
+        }
         }
     }
 
@@ -405,14 +696,64 @@ export default function PostDebugSection() {
         setPostType('random');
         setUserMode('random');
         setImageCount([1, 3, 5][Math.floor(Math.random() * 3)]);
-        setIncludeLocation(Math.random() > 0.5);
-        if (includeLocation) {
-            setLocationMode(Math.random() > 0.5 ? 'user' : 'random');
+
+        // Truly random location: 50% chance of being enabled, and if enabled pick random mode
+        const shouldIncludeLocation = Math.random() > 0.5;
+        setIncludeLocation(shouldIncludeLocation);
+        if (shouldIncludeLocation) {
+            const locationModes: LocationMode[] = ['user', 'random'];
+            setLocationMode(locationModes[Math.floor(Math.random() * locationModes.length)]);
         }
+
+        // Truly random tags: pick a random mode and optionally set custom tags
         const tagsModes: Array<TagsMode> = ['off', 'random', 'custom'];
-        setTagsMode(tagsModes[Math.floor(Math.random() * tagsModes.length)]);
+        const randomTagsMode = tagsModes[Math.floor(Math.random() * tagsModes.length)];
+        setTagsMode(randomTagsMode);
+        if (randomTagsMode === 'custom') {
+            // Generate random tags for custom mode
+            const tagPool = ['test', 'dev', 'random', 'sample', 'demo', 'example', 'temp', 'trial'];
+            const tagCount = Math.floor(Math.random() * 4) + 1;
+            const randomTags: string[] = [];
+            for (let i = 0; i < tagCount; i++) {
+                randomTags.push(tagPool[Math.floor(Math.random() * tagPool.length)]);
+            }
+            setCustomTags(randomTags.join(', '));
+        }
+        else {
+            setCustomTags('');
+        }
+
         setDescriptionMode('random');
         setCustomDescription('');
+
+        // Randomize handshakes
+        const handshakeModes: Array<HandshakesMode> = ['off', 'add', 'random'];
+        setHandshakesMode(handshakeModes[Math.floor(Math.random() * handshakeModes.length)]);
+        const countModes: Array<HandshakeCountMode> = ['off', '1', '3', '5', 'random'];
+        setHandshakeCountMode(countModes[Math.floor(Math.random() * countModes.length)]);
+        const stateModes: Array<HandshakeStateMode> = ['new', 'accepted', 'completed', 'random'];
+        setHandshakeStateMode(stateModes[Math.floor(Math.random() * stateModes.length)]);
+        const senderModes: Array<HandshakeSenderMode> = ['random', 'current'];
+        setHandshakeSenderMode(senderModes[Math.floor(Math.random() * senderModes.length)]);
+    };
+
+    const applyPreset = (preset: Partial<FormState>) => {
+        if (preset.countMode) setCountMode(preset.countMode);
+        if (preset.customCount !== undefined) setCustomCount(preset.customCount);
+        if (preset.customDescription !== undefined) setCustomDescription(preset.customDescription);
+        if (preset.descriptionMode) setDescriptionMode(preset.descriptionMode);
+        if (preset.imageCount !== undefined) setImageCount(preset.imageCount);
+        if (preset.includeLocation !== undefined) setIncludeLocation(preset.includeLocation);
+        if (preset.locationMode) setLocationMode(preset.locationMode);
+        if (preset.tagsMode) setTagsMode(preset.tagsMode);
+        if (preset.customTags !== undefined) setCustomTags(preset.customTags);
+        if (preset.selectedCategory !== undefined) setSelectedCategory(preset.selectedCategory);
+        if (preset.postType) setPostType(preset.postType);
+        if (preset.userMode) setUserMode(preset.userMode);
+        if (preset.handshakesMode) setHandshakesMode(preset.handshakesMode);
+        if (preset.handshakeCountMode) setHandshakeCountMode(preset.handshakeCountMode);
+        if (preset.handshakeStateMode) setHandshakeStateMode(preset.handshakeStateMode);
+        if (preset.handshakeSenderMode) setHandshakeSenderMode(preset.handshakeSenderMode);
     };
 
     const handleDeleteFakePosts = async () => {
@@ -468,8 +809,64 @@ export default function PostDebugSection() {
         }
     };
 
+    const getRandomHandshakeState = (): HandshakeStateMode => {
+        const states: HandshakeStateMode[] = ['new', 'accepted', 'completed'];
+        return states[Math.floor(Math.random() * states.length)];
+    };
+
+    const createHandshakesForPost = async (postId: number, postOwnerId: number) => {
+        if (handshakesMode === 'off') return;
+
+        const finalHandshakeCount = handshakeCountMode === 'off'
+            ? 0
+            : handshakeCountMode === 'random'
+                ? Math.floor(Math.random() * 10) + 1
+                : parseInt(handshakeCountMode);
+
+        if (finalHandshakeCount === 0) return;
+
+        for (let h = 0; h < finalHandshakeCount; h++) {
+            // Receiver is always the post owner
+            const receiverId = postOwnerId;
+
+            // Determine sender (configurable)
+            let senderId = handshakeSenderMode === 'random'
+                ? getRandomUserId()
+                : user?.id;
+
+            // CRITICAL: Sender can NEVER be the post creator
+            // If sender equals receiver, pick a random user instead
+            if (senderId === receiverId) {
+                senderId = getRandomUserId();
+            }
+
+            // Ensure we have valid, different users
+            if (!senderId || !receiverId || senderId === receiverId) continue;
+
+            const finalState = handshakeStateMode === 'random'
+                ? getRandomHandshakeState()
+                : handshakeStateMode;
+
+            try {
+                await apiMutate('/dev/handshakes/create', 'post', {
+                    postID: postId,
+                    senderID: senderId,
+                    receiverID: receiverId,
+                    type: 'request',
+                    status: finalState
+                });
+            }
+            catch (error) {
+                console.error('Failed to create dev handshake:', error);
+            }
+        }
+    };
+
     const handleCreatePosts = async () => {
         const finalCount = countMode === 'custom' ? customCount : parseInt(countMode);
+        const shouldCreateHandshakes = handshakesMode !== 'off';
+        const createdPosts: Array<{ postId: number; ownerId: number }> = [];
+
         for (let i = 0; i < finalCount; i++) {
             const selectedImages = getRandomSeedImages(imageCount);
             const files: File[] = [];
@@ -480,7 +877,10 @@ export default function PostDebugSection() {
             }
 
             const location = includeLocation ? (
-                locationMode === 'user' ? (user?.location as any) : getRandomLocation()
+                locationMode === 'user' ? (user?.location ? {
+                    regionID: user.location.regionID || null,
+                    name: user.location.name || null
+                } : undefined) : getRandomLocation()
             ) : undefined;
 
             const targetUserId = userMode === 'search' ? selectedUserId : userMode === 'random' ? getRandomUserId() : undefined;
@@ -488,41 +888,105 @@ export default function PostDebugSection() {
             const finalDescription = getDescription();
             const finalTags = getTags();
 
-            if (targetUserId) {
-                createPostAsUser({
-                    title: `Dev Post ${i + 1}`,
-                    body: finalDescription,
-                    tags: finalTags,
-                    type: finalPostType,
-                    categoryID: selectedCategory || 1,
-                    userId: targetUserId,
-                    files: files.length > 0 ? files : undefined,
-                    location
-                });
+            const postData = {
+                title: `Dev Post ${i + 1}`,
+                body: finalDescription,
+                tags: finalTags,
+                type: finalPostType,
+                categoryID: selectedCategory || 1,
+                files: files.length > 0 ? files : undefined,
+                location
+            };
+
+            try {
+                let postResponse;
+                let postOwnerId: number;
+
+                if (targetUserId) {
+                    postResponse = await apiMutate('/dev/posts/as-user', 'post', { ...postData, userId: targetUserId }, { as: 'form' });
+                    postOwnerId = targetUserId;
+                }
+                else {
+                    postResponse = await apiMutate('/posts', 'post', postData, { as: 'form' });
+                    postOwnerId = user?.id || 0;
+                }
+
+                if ((postResponse as any)?.id) {
+                    const postId = (postResponse as any).id;
+                    console.log(`[Dev] Post created with ID: ${postId} by user ${postOwnerId}`);
+                    createdPosts.push({ postId, ownerId: postOwnerId });
+                }
             }
-            else {
-                createPost({
-                    title: `Dev Post ${i + 1}`,
-                    body: finalDescription,
-                    tags: finalTags,
-                    type: finalPostType,
-                    categoryID: selectedCategory || 1,
-                    files: files.length > 0 ? files : undefined,
-                    location
-                });
+            catch (error) {
+                console.error(`[Dev] Failed to create post ${i + 1}:`, error);
             }
+        }
+
+        // If handshakes are enabled and we have posts, create handshakes
+        if (shouldCreateHandshakes && createdPosts.length > 0) {
+            console.log(`[Dev] Creating handshakes for ${createdPosts.length} posts:`, createdPosts);
+            for (const { postId, ownerId } of createdPosts) {
+                await createHandshakesForPost(postId, ownerId);
+            }
+            // Invalidate all post and handshake related caches to ensure UI updates
+            // Use exact: false to match partial keys since infinite query includes filters object
+            qc.invalidateQueries({ queryKey: ['posts'], exact: false });
+            qc.invalidateQueries({ queryKey: ['posts', 'infinite'], exact: false });
+            qc.invalidateQueries({ queryKey: ['handshakes'] });
+        }
+        else if (shouldCreateHandshakes) {
+            console.warn('[Dev] Handshakes enabled but no post IDs captured');
+        }
+
+        // Show success toast
+        if (createdPosts.length > 0) {
+            const message = createdPosts.length === 1
+                ? `✨ Post created successfully!`
+                : `✨ ${createdPosts.length} posts created successfully!`;
+            pushAlert({ type: 'success', message });
+        }
+        else {
+            pushAlert({ type: 'danger', message: '❌ Failed to create any posts. Check console for errors.' });
         }
     };
 
-    const FieldBox = ({ children, isActive }: { children: React.ReactNode; isActive: boolean }) => (
-        <div className={`p-2 rounded border-2 transition-colors ${
-            isActive
-                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
-                : 'border-gray-300 dark:border-gray-600'
-        }`}>
+    const FieldBox = ({ children, isActive, fieldName }: { children: React.ReactNode; isActive: boolean; fieldName: NavField }) => (
+        <div
+            ref={(el) => {
+                if (el) fieldRefs.current[fieldName] = el;
+            }}
+            className={`p-2 rounded border-2 transition-colors ${
+                isActive
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                    : 'border-gray-300 dark:border-gray-600'
+            }`}
+        >
             {children}
         </div>
     );
+
+    const ActionButton = React.forwardRef<HTMLButtonElement, { label: string; onClick: () => void; isActive: boolean; variant?: 'secondary' | 'primary' | 'destructive'; disabled?: boolean }>(
+        ({ label, onClick, isActive, variant = 'secondary', disabled }, ref) => {
+            const baseClasses = 'w-full px-2 py-1.5 rounded text-sm font-medium transition-all';
+            const activeClasses = isActive ? 'ring-2 ring-offset-2 ring-purple-400' : '';
+            const colorClasses = variant === 'primary'
+                ? `${isActive ? 'bg-purple-700' : 'bg-purple-600'} hover:bg-purple-700 disabled:bg-gray-400 text-white`
+                : variant === 'secondary'
+                    ? `${isActive ? 'bg-blue-700' : 'bg-blue-600'} hover:bg-blue-700 disabled:bg-gray-400 text-white`
+                    : `${isActive ? 'bg-red-700' : 'bg-red-600'} hover:bg-red-700 disabled:bg-gray-400 text-white`;
+            return (
+                <button
+                    ref={ref}
+                    onClick={onClick}
+                    disabled={disabled}
+                    className={`${baseClasses} ${colorClasses} ${activeClasses}`}
+                >
+                    {label}
+                </button>
+            );
+        }
+    );
+    ActionButton.displayName = 'ActionButton';
 
     const ToggleButton = ({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void }) => (
         <button
@@ -542,12 +1006,29 @@ export default function PostDebugSection() {
             {/* Header */}
             <div className='bg-purple-50 dark:bg-purple-900/20 p-2 rounded text-xs'>
                 <div className='font-medium text-gray-700 dark:text-gray-300'>Quick Post Creator</div>
-                <div className='text-gray-600 dark:text-gray-400 text-xs mt-1'>Navigate: ↑↓, Change: ←→, Randomize: R, Create: Enter</div>
+                <div className='text-gray-600 dark:text-gray-400 text-xs mt-1'>Navigate: ↑↓, Change: ←→, Randomize: R, Repeat: Q, Execute: Enter</div>
                 <div className='mt-1 text-xs text-gray-600 dark:text-gray-400'>As: <span className='font-semibold text-gray-900 dark:text-white'>{user?.displayName || user?.username || 'Current User'}</span></div>
             </div>
 
+            {/* Preset Configurations */}
+            <div className='bg-blue-50 dark:bg-blue-900/20 p-2 rounded'>
+                <div className='text-xs font-medium text-gray-700 dark:text-gray-300 mb-2'>Quick Presets</div>
+                <div className='grid grid-cols-2 gap-1'>
+                    {Object.entries(PRESET_CONFIGS).map(([name, config]) => (
+                        <button
+                            key={name}
+                            onClick={() => applyPreset(config)}
+                            disabled={isPending}
+                            className='px-2 py-1 text-xs bg-blue-200 dark:bg-blue-900 hover:bg-blue-300 dark:hover:bg-blue-800 disabled:bg-gray-400 text-gray-900 dark:text-gray-100 rounded transition-colors'
+                        >
+                            {name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Count */}
-            <FieldBox isActive={activeField === 'count'}>
+            <FieldBox isActive={activeField === 'count'} fieldName='count'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Count</label>
                 <div className='flex gap-1 mt-1'>
                     <ToggleButton label='1' isActive={countMode === '1'} onClick={() => setCountMode('1')} />
@@ -568,7 +1049,7 @@ export default function PostDebugSection() {
             </FieldBox>
 
             {/* Post Type */}
-            <FieldBox isActive={activeField === 'type'}>
+            <FieldBox isActive={activeField === 'type'} fieldName='type'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Type</label>
                 <div className='flex gap-1 mt-1'>
                     <ToggleButton label='Gift' isActive={postType === 'gift'} onClick={() => setPostType('gift')} />
@@ -578,7 +1059,7 @@ export default function PostDebugSection() {
             </FieldBox>
 
             {/* Category */}
-            <FieldBox isActive={activeField === 'category'}>
+            <FieldBox isActive={activeField === 'category'} fieldName='category'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Category</label>
                 <select
                     value={selectedCategory || ''}
@@ -594,7 +1075,7 @@ export default function PostDebugSection() {
             </FieldBox>
 
             {/* User Mode */}
-            <FieldBox isActive={activeField === 'user'}>
+            <FieldBox isActive={activeField === 'user'} fieldName='user'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Post As</label>
                 <div className='flex gap-1 mt-1'>
                     <ToggleButton label='Me' isActive={userMode === 'current'} onClick={() => { setUserMode('current'); setSelectedUserId(undefined); }} />
@@ -640,7 +1121,7 @@ export default function PostDebugSection() {
             </FieldBox>
 
             {/* Description Mode */}
-            <FieldBox isActive={activeField === 'description'}>
+            <FieldBox isActive={activeField === 'description'} fieldName='description'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Description</label>
                 <div className='flex gap-1 mt-1'>
                     <ToggleButton label='Short' isActive={descriptionMode === 'short'} onClick={() => setDescriptionMode('short')} />
@@ -663,7 +1144,7 @@ export default function PostDebugSection() {
 
             {/* Images & Location */}
             <div className='grid grid-cols-2 gap-2'>
-                <FieldBox isActive={activeField === 'images'}>
+                <FieldBox isActive={activeField === 'images'} fieldName='images'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Images</label>
                     <div className='flex gap-1 mt-1'>
                         {[1, 3, 5].map((num) => (
@@ -677,7 +1158,7 @@ export default function PostDebugSection() {
                     </div>
                 </FieldBox>
 
-                <FieldBox isActive={activeField === 'location'}>
+                <FieldBox isActive={activeField === 'location'} fieldName='location'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Location</label>
                     <div className='flex gap-1 mt-1'>
                         <ToggleButton label='Off' isActive={!includeLocation} onClick={() => setIncludeLocation(false)} />
@@ -686,7 +1167,7 @@ export default function PostDebugSection() {
                     </div>
                 </FieldBox>
 
-                <FieldBox isActive={activeField === 'tags'}>
+                <FieldBox isActive={activeField === 'tags'} fieldName='tags'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Tags</label>
                     <div className='flex gap-1 mt-1'>
                         <ToggleButton label='Off' isActive={tagsMode === 'off'} onClick={() => setTagsMode('off')} />
@@ -705,12 +1186,94 @@ export default function PostDebugSection() {
                 </FieldBox>
             </div>
 
+            {/* Handshakes */}
+            <FieldBox isActive={activeField === 'handshakes'} fieldName='handshakes'>
+                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Handshakes</label>
+                <div className='flex gap-1 mt-1'>
+                    <ToggleButton label='Off' isActive={handshakesMode === 'off'} onClick={() => setHandshakesMode('off')} />
+                    <ToggleButton label='Add' isActive={handshakesMode === 'add'} onClick={() => setHandshakesMode('add')} />
+                    <ToggleButton label='Random' isActive={handshakesMode === 'random'} onClick={() => setHandshakesMode('random')} />
+                </div>
+
+                {handshakesMode === 'add' && (
+                    <div className='mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 space-y-2'>
+                        {/* Count Mode */}
+                        <div
+                            ref={(el) => {
+                                if (el) fieldRefs.current['handshakes-count'] = el;
+                            }}
+                            className={`p-2 rounded border-2 transition-colors ${
+                                activeField === 'handshakes-count'
+                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                    : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                            onClick={() => setActiveField('handshakes-count')}
+                        >
+                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Per Post Count</label>
+                            <div className='flex gap-1'>
+                                <ToggleButton label='Off' isActive={handshakeCountMode === 'off'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('off'); }} />
+                                <ToggleButton label='1' isActive={handshakeCountMode === '1'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('1'); }} />
+                                <ToggleButton label='3' isActive={handshakeCountMode === '3'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('3'); }} />
+                                <ToggleButton label='5' isActive={handshakeCountMode === '5'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('5'); }} />
+                                <ToggleButton label='Random' isActive={handshakeCountMode === 'random'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('random'); }} />
+                            </div>
+                        </div>
+
+                        {/* State Mode */}
+                        <div
+                            ref={(el) => {
+                                if (el) fieldRefs.current['handshakes-state'] = el;
+                            }}
+                            className={`p-2 rounded border-2 transition-colors ${
+                                activeField === 'handshakes-state'
+                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                    : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                            onClick={() => setActiveField('handshakes-state')}
+                        >
+                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>State</label>
+                            <div className='flex gap-1'>
+                                <ToggleButton label='New' isActive={handshakeStateMode === 'new'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('new'); }} />
+                                <ToggleButton label='Accepted' isActive={handshakeStateMode === 'accepted'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('accepted'); }} />
+                                <ToggleButton label='Completed' isActive={handshakeStateMode === 'completed'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('completed'); }} />
+                                <ToggleButton label='Random' isActive={handshakeStateMode === 'random'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('random'); }} />
+                            </div>
+                        </div>
+
+                        {/* Sender User Mode */}
+                        <div
+                            ref={(el) => {
+                                if (el) fieldRefs.current['handshakes-sender'] = el;
+                            }}
+                            className={`p-2 rounded border-2 transition-colors ${
+                                activeField === 'handshakes-sender'
+                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                    : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                            onClick={() => setActiveField('handshakes-sender')}
+                        >
+                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Sender</label>
+                            <div className='flex gap-1'>
+                                <ToggleButton label='Random' isActive={handshakeSenderMode === 'random'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('random'); }} />
+                                <ToggleButton label='Current' isActive={handshakeSenderMode === 'current'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('current'); }} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </FieldBox>
+
             {/* Create Button */}
-            <FieldBox isActive={activeField === 'create'}>
+            <FieldBox isActive={activeField === 'create'} fieldName='create'>
                 <button
                     onClick={handleCreatePosts}
                     disabled={isPending}
-                    className='w-full px-2 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors'
+                    className={`w-full px-2 py-2 rounded text-sm font-medium transition-all ${
+                        activeField === 'create' ? 'ring-2 ring-offset-2 ring-purple-400' : ''
+                    } ${
+                        isPending
+                            ? 'bg-gray-400 text-white'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white'
+                    }`}
                 >
                     {isPending ? 'Creating...' : `Create ${countMode === 'custom' ? customCount : countMode}`}
                 </button>
@@ -718,22 +1281,26 @@ export default function PostDebugSection() {
 
             {/* Other Actions */}
             <div className='flex gap-2 pt-1'>
-                <button
-                    onClick={handleRandomizeAll}
-                    disabled={isPending}
-                    className='flex-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors'
-                    title='Randomize all fields (R)'
-                >
-                    Random
-                </button>
-                <button
-                    onClick={handleDeleteFakePosts}
-                    disabled={isPending}
-                    className='flex-1 px-2 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors'
-                    title='Delete all fake posts'
-                >
-                    Delete
-                </button>
+                <div className='flex-1'>
+                    <ActionButton
+                        ref={randomButtonRef}
+                        label='Random'
+                        onClick={handleRandomizeAll}
+                        isActive={activeField === 'random'}
+                        variant='secondary'
+                        disabled={isPending}
+                    />
+                </div>
+                <div className='flex-1'>
+                    <ActionButton
+                        ref={deleteButtonRef}
+                        label='Delete'
+                        onClick={handleDeleteFakePosts}
+                        isActive={activeField === 'delete'}
+                        variant='destructive'
+                        disabled={isPending}
+                    />
+                </div>
             </div>
         </div>
     );

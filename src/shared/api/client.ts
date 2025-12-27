@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { initReactQueryInterceptor } from '@/services/logCollector/reactQueryInterceptor';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -12,5 +13,8 @@ const queryClient = new QueryClient({
         }
     }
 });
+
+// Initialize dev tools React Query logging (only in dev mode)
+initReactQueryInterceptor(queryClient);
 
 export default queryClient;
