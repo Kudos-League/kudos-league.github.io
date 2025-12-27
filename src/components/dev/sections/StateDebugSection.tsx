@@ -31,9 +31,9 @@ export default function StateDebugSection({ user }: StateDebugSectionProps) {
 
             <div>
                 <div className='font-bold text-gray-900 dark:text-white mb-1'>Token</div>
-                <div className='bg-gray-100 dark:bg-slate-900 p-2 rounded break-all'>
-                    <span className='text-green-600 dark:text-green-400'>
-                        {token ? `${token.substring(0, 20)}...${token.substring(token.length - 10)}` : 'N/A'}
+                <div className='bg-gray-100 dark:bg-slate-900 p-2 rounded break-all max-h-32 overflow-y-auto'>
+                    <span className='text-green-600 dark:text-green-400 text-xs font-mono'>
+                        {token || 'N/A'}
                     </span>
                 </div>
             </div>

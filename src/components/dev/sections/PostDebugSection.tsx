@@ -1013,13 +1013,13 @@ export default function PostDebugSection() {
             {/* Preset Configurations */}
             <div className='bg-blue-50 dark:bg-blue-900/20 p-2 rounded'>
                 <div className='text-xs font-medium text-gray-700 dark:text-gray-300 mb-2'>Quick Presets</div>
-                <div className='grid grid-cols-2 gap-1'>
+                <div className='flex flex-wrap gap-1'>
                     {Object.entries(PRESET_CONFIGS).map(([name, config]) => (
                         <button
                             key={name}
                             onClick={() => applyPreset(config)}
                             disabled={isPending}
-                            className='px-2 py-1 text-xs bg-blue-200 dark:bg-blue-900 hover:bg-blue-300 dark:hover:bg-blue-800 disabled:bg-gray-400 text-gray-900 dark:text-gray-100 rounded transition-colors'
+                            className='px-2 py-1 text-xs bg-blue-200 dark:bg-blue-900 hover:bg-blue-300 dark:hover:bg-blue-800 disabled:bg-gray-400 text-gray-900 dark:text-gray-100 rounded transition-colors whitespace-nowrap flex-shrink-0'
                         >
                             {name}
                         </button>
@@ -1030,7 +1030,7 @@ export default function PostDebugSection() {
             {/* Count */}
             <FieldBox isActive={activeField === 'count'} fieldName='count'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Count</label>
-                <div className='flex gap-1 mt-1'>
+                <div className='flex flex-wrap gap-1 mt-1'>
                     <ToggleButton label='1' isActive={countMode === '1'} onClick={() => setCountMode('1')} />
                     <ToggleButton label='5' isActive={countMode === '5'} onClick={() => setCountMode('5')} />
                     <ToggleButton label='10' isActive={countMode === '10'} onClick={() => setCountMode('10')} />
@@ -1051,7 +1051,7 @@ export default function PostDebugSection() {
             {/* Post Type */}
             <FieldBox isActive={activeField === 'type'} fieldName='type'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Type</label>
-                <div className='flex gap-1 mt-1'>
+                <div className='flex flex-wrap gap-1 mt-1'>
                     <ToggleButton label='Gift' isActive={postType === 'gift'} onClick={() => setPostType('gift')} />
                     <ToggleButton label='Request' isActive={postType === 'request'} onClick={() => setPostType('request')} />
                     <ToggleButton label='Random' isActive={postType === 'random'} onClick={() => setPostType('random')} />
@@ -1077,7 +1077,7 @@ export default function PostDebugSection() {
             {/* User Mode */}
             <FieldBox isActive={activeField === 'user'} fieldName='user'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Post As</label>
-                <div className='flex gap-1 mt-1'>
+                <div className='flex flex-wrap gap-1 mt-1'>
                     <ToggleButton label='Me' isActive={userMode === 'current'} onClick={() => { setUserMode('current'); setSelectedUserId(undefined); }} />
                     <ToggleButton label='Random' isActive={userMode === 'random'} onClick={() => { setUserMode('random'); setSelectedUserId(undefined); }} />
                     <ToggleButton label='Search' isActive={userMode === 'search'} onClick={() => setUserMode('search')} />
@@ -1123,7 +1123,7 @@ export default function PostDebugSection() {
             {/* Description Mode */}
             <FieldBox isActive={activeField === 'description'} fieldName='description'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Description</label>
-                <div className='flex gap-1 mt-1'>
+                <div className='flex flex-wrap gap-1 mt-1'>
                     <ToggleButton label='Short' isActive={descriptionMode === 'short'} onClick={() => setDescriptionMode('short')} />
                     <ToggleButton label='Long' isActive={descriptionMode === 'long'} onClick={() => setDescriptionMode('long')} />
                     <ToggleButton label='Custom' isActive={descriptionMode === 'custom'} onClick={() => setDescriptionMode('custom')} />
@@ -1146,7 +1146,7 @@ export default function PostDebugSection() {
             <div className='grid grid-cols-2 gap-2'>
                 <FieldBox isActive={activeField === 'images'} fieldName='images'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Images</label>
-                    <div className='flex gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-1 mt-1'>
                         {[1, 3, 5].map((num) => (
                             <ToggleButton
                                 key={num}
@@ -1160,7 +1160,7 @@ export default function PostDebugSection() {
 
                 <FieldBox isActive={activeField === 'location'} fieldName='location'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Location</label>
-                    <div className='flex gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-1 mt-1'>
                         <ToggleButton label='Off' isActive={!includeLocation} onClick={() => setIncludeLocation(false)} />
                         <ToggleButton label='User' isActive={includeLocation && locationMode === 'user'} onClick={() => { setIncludeLocation(true); setLocationMode('user'); }} />
                         <ToggleButton label='Random' isActive={includeLocation && locationMode === 'random'} onClick={() => { setIncludeLocation(true); setLocationMode('random'); }} />
@@ -1169,7 +1169,7 @@ export default function PostDebugSection() {
 
                 <FieldBox isActive={activeField === 'tags'} fieldName='tags'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Tags</label>
-                    <div className='flex gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-1 mt-1'>
                         <ToggleButton label='Off' isActive={tagsMode === 'off'} onClick={() => setTagsMode('off')} />
                         <ToggleButton label='Random' isActive={tagsMode === 'random'} onClick={() => setTagsMode('random')} />
                         <ToggleButton label='Custom' isActive={tagsMode === 'custom'} onClick={() => setTagsMode('custom')} />
@@ -1189,7 +1189,7 @@ export default function PostDebugSection() {
             {/* Handshakes */}
             <FieldBox isActive={activeField === 'handshakes'} fieldName='handshakes'>
                 <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Handshakes</label>
-                <div className='flex gap-1 mt-1'>
+                <div className='flex flex-wrap gap-1 mt-1'>
                     <ToggleButton label='Off' isActive={handshakesMode === 'off'} onClick={() => setHandshakesMode('off')} />
                     <ToggleButton label='Add' isActive={handshakesMode === 'add'} onClick={() => setHandshakesMode('add')} />
                     <ToggleButton label='Random' isActive={handshakesMode === 'random'} onClick={() => setHandshakesMode('random')} />
@@ -1210,7 +1210,7 @@ export default function PostDebugSection() {
                             onClick={() => setActiveField('handshakes-count')}
                         >
                             <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Per Post Count</label>
-                            <div className='flex gap-1'>
+                            <div className='flex flex-wrap gap-1'>
                                 <ToggleButton label='Off' isActive={handshakeCountMode === 'off'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('off'); }} />
                                 <ToggleButton label='1' isActive={handshakeCountMode === '1'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('1'); }} />
                                 <ToggleButton label='3' isActive={handshakeCountMode === '3'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('3'); }} />
@@ -1232,7 +1232,7 @@ export default function PostDebugSection() {
                             onClick={() => setActiveField('handshakes-state')}
                         >
                             <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>State</label>
-                            <div className='flex gap-1'>
+                            <div className='flex flex-wrap gap-1'>
                                 <ToggleButton label='New' isActive={handshakeStateMode === 'new'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('new'); }} />
                                 <ToggleButton label='Accepted' isActive={handshakeStateMode === 'accepted'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('accepted'); }} />
                                 <ToggleButton label='Completed' isActive={handshakeStateMode === 'completed'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('completed'); }} />
@@ -1253,7 +1253,7 @@ export default function PostDebugSection() {
                             onClick={() => setActiveField('handshakes-sender')}
                         >
                             <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Sender</label>
-                            <div className='flex gap-1'>
+                            <div className='flex flex-wrap gap-1'>
                                 <ToggleButton label='Random' isActive={handshakeSenderMode === 'random'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('random'); }} />
                                 <ToggleButton label='Current' isActive={handshakeSenderMode === 'current'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('current'); }} />
                             </div>
