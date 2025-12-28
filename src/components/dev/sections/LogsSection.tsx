@@ -164,7 +164,7 @@ const LogRow = React.memo(({ log, onAddToRecording, onAddFromHere, onSelectRange
                         }`}
                         title={isPinned ? 'Click to unpin and stop following' : 'Pin this log to keep it visible when filtering'}
                     >
-                        📌
+                        PIN
                     </button>
                     <button
                         onClick={() => onAddToRecording(log.id)}
@@ -178,7 +178,7 @@ const LogRow = React.memo(({ log, onAddToRecording, onAddFromHere, onSelectRange
                         className='px-2 py-1 text-xs rounded transition-colors shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold'
                         title='Add this log and all newer logs above'
                     >
-                        ⤵
+                        ↑+
                     </button>
                     <button
                         onClick={() => onSelectRangeStart(log.id)}
@@ -189,7 +189,7 @@ const LogRow = React.memo(({ log, onAddToRecording, onAddFromHere, onSelectRange
                         }`}
                         title={isRangeStart ? 'Click another log to complete range, or click here to deselect' : 'Click to select range anchor'}
                     >
-                        ⬤
+                        ◯
                     </button>
                 </div>
             </div>
@@ -306,7 +306,12 @@ const LogRow = React.memo(({ log, onAddToRecording, onAddFromHere, onSelectRange
 
 LogRow.displayName = 'LogRow';
 
-export default function LogsSection() {
+interface LogsSectionProps {
+    selectedLogs: LogEntry[];
+    onSelectedLogsChange: (logs: LogEntry[]) => void;
+}
+
+export default function LogsSection({ selectedLogs, onSelectedLogsChange }: LogsSectionProps) {
     const { logs, filteredLogs, clearLogs, exportLogs, filterLogs, isPaused, setPaused, statistics } =
         useLogCollector();
     const [filter, setFilter] = useState<LogFilter>({
@@ -316,8 +321,15 @@ export default function LogsSection() {
         searchText: '',
         timeRange: { start: Date.now() - 5 * 60 * 1000, end: null }, // Default to 5 minutes
     });
-    const [selectedLogs, setSelectedLogs] = useState<LogEntry[]>([]);
     const [rangeStartLogId, setRangeStartLogId] = useState<string | null>(null);
+    const [currentTimeRange, setCurrentTimeRange] = useState<'200ms' | '1s' | '5s' | '10s' | '1m' | '5m' | 'all'>('5m');
+    const [customTimeStart, setCustomTimeStart] = useState<number | null>(null);
+    const [customTimeEnd, setCustomTimeEnd] = useState<number | null>(null);
+    const [showCustomTimeRange, setShowCustomTimeRange] = useState(false);
+    const [timeRangeMenuOpen, setTimeRangeMenuOpen] = useState(false);
+    const [severityMenuOpen, setSeverityMenuOpen] = useState(false);
+    const timeRangeMenuRef = useRef<HTMLDivElement>(null);
+    const severityMenuRef = useRef<HTMLDivElement>(null);
     const [pinnedLogIds, setPinnedLogIds] = useState<Set<string>>(() => {
         try {
             const saved = localStorage.getItem('kudos-logs-pinned-ids');
@@ -338,8 +350,25 @@ export default function LogsSection() {
     });
     const [editingPinId, setEditingPinId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState<string>('');
+    const HTTP_METHODS = ['all', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'] as const;
+    const [selectedMethods, setSelectedMethods] = useState<(typeof HTTP_METHODS[number])[]>(() => {
+        const saved = localStorage.getItem('kudos-logs-selected-methods');
+        return saved ? JSON.parse(saved) : ['all'];
+    });
     const logContainerRef = useRef<HTMLDivElement>(null);
     const pinnedLogRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
+
+    // Persist selected methods to localStorage
+    useEffect(() => {
+        localStorage.setItem('kudos-logs-selected-methods', JSON.stringify(selectedMethods));
+        // Update filter with new methods
+        const methodsToFilter = selectedMethods.includes('all')
+            ? ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']
+            : selectedMethods.filter((m) => m !== 'all');
+        const newFilter = { ...filter, httpMethods: methodsToFilter as any };
+        setFilter(newFilter);
+        filterLogs(newFilter);
+    }, [selectedMethods]);
 
     // Persist pinned IDs to localStorage
     useEffect(() => {
@@ -350,6 +379,35 @@ export default function LogsSection() {
     useEffect(() => {
         localStorage.setItem('kudos-logs-pinned-names', JSON.stringify(Array.from(pinnedLogNames)));
     }, [pinnedLogNames]);
+
+
+    // Close time range menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (timeRangeMenuRef.current && !timeRangeMenuRef.current.contains(event.target as Node)) {
+                setTimeRangeMenuOpen(false);
+            }
+        };
+
+        if (timeRangeMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [timeRangeMenuOpen]);
+
+    // Close severity menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (severityMenuRef.current && !severityMenuRef.current.contains(event.target as Node)) {
+                setSeverityMenuOpen(false);
+            }
+        };
+
+        if (severityMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [severityMenuOpen]);
 
     const handleFilterChange = (newFilter: LogFilter) => {
         setFilter(newFilter);
@@ -410,22 +468,10 @@ export default function LogsSection() {
     const handleAddToText = (logId: string) => {
         const log = logs.find((l) => l.id === logId);
         if (log) {
-            setSelectedLogs([...selectedLogs, log]);
+            onSelectedLogsChange([...selectedLogs, log]);
         }
     };
 
-    const handleRemoveFromText = (index: number) => {
-        setSelectedLogs(selectedLogs.filter((_, i) => i !== index));
-    };
-
-    const handleCopyText = () => {
-        const text = generateAIText();
-        navigator.clipboard.writeText(text);
-    };
-
-    const handleClearText = () => {
-        setSelectedLogs([]);
-    };
 
     const handleAddFromHere = (logId: string) => {
         // Find index in the filtered logs (what user is actually seeing)
@@ -440,7 +486,7 @@ export default function LogsSection() {
                 newSelectedLogs.push(log);
             }
         });
-        setSelectedLogs(newSelectedLogs);
+        onSelectedLogsChange(newSelectedLogs);
     };
 
     const handleSelectRangeStart = (logId: string) => {
@@ -474,7 +520,7 @@ export default function LogsSection() {
                 newSelectedLogs.push(log);
             }
         });
-        setSelectedLogs(newSelectedLogs);
+        onSelectedLogsChange(newSelectedLogs);
         setRangeStartLogId(null);
     };
 
@@ -528,194 +574,297 @@ export default function LogsSection() {
         setEditingName('');
     };
 
-
-    const generateAIText = (): string => {
-        if (selectedLogs.length === 0) return '';
-
-        const lines: string[] = [];
-        const firstTime = new Date(selectedLogs[0].timestamp).toLocaleTimeString('en-US', {
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+    const toggleMethod = (method: typeof HTTP_METHODS[number]) => {
+        setSelectedMethods((prev) => {
+            if (method === 'all') {
+                return prev.includes('all') ? ['all'] : ['all'];
+            }
+            const hasMethod = prev.includes(method);
+            if (hasMethod) {
+                return prev.filter((m) => m !== method && m !== 'all');
+            }
+            else {
+                const newMethods = [...prev.filter((m) => m !== 'all'), method];
+                if (newMethods.length === HTTP_METHODS.length - 1) {
+                    return ['all'];
+                }
+                return newMethods;
+            }
         });
-        const lastTime = new Date(selectedLogs[selectedLogs.length - 1].timestamp).toLocaleTimeString('en-US', {
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-
-        // Group logs by type and generate context
-        const byType = selectedLogs.reduce((acc, log) => {
-            if (!acc[log.type]) acc[log.type] = [];
-            acc[log.type].push(log);
-            return acc;
-        }, {} as Record<string, LogEntry[]>);
-
-        // Generate intro
-        lines.push(`Logs from ${firstTime} to ${lastTime}:\n`);
-
-        // Add context for each type
-        if (byType.websocket) {
-            const urls = new Set(byType.websocket.map((l: any) => l.event));
-            lines.push(`WebSocket messages (${byType.websocket.length}): ${Array.from(urls).join(', ')}`);
-            byType.websocket.forEach((log: any) => {
-                const dir = log.direction === 'sent' ? '→' : '←';
-                lines.push(`  ${dir} ${log.event}: ${log.message}`);
-            });
-            lines.push('');
-        }
-
-        if (byType.network) {
-            const urls = new Set(byType.network.map((l: any) => l.url));
-            lines.push(`Network requests (${byType.network.length}): ${Array.from(urls).join(', ')}`);
-            byType.network.forEach((log: any) => {
-                lines.push(`  ${log.method} ${log.url} → ${log.status}`);
-            });
-            lines.push('');
-        }
-
-        if (byType['react-query']) {
-            lines.push(`React Query operations (${byType['react-query'].length}):`);
-            byType['react-query'].forEach((log: any) => {
-                lines.push(`  ${log.operation}: ${log.queryKey} (${log.status})`);
-            });
-            lines.push('');
-        }
-
-        if (byType.console) {
-            lines.push(`Console logs (${byType.console.length}):`);
-            byType.console.forEach((log: any) => {
-                lines.push(`  [${log.level?.toUpperCase()}] ${log.message}`);
-            });
-            lines.push('');
-        }
-
-        return lines.join('\n');
     };
+
 
     return (
         <div className='space-y-2 h-full flex flex-col'>
-            {/* Compact Header - Controls and Statistics in one row */}
-            <div className='flex flex-wrap items-center gap-1.5'>
-                {/* Control Buttons */}
-                <button
-                    onClick={handleClearLogs}
-                    className='px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors flex-shrink-0'
-                    title='Clear all logs'
-                >
-                    Clear
-                </button>
-                <button
-                    onClick={handleExport}
-                    className='px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex-shrink-0'
-                    title='Export logs as JSON'
-                >
-                    Export
-                </button>
-                <button
-                    onClick={() => setPaused(!isPaused)}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        isPaused
-                            ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
-                    title={isPaused ? 'Resume logging' : 'Pause logging'}
-                >
-                    {isPaused ? '▶' : '⏸'}
-                </button>
+            {/* Compact Header - Multiple rows */}
+            <div className='space-y-1.5'>
+                {/* Row 1: Control Buttons and Main Filters */}
+                <div className='flex flex-wrap items-center gap-1.5'>
+                    {/* Control Buttons */}
+                    <button
+                        onClick={handleClearLogs}
+                        className='px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors flex-shrink-0'
+                        title='Clear all logs'
+                    >
+                        Clear
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className='px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex-shrink-0'
+                        title='Export logs as JSON'
+                    >
+                        Export
+                    </button>
+                    <button
+                        onClick={() => setPaused(!isPaused)}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            isPaused
+                                ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                        title={isPaused ? 'Resume logging' : 'Pause logging'}
+                    >
+                        {isPaused ? '▶' : '⏸'}
+                    </button>
 
-                {/* Separator */}
-                <div className='w-px h-4 bg-gray-300 dark:bg-gray-600 flex-shrink-0' />
+                    {/* Separator */}
+                    <div className='w-px h-4 bg-gray-300 dark:bg-gray-600 flex-shrink-0' />
 
-                {/* Statistics as clickable filter buttons - matching Type: section behavior */}
-                <button
-                    onClick={() => handleStatisticClick('all')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.length === 4
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
-                    }`}
-                    title='Click to select/deselect all log types'
-                >
+                    {/* Statistics as clickable filter buttons - matching Type: section behavior */}
+                    <button
+                        onClick={() => handleStatisticClick('all')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.length === 4
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
+                        }`}
+                        title='Click to select/deselect all log types'
+                    >
                     All:{statistics.total}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('console')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('console')
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
-                    }`}
-                    title='Click to toggle, double-click to isolate'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('console')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('console')
+                                ? 'bg-gray-600 text-white'
+                                : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
+                        }`}
+                        title='Click to toggle, double-click to isolate'
+                    >
                     C:{statistics.console}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('network')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('network')
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-blue-300 dark:bg-blue-700 text-blue-900 dark:text-blue-300 hover:bg-blue-400 dark:hover:bg-blue-600'
-                    }`}
-                    title='Click to toggle, double-click to isolate'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('network')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('network')
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-300 dark:bg-blue-700 text-blue-900 dark:text-blue-300 hover:bg-blue-400 dark:hover:bg-blue-600'
+                        }`}
+                        title='Click to toggle, double-click to isolate'
+                    >
                     N:{statistics.network}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('websocket')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('websocket')
-                            ? 'bg-green-600 text-white'
-                            : 'bg-green-300 dark:bg-green-700 text-green-900 dark:text-green-300 hover:bg-green-400 dark:hover:bg-green-600'
-                    }`}
-                    title='Click to toggle, double-click to isolate'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('websocket')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('websocket')
+                                ? 'bg-green-600 text-white'
+                                : 'bg-green-300 dark:bg-green-700 text-green-900 dark:text-green-300 hover:bg-green-400 dark:hover:bg-green-600'
+                        }`}
+                        title='Click to toggle, double-click to isolate'
+                    >
                     WS:{statistics.websocket}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('react-query')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('react-query')
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-orange-300 dark:bg-orange-700 text-orange-900 dark:text-orange-300 hover:bg-orange-400 dark:hover:bg-orange-600'
-                    }`}
-                    title='Click to toggle, double-click to isolate'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('react-query')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('react-query')
+                                ? 'bg-orange-600 text-white'
+                                : 'bg-orange-300 dark:bg-orange-700 text-orange-900 dark:text-orange-300 hover:bg-orange-400 dark:hover:bg-orange-600'
+                        }`}
+                        title='Click to toggle, double-click to isolate'
+                    >
                     Q:{statistics.reactQuery}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('errors')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('console') && filter.logTypes.includes('network') && filter.logLevels.includes('error') && filter.logLevels.length === 1
-                            ? 'bg-red-600 text-white'
-                            : 'bg-red-300 dark:bg-red-700 text-red-900 dark:text-red-300 hover:bg-red-400 dark:hover:bg-red-600'
-                    }`}
-                    title='Show console and network errors'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('errors')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('console') && filter.logTypes.includes('network') && filter.logLevels.includes('error') && filter.logLevels.length === 1
+                                ? 'bg-red-600 text-white'
+                                : 'bg-red-300 dark:bg-red-700 text-red-900 dark:text-red-300 hover:bg-red-400 dark:hover:bg-red-600'
+                        }`}
+                        title='Show console and network errors'
+                    >
                     Errors:{statistics.errors}
-                </button>
-                <button
-                    onClick={() => handleStatisticClick('warnings')}
-                    className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                        filter.logTypes.includes('console') && filter.logTypes.length === 1 && filter.logLevels.includes('warn') && filter.logLevels.length === 1
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-yellow-300 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-300 hover:bg-yellow-400 dark:hover:bg-yellow-600'
-                    }`}
-                    title='Show console warnings'
-                >
+                    </button>
+                    <button
+                        onClick={() => handleStatisticClick('warnings')}
+                        className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                            filter.logTypes.includes('console') && filter.logTypes.length === 1 && filter.logLevels.includes('warn') && filter.logLevels.length === 1
+                                ? 'bg-yellow-500 text-white'
+                                : 'bg-yellow-300 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-300 hover:bg-yellow-400 dark:hover:bg-yellow-600'
+                        }`}
+                        title='Show console warnings'
+                    >
                     Warnings:{statistics.warnings}
-                </button>
+                    </button>
 
-                {/* Log count */}
-                <div className='ml-auto text-xs text-gray-600 dark:text-gray-400 font-semibold flex-shrink-0'>
-                    {filteredLogs.length}/{logs.length}
+                    {/* Severity Level Selector */}
+                    <div className='relative' ref={severityMenuRef}>
+                        <button
+                            onClick={() => setSeverityMenuOpen(!severityMenuOpen)}
+                            className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                                severityMenuOpen
+                                    ? 'bg-blue-700 text-white'
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                            title='Filter by severity level'
+                        >
+                        Severity: {filter.logLevels[0]}
+                        </button>
+                        {severityMenuOpen && (
+                            <div className='absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded shadow-lg z-50 min-w-max'>
+                                {(['log', 'info', 'warn', 'error', 'debug'] as const).map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={() => {
+                                            const newFilter = { ...filter, logLevels: [level] };
+                                            setFilter(newFilter);
+                                            filterLogs(newFilter);
+                                            setSeverityMenuOpen(false);
+                                        }}
+                                        className={`block w-full text-left px-3 py-2 text-xs rounded-none transition-colors first:rounded-t-md last:rounded-b-md ${
+                                            filter.logLevels.includes(level)
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        {level}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Time Range Selector */}
+                    <div className='relative' ref={timeRangeMenuRef}>
+                        <button
+                            onClick={() => setTimeRangeMenuOpen(!timeRangeMenuOpen)}
+                            className={`px-2 py-1 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                                timeRangeMenuOpen
+                                    ? 'bg-orange-700 text-white'
+                                    : 'bg-orange-600 hover:bg-orange-700 text-white'
+                            }`}
+                            title='Filter by time range'
+                        >
+                        Time: {showCustomTimeRange ? 'Custom Range' : currentTimeRange === 'all' ? 'All' : currentTimeRange}
+                        </button>
+                        {timeRangeMenuOpen && (
+                            <div className='absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-orange-300 dark:border-orange-600 rounded shadow-lg z-50 min-w-max'>
+                                {(['200ms', '1s', '5s', '10s', '1m', '5m', 'all'] as const).map((range) => (
+                                    <button
+                                        key={range}
+                                        onClick={() => {
+                                            setCurrentTimeRange(range);
+                                            setShowCustomTimeRange(false);
+                                            setTimeRangeMenuOpen(false);
+                                            const baseTime = logs.length > 0 ? logs[logs.length - 1].timestamp : Date.now();
+                                            const newTimeRange: { start: number | null; end: null } = range === 'all'
+                                                ? { start: null, end: null }
+                                                : { start: baseTime - (range === '200ms' ? 200 : range === '1s' ? 1000 : range === '5s' ? 5000 : range === '10s' ? 10000 : range === '1m' ? 60000 : 5 * 60000), end: null };
+                                            const newFilter = { ...filter, timeRange: newTimeRange };
+                                            setFilter(newFilter);
+                                            filterLogs(newFilter);
+                                        }}
+                                        className={`block w-full text-left px-3 py-2 text-xs rounded-none transition-colors first:rounded-t-md ${
+                                            currentTimeRange === range && !showCustomTimeRange
+                                                ? 'bg-orange-600 text-white'
+                                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        {range === 'all' ? 'All Time' : range}
+                                    </button>
+                                ))}
+                                <div className='border-t border-orange-200 dark:border-orange-700' />
+                                <button
+                                    onClick={() => setShowCustomTimeRange(!showCustomTimeRange)}
+                                    className={`block w-full text-left px-3 py-2 text-xs rounded-b-md transition-colors ${
+                                        showCustomTimeRange
+                                            ? 'bg-orange-100 dark:bg-orange-900 text-gray-900 dark:text-orange-100'
+                                            : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {showCustomTimeRange ? '▼ Custom Range' : '▶ Custom Range'}
+                                </button>
+                                {showCustomTimeRange && (
+                                    <div className='px-3 py-2 border-t border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/30 space-y-2 rounded-b-md'>
+                                        <div className='text-xs font-semibold text-gray-700 dark:text-gray-300'>Start Time (ms ago)</div>
+                                        <input
+                                            type='number'
+                                            value={customTimeStart || ''}
+                                            onChange={(e) => setCustomTimeStart(e.target.value ? parseInt(e.target.value) : null)}
+                                            placeholder='0'
+                                            className='w-full px-2 py-1 text-xs border border-orange-300 dark:border-orange-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
+                                        />
+                                        <div className='text-xs font-semibold text-gray-700 dark:text-gray-300'>End Time (ms ago, optional)</div>
+                                        <input
+                                            type='number'
+                                            value={customTimeEnd || ''}
+                                            onChange={(e) => setCustomTimeEnd(e.target.value ? parseInt(e.target.value) : null)}
+                                            placeholder='0 (now)'
+                                            className='w-full px-2 py-1 text-xs border border-orange-300 dark:border-orange-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const baseTime = logs.length > 0 ? logs[logs.length - 1].timestamp : Date.now();
+                                                const newTimeRange = {
+                                                    start: customTimeStart ? baseTime - customTimeStart : null,
+                                                    end: customTimeEnd ? baseTime - customTimeEnd : null,
+                                                };
+                                                const newFilter = { ...filter, timeRange: newTimeRange };
+                                                setFilter(newFilter);
+                                                filterLogs(newFilter);
+                                                setTimeRangeMenuOpen(false);
+                                            }}
+                                            className='w-full px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded font-medium transition-colors'
+                                        >
+                                        Apply Custom Range
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Log count */}
+                    <div className='ml-auto text-xs text-gray-600 dark:text-gray-400 font-semibold flex-shrink-0'>
+                        {filteredLogs.length}/{logs.length}
+                    </div>
                 </div>
+
+                {/* Row 2: HTTP Methods Filter - Only show if network logs visible */}
+                {filter.logTypes.includes('network') && (
+                    <div className='flex flex-wrap items-center gap-1.5'>
+                        {HTTP_METHODS.map((method) => (
+                            <button
+                                key={method}
+                                onClick={() => toggleMethod(method)}
+                                className={`px-1.5 py-0.5 text-xs rounded transition-colors font-mono flex-shrink-0 ${
+                                    selectedMethods.includes(method)
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-600'
+                                }`}
+                                title='Click to toggle HTTP method'
+                            >
+                                {method}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Filter Bar */}
-            <LogsFilterBar onFilterChange={handleFilterChange} latestLogTimestamp={logs.length > 0 ? logs[logs.length - 1].timestamp : Date.now()} currentFilter={filter} />
+            <LogsFilterBar onFilterChange={handleFilterChange} currentFilter={filter} />
 
             {/* Pinned Logs List */}
             {pinnedLogIds.size > 0 && (
@@ -786,91 +935,32 @@ export default function LogsSection() {
                 </div>
             )}
 
-            {/* Two-column layout: Logs on left, Text panel on right (if text exists) */}
-            <div className={`flex-1 flex gap-3 overflow-hidden ${selectedLogs.length > 0 ? '' : ''}`}>
-                {/* Log List */}
-                <div ref={logContainerRef} className='flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-slate-800'>
-                    {filteredLogs.length > 0 ? (
-                        <div>
-                            {filteredLogs.map((log) => (
-                                <div
-                                    key={log.id}
-                                    ref={(el) => {
-                                        if (el) pinnedLogRefMap.current.set(log.id, el);
-                                    }}
-                                >
-                                    <LogRow
-                                        log={log}
-                                        onAddToRecording={handleAddToText}
-                                        onAddFromHere={handleAddFromHere}
-                                        onSelectRangeStart={handleSelectRangeStart}
-                                        isRangeStart={rangeStartLogId === log.id}
-                                        isPinned={pinnedLogIds.has(log.id)}
-                                        onPin={handlePin}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className='flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm'>
-                            {logs.length === 0 ? 'No logs yet. Start logging...' : 'No logs match your filters.'}
-                        </div>
-                    )}
-                </div>
-
-                {/* Text Panel - Only show if there are selected logs */}
-                {selectedLogs.length > 0 && (
-                    <div className='w-1/3 flex flex-col border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-slate-800 overflow-hidden'>
-                        <div className='bg-purple-600 text-white px-3 py-2 flex-shrink-0'>
-                            <div className='flex items-center justify-between'>
-                                <span className='text-xs font-semibold'>AI Context ({selectedLogs.length})</span>
-                                <div className='flex gap-1'>
-                                    <button
-                                        onClick={handleCopyText}
-                                        title='Copy to clipboard'
-                                        className='px-2 py-0.5 bg-purple-700 hover:bg-purple-800 text-white text-xs rounded transition-colors'
-                                    >
-                                        Copy
-                                    </button>
-                                    <button
-                                        onClick={handleClearText}
-                                        title='Clear all'
-                                        className='px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors'
-                                    >
-                                        Clear
-                                    </button>
-                                </div>
+            {/* Log List */}
+            <div ref={logContainerRef} className='flex-1 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-slate-800'>
+                {filteredLogs.length > 0 ? (
+                    <div>
+                        {filteredLogs.map((log) => (
+                            <div
+                                key={log.id}
+                                ref={(el) => {
+                                    if (el) pinnedLogRefMap.current.set(log.id, el);
+                                }}
+                            >
+                                <LogRow
+                                    log={log}
+                                    onAddToRecording={handleAddToText}
+                                    onAddFromHere={handleAddFromHere}
+                                    onSelectRangeStart={handleSelectRangeStart}
+                                    isRangeStart={rangeStartLogId === log.id}
+                                    isPinned={pinnedLogIds.has(log.id)}
+                                    onPin={handlePin}
+                                />
                             </div>
-                        </div>
-
-                        {/* Text content with log list */}
-                        <div className='flex-1 flex flex-col overflow-hidden'>
-                            {/* AI-friendly text */}
-                            <div className='flex-1 overflow-y-auto px-3 py-2 border-b border-gray-200 dark:border-gray-700 font-mono text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words'>
-                                {generateAIText()}
-                            </div>
-
-                            {/* Selected logs list with remove buttons */}
-                            <div className='max-h-32 overflow-y-auto border-t border-gray-200 dark:border-gray-700'>
-                                {selectedLogs.map((log, idx) => (
-                                    <div
-                                        key={idx}
-                                        className='px-3 py-1 text-xs border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 group'
-                                    >
-                                        <span className='text-gray-600 dark:text-gray-400 truncate flex-1'>
-                                            {idx + 1}. {log.message.substring(0, 40)}
-                                        </span>
-                                        <button
-                                            onClick={() => handleRemoveFromText(idx)}
-                                            className='px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors opacity-0 group-hover:opacity-100'
-                                            title='Remove'
-                                        >
-                                            −
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className='flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm'>
+                        {logs.length === 0 ? 'No logs yet. Start logging...' : 'No logs match your filters.'}
                     </div>
                 )}
             </div>

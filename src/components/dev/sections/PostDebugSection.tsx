@@ -759,7 +759,7 @@ export default function PostDebugSection() {
     const handleDeleteFakePosts = async () => {
         if (!confirm('Delete all fake dev posts?')) return;
         try {
-            await apiMutate('/dev/posts/delete-all', 'post', {});
+            // await apiMutate('/dev/posts/delete-all', 'post', {});
             alert('Deleted all fake posts');
         }
         catch (error) {
@@ -1027,126 +1027,45 @@ export default function PostDebugSection() {
                 </div>
             </div>
 
-            {/* Count */}
-            <FieldBox isActive={activeField === 'count'} fieldName='count'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Count</label>
-                <div className='flex flex-wrap gap-1 mt-1'>
-                    <ToggleButton label='1' isActive={countMode === '1'} onClick={() => setCountMode('1')} />
-                    <ToggleButton label='5' isActive={countMode === '5'} onClick={() => setCountMode('5')} />
-                    <ToggleButton label='10' isActive={countMode === '10'} onClick={() => setCountMode('10')} />
-                    <ToggleButton label='Custom' isActive={countMode === 'custom'} onClick={() => setCountMode('custom')} />
-                </div>
-                {countMode === 'custom' && (
-                    <input
-                        type='number'
-                        min='1'
-                        max='50'
-                        value={customCount}
-                        onChange={(e) => setCustomCount(Math.max(1, parseInt(e.target.value) || 1))}
-                        className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
-                    />
-                )}
-            </FieldBox>
-
-            {/* Post Type */}
-            <FieldBox isActive={activeField === 'type'} fieldName='type'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Type</label>
-                <div className='flex flex-wrap gap-1 mt-1'>
-                    <ToggleButton label='Gift' isActive={postType === 'gift'} onClick={() => setPostType('gift')} />
-                    <ToggleButton label='Request' isActive={postType === 'request'} onClick={() => setPostType('request')} />
-                    <ToggleButton label='Random' isActive={postType === 'random'} onClick={() => setPostType('random')} />
-                </div>
-            </FieldBox>
-
-            {/* Category */}
-            <FieldBox isActive={activeField === 'category'} fieldName='category'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Category</label>
-                <select
-                    value={selectedCategory || ''}
-                    onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : undefined)}
-                    onFocus={() => setActiveField('category')}
-                    className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
-                >
-                    <option value=''>Random</option>
-                    {categories?.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                </select>
-            </FieldBox>
-
-            {/* User Mode */}
-            <FieldBox isActive={activeField === 'user'} fieldName='user'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Post As</label>
-                <div className='flex flex-wrap gap-1 mt-1'>
-                    <ToggleButton label='Me' isActive={userMode === 'current'} onClick={() => { setUserMode('current'); setSelectedUserId(undefined); }} />
-                    <ToggleButton label='Random' isActive={userMode === 'random'} onClick={() => { setUserMode('random'); setSelectedUserId(undefined); }} />
-                    <ToggleButton label='Search' isActive={userMode === 'search'} onClick={() => setUserMode('search')} />
-                </div>
-
-                {userMode === 'search' && (
-                    <div className='mt-2 pt-2 border-t border-gray-300 dark:border-gray-600'>
-                        <input
-                            type='text'
-                            placeholder='Search user...'
-                            value={userSearchQuery}
-                            onChange={(e) => setUserSearchQuery(e.target.value)}
-                            className='w-full px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
-                        />
-                        {searchResults && searchResults.length > 0 && (
-                            <div className='mt-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-slate-700 max-h-32 overflow-y-auto'>
-                                {searchResults.map((u) => (
-                                    <button
-                                        key={u.id}
-                                        onClick={() => {
-                                            setSelectedUserId(u.id);
-                                            setSelectedUserName(u.displayName || u.username);
-                                            setUserSearchQuery('');
-                                        }}
-                                        className='w-full text-left px-1 py-0.5 hover:bg-purple-100 dark:hover:bg-purple-900 border-b border-gray-200 dark:border-gray-600 last:border-b-0 text-xs'
-                                    >
-                                        <div className='font-medium'>{u.displayName || u.username}</div>
-                                        <div className='text-xs text-gray-500'>@{u.username}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {selectedUserId && selectedUserName && (
-                            <div className='mt-1 p-1 bg-purple-100 dark:bg-purple-900 rounded text-xs'>
-                                ✓ {selectedUserName}
-                                <button onClick={() => { setSelectedUserId(undefined); setSelectedUserName(undefined); }} className='ml-2 text-purple-600 dark:text-purple-300 hover:underline text-xs'>clear</button>
-                            </div>
-                        )}
+            {/* Row 1: Count, Type, Category, Images, Location, Tags */}
+            <div className='grid grid-cols-3 sm:grid-cols-6 gap-1'>
+                <FieldBox isActive={activeField === 'count'} fieldName='count'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Count</label>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
+                        <ToggleButton label='1' isActive={countMode === '1'} onClick={() => setCountMode('1')} />
+                        <ToggleButton label='5' isActive={countMode === '5'} onClick={() => setCountMode('5')} />
+                        <ToggleButton label='10' isActive={countMode === '10'} onClick={() => setCountMode('10')} />
+                        <ToggleButton label='#' isActive={countMode === 'custom'} onClick={() => setCountMode('custom')} />
                     </div>
-                )}
-            </FieldBox>
+                </FieldBox>
 
-            {/* Description Mode */}
-            <FieldBox isActive={activeField === 'description'} fieldName='description'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Description</label>
-                <div className='flex flex-wrap gap-1 mt-1'>
-                    <ToggleButton label='Short' isActive={descriptionMode === 'short'} onClick={() => setDescriptionMode('short')} />
-                    <ToggleButton label='Long' isActive={descriptionMode === 'long'} onClick={() => setDescriptionMode('long')} />
-                    <ToggleButton label='Custom' isActive={descriptionMode === 'custom'} onClick={() => setDescriptionMode('custom')} />
-                    <ToggleButton label='Random' isActive={descriptionMode === 'random'} onClick={() => setDescriptionMode('random')} />
-                </div>
+                <FieldBox isActive={activeField === 'type'} fieldName='type'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Type</label>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
+                        <ToggleButton label='Gift' isActive={postType === 'gift'} onClick={() => setPostType('gift')} />
+                        <ToggleButton label='Req' isActive={postType === 'request'} onClick={() => setPostType('request')} />
+                        <ToggleButton label='Rnd' isActive={postType === 'random'} onClick={() => setPostType('random')} />
+                    </div>
+                </FieldBox>
 
-                {descriptionMode === 'custom' && (
-                    <textarea
-                        value={customDescription}
-                        onChange={(e) => setCustomDescription(e.target.value)}
-                        placeholder='Enter custom description...'
-                        className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white resize-none'
-                        rows={2}
-                        onFocus={() => setActiveField('description')}
-                    />
-                )}
-            </FieldBox>
+                <FieldBox isActive={activeField === 'category'} fieldName='category'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Category</label>
+                    <select
+                        value={selectedCategory || ''}
+                        onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : undefined)}
+                        onFocus={() => setActiveField('category')}
+                        className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                    >
+                        <option value=''>Rnd</option>
+                        {categories?.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </select>
+                </FieldBox>
 
-            {/* Images & Location */}
-            <div className='grid grid-cols-2 gap-2'>
                 <FieldBox isActive={activeField === 'images'} fieldName='images'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Images</label>
-                    <div className='flex flex-wrap gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
                         {[1, 3, 5].map((num) => (
                             <ToggleButton
                                 key={num}
@@ -1160,107 +1079,189 @@ export default function PostDebugSection() {
 
                 <FieldBox isActive={activeField === 'location'} fieldName='location'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Location</label>
-                    <div className='flex flex-wrap gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
                         <ToggleButton label='Off' isActive={!includeLocation} onClick={() => setIncludeLocation(false)} />
                         <ToggleButton label='User' isActive={includeLocation && locationMode === 'user'} onClick={() => { setIncludeLocation(true); setLocationMode('user'); }} />
-                        <ToggleButton label='Random' isActive={includeLocation && locationMode === 'random'} onClick={() => { setIncludeLocation(true); setLocationMode('random'); }} />
+                        <ToggleButton label='Rnd' isActive={includeLocation && locationMode === 'random'} onClick={() => { setIncludeLocation(true); setLocationMode('random'); }} />
                     </div>
                 </FieldBox>
 
                 <FieldBox isActive={activeField === 'tags'} fieldName='tags'>
                     <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Tags</label>
-                    <div className='flex flex-wrap gap-1 mt-1'>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
                         <ToggleButton label='Off' isActive={tagsMode === 'off'} onClick={() => setTagsMode('off')} />
-                        <ToggleButton label='Random' isActive={tagsMode === 'random'} onClick={() => setTagsMode('random')} />
-                        <ToggleButton label='Custom' isActive={tagsMode === 'custom'} onClick={() => setTagsMode('custom')} />
+                        <ToggleButton label='Rnd' isActive={tagsMode === 'random'} onClick={() => setTagsMode('random')} />
+                        <ToggleButton label='#' isActive={tagsMode === 'custom'} onClick={() => setTagsMode('custom')} />
                     </div>
+                </FieldBox>
+            </div>
+
+            {/* Expandable inputs row */}
+            {(countMode === 'custom' || tagsMode === 'custom') && (
+                <div className='flex gap-2'>
+                    {countMode === 'custom' && (
+                        <input
+                            type='number'
+                            min='1'
+                            max='50'
+                            value={customCount}
+                            onChange={(e) => setCustomCount(Math.max(1, parseInt(e.target.value) || 1))}
+                            placeholder='Count'
+                            className='w-20 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                        />
+                    )}
                     {tagsMode === 'custom' && (
                         <input
                             type='text'
                             value={customTags}
                             onChange={(e) => setCustomTags(e.target.value)}
-                            placeholder='Comma-separated, max 10'
-                            className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                            placeholder='Tags: comma-separated'
+                            className='flex-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                        />
+                    )}
+                </div>
+            )}
+
+            {/* Row 2: Post As, Description, Handshakes */}
+            <div className='grid grid-cols-3 gap-1'>
+                <FieldBox isActive={activeField === 'user'} fieldName='user'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Post As</label>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
+                        <ToggleButton label='Me' isActive={userMode === 'current'} onClick={() => { setUserMode('current'); setSelectedUserId(undefined); }} />
+                        <ToggleButton label='Rnd' isActive={userMode === 'random'} onClick={() => { setUserMode('random'); setSelectedUserId(undefined); }} />
+                        <ToggleButton label='Find' isActive={userMode === 'search'} onClick={() => setUserMode('search')} />
+                    </div>
+
+                    {userMode === 'search' && (
+                        <div className='mt-1 pt-1 border-t border-gray-300 dark:border-gray-600'>
+                            <input
+                                type='text'
+                                placeholder='Search...'
+                                value={userSearchQuery}
+                                onChange={(e) => setUserSearchQuery(e.target.value)}
+                                className='w-full px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                            />
+                            {searchResults && searchResults.length > 0 && (
+                                <div className='mt-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-slate-700 max-h-20 overflow-y-auto'>
+                                    {searchResults.map((u) => (
+                                        <button
+                                            key={u.id}
+                                            onClick={() => {
+                                                setSelectedUserId(u.id);
+                                                setSelectedUserName(u.displayName || u.username);
+                                                setUserSearchQuery('');
+                                            }}
+                                            className='w-full text-left px-1 py-0.5 hover:bg-purple-100 dark:hover:bg-purple-900 border-b border-gray-200 dark:border-gray-600 last:border-b-0 text-xs'
+                                        >
+                                            {u.displayName || u.username}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {selectedUserId && selectedUserName && (
+                                <div className='mt-1 p-1 bg-purple-100 dark:bg-purple-900 rounded text-xs flex items-center justify-between'>
+                                    <span>✓ {selectedUserName}</span>
+                                    <button onClick={() => { setSelectedUserId(undefined); setSelectedUserName(undefined); }} className='text-purple-600 dark:text-purple-300 hover:underline text-xs'>×</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </FieldBox>
+
+                <FieldBox isActive={activeField === 'description'} fieldName='description'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Desc</label>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
+                        <ToggleButton label='S' isActive={descriptionMode === 'short'} onClick={() => setDescriptionMode('short')} />
+                        <ToggleButton label='L' isActive={descriptionMode === 'long'} onClick={() => setDescriptionMode('long')} />
+                        <ToggleButton label='#' isActive={descriptionMode === 'custom'} onClick={() => setDescriptionMode('custom')} />
+                        <ToggleButton label='R' isActive={descriptionMode === 'random'} onClick={() => setDescriptionMode('random')} />
+                    </div>
+
+                    {descriptionMode === 'custom' && (
+                        <textarea
+                            value={customDescription}
+                            onChange={(e) => setCustomDescription(e.target.value)}
+                            placeholder='Custom...'
+                            className='w-full mt-1 px-1 py-0.5 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-white resize-none'
+                            rows={2}
+                            onFocus={() => setActiveField('description')}
                         />
                     )}
                 </FieldBox>
+
+                <FieldBox isActive={activeField === 'handshakes'} fieldName='handshakes'>
+                    <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Handshakes</label>
+                    <div className='flex flex-wrap gap-0.5 mt-1'>
+                        <ToggleButton label='Off' isActive={handshakesMode === 'off'} onClick={() => setHandshakesMode('off')} />
+                        <ToggleButton label='Add' isActive={handshakesMode === 'add'} onClick={() => setHandshakesMode('add')} />
+                        <ToggleButton label='Rnd' isActive={handshakesMode === 'random'} onClick={() => setHandshakesMode('random')} />
+                    </div>
+                </FieldBox>
             </div>
 
-            {/* Handshakes */}
-            <FieldBox isActive={activeField === 'handshakes'} fieldName='handshakes'>
-                <label className='text-xs font-medium text-gray-700 dark:text-gray-300'>Handshakes</label>
-                <div className='flex flex-wrap gap-1 mt-1'>
-                    <ToggleButton label='Off' isActive={handshakesMode === 'off'} onClick={() => setHandshakesMode('off')} />
-                    <ToggleButton label='Add' isActive={handshakesMode === 'add'} onClick={() => setHandshakesMode('add')} />
-                    <ToggleButton label='Random' isActive={handshakesMode === 'random'} onClick={() => setHandshakesMode('random')} />
-                </div>
-
-                {handshakesMode === 'add' && (
-                    <div className='mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 space-y-2'>
-                        {/* Count Mode */}
-                        <div
-                            ref={(el) => {
-                                if (el) fieldRefs.current['handshakes-count'] = el;
-                            }}
-                            className={`p-2 rounded border-2 transition-colors ${
-                                activeField === 'handshakes-count'
-                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
-                                    : 'border-gray-200 dark:border-gray-700'
-                            }`}
-                            onClick={() => setActiveField('handshakes-count')}
-                        >
-                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Per Post Count</label>
-                            <div className='flex flex-wrap gap-1'>
-                                <ToggleButton label='Off' isActive={handshakeCountMode === 'off'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('off'); }} />
-                                <ToggleButton label='1' isActive={handshakeCountMode === '1'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('1'); }} />
-                                <ToggleButton label='3' isActive={handshakeCountMode === '3'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('3'); }} />
-                                <ToggleButton label='5' isActive={handshakeCountMode === '5'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('5'); }} />
-                                <ToggleButton label='Random' isActive={handshakeCountMode === 'random'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('random'); }} />
-                            </div>
-                        </div>
-
-                        {/* State Mode */}
-                        <div
-                            ref={(el) => {
-                                if (el) fieldRefs.current['handshakes-state'] = el;
-                            }}
-                            className={`p-2 rounded border-2 transition-colors ${
-                                activeField === 'handshakes-state'
-                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
-                                    : 'border-gray-200 dark:border-gray-700'
-                            }`}
-                            onClick={() => setActiveField('handshakes-state')}
-                        >
-                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>State</label>
-                            <div className='flex flex-wrap gap-1'>
-                                <ToggleButton label='New' isActive={handshakeStateMode === 'new'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('new'); }} />
-                                <ToggleButton label='Accepted' isActive={handshakeStateMode === 'accepted'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('accepted'); }} />
-                                <ToggleButton label='Completed' isActive={handshakeStateMode === 'completed'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('completed'); }} />
-                                <ToggleButton label='Random' isActive={handshakeStateMode === 'random'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('random'); }} />
-                            </div>
-                        </div>
-
-                        {/* Sender User Mode */}
-                        <div
-                            ref={(el) => {
-                                if (el) fieldRefs.current['handshakes-sender'] = el;
-                            }}
-                            className={`p-2 rounded border-2 transition-colors ${
-                                activeField === 'handshakes-sender'
-                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
-                                    : 'border-gray-200 dark:border-gray-700'
-                            }`}
-                            onClick={() => setActiveField('handshakes-sender')}
-                        >
-                            <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Sender</label>
-                            <div className='flex flex-wrap gap-1'>
-                                <ToggleButton label='Random' isActive={handshakeSenderMode === 'random'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('random'); }} />
-                                <ToggleButton label='Current' isActive={handshakeSenderMode === 'current'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('current'); }} />
-                            </div>
+            {/* Handshakes expanded options */}
+            {handshakesMode === 'add' && (
+                <div className='grid grid-cols-3 gap-1'>
+                    <div
+                        ref={(el) => {
+                            if (el) fieldRefs.current['handshakes-count'] = el;
+                        }}
+                        className={`p-2 rounded border-2 transition-colors ${
+                            activeField === 'handshakes-count'
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        onClick={() => setActiveField('handshakes-count')}
+                    >
+                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Count</label>
+                        <div className='flex flex-wrap gap-0.5'>
+                            <ToggleButton label='Off' isActive={handshakeCountMode === 'off'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('off'); }} />
+                            <ToggleButton label='1' isActive={handshakeCountMode === '1'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('1'); }} />
+                            <ToggleButton label='3' isActive={handshakeCountMode === '3'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('3'); }} />
+                            <ToggleButton label='5' isActive={handshakeCountMode === '5'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('5'); }} />
+                            <ToggleButton label='R' isActive={handshakeCountMode === 'random'} onClick={() => { setActiveField('handshakes-count'); setHandshakeCountMode('random'); }} />
                         </div>
                     </div>
-                )}
-            </FieldBox>
+
+                    <div
+                        ref={(el) => {
+                            if (el) fieldRefs.current['handshakes-state'] = el;
+                        }}
+                        className={`p-2 rounded border-2 transition-colors ${
+                            activeField === 'handshakes-state'
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        onClick={() => setActiveField('handshakes-state')}
+                    >
+                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>State</label>
+                        <div className='flex flex-wrap gap-0.5'>
+                            <ToggleButton label='New' isActive={handshakeStateMode === 'new'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('new'); }} />
+                            <ToggleButton label='Acc' isActive={handshakeStateMode === 'accepted'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('accepted'); }} />
+                            <ToggleButton label='Done' isActive={handshakeStateMode === 'completed'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('completed'); }} />
+                            <ToggleButton label='R' isActive={handshakeStateMode === 'random'} onClick={() => { setActiveField('handshakes-state'); setHandshakeStateMode('random'); }} />
+                        </div>
+                    </div>
+
+                    <div
+                        ref={(el) => {
+                            if (el) fieldRefs.current['handshakes-sender'] = el;
+                        }}
+                        className={`p-2 rounded border-2 transition-colors ${
+                            activeField === 'handshakes-sender'
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400 ring-opacity-50'
+                                : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        onClick={() => setActiveField('handshakes-sender')}
+                    >
+                        <label className='text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1'>Sender</label>
+                        <div className='flex flex-wrap gap-0.5'>
+                            <ToggleButton label='Rnd' isActive={handshakeSenderMode === 'random'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('random'); }} />
+                            <ToggleButton label='Me' isActive={handshakeSenderMode === 'current'} onClick={() => { setActiveField('handshakes-sender'); setHandshakeSenderMode('current'); }} />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Create Button */}
             <FieldBox isActive={activeField === 'create'} fieldName='create'>
