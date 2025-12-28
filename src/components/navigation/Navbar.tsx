@@ -255,7 +255,7 @@ export default function Navbar({
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
+            <header className='sticky-nav top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
                     <div className='flex-shrink-0 mr-2'>
                         {brand || <></>}

@@ -52,22 +52,59 @@
 
 /* Dynamic Viewport Height with fallbacks for mobile and older browsers */
 .height-dvh {
-    height: 100vh; /* Fallback for older browsers */
-    height: 100dvh; /* Modern browsers with dynamic viewport support */
+    /* Fallback for older browsers */
+    height: 100vh;
+    /* iOS Safari fallback */
+    height: -webkit-fill-available;
+    /* Modern browsers - accounts for mobile browser UI and safe areas */
+    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
 
 /* Min height variant */
 .min-height-dvh {
-    min-height: 100vh; /* Fallback for older browsers */
-    min-height: 100dvh; /* Modern browsers with dynamic viewport support */
+    /* Fallback for older browsers */
+    min-height: 100vh;
+    /* iOS Safari fallback */
+    min-height: -webkit-fill-available;
+    /* Modern browsers - accounts for mobile browser UI and safe areas */
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
 
-/* iOS-specific fallback using -webkit-fill-available */
-@supports (-webkit-touch-callout: none) {
-    .height-dvh {
-        height: -webkit-fill-available;
-    }
-    .min-height-dvh {
-        min-height: -webkit-fill-available;
-    }
+/* Mobile scroll behavior fixes */
+html, body {
+    /* Prevent overscroll/bounce on iOS that affects sticky headers */
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    /* Ensure proper scroll containment */
+    overflow: hidden;
+    height: 100%;
+}
+
+/* Root app container - ensure it fills available space */
+#root {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Main scrollable area styles */
+.main-scroll-container {
+    /* Enable momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent scroll chaining to parent */
+    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
+}
+
+/* Sticky header fixes for mobile */
+.sticky-nav {
+    /* Ensure sticky works properly on iOS */
+    position: sticky;
+    position: -webkit-sticky;
+    /* Prevent transform issues that break sticky on iOS */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    /* Hardware acceleration */
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }

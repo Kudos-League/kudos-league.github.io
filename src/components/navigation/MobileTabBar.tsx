@@ -92,7 +92,7 @@ export default function MobileTabBar() {
     };
 
     return (
-        <nav className="lg:hidden sticky top-[64px] sm:top-[72px] z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <nav className="lg:hidden sticky-nav top-[64px] sm:top-[72px] z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
             <div className="flex items-center px-1 py-1">
                 {tabs.map((tab) => {
                     const active = isActive(tab.path);
