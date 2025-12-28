@@ -14,7 +14,9 @@ export function useSearchUsersQuery(query: string) {
             apiGet<UserDTO[]>('/users/search', {
                 params: { query }
             }),
-        enabled: query.length >= 2
+        enabled: query.length >= 2,
+        staleTime: 0,
+        gcTime: 60_000
     });
 }
 

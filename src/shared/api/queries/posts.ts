@@ -40,7 +40,9 @@ export function useSearchPostsQuery(query: string) {
             apiGet<PostDTO[]>('/posts/search', {
                 params: { query, ...filters }
             }),
-        enabled: query.length >= 2
+        enabled: query.length >= 2,
+        staleTime: 0,
+        gcTime: 60_000
     });
 }
 
