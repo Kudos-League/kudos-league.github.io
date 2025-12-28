@@ -249,10 +249,7 @@ export default function GanttEventsCalendar() {
     const [viewDate, setViewDate] = useState<Date | null>(null);
     const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | 'quarter' | null>(null);
     const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
-    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>(() => {
-        const saved = localStorage.getItem('events_locationFilter');
-        return (saved as 'all' | 'local' | 'global') || 'local';
-    });
+    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>('all');
     const [periodOffset, setPeriodOffset] = useState(0);
     const [visibleEventCount, setVisibleEventCount] = useState(10);
     const [useCustomRange, setUseCustomRange] = useState(false);
@@ -269,10 +266,6 @@ export default function GanttEventsCalendar() {
         localStorage.setItem('events_timeRange', timeRange);
     }, [timeRange]);
 
-    // Persist locationFilter to localStorage
-    useEffect(() => {
-        localStorage.setItem('events_locationFilter', locationFilter);
-    }, [locationFilter]);
 
     const { data: allEvents = [], isLoading, isError } = useEvents({
         filter: 'all',

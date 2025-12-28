@@ -31,7 +31,7 @@ export default function CreateEvent() {
     const [location, setLocation] = useState<LocationDTO | null>(null);
 
     const now = new Date();
-    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
 
     // Parse dates from query params if available
     const startDateParam = searchParams.get('startDate');
@@ -55,7 +55,7 @@ export default function CreateEvent() {
     else {
         // Default behavior when no dates provided
         initialStartDate = now;
-        initialEndDate = oneDayLater;
+        initialEndDate = threeHoursLater;
     }
 
     const [startDate, setStartDate] = useState(initialStartDate);
