@@ -57,10 +57,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         return compact ? period.replace('This ', '') : `Kudos ${period}`;
     };
 
-    // Check if we have any location available (saved or browser)
-    const hasLocation = !!user?.location?.regionID || !!browserLocation;
-
-    console.log('Render - useLocal:', useLocal, 'hasLocation:', hasLocation, 'shouldRender:', !useLocal || hasLocation);
+    // Check if user has a SAVED location (not browser location) - required for local leaderboard
+    const hasSavedLocation = !!user?.location?.regionID;
+    // For API calls, we can use either saved or browser location
+    const hasLocation = hasSavedLocation || !!browserLocation;
 
     const loadLeaderboard = async (reset = true) => {
         if (!user) {
@@ -283,29 +283,45 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
                 {/* Local/Global Switch */}
                 <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
-                    <span className='text-sm truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px] lg:max-w-[240px]' title={user?.location?.name || 'Local'}>
-                        {user?.location?.name || 'Local'}
-                    </span>
-                    <label className='inline-flex items-center cursor-pointer'>
-                        <input
-                            type='checkbox'
-                            checked={!useLocal}
-                            onChange={() => setUseLocal((v) => !v)}
-                            className='sr-only'
-                        />
-                        <div className={`relative bg-gray-300 dark:bg-zinc-600 rounded-full shadow-inner ${
-                            compact ? 'w-8 h-4' : 'w-10 h-5'
-                        }`}>
-                            <div
-                                className={`absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform ${
-                                    compact ? 'w-3 h-3' : 'w-4 h-4'
-                                } ${
-                                    useLocal ? '' : (compact ? 'translate-x-4' : 'translate-x-5')
-                                }`}
-                            />
-                        </div>
-                    </label>
-                    <span className={compact ? 'text-xs' : 'text-sm'}>Global</span>
+                    {hasSavedLocation ? (
+                        <>
+                            <span
+                                className={`truncate max-w-[60px] sm:max-w-[100px] md:max-w-[140px] ${compact ? 'text-xs' : 'text-sm'}`}
+                                title={user?.location?.name || 'Local'}
+                            >
+                                {user?.location?.name || 'Local'}
+                            </span>
+                            <label className='inline-flex items-center cursor-pointer'>
+                                <input
+                                    type='checkbox'
+                                    checked={!useLocal}
+                                    onChange={() => setUseLocal((v) => !v)}
+                                    className='sr-only'
+                                />
+                                <div className={`relative bg-gray-300 dark:bg-zinc-600 rounded-full shadow-inner ${
+                                    compact ? 'w-8 h-4' : 'w-10 h-5'
+                                }`}>
+                                    <div
+                                        className={`absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform ${
+                                            compact ? 'w-3 h-3' : 'w-4 h-4'
+                                        } ${
+                                            useLocal ? '' : (compact ? 'translate-x-4' : 'translate-x-5')
+                                        }`}
+                                    />
+                                </div>
+                            </label>
+                            <span className={compact ? 'text-xs' : 'text-sm'}>Global</span>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => navigate(`/user/${user?.id}`)}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${compact ? 'text-xs' : 'text-sm'}`}
+                            title='Add your location to see local leaderboard'
+                        >
+                            <span className={compact ? '' : 'hidden sm:inline'}>Add location on your profile for local filter</span>
+                            <span className={compact ? 'hidden' : 'sm:hidden'}>Local</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -313,27 +329,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             {loading && <p className='text-center text-gray-500'>Loading...</p>}
             {error && <p className='text-center text-red-500'>{error}</p>}
 
-            {/* No location message when local filter is on but no location available */}
-            {useLocal && !hasLocation && !loading && (
-                <div className='mt-4 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-center'>
-                    <div className='text-4xl mb-3'>📍</div>
-                    <h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-2'>
-                        Location Required
-                    </h3>
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                        To view your local leaderboard, you need to set your location first.
-                    </p>
-                    <button
-                        onClick={() => navigate('/settings')}
-                        className='inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors'
-                    >
-                        Add Location in Settings
-                    </button>
-                </div>
-            )}
-
             {/* Leaderboard List Container */}
-            {(!useLocal || hasLocation) && !loading && (
+            {!loading && (
                 <>
                     <style>{`
                         .leaderboard-scroll::-webkit-scrollbar {
