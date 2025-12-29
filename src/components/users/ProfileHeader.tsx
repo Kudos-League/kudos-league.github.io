@@ -91,7 +91,8 @@ const ProfileHeader: React.FC<Props> = ({
                     <Button
                         data-testid='edit-profile'
                         onClick={onEditProfile}
-                        variant='secondary'
+                        variant='primary'
+                        shape='pill'
                     >
                         ⚙️ Edit Profile/Settings
                     </Button>

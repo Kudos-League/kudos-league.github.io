@@ -546,10 +546,8 @@ export default function PostDetails(props: Props) {
                 categoryID: editData.categoryID
             };
 
-            if (
-                editData.location &&
-                editData.location !== postDetails.location
-            ) {
+            // Handle location changes (including deletion)
+            if (editData.location !== postDetails.location) {
                 updateData.location = editData.location;
             }
 
@@ -945,7 +943,24 @@ export default function PostDetails(props: Props) {
                             Location
                         </label>
 
+                        {editData.location && (
+                            <div className='mb-2 flex items-center justify-between gap-2'>
+                                <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                    {editData.location.name || 'Location set'}
+                                </div>
+                                <Button
+                                    type='button'
+                                    variant='ghost'
+                                    onClick={() => setEditData({ ...editData, location: null })}
+                                    className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                >
+                                    ✕ Remove
+                                </Button>
+                            </div>
+                        )}
+
                         <MapDisplay
+                            key={editData.location?.regionID || 'no-location'}
                             edit
                             regionID={editData.location?.regionID}
                             height={300}

@@ -9,7 +9,7 @@ import {
 } from '@/shared/api/mutations/posts';
 import { useCategories } from '@/shared/api/queries/categories';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { ArrowLeftIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { getImagePath } from '@/shared/api/config';
 
 import type {
@@ -53,7 +53,6 @@ export default function PostEditForm({
     const [editImageError, setEditImageError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
-    const [showLocationEditor, setShowLocationEditor] = useState(false);
 
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
@@ -102,11 +101,12 @@ export default function PostEditForm({
     const handleLocationChange = (data: any) => {
         if (data.coordinates) {
             const locationData: LocationDTO = {
-                name: data.name,
+                name: data.name || data.businessName || data.formattedAddress || '',
                 regionID: data.placeID,
                 latitude: data.coordinates.latitude,
                 longitude: data.coordinates.longitude
             };
+            console.log('[PostEditForm] Location changed:', data, 'Extracted name:', locationData.name);
             setEditData({ ...editData, location: locationData });
         }
     };
@@ -129,11 +129,13 @@ export default function PostEditForm({
                 categoryID: editData.categoryID
             };
 
-            if (
-                editData.location &&
-                editData.location !== post.location
-            ) {
+            // Handle location changes (including deletion)
+            if (editData.location !== post.location) {
                 updateData.location = editData.location;
+                console.log('[PostEditForm] Location change detected:', {
+                    oldLocation: post.location,
+                    newLocation: editData.location
+                });
             }
 
             const limitStr = (editData.itemsLimit || '').trim();
@@ -297,36 +299,41 @@ export default function PostEditForm({
                 </div>
 
                 <div>
-                    <button
-                        type='button'
-                        onClick={() => setShowLocationEditor(!showLocationEditor)}
-                        className='w-full flex items-center justify-between px-4 py-3 bg-brand-50 dark:bg-brand-900/20 border-2 border-brand-500 dark:border-brand-400 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors'
-                    >
-                        <span className='text-sm font-semibold text-brand-700 dark:text-brand-300'>
-                            Change Location
-                        </span>
-                        <ChevronDownIcon
-                            className={`w-5 h-5 text-brand-600 dark:text-brand-400 transition-transform ${showLocationEditor ? 'rotate-180' : ''}`}
-                        />
-                    </button>
+                    <label className='block text-sm font-medium mb-2'>
+                        Location
+                    </label>
 
-                    {showLocationEditor && (
-                        <div className='mt-4'>
-                            <MapDisplay
-                                edit
-                                regionID={editData.location?.regionID}
-                                coordinates={editData.location ? {
-                                    latitude: editData.location.latitude,
-                                    longitude: editData.location.longitude,
-                                    name: editData.location.name
-                                } : null}
-                                height={300}
-                                exactLocation={isPostOwner}
-                                onLocationChange={handleLocationChange}
-                                shouldSavedLocationButton={true}
-                            />
+                    {editData.location && (
+                        <div className='mb-2 flex items-center justify-between gap-2'>
+                            <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                {editData.location.name || 'Location set'}
+                            </div>
+                            <Button
+                                type='button'
+                                variant='ghost'
+                                onClick={() => setEditData({ ...editData, location: null })}
+                                className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                disabled={isSaving}
+                            >
+                                ✕ Remove
+                            </Button>
                         </div>
                     )}
+
+                    <MapDisplay
+                        key={editData.location?.regionID || 'no-location'}
+                        edit
+                        regionID={editData.location?.regionID || undefined}
+                        coordinates={editData.location ? {
+                            latitude: editData.location.latitude,
+                            longitude: editData.location.longitude,
+                            name: editData.location.name
+                        } : undefined}
+                        height={300}
+                        exactLocation={isPostOwner}
+                        onLocationChange={handleLocationChange}
+                        shouldSavedLocationButton={true}
+                    />
                 </div>
 
                 <div>
