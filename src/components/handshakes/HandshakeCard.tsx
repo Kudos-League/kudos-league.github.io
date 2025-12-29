@@ -62,11 +62,11 @@ const HandshakeCard: React.FC<Props> = ({
     const { user: senderUser } = useCachedUser(handshake.senderID);
     const { user: receiverUser } = useCachedUser(handshake.receiverID);
 
-    const imageSrc = handshake.post.images?.[0]
-        ? getEndpointUrl() + handshake.post.images[0]
+    const imageSrc = handshake.post?.images?.[0]
+        ? getEndpointUrl() + handshake.post?.images[0]
         : undefined;
     const showBodyInImageBox =
-        imgError || !handshake.post.images?.length || !imageSrc;
+        imgError || !handshake.post?.images?.length || !imageSrc;
 
     const stage = useMemo(() => {
         const handshakeForStage = { ...handshake, status } as typeof handshake;
@@ -319,12 +319,12 @@ const HandshakeCard: React.FC<Props> = ({
                             <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
                                 {showBodyInImageBox ? (
                                     <div className="w-full h-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded-lg flex items-center justify-center text-center p-2 overflow-hidden border border-gray-200 dark:border-gray-600">
-                                        {handshake.post.body.slice(0, 60)}…
+                                        {handshake.post?.body?.slice(0, 60) || 'No description'}…
                                     </div>
                                 ) : (
                                     <img
                                         src={imageSrc}
-                                        alt={handshake.post.title}
+                                        alt={handshake.post?.title || 'Post image'}
                                         className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                                         onError={() => setImgError(true)}
                                     />
@@ -334,7 +334,7 @@ const HandshakeCard: React.FC<Props> = ({
                             {/* Post Info - Better spacing */}
                             <div className="flex flex-col justify-center flex-1 min-w-0">
                                 <span className="text-blue-600 dark:text-blue-400 font-medium text-base sm:text-sm break-words line-clamp-2">
-                                    {handshake.post.title}
+                                    {handshake.post?.title || 'Untitled post'}
                                 </span>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     {new Date(handshake.createdAt).toLocaleDateString()}
@@ -390,19 +390,19 @@ const HandshakeCard: React.FC<Props> = ({
                         <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-amber-800 dark:text-amber-300`}>
                                 {userID === handshake.senderID ? (
-                                    handshake.post.type === 'request' ? (
+                                    handshake.post?.type === 'request' ? (
                                         <><span className="font-semibold">You offered help to this user.</span> Waiting for the poster to accept.</>
                                     ) : (
                                         <><span className="font-semibold">You asked for help.</span> Waiting for the poster to accept.</>
                                     )
                                 ) : userID === handshake.receiverID ? (
-                                    handshake.post.type === 'request' ? (
+                                    handshake.post?.type === 'request' ? (
                                         <><span className="font-semibold">This user is offering help.</span> Accept to coordinate the exchange.</>
                                     ) : (
                                         <><span className="font-semibold">This user wants your help.</span> Accept to coordinate the exchange.</>
                                     )
                                 ) : (
-                                    handshake.post.type === 'request' ? (
+                                    handshake.post?.type === 'request' ? (
                                         'Someone is offering this item to the poster.'
                                     ) : (
                                         'Someone wants this item from the poster.'
@@ -416,7 +416,7 @@ const HandshakeCard: React.FC<Props> = ({
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}>
                                 {userIsItemReceiver ? (
-                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive help, you can assign kudos below.</>
+                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post?.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive help, you can assign kudos below.</>
                                 ) : (
                                     <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? 'Waiting for the receiver to confirm they received the help' : 'Both parties are coordinating the exchange.'}</>
                                 )}
@@ -484,7 +484,7 @@ const HandshakeCard: React.FC<Props> = ({
                                     Send Kudos to Complete Exchange
                                 </label>
                                 <p className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}>
-                                    You received help! Send kudos as a thank you to the {handshake.post.type === 'request' ? 'giver' : 'poster'}.
+                                    You received help! Send kudos as a thank you to the {handshake.post?.type === 'request' ? 'giver' : 'poster'}.
                                 </p>
                             </div>
                             <div className="flex gap-2">
@@ -561,7 +561,7 @@ const HandshakeCard: React.FC<Props> = ({
                     setIsChatOpen={setIsChatOpen}
                     recipientID={otherUserID}
                     initialMessage={
-                        handshake.post.type === 'gift'
+                        handshake.post?.type === 'gift'
                             ? ""
                             : ''
                     }
