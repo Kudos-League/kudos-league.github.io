@@ -173,13 +173,17 @@ export default function NotificationsBell() {
         }
     }, [sortedItems]);
 
-    // Check if there are any recent notifications (within last week)
+    // Check if there are any recent notifications (within last week) or any unread notifications
     const hasRecentNotifications = useMemo(() => {
         if (items.length === 0) return false;
-        
+
+        // If there are any unread notifications, consider them as "recent" regardless of timestamp
+        const hasUnread = sortedItems.some(n => !n.isRead);
+        if (hasUnread) return true;
+
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        
+
         return sortedItems.some(n => {
             const timestamp = n.createdAt ||
                             (n as any).created || (n as any).date
@@ -305,6 +309,15 @@ export default function NotificationsBell() {
             }
             else {
                 console.error('No postID found for handshake notification', n);
+            }
+        }
+        else if (n.type === 'event-user-joined') {
+            const eventID = 'eventID' in n ? n.eventID : null;
+            if (eventID) {
+                navigate(`/event/${eventID}`);
+            }
+            else {
+                console.error('No eventID found for event-user-joined notification', n);
             }
         }
         setOpen(false);
@@ -519,6 +532,38 @@ export default function NotificationsBell() {
                                                             : 'The handshake was cancelled'}
                                                     </div>
                                                 )}
+                                            </div>
+                                        ) : n.type === 'event-user-joined' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium text-brand-700 dark:text-brand-300'>
+                                                        joined your event
+                                                    </div>
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                {(() => {
+                                                    const hasUser = 'user' in n && n.user;
+                                                    console.log('[NotificationsBell] EVENT_USER_JOINED:', {
+                                                        notification: n,
+                                                        hasUser,
+                                                        user: 'user' in n ? n.user : undefined,
+                                                        userID: 'userID' in n ? n.userID : undefined
+                                                    });
+                                                    return hasUser ? (
+                                                        <div className='mb-1' onClick={(e) => e.stopPropagation()}>
+                                                            <UserCard user={n.user} triggerVariant='avatar-name' />
+                                                        </div>
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                                                            Someone joined your event
+                                                        </div>
+                                                    );
+                                                })()}
+                                                <div className='text-xs text-zinc-500 dark:text-zinc-400 italic'>
+                                                    Click to view event
+                                                </div>
                                             </div>
                                         ) : (
                                             <div>

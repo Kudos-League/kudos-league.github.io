@@ -1,16 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function Spinner({
     text = '',
     className = '',
     size = 'xl',
-    variant = 'inline'
+    variant = 'inline',
+    delay = 0
 }: {
     text?: string;
     className?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
     variant?: 'inline' | 'fullscreen';
+    delay?: number;
 }) {
+    const [shouldShow, setShouldShow] = useState(delay === 0);
+
+    useEffect(() => {
+        if (delay === 0) {
+            setShouldShow(true);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setShouldShow(true);
+        }, delay);
+
+        return () => clearTimeout(timer);
+    }, [delay]);
+
+    if (!shouldShow) {
+        return null;
+    }
     const sizeConfig = {
         sm: { size: 'w-8 h-8', border: 'border-2' },
         md: { size: 'w-12 h-12', border: 'border-3' },

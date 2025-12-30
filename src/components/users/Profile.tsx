@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -22,6 +22,7 @@ import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteManager from './InviteManager';
 
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
+type EventFilterType = 'all-events' | 'created-events' | 'participating-events';
 
 type Props = {
     user: UserDTO;
@@ -60,6 +61,14 @@ const Profile: React.FC<Props> = ({
     const [reportServerError, setReportServerError] = useState<string | null>(null);
     const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
     const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
+
+    // Define available filters - show handshakes only for own profile
+    const availableFilters: FilterType[] = isSelf
+        ? ['all', 'posts', 'events', 'handshakes', 'kudos']
+        : ['all', 'posts', 'events'];
+
+    const [filter, setFilter] = useState<FilterType>('all');
+    const [eventFilter, setEventFilter] = useState<EventFilterType>('all-events');
 
     // Fetch blocked users details
     React.useEffect(() => {
@@ -107,6 +116,22 @@ const Profile: React.FC<Props> = ({
             return dateB - dateA;
         });
     }, [events]);
+
+    // Separate events into created and participating
+    const createdEvents = useMemo(() => {
+        return sortedEvents.filter(event => event.creatorID === user.id);
+    }, [sortedEvents, user.id]);
+
+    const participatingEvents = useMemo(() => {
+        return sortedEvents.filter(event => event.creatorID !== user.id);
+    }, [sortedEvents, user.id]);
+
+    // Filter events based on the selected event filter
+    const filteredEvents = useMemo(() => {
+        if (eventFilter === 'created-events') return createdEvents;
+        if (eventFilter === 'participating-events') return participatingEvents;
+        return sortedEvents; // all-events
+    }, [eventFilter, createdEvents, participatingEvents, sortedEvents]);
 
     const sortedHandshakes = useMemo(() => {
         // Status priority: new (pending) > accepted > completed
@@ -161,12 +186,12 @@ const Profile: React.FC<Props> = ({
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
 
-    // Define available filters - show handshakes only for own profile
-    const availableFilters: FilterType[] = isSelf
-        ? ['all', 'posts', 'events', 'handshakes', 'kudos']
-        : ['all', 'posts', 'events'];
-
-    const [filter, setFilter] = useState<FilterType>('all');
+    // Reset event filter when main filter changes
+    useEffect(() => {
+        if (filter !== 'events') {
+            setEventFilter('all-events');
+        }
+    }, [filter]);
 
     const handleStartDM = async () => {
         if (!currentUser?.id || !user?.id) return;
@@ -267,65 +292,106 @@ const Profile: React.FC<Props> = ({
 
         if (filter === 'events') {
             return (
-                <ul className='space-y-2 sm:space-y-3 list-none'>
-                    {sortedEvents.length === 0 ? (
-                        <p className='text-center text-gray-500 dark:text-gray-400'>
-                            No events available.
-                        </p>
-                    ) : (
-                        sortedEvents.map((event) => (
-                            <li
-                                key={event.id}
-                                onClick={() => navigate(`/event/${event.id}`)}
-                                className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
-                            >
-                                <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
-                                    {event.location?.global ? (
-                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                            🌐 Global
-                                        </span>
-                                    ) : (
-                                        <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                            📍 Local
-                                        </span>
+                <div className='space-y-4'>
+                    {/* Event sub-filter buttons */}
+                    <div className='flex flex-wrap gap-2 justify-center'>
+                        <Button
+                            onClick={() => setEventFilter('all-events')}
+                            className={[
+                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
+                                eventFilter === 'all-events'
+                                    ? '!bg-blue-500 !text-white !border-blue-500'
+                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
+                            ].join(' ')}
+                        >
+                            All Events ({sortedEvents.length})
+                        </Button>
+                        <Button
+                            onClick={() => setEventFilter('created-events')}
+                            className={[
+                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
+                                eventFilter === 'created-events'
+                                    ? '!bg-blue-500 !text-white !border-blue-500'
+                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
+                            ].join(' ')}
+                        >
+                            Created ({createdEvents.length})
+                        </Button>
+                        <Button
+                            onClick={() => setEventFilter('participating-events')}
+                            className={[
+                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
+                                eventFilter === 'participating-events'
+                                    ? '!bg-blue-500 !text-white !border-blue-500'
+                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
+                            ].join(' ')}
+                        >
+                            Participating ({participatingEvents.length})
+                        </Button>
+                    </div>
+
+                    <ul className='space-y-2 sm:space-y-3 list-none'>
+                        {filteredEvents.length === 0 ? (
+                            <p className='text-center text-gray-500 dark:text-gray-400'>
+                                {eventFilter === 'created-events' && 'No created events.'}
+                                {eventFilter === 'participating-events' && 'Not participating in any events.'}
+                                {eventFilter === 'all-events' && 'No events available.'}
+                            </p>
+                        ) : (
+                            filteredEvents.map((event) => (
+                                <li
+                                    key={event.id}
+                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                >
+                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                        {event.location?.global ? (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                🌐 Global
+                                            </span>
+                                        ) : (
+                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                📍 Local
+                                            </span>
+                                        )}
+                                    </div>
+                                    {event.description && (
+                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
                                     )}
-                                </div>
-                                {event.description && (
-                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
-                                )}
-                                <div className='space-y-0.5 sm:space-y-1'>
-                                    <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2 mb-2'>
-                                        <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                        <span className='truncate'>
-                                            {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
-                                            {event.endTime
-                                                ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
-                                                : 'Ongoing'}
-                                        </span>
-                                    </p>
-                                    {event.location?.name && !event.location.global && (
-                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                            <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                            {event.location.name}
+                                    <div className='space-y-0.5 sm:space-y-1'>
+                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2 mb-2'>
+                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                            <span className='truncate'>
+                                                {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                                {event.endTime
+                                                    ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                    : 'Ongoing'}
+                                            </span>
                                         </p>
-                                    )}
-                                    {event.creator && (
-                                        <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
-                                            <UserCard user={event.creator} />
-                                        </p>
-                                    )}
-                                    {typeof event.participantCount === 'number' && event.participantCount > 0 && (
-                                        <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                            <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                            {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
-                                        </p>
-                                    )}
-                                </div>
-                            </li>
-                        ))
-                    )}
-                </ul>
+                                        {event.location?.name && !event.location.global && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.location.name}
+                                            </p>
+                                        )}
+                                        {event.creator && (
+                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
+                                                <UserCard user={event.creator} />
+                                            </p>
+                                        )}
+                                        {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                </div>
             );
         }
 
@@ -364,6 +430,11 @@ const Profile: React.FC<Props> = ({
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Events ({sortedEvents.length})
+                            {createdEvents.length > 0 && participatingEvents.length > 0 && (
+                                <span className='text-sm font-normal text-gray-600 dark:text-gray-400 ml-2'>
+                                    ({createdEvents.length} created, {participatingEvents.length} participating)
+                                </span>
+                            )}
                         </h3>
                         <ul className='space-y-2 sm:space-y-3 list-none'>
                             {sortedEvents.slice(0, 2).map((event) => (

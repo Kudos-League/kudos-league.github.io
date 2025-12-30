@@ -58,7 +58,6 @@ export default function App() {
                                                 <WebSocketProvider>
                                                     <BlockedUsersProvider>
                                                         <AppCore />
-                                                        <AlertHost />
                                                         <ConnectingOverlay />
                                                         <DevToolsPanel />
                                                     </BlockedUsersProvider>
@@ -84,6 +83,7 @@ function AppCore() {
     return (
         <BrowserRouter>
             <AppNavigator />
+            <AlertHost />
         </BrowserRouter>
     );
 }

@@ -380,6 +380,7 @@ export interface FeedbackDTO {
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
     POST_REPLY: 'post-reply',
+    EVENT_REPLY: 'event-reply',
     POST_AUTO_CLOSE: 'post-auto-close',
     PAST_GIFT: 'past-gift',
     BUG_REPORT: 'bug-report',
@@ -388,7 +389,8 @@ export const NotificationType = {
     HANDSHAKE_CREATED: 'handshake-created',
     HANDSHAKE_ACCEPTED: 'handshake-accepted',
     HANDSHAKE_COMPLETED: 'handshake-completed',
-    HANDSHAKE_CANCELLED: 'handshake-cancelled'
+    HANDSHAKE_CANCELLED: 'handshake-cancelled',
+    EVENT_USER_JOINED: 'event-user-joined'
 } as const;
 
 export type NotificationTypeKeys =
@@ -406,9 +408,24 @@ export type PostReplyNotification = {
     message: MessageDTO;
 };
 
+export type EventReplyNotification = {
+    type: typeof NotificationType.EVENT_REPLY;
+    eventID: number;
+    message: MessageDTO;
+};
+
+export type EventUserJoinedNotification = {
+    type: typeof NotificationType.EVENT_USER_JOINED;
+    eventID: number;
+    userID: number;
+    user?: UserDTO;
+};
+
 export type NotificationPayload =
     | DirectMessageNotification
     | PostReplyNotification
+    | EventReplyNotification
+    | EventUserJoinedNotification
     | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
     | { type: typeof NotificationType.PAST_GIFT; postID: number }
     | { type: typeof NotificationType.BUG_REPORT; feedbackID: number }

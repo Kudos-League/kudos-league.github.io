@@ -21,6 +21,7 @@ import { pushAlert } from '@/components/common/alertBus';
 import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
+import { useDataCache } from '@/contexts/DataCacheContext';
 
 type Ctx = {
     state: { items: NotificationRecord[]; unread: number; loaded: boolean };
@@ -40,9 +41,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     const state = useSelector((s: RootState) => s.notifications);
     const { user, token, logout } = useAuth();
     const queryClient = useQueryClient();
+    const { invalidateHandshake, invalidatePost } = useDataCache();
     const [hasNewNotifications, setHasNewNotifications] = React.useState(false);
 
-    const joinedUserId = useRef<number | null>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
     const autoActTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
     const debug = useMemo(() =>
@@ -62,13 +63,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     useEffect(() => {
         if (!token) {
-            if (socketRef.current && joinedUserId.current != null) {
-                debug('token missing, leaving previous socket room', {
-                    userID: joinedUserId.current
-                });
-                socketRef.current.emit('leaveUser', { userID: joinedUserId.current });
-            }
-            joinedUserId.current = null;
             socketRef.current = null;
             return;
         }
@@ -81,23 +75,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             debug('socket connect event', {
                 connected: sock.connected,
                 id: sock.id,
-                currentRoom: joinedUserId.current,
                 userID: user?.id
             });
-            if (user?.id != null && joinedUserId.current !== user.id) {
-                if (joinedUserId.current != null) {
-                    debug('switching socket room', {
-                        leaveUserID: joinedUserId.current,
-                        joinUserID: user.id
-                    });
-                    sock.emit('leaveUser', { userID: joinedUserId.current });
-                }
-                else {
-                    debug('joining socket room', { userID: user.id });
-                }
-                sock.emit('joinUser', { userID: user.id });
-                joinedUserId.current = user.id;
-            }
         };
 
         const handleDisconnect = (reason: string) => {
@@ -125,7 +104,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             const normalized: NotificationRecord = {
                 ...incoming,
                 isRead: incoming.isRead ?? false,
-                isActedOn: incoming.isActedOn ?? false
+                isActedOn: incoming.isActedOn ?? false,
+                createdAt: incoming.createdAt ?? new Date().toISOString()
             };
             debug('received notification', {
                 id: (normalized as any).id,
@@ -136,9 +116,40 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 isActedOn: normalized.isActedOn
             });
             dispatch(pushAction(normalized));
+            console.log('[NotificationsContext] Notification dispatched to Redux store');
 
             // Set flag to show "new notifications" banner
             setHasNewNotifications(true);
+
+            // Invalidate notification history query to show new notifications
+            queryClient.invalidateQueries({ queryKey: ['notifications', 'history'] });
+
+            // Invalidate handshake/post cache for handshake-related notifications
+            if (
+                normalized.type === NotificationType.HANDSHAKE_CREATED ||
+                normalized.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                normalized.type === NotificationType.HANDSHAKE_COMPLETED ||
+                normalized.type === NotificationType.HANDSHAKE_CANCELLED
+            ) {
+                const handshakeID = 'handshakeID' in normalized ? normalized.handshakeID : undefined;
+                const postID = 'postID' in normalized ? normalized.postID : undefined;
+
+                if (handshakeID) {
+                    invalidateHandshake(handshakeID);
+                }
+                if (postID) {
+                    invalidatePost(postID);
+                }
+            }
+
+            // Invalidate event cache for event-related notifications
+            if (normalized.type === NotificationType.EVENT_USER_JOINED) {
+                const eventID = 'eventID' in normalized ? normalized.eventID : undefined;
+                if (eventID) {
+                    queryClient.invalidateQueries({ queryKey: ['event', eventID] });
+                    queryClient.invalidateQueries({ queryKey: ['events'] });
+                }
+            }
 
             try {
                 if (normalized.type === 'direct-message') {
@@ -149,6 +160,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 else if (normalized.type === 'post-reply') {
                     const text = normalized.message?.content || '';
                     pushAlert({ type: 'info', message: `New reply on your post: ${text}` });
+                }
+                else if (normalized.type === 'event-reply') {
+                    const text = normalized.message?.content || '';
+                    pushAlert({ type: 'info', message: `New comment on your event: ${text}` });
                 }
                 else if (normalized.type === 'past-gift') {
                     pushAlert({ type: 'info', message: `Past gift logged on your profile.` });
@@ -181,6 +196,19 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                         ? 'Handshake cancelled due to no-show.'
                         : 'Handshake cancelled.';
                     pushAlert({ type: 'warning', message: msg });
+                }
+                else if (normalized.type === NotificationType.EVENT_USER_JOINED) {
+                    const username = 'user' in normalized && normalized.user?.username
+                        ? normalized.user.username
+                        : 'Someone';
+                    console.log('[NotificationsContext] EVENT_USER_JOINED received!', {
+                        notification: normalized,
+                        username,
+                        eventID: 'eventID' in normalized ? normalized.eventID : undefined,
+                        userID: 'userID' in normalized ? normalized.userID : undefined,
+                        hasUser: 'user' in normalized && !!normalized.user
+                    });
+                    pushAlert({ type: 'info', message: `${username} joined your event!` });
                 }
                 else if ((normalized as any).type === NotificationType.USER_BANNED || (normalized as any).type === 'user-banned') {
                     const banEnd = (normalized as any).banEndDate || (normalized as any).payload?.banEndDate;
@@ -220,13 +248,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             sock.on('reconnect', handleReconnect);
             sock.on('joinedUser', handleJoinedUser);
             sock.on(Events.NOTIFICATION_CREATE, handleNotification);
-            sock.on('notification', handleNotification);
             (sock as any).onAny?.(handleAny);
             (sock as any).__notifListenersAttached = true;
             debug('attached socket listeners');
         }
         else if (sock.connected) {
-            debug('socket already connected, ensuring room membership');
+            debug('socket already connected');
             handleConnect();
         }
 
@@ -238,18 +265,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             sock.off('reconnect', handleReconnect);
             sock.off('joinedUser', handleJoinedUser);
             sock.off(Events.NOTIFICATION_CREATE, handleNotification);
-            sock.off('notification', handleNotification);
             (sock as any).offAny?.(handleAny);
             (sock as any).__notifListenersAttached = false;
-            if (joinedUserId.current != null) {
-                debug('leaving socket room on cleanup', {
-                    userID: joinedUserId.current
-                });
-                sock.emit('leaveUser', { userID: joinedUserId.current });
-                joinedUserId.current = null;
-            }
         };
-    }, [dispatch, token, user?.id]);
+    }, [dispatch, token, user?.id, queryClient, invalidateHandshake, invalidatePost, logout]);
 
     useEffect(() => {
         const timers = autoActTimers.current;
@@ -303,6 +322,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             markActed: async (id) => {
                 debug('markActed triggered', { id });
                 await dispatch(markNotificationActed(id) as any);
+                // Invalidate to update the UI
+                queryClient.invalidateQueries({ queryKey: ['notifications', 'history'] });
                 debug('markActed completed', { id });
             },
             hasNewNotifications,

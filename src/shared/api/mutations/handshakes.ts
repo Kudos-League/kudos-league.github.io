@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
 import type { ChannelDTO } from '@/shared/api/types';
+import { useDataCache } from '@/contexts/DataCacheContext';
 
 export function useCreateChannel() {
     const qc = useQueryClient();
@@ -14,6 +15,7 @@ export function useCreateChannel() {
 
 export function useAcceptHandshake() {
     const qc = useQueryClient();
+    const { invalidateHandshake } = useDataCache();
     return useMutation<any, any, number>({
         mutationFn: (handshakeID) => {
             if (typeof handshakeID !== 'number') {
@@ -21,15 +23,18 @@ export function useAcceptHandshake() {
             }
             return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'accepted' });
         },
-        onSuccess: () => {
+        onSuccess: (_, handshakeID) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
+            qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
+            invalidateHandshake(handshakeID);
         }
     });
 }
 
 export function useCompleteHandshake() {
     const qc = useQueryClient();
+    const { invalidateHandshake } = useDataCache();
     return useMutation<any, any, number>({
         mutationFn: (handshakeID) => {
             if (typeof handshakeID !== 'number') {
@@ -37,15 +42,18 @@ export function useCompleteHandshake() {
             }
             return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'completed' });
         },
-        onSuccess: () => {
+        onSuccess: (_, handshakeID) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
+            qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
+            invalidateHandshake(handshakeID);
         }
     });
 }
 
 export function useDeleteHandshake() {
     const qc = useQueryClient();
+    const { invalidateHandshake } = useDataCache();
     return useMutation<void, any, number>({
         mutationFn: (handshakeID) => {
             if (typeof handshakeID !== 'number') {
@@ -53,9 +61,11 @@ export function useDeleteHandshake() {
             }
             return apiMutate(`/handshakes/${handshakeID}`, 'delete');
         },
-        onSuccess: () => {
+        onSuccess: (_, handshakeID) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['handshakes'] });
+            qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
+            invalidateHandshake(handshakeID);
         }
     });
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Filter, Handshake, MessageCircle, MoreHorizontal, Check, ChevronDown, ChevronUp } from 'lucide-react';
@@ -20,7 +20,14 @@ import type { HandshakeDTO } from '@/shared/api/types';
 import { useCachedHandshake, useCachedPost } from '@/contexts/DataCacheContext';
 
 const PAGE_SIZE = 20;
-const historyQueryKey = ['notifications', 'history', PAGE_SIZE] as const;
+const historyQueryKey = ['notifications', 'history'] as const;
+
+// Simple UserCard wrapper (delays removed to fix staggering loading)
+const DelayedUserCard = memo(({ user, triggerVariant }: { user: any; triggerVariant: string }) => {
+    return <UserCard user={user} triggerVariant={triggerVariant as any} />;
+});
+
+DelayedUserCard.displayName = 'DelayedUserCard';
 
 function HandshakeNotificationByPost({
     postID,
@@ -34,8 +41,22 @@ function HandshakeNotificationByPost({
     onInteraction?: () => void;
 }) {
     const { post, loading, error } = useCachedPost(postID);
+    const [showError, setShowError] = useState(false);
 
     console.log('[HandshakeNotificationByPost] Using cached post:', { postID, userID, notificationType, post, loading, error });
+
+    // Delay showing error message
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => {
+                setShowError(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+        else {
+            setShowError(false);
+        }
+    }, [error]);
 
     if (loading) {
         return (
@@ -45,7 +66,7 @@ function HandshakeNotificationByPost({
         );
     }
 
-    if (error) {
+    if (error && showError) {
         console.error('[HandshakeNotificationByPost] Error loading post:', error);
         return (
             <div className='text-center py-4'>
@@ -54,6 +75,11 @@ function HandshakeNotificationByPost({
                 </p>
             </div>
         );
+    }
+
+    // While waiting to show error, don't render anything to avoid flashing
+    if (error && !showError) {
+        return null;
     }
 
     if (!post) {
@@ -93,7 +119,15 @@ function HandshakeNotificationByPost({
     console.log('[HandshakeNotificationByPost] Rendering HandshakeCard with:', relevantHandshake);
 
     return (
-        <div>
+        <div
+            className='transition-opacity'
+            style={{
+                opacity: 1,
+                transitionDuration: '250ms',
+                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                animation: 'fadeIn 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+        >
             <HandshakeCard
                 handshake={{ ...relevantHandshake, post }}
                 userID={userID}
@@ -189,6 +223,20 @@ function HandshakeNotificationCard({
     onInteraction?: () => void;
 }) {
     const { handshake, loading, error } = useCachedHandshake(handshakeID);
+    const [showError, setShowError] = useState(false);
+
+    // Delay showing error message
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => {
+                setShowError(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+        else {
+            setShowError(false);
+        }
+    }, [error]);
 
     if (loading) {
         return (
@@ -198,7 +246,7 @@ function HandshakeNotificationCard({
         );
     }
 
-    if (error) {
+    if (error && showError) {
         console.error('[HandshakeNotificationCard] Error loading handshake:', error);
         return (
             <div className='text-center py-4'>
@@ -207,6 +255,11 @@ function HandshakeNotificationCard({
                 </p>
             </div>
         );
+    }
+
+    // While waiting to show error, don't render anything to avoid flashing
+    if (error && !showError) {
+        return null;
     }
 
     if (!handshake) {
@@ -221,7 +274,15 @@ function HandshakeNotificationCard({
     }
 
     return (
-        <div>
+        <div
+            className='transition-opacity'
+            style={{
+                opacity: 1,
+                transitionDuration: '250ms',
+                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                animation: 'fadeIn 250ms cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+        >
             <HandshakeCard
                 handshake={handshake}
                 userID={userID}
@@ -352,6 +413,15 @@ function describeNotification(notification: NotificationRecord, showingHandshake
 
         return { title, description };
     }
+    case NotificationType.EVENT_USER_JOINED: {
+        const username = 'user' in notification && notification.user?.username
+            ? notification.user.username
+            : 'Someone';
+        return {
+            title: `${username} joined your event`,
+            description: 'Click to view event details.'
+        };
+    }
     default:
         return {
             title: 'Notification',
@@ -389,6 +459,8 @@ export default function NotificationsPage() {
     const [filter, setFilter] = useState<NotificationFilter>('all');
     const markedAsReadRef = useRef<Set<number>>(new Set());
     const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+    const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
+    const [showEmptyState, setShowEmptyState] = useState(false);
 
     // Clear the "new notifications" flag when component unmounts
     useEffect(() => {
@@ -407,13 +479,21 @@ export default function NotificationsPage() {
         refetch
     } = useInfiniteQuery({
         queryKey: historyQueryKey,
-        queryFn: async ({ pageParam }) =>
-            apiGet<NotificationsHistoryResponse>('/notifications/history', {
+        queryFn: async ({ pageParam }) => {
+            const response = await apiGet<NotificationsHistoryResponse>('/notifications/history', {
                 params: {
                     limit: PAGE_SIZE,
                     cursor: pageParam
                 }
-            }),
+            });
+            console.log('[NotificationsPage] API Response:', {
+                itemsCount: response.items.length,
+                types: response.items.map(item => item.type),
+                hasEventUserJoined: response.items.some(item => item.type === 'event-user-joined'),
+                hasEventReply: response.items.some(item => item.type === 'event-reply')
+            });
+            return response;
+        },
         initialPageParam: undefined as number | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         staleTime: 60_000
@@ -429,6 +509,14 @@ export default function NotificationsPage() {
         // Filter out direct messages - they should only appear in the messages section
         const itemsWithoutDMs = allItems.filter((item) => item.type !== NotificationType.DIRECT_MESSAGE);
 
+        // Debug: Log all notification types
+        console.log('[NotificationsPage] All notification types:', {
+            total: allItems.length,
+            types: allItems.map(item => item.type),
+            eventUserJoined: allItems.filter(item => item.type === NotificationType.EVENT_USER_JOINED).length,
+            eventReply: allItems.filter(item => item.type === NotificationType.EVENT_REPLY).length
+        });
+
         const filtered = filter === 'all' ? itemsWithoutDMs : itemsWithoutDMs.filter((item) => {
             if (filter === 'handshakes') {
                 return (
@@ -439,11 +527,12 @@ export default function NotificationsPage() {
                 );
             }
             if (filter === 'comments') {
-                return item.type === NotificationType.POST_REPLY;
+                return item.type === NotificationType.POST_REPLY || item.type === NotificationType.EVENT_REPLY;
             }
             if (filter === 'other') {
                 return (
                     item.type !== NotificationType.POST_REPLY &&
+                    item.type !== NotificationType.EVENT_REPLY &&
                     item.type !== NotificationType.HANDSHAKE_CREATED &&
                     item.type !== NotificationType.HANDSHAKE_ACCEPTED &&
                     item.type !== NotificationType.HANDSHAKE_COMPLETED &&
@@ -530,6 +619,38 @@ export default function NotificationsPage() {
         });
     }, [allItems, filter]);
 
+    // Delayed loading spinner to prevent flickering
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (isLoading) {
+            timer = setTimeout(() => {
+                setShowLoadingSpinner(true);
+            }, 500);
+        }
+        else {
+            setShowLoadingSpinner(false);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [isLoading]);
+
+    // Delayed empty state to prevent flashing
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (!isLoading && items.length === 0) {
+            timer = setTimeout(() => {
+                setShowEmptyState(true);
+            }, 300);
+        }
+        else {
+            setShowEmptyState(false);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [isLoading, items.length]);
+
     // Auto-mark completed/cancelled handshake notifications as read when visible
     useEffect(() => {
         const notificationsToMark: NotificationRecord[] = [];
@@ -569,8 +690,7 @@ export default function NotificationsPage() {
 
                 try {
                     await Promise.all(toMark.map((notification) => markActed(notification.id)));
-                    // Refetch to update the UI
-                    refetch();
+                    // No need to refetch here - markActed invalidates the query in NotificationsContext
                 }
                 catch (err) {
                     console.error('Failed to auto-mark handshake notifications as read:', err);
@@ -581,7 +701,7 @@ export default function NotificationsPage() {
 
             markAllAsync();
         }
-    }, [items, markActed, refetch]);
+    }, [items, markActed]);
 
     const handleOpen = useCallback(
         (item: NotificationItem) => {
@@ -589,6 +709,9 @@ export default function NotificationsPage() {
 
             if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
+            }
+            else if (notification.type === NotificationType.EVENT_REPLY) {
+                navigate(`/event/${notification.eventID}`);
             }
             else if (notification.type === NotificationType.POST_AUTO_CLOSE) {
                 navigate(`/post/${notification.postID}`);
@@ -610,6 +733,9 @@ export default function NotificationsPage() {
             ) {
                 navigate(`/post/${notification.postID}`);
             }
+            else if (notification.type === NotificationType.EVENT_USER_JOINED) {
+                navigate(`/event/${notification.eventID}`);
+            }
 
             // Mark all notifications in group as acted
             const notificationsToMark = isGroupedNotification(item)
@@ -625,16 +751,11 @@ export default function NotificationsPage() {
                             'Failed to mark notification(s) acted from history view',
                             err
                         );
-                    })
-                    .finally(() => {
-                        refetch();
                     });
-            }
-            else if (notificationsToMark.some(n => !n.isRead)) {
-                refetch();
+                // No need to refetch - markActed invalidates the query
             }
         },
-        [markActed, navigate, refetch]
+        [markActed, navigate]
     );
 
     const errorMessage = error
@@ -646,7 +767,6 @@ export default function NotificationsPage() {
     const renderNotificationContent = (notification: NotificationRecord, shouldShowHandshakeCard: boolean, handshake?: any) => {
         const createdAt = formatCreatedAt(notification.createdAt);
 
-        // Comment/Post Reply
         if (notification.type === NotificationType.POST_REPLY) {
             const author = notification.message?.author;
             const displayName = author?.displayName || author?.username || 'Someone';
@@ -654,12 +774,41 @@ export default function NotificationsPage() {
                 <div className='flex items-start gap-3'>
                     {author && (
                         <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                            <UserCard user={author} triggerVariant='avatar-name' />
+                            <DelayedUserCard user={author} triggerVariant='avatar-name' />
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
                         <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
                             replied to your post
+                        </p>
+                        {notification.message?.content && (
+                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                                {notification.message.content}
+                            </p>
+                        )}
+                        {createdAt && (
+                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        if (notification.type === NotificationType.EVENT_REPLY) {
+            const author = notification.message?.author;
+            const displayName = author?.displayName || author?.username || 'Someone';
+            return (
+                <div className='flex items-start gap-3'>
+                    {author && (
+                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                            <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                        </div>
+                    )}
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                            commented on your event
                         </p>
                         {notification.message?.content && (
                             <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -759,6 +908,45 @@ export default function NotificationsPage() {
                             {handshakeContent}
                         </div>
                     )}
+                </div>
+            );
+        }
+
+        // Event user joined notifications
+        if (notification.type === NotificationType.EVENT_USER_JOINED) {
+            const eventUser = 'user' in notification ? notification.user : undefined;
+            console.log('[NotificationsPage] EVENT_USER_JOINED notification:', {
+                notification,
+                eventUser,
+                hasUser: !!eventUser,
+                userID: 'userID' in notification ? notification.userID : undefined
+            });
+            return (
+                <div className='flex flex-col gap-3'>
+                    <div className='flex items-start justify-between gap-3'>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2'>
+                                joined your event
+                            </p>
+                            {eventUser ? (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <DelayedUserCard user={eventUser} triggerVariant='avatar-name' />
+                                </div>
+                            ) : (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300'>
+                                    Someone joined your event
+                                </p>
+                            )}
+                            <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 italic'>
+                                Click to view event details
+                            </p>
+                        </div>
+                        {createdAt && (
+                            <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -906,7 +1094,7 @@ export default function NotificationsPage() {
 
 
 
-            {isLoading ? (
+            {showLoadingSpinner ? (
                 <div className='mt-8'>
                     <Spinner text='Loading notifications...' />
                 </div>
@@ -928,13 +1116,15 @@ export default function NotificationsPage() {
                     </div>
                 </div>
             ) : items.length === 0 ? (
-                <div className='mt-6'>
-                    <Alert
-                        type='info'
-                        title='You are all caught up'
-                        message='There are no notifications to show yet.'
-                    />
-                </div>
+                showEmptyState ? (
+                    <div className='mt-6' style={{ animation: 'fadeInSlow 0.4s ease-out both' }}>
+                        <Alert
+                            type='info'
+                            title='You are all caught up'
+                            message='There are no notifications to show yet.'
+                        />
+                    </div>
+                ) : null
             ) : (
                 <>
                     <ul className='mt-6 space-y-3 mb-8'>
@@ -962,7 +1152,7 @@ export default function NotificationsPage() {
                                 if (notificationsToMark.length > 0) {
                                     try {
                                         await Promise.all(notificationsToMark.map(n => markActed(n.id)));
-                                        refetch();
+                                        // No need to refetch - markActed invalidates the query
                                     }
                                     catch (err) {
                                         console.error('Failed to mark notification(s) as read:', err);
@@ -991,7 +1181,8 @@ export default function NotificationsPage() {
                                     <button
                                         type='button'
                                         onClick={() => handleOpen(item)}
-                                        className={`w-full rounded-lg border px-4 py-4 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight}`}
+                                        className={`w-full rounded-lg border px-4 py-4 text-left transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight} overflow-hidden`}
+                                        style={{ animation: `fadeIn 600ms cubic-bezier(0.4, 0, 0.2, 1) both` }}
                                     >
                                         <NotificationContentWrapper
                                             notification={notification}

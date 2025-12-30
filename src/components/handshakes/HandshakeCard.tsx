@@ -59,8 +59,42 @@ const HandshakeCard: React.FC<Props> = ({
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     // Use cached user data
-    const { user: senderUser } = useCachedUser(handshake.senderID);
-    const { user: receiverUser } = useCachedUser(handshake.receiverID);
+    const { user: senderUser, loading: senderLoading } = useCachedUser(handshake.senderID);
+    const { user: receiverUser, loading: receiverLoading } = useCachedUser(handshake.receiverID);
+
+    // Delay showing user until data is loaded to prevent "Anonymous" flash
+    const [showUser, setShowUser] = useState(false);
+    const [fadeInUser, setFadeInUser] = useState(false);
+    const [fadeInCard, setFadeInCard] = useState(false);
+
+    useEffect(() => {
+        // Only show user after data is loaded
+        if (!senderLoading && !receiverLoading && (senderUser || receiverUser)) {
+            setShowUser(true);
+            // Start fade-in animation after a brief delay
+            setTimeout(() => setFadeInUser(true), 100);
+        }
+        else if (!senderUser && !receiverUser) {
+            // Reset if users become null
+            setShowUser(false);
+            setFadeInUser(false);
+        }
+    }, [senderLoading, receiverLoading, senderUser, receiverUser]);
+
+    // Trigger card fade-in AFTER user section is ready (or after loading completes)
+    useEffect(() => {
+        // Only fade in the card after:
+        // 1. User section has faded in (fadeInUser is true), OR
+        // 2. Loading is complete but there's no user to show
+        if (fadeInUser) {
+            // User section is ready, fade in card after a delay
+            setTimeout(() => setFadeInCard(true), 150);
+        }
+        else if (!senderLoading && !receiverLoading) {
+            // Loading complete but no users to show, fade in card
+            setTimeout(() => setFadeInCard(true), 200);
+        }
+    }, [fadeInUser, senderLoading, receiverLoading]);
 
     const imageSrc = handshake.post?.images?.[0]
         ? getEndpointUrl() + handshake.post?.images[0]
@@ -288,12 +322,19 @@ const HandshakeCard: React.FC<Props> = ({
         <>
             <div
                 onClick={() => navigate(`/post/${handshake.postID}`)}
-                className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} ${compact ? 'p-3 sm:p-3' : 'p-4 sm:p-6'} rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${compact ? 'space-y-2' : 'space-y-4'} cursor-pointer`}
+                className={`${hideCardBorder ? '' : 'border border-gray-200 dark:border-gray-700'} ${compact ? 'p-3 sm:p-3' : 'p-4 sm:p-6'} rounded-xl shadow-sm hover:shadow-md transition-all duration-500 ease-out ${compact ? 'space-y-2' : 'space-y-4'} cursor-pointer ${fadeInCard ? 'opacity-100' : 'opacity-0'}`}
             >
                 {/* Header: User + Status Badge */}
                 <div className="flex items-center justify-between gap-2">
-                    <div className="font-semibold flex-1 min-w-0">
-                        <UserCard user={userID && handshake.senderID === userID ? receiverUser : userID && handshake.receiverID === userID ? senderUser : showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails && !compact} />
+                    <div className={`font-semibold flex-1 min-w-0 transition-opacity duration-500 ease-out ${fadeInUser ? 'opacity-100' : 'opacity-0'}`}>
+                        {showUser ? (
+                            <UserCard user={userID && handshake.senderID === userID ? receiverUser : userID && handshake.receiverID === userID ? senderUser : showSenderOrReceiver === 'receiver' ? receiverUser : senderUser} large={!showPostDetails && !compact} />
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-gray-300" />
+                                <div className="w-24 h-4 bg-gray-300 rounded" />
+                            </div>
+                        )}
                     </div>
 
                     {/* Status badge */}

@@ -9,6 +9,7 @@ import Button from '@/components/common/Button';
 import { useCreateEvent } from '@/shared/api/mutations/events';
 import { useAuth } from '@/contexts/useAuth';
 import { pushAlert } from '@/components/common/alertBus';
+import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -248,39 +249,46 @@ export default function CreateEvent() {
     };
 
     const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {
-        if (hasErrors) return 'border-red-300 bg-red-50';
-        if (hasWarnings) return 'border-yellow-300 bg-yellow-50';
-        return 'border-gray-300 bg-white';
+        if (hasErrors) return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30';
+        if (hasWarnings) return 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30';
+        return 'border-gray-300 bg-white dark:border-neutral-700 dark:bg-neutral-900';
     };
 
     const getInputClasses = (isRequired: boolean, hasError = false) => {
-        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2';
-        
+        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 dark:bg-neutral-800 dark:text-neutral-100';
+
         if (hasError) {
-            return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500`;
+            return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500 dark:border-red-800 dark:bg-red-950/30`;
         }
         else if (isRequired) {
-            return `${baseClasses} border-blue-300 focus:ring-blue-500`;
+            return `${baseClasses} border-blue-300 focus:ring-blue-500 dark:border-blue-700`;
         }
         else {
-            return `${baseClasses} border-gray-300 focus:ring-blue-500`;
+            return `${baseClasses} border-gray-300 focus:ring-blue-500 dark:border-neutral-700`;
         }
     };
 
     return (
         <div className='max-w-xl mx-auto p-6 space-y-6'>
+            <button
+                onClick={() => navigate(-1)}
+                className='flex items-center gap-2 text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-neutral-100 transition-colors mb-2'
+            >
+                <ChevronLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
+            </button>
             <h1 className='text-2xl font-bold text-center'>Create Event</h1>
 
             {/* Required fields notice */}
-            <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
-                <p className='text-sm text-blue-800'>
-                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold'>*</span> <span className='font-medium'>are required</span>
+            <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 dark:bg-blue-950/30 dark:border-blue-800'>
+                <p className='text-sm text-blue-800 dark:text-blue-300'>
+                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold dark:text-red-400'>*</span> <span className='font-medium'>are required</span>
                 </p>
             </div>
 
             <div>
                 <label className='block font-semibold mb-1'>
-                    Title <span className='text-red-500'>*</span>
+                    Title <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <input
                     className={getInputClasses(true, !title.trim() && errorMessages.length > 0)}
@@ -290,13 +298,13 @@ export default function CreateEvent() {
                     required
                 />
                 {!title.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>Title is required</p>
+                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>Title is required</p>
                 )}
             </div>
 
             <div>
                 <label className='block font-semibold mb-1'>
-                    Description <span className='text-red-500'>*</span>
+                    Description <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <textarea
                     className={getInputClasses(true, !description.trim() && errorMessages.length > 0) + ' overflow-y-auto'}
@@ -308,13 +316,13 @@ export default function CreateEvent() {
                     required
                 />
                 {!description.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1'>Description is required</p>
+                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>Description is required</p>
                 )}
             </div>
 
-            <div className={`p-4 rounded-lg border-2 ${!global && !location?.regionID && errorMessages.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'}`}>
+            <div className={`p-4 rounded-lg border-2 ${!global && !location?.regionID && errorMessages.length > 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-gray-300 bg-white dark:border-neutral-700 dark:bg-neutral-900'}`}>
                 <label className='block font-semibold mb-2'>
-                    Location <span className='text-red-500'>*</span>
+                    Location <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <div className='flex items-center gap-3 mb-3'>
                     <input
@@ -324,13 +332,13 @@ export default function CreateEvent() {
                         className='w-4 h-4'
                     />
                     <label className='font-medium'>Is Global Event?</label>
-                    <span className='text-sm text-gray-600'>
+                    <span className='text-sm text-gray-600 dark:text-neutral-400'>
                         (Global events are visible to everyone)
                     </span>
-                    {global && <span className='text-green-600 text-sm ml-2'>✓ Location set to Global</span>}
+                    {global && <span className='text-green-600 text-sm ml-2 dark:text-green-400'>✓ Location set to Global</span>}
                 </div>
                 {!global && !location?.regionID && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mb-2'>Location is required (select a location or check Global Event)</p>
+                    <p className='text-red-600 text-sm mb-2 dark:text-red-400'>Location is required (select a location or check Global Event)</p>
                 )}
 
                 {!global && (
@@ -338,11 +346,11 @@ export default function CreateEvent() {
                         <label className='block font-semibold'>
                             Pick a Location
                         </label>
-                        <p className='text-yellow-700 text-sm font-medium flex items-start gap-2'>
+                        <p className='text-yellow-700 text-sm font-medium flex items-start gap-2 dark:text-yellow-300'>
                             <span className='flex-shrink-0'>⚠️</span>
                             <span>The <u>EXACT</u> event location will be visible to all participants.</span>
                         </p>
-                        <div className='border-2 rounded-lg overflow-hidden'>
+                        <div className='border-2 rounded-lg overflow-hidden dark:border-neutral-700'>
                             <MapDisplay
                                 edit={true}
                                 regionID={location?.regionID}
@@ -360,7 +368,7 @@ export default function CreateEvent() {
                             />
                         </div>
                         {!location?.regionID && errorMessages.length > 0 && (
-                            <p className='text-red-600 text-sm'>Please select a location on the map</p>
+                            <p className='text-red-600 text-sm dark:text-red-400'>Please select a location on the map</p>
                         )}
                     </div>
                 )}
@@ -373,7 +381,7 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    Start Time <span className='text-red-500'>*</span>
+                    Start Time <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <UniversalDatePicker
                     label=''
@@ -382,7 +390,7 @@ export default function CreateEvent() {
                 />
 
                 {dateValidation.info.length > 0 && (
-                    <div className='mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded'>
+                    <div className='mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded dark:text-blue-300 dark:bg-blue-950/30'>
                         <div className='flex items-center gap-2'>
                             <span>ℹ️</span>
                             <div>
@@ -402,7 +410,7 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    End Time <span className='text-gray-500 text-sm font-normal'>(Optional)</span>
+                    End Time <span className='text-gray-500 text-sm font-normal dark:text-neutral-400'>(Optional)</span>
                 </label>
                 {endDate !== null ? (
                     <>
@@ -440,9 +448,9 @@ export default function CreateEvent() {
                     {dateValidation.errors.map((error, i) => (
                         <div
                             key={`error-${i}`}
-                            className='bg-red-50 border border-red-200 rounded p-3'
+                            className='bg-red-50 border border-red-200 rounded p-3 dark:bg-red-950/30 dark:border-red-800'
                         >
-                            <p className='text-red-700 text-sm font-medium flex items-center'>
+                            <p className='text-red-700 text-sm font-medium flex items-center dark:text-red-300'>
                                 <span className='mr-2'>❌</span>
                                 {error}
                             </p>
@@ -452,9 +460,9 @@ export default function CreateEvent() {
                     {dateValidation.warnings.map((warning, i) => (
                         <div
                             key={`warning-${i}`}
-                            className='bg-yellow-50 border border-yellow-200 rounded p-3'
+                            className='bg-yellow-50 border border-yellow-200 rounded p-3 dark:bg-yellow-950/30 dark:border-yellow-800'
                         >
-                            <p className='text-yellow-700 text-sm font-medium flex items-center'>
+                            <p className='text-yellow-700 text-sm font-medium flex items-center dark:text-yellow-300'>
                                 <span className='mr-2'>⚠️</span>
                                 {warning}
                             </p>
@@ -486,16 +494,16 @@ export default function CreateEvent() {
                 </Button>
 
                 {!dateValidation.canSubmit && (
-                    <p className='text-sm text-gray-600 text-center'>
+                    <p className='text-sm text-gray-600 text-center dark:text-neutral-400'>
                         Please complete all required fields to create your event
                     </p>
                 )}
             </div>
 
             {errorMessages?.length && !createEvent.isError ? (
-                <div className='bg-red-100 border border-red-300 rounded p-4'>
+                <div className='bg-red-100 border border-red-300 rounded p-4 dark:bg-red-950/30 dark:border-red-800'>
                     {errorMessages.map((msg, i) => (
-                        <p key={i} className='text-red-700 text-sm'>
+                        <p key={i} className='text-red-700 text-sm dark:text-red-300'>
                             {msg}
                         </p>
                     ))}
@@ -505,8 +513,8 @@ export default function CreateEvent() {
             {createEvent.isError &&
                 Array.isArray(createEvent.error) &&
                 createEvent.error.length > 0 && (
-                <div className='bg-red-100 border border-red-300 rounded p-4'>
-                    <p className='text-red-700 text-sm'>
+                <div className='bg-red-100 border border-red-300 rounded p-4 dark:bg-red-950/30 dark:border-red-800'>
+                    <p className='text-red-700 text-sm dark:text-red-300'>
                         {createEvent.error.join(', ')}
                     </p>
                 </div>

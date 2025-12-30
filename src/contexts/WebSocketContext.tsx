@@ -101,8 +101,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             setConnectingText(null);
             clearPolling();
 
-            if (currentUserId != null)
+            if (currentUserId != null && joinedUserId.current !== currentUserId) {
                 sock.emit('joinUser', { userID: currentUserId });
+                joinedUserId.current = currentUserId;
+            }
             if (activeChannelId.current != null)
                 sock.emit('joinChannel', {
                     channelID: activeChannelId.current
