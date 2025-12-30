@@ -557,7 +557,7 @@ const Profile: React.FC<Props> = ({
                 )}
 
                 {/* Log Past Gift button - available for all users on their own profile */}
-                {isSelf && (
+                {/* {isSelf && (
                     <div className='flex flex-col items-center gap-2'>
                         <Button
                             onClick={() => setShowPastGiftModal(true)}
@@ -569,7 +569,7 @@ const Profile: React.FC<Props> = ({
                             Post a good deed that you made previously
                         </p>
                     </div>
-                )}
+                )} */}
 
 
                 {!isSelf && (
