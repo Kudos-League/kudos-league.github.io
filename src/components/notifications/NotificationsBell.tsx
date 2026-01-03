@@ -396,11 +396,6 @@ export default function NotificationsBell() {
                                         `}
                                         onClick={() => go(n)}
                                     >
-                                        {!n.isRead && (
-                                            <span className='absolute right-4 md:right-3 top-4 md:top-3 text-[10px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300'>
-                                                New
-                                            </span>
-                                        )}
                                         {n.type === 'post-reply' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>

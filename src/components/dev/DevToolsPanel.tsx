@@ -127,6 +127,16 @@ export default function DevToolsPanel() {
         }
     }, [isDevMode]);
 
+    // Listen for toggle event from navbar
+    useEffect(() => {
+        const handleToggle = () => {
+            setIsOpen(prev => !prev);
+        };
+
+        window.addEventListener('toggle-devtools', handleToggle);
+        return () => window.removeEventListener('toggle-devtools', handleToggle);
+    }, []);
+
     // Handle resize
     useEffect(() => {
         if (!isResizing) return;

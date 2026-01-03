@@ -234,11 +234,22 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    const handleOpenChatFromSuccess = () => {
-        //navigator navigate to chat
-        navigate(`/dms/${postDetails?.senderID}`);
-        // setHandshakeSuccessModal(false);
-        // setIsChatOpen(true);
+    const handleOpenChatFromSuccess = async () => {
+        if (!user?.id || !postDetails?.senderID) return;
+        try {
+            // Create or get DM channel with the post owner
+            await apiMutate('/channels', 'post', {
+                name: `DM: User ${user.id} & User ${postDetails.senderID}`,
+                channelType: 'dm',
+                userIDs: [user.id, postDetails.senderID]
+            });
+            // Navigate to the specific chat
+            navigate(`/dms/${postDetails.senderID}`);
+        }
+        catch (err) {
+            console.error('Failed to create or get DM channel', err);
+            alert('Failed to start a direct message. Please try again.');
+        }
     };
 
     const handleCloseChatModal = (open: boolean) => {

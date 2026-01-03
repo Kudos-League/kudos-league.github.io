@@ -137,7 +137,23 @@ const Layout: React.FC = () => {
         navigate(routes.home);
     };
 
-    const brandElement = (
+    const isDevMode =
+        process.env.REACT_APP_BACKEND_URI?.includes('localhost') ||
+        process.env.REACT_APP_BACKEND_URI?.includes('api-dev');
+
+    const handleDevToolsClick = () => {
+        window.dispatchEvent(new CustomEvent('toggle-devtools'));
+    };
+
+    const brandElement = isDevMode ? (
+        <button
+            onClick={handleDevToolsClick}
+            className='text-m font-semibold hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
+            title='Open Dev Tools'
+        >
+            <span className='text-2xl sm:text-3xl'>⚙️</span>
+        </button>
+    ) : (
         <Link
             to={routes.home}
             className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
