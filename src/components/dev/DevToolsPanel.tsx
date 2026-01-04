@@ -963,10 +963,9 @@ export default function DevToolsPanel() {
     return (
         <button
             onClick={() => setIsOpen(true)}
-            className='fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-lg transition-all hover:scale-110'
+            className='fixed bottom-6 left-6 z-40 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-lg transition-all hover:scale-110'
             title='Dev Tools'
         >
-            ⚙️
         </button>
     );
 }

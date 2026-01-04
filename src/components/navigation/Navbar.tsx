@@ -176,8 +176,7 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
                 <Avatar
                     avatar={getImagePath(user?.avatar)}
                     username={user?.username}
-                    size={40}
-                    className='sm:!w-11 sm:!h-11 lg:!w-12 lg:!h-12'
+                    size={46}
                 />
             </button>
             {open && (

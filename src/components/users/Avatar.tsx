@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getImagePath } from '@/shared/api/config';
 
 // Track loaded images globally to prevent re-flashing on re-renders
@@ -79,7 +80,7 @@ export default function AvatarComponent({
     }
 
     return (
-        <div className="relative" style={{ width: size, height: size }}>
+        <div className="relative flex-shrink-0" style={{ width: size, height: size, minWidth: size, minHeight: size }}>
             {/* Show fallback until image loads to prevent flicker */}
             {!imageLoaded && showFallback && (
                 <div
@@ -99,6 +100,8 @@ export default function AvatarComponent({
                 style={{
                     width: size,
                     height: size,
+                    minWidth: size,
+                    minHeight: size,
                     cursor: pointer ? 'pointer' : 'default'
                 }}
                 onClick={onClick}

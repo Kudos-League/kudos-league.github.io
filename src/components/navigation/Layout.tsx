@@ -161,7 +161,8 @@ const Layout: React.FC = () => {
             <img
                 src={`${process.env.PUBLIC_URL}/logo.webp`}
                 alt="Kudos League"
-                className="h-6 w-auto sm:h-8"
+                className="rounded-full object-cover flex-shrink-0"
+                style={{ height: '1.5rem !important', width: '1.5rem !important', minHeight: '1.5rem !important', minWidth: '1.5rem !important', maxHeight: '1.5rem !important', maxWidth: '1.5rem !important' } as any}
             />
         </Link>
     );
