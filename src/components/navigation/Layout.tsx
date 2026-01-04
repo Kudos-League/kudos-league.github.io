@@ -141,28 +141,23 @@ const Layout: React.FC = () => {
         process.env.REACT_APP_BACKEND_URI?.includes('localhost') ||
         process.env.REACT_APP_BACKEND_URI?.includes('api-dev');
 
-    const handleDevToolsClick = () => {
-        window.dispatchEvent(new CustomEvent('toggle-devtools'));
+    const handleBrandClick = (e: React.MouseEvent) => {
+        if (isDevMode) {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('toggle-devtools'));
+        }
     };
 
-    const brandElement = isDevMode ? (
-        <button
-            onClick={handleDevToolsClick}
-            className='text-m font-semibold hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
-            title='Open Dev Tools'
-        >
-            <span className='text-2xl sm:text-3xl'>⚙️</span>
-        </button>
-    ) : (
+    const brandElement = (
         <Link
             to={routes.home}
+            onClick={handleBrandClick}
             className='text-m font-semibold text-black dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex flex-col flex-shrink-0'
         >
             <img
                 src={`${process.env.PUBLIC_URL}/logo.webp`}
                 alt="Kudos League"
-                className="rounded-full object-cover flex-shrink-0"
-                style={{ height: '1.5rem !important', width: '1.5rem !important', minHeight: '1.5rem !important', minWidth: '1.5rem !important', maxHeight: '1.5rem !important', maxWidth: '1.5rem !important' } as any}
+                className="h-6 w-auto sm:h-8"
             />
         </Link>
     );

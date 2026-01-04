@@ -359,7 +359,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     `}</style>
                     <div
                         ref={scrollContainerRef}
-                        className={compact ? 'leaderboard-scroll max-h-[600px] overflow-y-auto pr-1' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
+                        className={compact ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
                         style={{ scrollbarGutter: 'stable' }}
                     >
                         {LeaderboardContent}
