@@ -115,6 +115,25 @@ const HandshakeCard: React.FC<Props> = ({
     const isParticipant = stage.isParticipant;
     const otherUserID = stage.otherUserID;
 
+    // Determine user's help action context
+    const userHelpAction: 'receiving' | 'giving' | null =
+        userID === handshake.receiverID
+            ? (handshake.post?.type === 'request' ? 'receiving' : 'giving')
+            : userID === handshake.senderID
+                ? (handshake.post?.type === 'request' ? 'giving' : 'receiving')
+                : null;
+
+    // Get the other user's username for contextual messages
+    const otherUser = userID === handshake.senderID ? receiverUser : senderUser;
+    const otherUsername = otherUser?.username || 'the other user';
+
+    // Helper to get display name - "you" if current user, otherwise username
+    const getDisplayName = (user: typeof senderUser | typeof receiverUser, capitalize = false) => {
+        if (!user?.username) return user?.username || '';
+        if (user.id === userID) return capitalize ? 'You' : 'you';
+        return user.username;
+    };
+
     useEffect(() => {
         const fetchLastMessage = async () => {
             if (
@@ -172,15 +191,19 @@ const HandshakeCard: React.FC<Props> = ({
             setStatus('accepted');
             setIsChatOpen(true);
             setToastType('success');
-            setToastMessage('Handshake accepted! You can now chat and coordinate the exchange.');
+            setToastMessage(
+                userHelpAction === 'receiving'
+                    ? 'Help accepted! You can now coordinate.'
+                    : `${otherUsername} accepted your help! You can now coordinate.`
+            );
             onInteraction?.();
             return true;
         }
         catch (err) {
             console.error(err);
-            setError('Could not accept handshake.');
+            setError('Could not accept help offer.');
             setToastType('error');
-            setToastMessage('Failed to accept handshake. Please try again.');
+            setToastMessage('Failed to accept help offer. Please try again.');
             return false;
         }
         finally {
@@ -195,7 +218,11 @@ const HandshakeCard: React.FC<Props> = ({
             await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
             setStatus('new');
             setToastType('success');
-            setToastMessage('Handshake acceptance undone. Status reverted to pending.');
+            setToastMessage(
+                userHelpAction === 'receiving'
+                    ? 'Help acceptance cancelled. Status reverted to pending.'
+                    : `Cancelled accepting ${otherUsername}'s request. Status reverted to pending.`
+            );
             onInteraction?.();
         }
         catch (err) {
@@ -254,14 +281,14 @@ const HandshakeCard: React.FC<Props> = ({
             setIsChatOpen(false);
             onDelete?.(handshake.id);
             setToastType('success');
-            setToastMessage('Handshake cancelled successfully.');
+            setToastMessage('Deleted.');
             onInteraction?.();
         }
         catch (err) {
             console.error('Failed to cancel handshake', err);
-            setError('Failed to cancel handshake.');
+            setError('Failed to delete.');
             setToastType('error');
-            setToastMessage('Failed to cancel handshake. Please try again.');
+            setToastMessage('Failed to delete. Please try again.');
         }
         finally {
             setCancelling(false);
@@ -295,7 +322,11 @@ const HandshakeCard: React.FC<Props> = ({
             setStatus('completed');
             setKudosValue('');
             setToastType('success');
-            setToastMessage(`Handshake completed! ${kudosValue} kudos sent successfully.`);
+            setToastMessage(
+                userHelpAction === 'receiving'
+                    ? `You received help! ${kudosValue} kudos sent successfully.`
+                    : `You helped ${otherUsername}! Waiting for them to complete.`
+            );
         }
         catch (err) {
             console.error(err);
@@ -427,7 +458,7 @@ const HandshakeCard: React.FC<Props> = ({
                 {/* Actions Row */}
                 <div className={compact ? 'space-y-2' : 'space-y-3'}>
                     {/* Status Message */}
-                    {status === 'new' && (
+                    {status === 'new' && showUser && (
                         <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-amber-800 dark:text-amber-300`}>
                                 {userID === handshake.senderID ? (
@@ -444,31 +475,42 @@ const HandshakeCard: React.FC<Props> = ({
                                     )
                                 ) : (
                                     handshake.post?.type === 'request' ? (
-                                        'Someone is offering this item to the poster.'
+                                        `${getDisplayName(senderUser, true)} is offering help to ${getDisplayName(receiverUser)}.`
                                     ) : (
-                                        'Someone wants this item from the poster.'
+                                        `${getDisplayName(receiverUser, true)} wants this item from ${getDisplayName(senderUser)}.`
                                     )
                                 )}
                             </p>
                         </div>
                     )}
 
-                    {status === 'accepted' && !canComplete && (
+                    {status === 'accepted' && !canComplete && showUser && (
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}>
                                 {userIsItemReceiver ? (
-                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with the {handshake.post?.type === 'request' ? 'giver' : 'receiver'} to complete the exchange. Once you receive help, you can assign kudos below.</>
+                                    <><span className="font-semibold">Exchange accepted!</span> Coordinate with {otherUsername} to complete the exchange. Once you receive help, you can assign kudos below.</>
                                 ) : (
-                                    <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? 'Waiting for the receiver to confirm they received the help' : 'Both parties are coordinating the exchange.'}</>
+                                    <><span className="font-semibold">Exchange accepted!</span> {userID === handshake.senderID || userID === handshake.receiverID ? `Waiting for ${otherUsername} to confirm they received the help.` : 'Both parties are coordinating the exchange.'}</>
                                 )}
                             </p>
                         </div>
                     )}
 
-                    {status === 'completed' && (
+                    {status === 'completed' && showUser && (
                         <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
                             <p className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}>
-                                <span className="font-semibold">Handshake completed!</span> {userID === gifterID ? 'You received kudos for this exchange.' : 'You sent kudos to complete this exchange.'}
+                                {userHelpAction === 'receiving' ? (
+                                    <><span className="font-semibold">You received help from {otherUsername}!</span> They received kudos from you.</>
+                                ) : userHelpAction === 'giving' ? (
+                                    <><span className="font-semibold">You helped {otherUsername}!</span> You received kudos from them.</>
+                                ) : (
+                                    // For viewers: show who helped who based on post type
+                                    handshake.post?.type === 'request' ? (
+                                        <><span className="font-semibold">{getDisplayName(senderUser, true)} helped {getDisplayName(receiverUser)}!</span> The exchange is complete.</>
+                                    ) : (
+                                        <><span className="font-semibold">{getDisplayName(senderUser, true)} helped {getDisplayName(receiverUser)}!</span> The exchange is complete.</>
+                                    )
+                                )}
                             </p>
                         </div>
                     )}
@@ -511,7 +553,7 @@ const HandshakeCard: React.FC<Props> = ({
                                     disabled={cancelling}
                                     className={compact ? 'text-sm py-3 px-4' : 'text-base py-3 px-6'}
                                 >
-                                    {cancelling ? (compact ? 'Cancelling' : 'Cancelling…') : 'Cancel Handshake'}
+                                    {cancelling ? (compact ? 'Deleting' : 'Deleting…') : 'Delete'}
                                 </Button>
                             )}
                         </div>
@@ -569,9 +611,13 @@ const HandshakeCard: React.FC<Props> = ({
                     <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
                         <p className="text-sm text-gray-700 dark:text-gray-300">
                             {handshake.cancelledByUserID === userID ? (
-                                <>You&apos;ve cancelled handshake on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                                userHelpAction === 'receiving' ? (
+                                    <>You stopped receiving help on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                                ) : (
+                                    <>You stopped giving help on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                                )
                             ) : (
-                                <>Handshake cancelled on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
+                                <>{otherUsername} stopped helping on &quot;<span className="font-semibold">{handshake.post?.title || 'this post'}</span>&quot;</>
                             )}
                             {handshake.noShowReported && (
                                 <span className="block mt-1 text-xs text-red-600 dark:text-red-400">
@@ -614,9 +660,9 @@ const HandshakeCard: React.FC<Props> = ({
                 isOpen={showCancelModal}
                 onClose={() => setShowCancelModal(false)}
                 onConfirm={handleCancelConfirmed}
-                title="Cancel Handshake"
-                message="Are you sure you want to cancel this handshake? This action cannot be undone."
-                confirmText="Yes, Cancel"
+                title="Delete?"
+                message="Are you sure you want to delete this? This action cannot be undone."
+                confirmText="Yes, Delete"
                 cancelText="No, Keep It"
                 variant="danger"
             />
@@ -646,9 +692,9 @@ const HandshakeCard: React.FC<Props> = ({
                     setShowAcceptedWarningModal(false);
                     setShowCancelModal(true);
                 }}
-                title="Cancel Accepted Handshake"
-                message="You both agreed to this exchange. Did you not receive the item? Canceling will end this handshake."
-                confirmText="Yes, Cancel It"
+                title="Delete?"
+                message="You both agreed to this. Are you sure you want to delete it? This action cannot be undone."
+                confirmText="Yes, Delete"
                 cancelText="No, Keep It"
                 variant="warning"
             />

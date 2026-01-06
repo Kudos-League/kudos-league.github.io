@@ -61,7 +61,7 @@ function HandshakeNotificationByPost({
     if (loading) {
         return (
             <div className='flex items-center justify-center py-8'>
-                <Spinner text='Loading handshake...' />
+                <Spinner text='Loading...' />
             </div>
         );
     }
@@ -71,7 +71,7 @@ function HandshakeNotificationByPost({
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
-                    Failed to load handshake details: {error}
+                    Failed to load details: {error}
                 </p>
             </div>
         );
@@ -110,7 +110,7 @@ function HandshakeNotificationByPost({
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
-                    Handshake not found
+                    Not found
                 </p>
             </div>
         );
@@ -165,7 +165,7 @@ function NotificationContentWrapper({
     renderContent: (notification: NotificationRecord, shouldShowHandshakeCard: boolean, handshake?: any) => React.ReactNode;
 }) {
     const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
-    const { handshake } = useCachedHandshake(handshakeID || 0);
+    const { handshake, loading } = useCachedHandshake(handshakeID || 0);
 
     // For handshake notifications, wait for handshake data if we have an ID
     const isHandshakeNotification =
@@ -173,6 +173,17 @@ function NotificationContentWrapper({
         notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
         notification.type === NotificationType.HANDSHAKE_COMPLETED ||
         notification.type === NotificationType.HANDSHAKE_CANCELLED;
+
+    // If it's a handshake notification and we have a handshake ID but it's still loading,
+    // show a brief loading state to prevent "Someone" from flashing
+    if (isHandshakeNotification && handshakeID && loading && !handshake) {
+        return (
+            <div className='flex items-center gap-2 py-2'>
+                <div className='h-4 w-4 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin' />
+                <span className='text-sm text-zinc-500 dark:text-zinc-400'>Loading...</span>
+            </div>
+        );
+    }
 
     return <>{renderContent(notification, shouldShowHandshakeCard, isHandshakeNotification ? handshake : undefined)}</>;
 }
@@ -241,7 +252,7 @@ function HandshakeNotificationCard({
     if (loading) {
         return (
             <div className='flex items-center justify-center py-8'>
-                <Spinner text='Loading handshake...' />
+                <Spinner text='Loading...' />
             </div>
         );
     }
@@ -251,7 +262,7 @@ function HandshakeNotificationCard({
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
-                    Failed to load handshake details: {error}
+                    Failed to load details: {error}
                 </p>
             </div>
         );
@@ -267,7 +278,7 @@ function HandshakeNotificationCard({
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
-                    Handshake not found (ID: {handshakeID})
+                    Not found (ID: {handshakeID})
                 </p>
             </div>
         );
@@ -293,6 +304,51 @@ function HandshakeNotificationCard({
         </div>
     );
 }
+
+// Helper to get display name - "you" if current user, otherwise username
+const getNotificationDisplayName = (user: any, currentUserID?: number, capitalize = false) => {
+    if (!user?.username) return capitalize ? 'Someone' : 'someone';
+    if (currentUserID && user.id === currentUserID) return capitalize ? 'You' : 'you';
+    return user.username;
+};
+
+// Helper to get user from notification or handshake with better fallback logic
+const getUserFromNotificationOrHandshake = (
+    notification: NotificationRecord,
+    handshake?: any,
+    currentUserID?: number
+) => {
+    // First, try to get user from notification
+    let user = null;
+    if ('user' in notification) user = (notification as any).user;
+    else if ('sender' in notification) user = (notification as any).sender;
+
+    // If we got a user with a username, use it
+    if (user?.username) {
+        return user;
+    }
+
+    // Otherwise, try to extract from handshake if available
+    if (handshake) {
+        // Try to find the "other" user (not the current user)
+        if (handshake.sender && handshake.sender.id !== currentUserID && handshake.sender.username) {
+            return handshake.sender;
+        }
+        if (handshake.receiver && handshake.receiver.id !== currentUserID && handshake.receiver.username) {
+            return handshake.receiver;
+        }
+        // If we couldn't find the "other" user, try sender first, then receiver
+        if (handshake.sender?.username) {
+            return handshake.sender;
+        }
+        if (handshake.receiver?.username) {
+            return handshake.receiver;
+        }
+    }
+
+    // Last resort: return the user we found (even without username) or null
+    return user;
+};
 
 function describeNotification(notification: NotificationRecord, showingHandshakeCard = true, userID?: number, handshake?: any) {
     switch (notification.type) {
@@ -340,53 +396,79 @@ function describeNotification(notification: NotificationRecord, showingHandshake
                 : 'Review in the admin dashboard.'
         };
     }
-    case NotificationType.HANDSHAKE_CREATED:
+    case NotificationType.HANDSHAKE_CREATED: {
+        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const username = getNotificationDisplayName(user, userID, true);
         return {
-            title: 'New handshake request',
+            title: 'New offer to help',
             description: showingHandshakeCard
-                ? 'Someone wants to handshake on your post. Click to view details.'
-                : 'Someone wants to handshake on your post.'
+                ? `${username} wants to help with your post. Click to view details.`
+                : `${username} wants to help with your post.`
         };
+    }
     case NotificationType.HANDSHAKE_ACCEPTED: {
         // Determine who accepted based on post ownership
-        // If the current user is the sender of the handshake (requester), then the other user accepted
-        // If the current user is the receiver (post owner), then they accepted
-        let title = 'Handshake accepted';
+        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const username = getNotificationDisplayName(user, userID);
+        const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+
+        let title = 'Help offer accepted';
         let description = showingHandshakeCard
-            ? 'The handshake was accepted! You can now coordinate the exchange.'
-            : 'The handshake was accepted!';
+            ? 'The help offer was accepted! You can now coordinate.'
+            : 'The help offer was accepted!';
 
         if (userID && handshake) {
             if (handshake.senderID === userID) {
                 // Current user sent the request, so the other person accepted
-                title = 'The other user accepted your handshake';
+                title = `${usernameCapitalized} accepted your help offer`;
                 description = showingHandshakeCard
-                    ? 'Your handshake request was accepted! You can now coordinate the exchange.'
-                    : 'Your handshake request was accepted!';
+                    ? `${usernameCapitalized} accepted your help offer! You can now coordinate.`
+                    : `${usernameCapitalized} accepted your help offer!`;
             }
             else if (handshake.receiverID === userID || handshake.recipientID === userID) {
                 // Current user is the post owner/receiver, so they accepted
-                title = 'You accepted this handshake';
+                title = `You accepted ${username}'s help offer`;
                 description = showingHandshakeCard
-                    ? 'You accepted the handshake request. You can now coordinate the exchange.'
-                    : 'You accepted the handshake request.';
+                    ? `You accepted ${username}'s help offer. You can now coordinate.`
+                    : `You accepted ${username}'s help offer.`;
             }
         }
 
         return { title, description };
     }
     case NotificationType.HANDSHAKE_COMPLETED: {
-        let title = 'Handshake completed';
-        const description = showingHandshakeCard
-            ? 'The transaction has been completed successfully.'
-            : 'The transaction has been completed successfully.';
+        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const username = getNotificationDisplayName(user, userID);
+        const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+
+        let title = 'Help completed';
+        let description = showingHandshakeCard
+            ? 'The help exchange has been completed successfully.'
+            : 'The help exchange has been completed successfully.';
 
         if (userID && handshake) {
-            if (handshake.senderID === userID) {
-                title = 'You completed this handshake';
+            // Determine if user was receiving or giving help
+            const postType = handshake.post?.type;
+            const isReceiver = handshake.receiverID === userID || handshake.recipientID === userID;
+            const isSender = handshake.senderID === userID;
+
+            const userWasReceivingHelp = (postType === 'request' && isReceiver) || (postType === 'gift' && isSender);
+
+            if (isSender) {
+                title = userWasReceivingHelp ? `You received help from ${username}` : `You helped ${username}`;
+                description = userWasReceivingHelp
+                    ? `You received help from ${username}.`
+                    : `You helped ${username}.`;
             }
-            else if (handshake.receiverID === userID || handshake.recipientID === userID) {
-                title = 'The other user completed this handshake';
+            else if (isReceiver) {
+                title = userWasReceivingHelp ? `${usernameCapitalized} helped you` : `${usernameCapitalized} received help from you`;
+                description = showingHandshakeCard
+                    ? (userWasReceivingHelp
+                        ? `${usernameCapitalized} helped you. The exchange is complete.`
+                        : `${usernameCapitalized} received help from you. The exchange is complete.`)
+                    : (userWasReceivingHelp
+                        ? `${usernameCapitalized} helped you.`
+                        : `${usernameCapitalized} received help from you.`);
             }
         }
 
@@ -394,29 +476,38 @@ function describeNotification(notification: NotificationRecord, showingHandshake
     }
     case NotificationType.HANDSHAKE_CANCELLED: {
         const noShow = 'noShowReported' in notification ? notification.noShowReported : false;
-        let title = 'Handshake cancelled';
+        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+
+        let title = 'Help cancelled';
         let description = noShow
-            ? 'The handshake was cancelled due to a no-show.'
-            : 'The handshake was cancelled.';
+            ? 'The help was cancelled due to a no-show.'
+            : 'The help was cancelled.';
 
         if (userID && handshake && !noShow) {
             const cancelledByUserID = handshake.cancelledByUserID;
+            const postType = handshake.post?.type;
+            const isReceiver = handshake.receiverID === userID || handshake.recipientID === userID;
+            const isSender = handshake.senderID === userID;
+            const userWasReceivingHelp = (postType === 'request' && isReceiver) || (postType === 'gift' && isSender);
+
             if (cancelledByUserID === userID) {
-                title = 'You cancelled this handshake';
-                description = 'You cancelled the handshake.';
+                title = userWasReceivingHelp ? 'You stopped receiving help' : 'You stopped giving help';
+                description = userWasReceivingHelp
+                    ? 'You stopped receiving help.'
+                    : 'You stopped giving help.';
             }
             else if (cancelledByUserID) {
-                title = 'The other user cancelled this handshake';
-                description = 'The other user cancelled the handshake.';
+                const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+                title = `${usernameCapitalized} stopped helping`;
+                description = `${usernameCapitalized} stopped helping.`;
             }
         }
 
         return { title, description };
     }
     case NotificationType.EVENT_USER_JOINED: {
-        const username = 'user' in notification && notification.user?.username
-            ? notification.user.username
-            : 'Someone';
+        const user = 'user' in notification ? notification.user : null;
+        const username = getNotificationDisplayName(user, userID, true);
         return {
             title: `${username} joined your event`,
             description: 'Click to view event details.'
@@ -769,17 +860,26 @@ export default function NotificationsPage() {
 
         if (notification.type === NotificationType.POST_REPLY) {
             const author = notification.message?.author;
-            const displayName = author?.displayName || author?.username || 'Someone';
+            const isCurrentUser = author && user?.id && author.id === user.id;
+            const hasUsername = author?.username || author?.displayName;
             return (
                 <div className='flex items-start gap-3'>
-                    {author && (
+                    {isCurrentUser ? (
+                        <div className='flex-shrink-0'>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>You</span>
+                        </div>
+                    ) : hasUsername ? (
                         <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
                             <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                        </div>
+                    ) : (
+                        <div className='flex-shrink-0'>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>Someone</span>
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
                         <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                            replied to your post
+                            Someone replied to your post
                         </p>
                         {notification.message?.content && (
                             <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -798,17 +898,26 @@ export default function NotificationsPage() {
 
         if (notification.type === NotificationType.EVENT_REPLY) {
             const author = notification.message?.author;
-            const displayName = author?.displayName || author?.username || 'Someone';
+            const isCurrentUser = author && user?.id && author.id === user.id;
+            const hasUsername = author?.username || author?.displayName;
             return (
                 <div className='flex items-start gap-3'>
-                    {author && (
+                    {isCurrentUser ? (
+                        <div className='flex-shrink-0'>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>You</span>
+                        </div>
+                    ) : hasUsername ? (
                         <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
                             <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                        </div>
+                    ) : (
+                        <div className='flex-shrink-0'>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>Someone</span>
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
                         <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                            commented on your event
+                            Someone commented on your event
                         </p>
                         {notification.message?.content && (
                             <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -915,10 +1024,13 @@ export default function NotificationsPage() {
         // Event user joined notifications
         if (notification.type === NotificationType.EVENT_USER_JOINED) {
             const eventUser = 'user' in notification ? notification.user : undefined;
+            const isCurrentUser = eventUser && user?.id && eventUser.id === user.id;
+            const hasUsername = eventUser?.username || eventUser?.displayName;
             console.log('[NotificationsPage] EVENT_USER_JOINED notification:', {
                 notification,
                 eventUser,
                 hasUser: !!eventUser,
+                hasUsername,
                 userID: 'userID' in notification ? notification.userID : undefined
             });
             return (
@@ -926,9 +1038,13 @@ export default function NotificationsPage() {
                     <div className='flex items-start justify-between gap-3'>
                         <div className='flex-1 min-w-0'>
                             <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2'>
-                                joined your event
+                                Someone joined your event
                             </p>
-                            {eventUser ? (
+                            {isCurrentUser ? (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300'>
+                                    You joined your event
+                                </p>
+                            ) : hasUsername ? (
                                 <div onClick={(e) => e.stopPropagation()}>
                                     <DelayedUserCard user={eventUser} triggerVariant='avatar-name' />
                                 </div>
@@ -953,6 +1069,7 @@ export default function NotificationsPage() {
 
         // Default/Other notifications
         const meta = describeNotification(notification);
+
         return (
             <div className='flex flex-col gap-2'>
                 <div className='flex items-start justify-between gap-3'>
@@ -1203,7 +1320,7 @@ export default function NotificationsPage() {
                                                     >
                                                         {isExpanded ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
                                                         <span className='font-medium'>
-                                                            +{item.previous.length} earlier update{item.previous.length !== 1 ? 's' : ''} on this {multipleHandshakes ? 'post' : 'handshake'}
+                                                            +{item.previous.length} earlier update{item.previous.length !== 1 ? 's' : ''} about this {multipleHandshakes ? 'post' : 'help request'}
                                                         </span>
                                                     </button>
 

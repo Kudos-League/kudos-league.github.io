@@ -153,7 +153,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
             try {
                 if (normalized.type === 'direct-message') {
-                    const author = normalized.message?.author?.username || 'Someone';
+                    const author = normalized.message?.author?.username || normalized.message?.author?.displayName || 'Someone';
                     const text = normalized.message?.content || '';
                     pushAlert({ type: 'info', message: `New DM from ${author}: ${text}` });
                 }
@@ -182,25 +182,32 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     pushAlert({ type: 'info', message: 'New site feedback submitted.' });
                 }
                 else if (normalized.type === NotificationType.HANDSHAKE_CREATED) {
-                    pushAlert({ type: 'info', message: 'New handshake request on your post!' });
+                    const user = 'user' in normalized ? (normalized as any).user
+                        : 'sender' in normalized ? (normalized as any).sender
+                            : null;
+                    const username = user?.username || user?.displayName || 'Someone';
+                    pushAlert({ type: 'info', message: `${username} wants to help with your post!` });
                 }
                 else if (normalized.type === NotificationType.HANDSHAKE_ACCEPTED) {
-                    pushAlert({ type: 'success', message: 'Your handshake request was accepted!' });
+                    const user = 'user' in normalized ? (normalized as any).user
+                        : 'sender' in normalized ? (normalized as any).sender
+                            : null;
+                    const username = user?.username || user?.displayName || 'They';
+                    pushAlert({ type: 'success', message: `${username} accepted your help offer!` });
                 }
                 else if (normalized.type === NotificationType.HANDSHAKE_COMPLETED) {
-                    pushAlert({ type: 'success', message: 'Handshake completed!' });
+                    pushAlert({ type: 'success', message: 'Help completed!' });
                 }
                 else if (normalized.type === NotificationType.HANDSHAKE_CANCELLED) {
                     const noShow = 'noShowReported' in normalized ? normalized.noShowReported : false;
                     const msg = noShow
-                        ? 'Handshake cancelled due to no-show.'
-                        : 'Handshake cancelled.';
+                        ? 'Help cancelled due to no-show.'
+                        : 'Help cancelled.';
                     pushAlert({ type: 'warning', message: msg });
                 }
                 else if (normalized.type === NotificationType.EVENT_USER_JOINED) {
-                    const username = 'user' in normalized && normalized.user?.username
-                        ? normalized.user.username
-                        : 'Someone';
+                    const user = 'user' in normalized ? normalized.user : null;
+                    const username = user?.username || user?.displayName || 'Someone';
                     console.log('[NotificationsContext] EVENT_USER_JOINED received!', {
                         notification: normalized,
                         username,

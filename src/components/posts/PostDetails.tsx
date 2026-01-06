@@ -1164,8 +1164,8 @@ export default function PostDetails(props: Props) {
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
                         {postDetails.type === 'request'
-                            ? 'Offered By'
-                            : 'Requested By'}
+                            ? 'Offers'
+                            : 'Requests'}
                     </h2>
                     
                     {showAcceptHighestKudosButton && (

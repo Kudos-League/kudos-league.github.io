@@ -106,7 +106,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder='Search users, posts, events…'
+                                    placeholder='Search users, posts…'
                                     value={searchText}
                                     onChange={(e) => setSearchText(e.target.value)}
                                     className='w-full pl-12 pr-10 py-3 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 transition-all'

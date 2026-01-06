@@ -47,6 +47,14 @@ function HandshakeNotificationPreview({
     const postTitle = handshake.post?.title || 'Post';
     const postType = handshake.post?.type || 'request';
 
+    // Determine user's help action context
+    const userHelpAction: 'receiving' | 'giving' | null =
+        userID === handshake.receiverID
+            ? (postType === 'request' ? 'receiving' : 'giving')
+            : userID === handshake.senderID
+                ? (postType === 'request' ? 'giving' : 'receiving')
+                : null;
+
     let statusMessage = '';
     let statusColor = 'text-zinc-700 dark:text-zinc-300';
 
@@ -55,15 +63,15 @@ function HandshakeNotificationPreview({
         statusColor = 'text-blue-700 dark:text-blue-300';
     }
     else if (notificationType === 'handshake-accepted') {
-        statusMessage = 'accepted your handshake on';
+        statusMessage = 'accepted your help offer on';
         statusColor = 'text-green-700 dark:text-green-300';
     }
     else if (notificationType === 'handshake-completed') {
-        statusMessage = 'completed handshake on';
+        statusMessage = userHelpAction === 'receiving' ? 'received help on' : 'completed helping on';
         statusColor = 'text-emerald-700 dark:text-emerald-300';
     }
     else if (notificationType === 'handshake-cancelled') {
-        statusMessage = 'cancelled handshake on';
+        statusMessage = userHelpAction === 'receiving' ? 'stopped receiving help on' : 'stopped helping on';
         statusColor = 'text-red-700 dark:text-red-300';
     }
 
@@ -532,7 +540,7 @@ export default function NotificationsBell() {
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                                                     <div className='text-sm md:text-sm font-medium text-brand-700 dark:text-brand-300'>
-                                                        joined your event
+                                                        Someone joined your event
                                                     </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
