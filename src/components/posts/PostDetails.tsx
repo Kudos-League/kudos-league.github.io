@@ -1325,9 +1325,9 @@ export default function PostDetails(props: Props) {
                                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
                                 </svg>
                             </div>
-                            <h2 className='text-2xl font-bold mb-3'>Handshake Created!</h2>
+                            <h2 className='text-2xl font-bold mb-3'>Help request/offer Created!</h2>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                Your handshake has been successfully created. The post owner has been notified.
+                                Your help request/offer has been successfully created. The post owner has been notified.
                             </p>
                             <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
                                 <p className='text-xs text-blue-800 dark:text-blue-200'>

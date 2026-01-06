@@ -567,7 +567,7 @@ const HandshakeCard: React.FC<Props> = ({
                                     Send Kudos to Complete Exchange
                                 </label>
                                 <p className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}>
-                                    You received help! Send kudos as a thank you to the {handshake.post?.type === 'request' ? 'giver' : 'poster'}.
+                                    You&apos;ll receive help! Send kudos as a thank you to the {handshake.post?.type === 'request' ? 'giver' : 'poster'} once you receive it.
                                 </p>
                             </div>
                             <div className="flex gap-2">
