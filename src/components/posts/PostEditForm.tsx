@@ -332,7 +332,7 @@ export default function PostEditForm({
                         height={300}
                         exactLocation={isPostOwner}
                         onLocationChange={handleLocationChange}
-                        shouldSavedLocationButton={true}
+                        shouldSavedLocationButton
                     />
                 </div>
 

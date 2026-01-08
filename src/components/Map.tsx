@@ -190,7 +190,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     coordinates = null,
     width = '100%',
     height = 400,
-    exactLocation = true,
+    exactLocation = false,
     regionID,
     onLocationChange,
     onLabelChange,
@@ -676,15 +676,41 @@ const MapDisplay: React.FC<MapComponentProps> = ({
 
         run();
     }, [searchInput, isLoaded]);
-
-    if (!isLoaded) return <p>Loading Google Maps...</p>;
-
     const centerLat = Number(mapCoordinates?.latitude);
     const centerLng = Number(mapCoordinates?.longitude);
-    const center = {
+    const [randomizedCenter, setRandomizedCenter] = useState<{ lat: number; lng: number } | null>(null);
+
+    useEffect(() => {
+        if (exactLocation) {
+            setRandomizedCenter(null);
+            return;
+        }
+
+        const lat = Number(mapCoordinates?.latitude);
+        const lng = Number(mapCoordinates?.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || isCleared) {
+            setRandomizedCenter(null);
+            return;
+        }
+
+        const min = Math.max(1, approximateRadiusMeters * 0.3);
+        const max = Math.max(min + 1, approximateRadiusMeters * 0.7);
+        const randDist = Math.random() * (max - min) + min;
+        const bearing = Math.random() * 2 * Math.PI;
+
+        const earthRadius = 6378137;
+        const deltaLat = (randDist * Math.cos(bearing)) / earthRadius * (180 / Math.PI);
+        const deltaLng = (randDist * Math.sin(bearing)) / (earthRadius * Math.cos(lat * Math.PI / 180)) * (180 / Math.PI);
+
+        setRandomizedCenter({ lat: lat + deltaLat, lng: lng + deltaLng });
+    }, [mapCoordinates, exactLocation, isCleared, approximateRadiusMeters]);
+
+    const center = randomizedCenter ?? {
         lat: Number.isFinite(centerLat) ? centerLat : DEFAULT_CENTER.latitude,
         lng: Number.isFinite(centerLng) ? centerLng : DEFAULT_CENTER.longitude
     };
+
+    if (!isLoaded) return <p>Loading Google Maps...</p>;
 
     if (loading) {
         return <p>Loading map...</p>;

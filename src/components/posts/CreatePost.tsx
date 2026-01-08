@@ -419,7 +419,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 name: data.name
                             });
                     }}
-                    shouldSavedLocationButton={true}
+                    shouldSavedLocationButton
+                    exactLocation
                 />
             </div>
 

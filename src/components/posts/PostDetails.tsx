@@ -975,9 +975,9 @@ export default function PostDetails(props: Props) {
                             edit
                             regionID={editData.location?.regionID}
                             height={300}
-                            exactLocation={user?.id === postDetails.sender?.id}
+                            exactLocation={isPostOwner}
                             onLocationChange={handleLocationChange}
-                            shouldSavedLocationButton={true}
+                            shouldSavedLocationButton
                         />
                     </div>
 
@@ -1143,6 +1143,7 @@ export default function PostDetails(props: Props) {
                 <div className='mb-6 flex justify-center'>
                     <MapDisplay
                         edit={false}
+                        exactLocation={isPostOwner}
                         regionID={postDetails.location?.regionID}
                         coordinates={
                             postDetails.location?.latitude && postDetails.location?.longitude

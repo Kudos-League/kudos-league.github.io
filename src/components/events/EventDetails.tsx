@@ -470,7 +470,8 @@ export default function EventDetails({ event, setEvent }: Props) {
                         <div>
                             <label className='block font-semibold mb-2'>Event Location</label>
                             <MapDisplay
-                                edit={true}
+                                edit
+                                exactLocation
                                 regionID={editData.location?.regionID}
                                 width='100%'
                                 height={300}
@@ -563,6 +564,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                         regionID={event.location.regionID}
                         height={200}
                         edit={false}
+                        exactLocation
                     />
                 </div>
             )}

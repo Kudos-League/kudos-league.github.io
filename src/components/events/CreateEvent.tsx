@@ -352,7 +352,8 @@ export default function CreateEvent() {
                         </p>
                         <div className='border-2 rounded-lg overflow-hidden dark:border-neutral-700'>
                             <MapDisplay
-                                edit={true}
+                                edit
+                                exactLocation
                                 regionID={location?.regionID}
                                 onLocationChange={(data) =>
                                     setLocation({
@@ -364,7 +365,7 @@ export default function CreateEvent() {
                                 }
                                 width='100%'
                                 height={300}
-                                shouldSavedLocationButton={true}
+                                shouldSavedLocationButton
                             />
                         </div>
                         {!location?.regionID && errorMessages.length > 0 && (
