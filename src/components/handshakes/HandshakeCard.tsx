@@ -14,7 +14,7 @@ import Button from '../common/Button';
 import Pill from '../common/Pill';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import ConfirmationModal from '../ConfirmationModal';
-import Alert from '../common/Alert';
+import { pushAlert } from '../common/alertBus';
 import { current } from '@reduxjs/toolkit';
 
 interface Props {
@@ -55,8 +55,6 @@ const HandshakeCard: React.FC<Props> = ({
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showNoShowModal, setShowNoShowModal] = useState(false);
     const [showAcceptedWarningModal, setShowAcceptedWarningModal] = useState(false);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-    const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     // Use cached user data
     const { user: senderUser, loading: senderLoading } = useCachedUser(handshake.senderID);
@@ -175,12 +173,6 @@ const HandshakeCard: React.FC<Props> = ({
         fetchLastMessage();
     }, [status, userID, otherUserID, isParticipant]);
 
-    useEffect(() => {
-        if (!toastMessage) return;
-        const t = setTimeout(() => setToastMessage(null), 3000);
-        return () => clearTimeout(t);
-    }, [toastMessage]);
-
     const handleAccept = async (): Promise<boolean> => {
         setError(null);
         if (status !== 'new') return false;
@@ -190,20 +182,22 @@ const HandshakeCard: React.FC<Props> = ({
             await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'accepted' });
             setStatus('accepted');
             setIsChatOpen(true);
-            setToastType('success');
-            setToastMessage(
-                userHelpAction === 'receiving'
-                    ? 'Help accepted! You can now coordinate.'
-                    : `${otherUsername} accepted your help! You can now coordinate.`
-            );
+            pushAlert({
+                type: 'success',
+                message: userHelpAction === 'receiving'
+                    ? `You accepted ${otherUsername}'s offer! You can now coordinate.`
+                    : `You accepted ${otherUsername}'s request! You can now coordinate.`
+            });
             onInteraction?.();
             return true;
         }
         catch (err) {
             console.error(err);
             setError('Could not accept help offer.');
-            setToastType('error');
-            setToastMessage('Failed to accept help offer. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to accept help offer. Please try again.'
+            });
             return false;
         }
         finally {
@@ -217,19 +211,21 @@ const HandshakeCard: React.FC<Props> = ({
         try {
             await apiMutate(`/handshakes/${handshake.id}`, 'patch', { status: 'new' });
             setStatus('new');
-            setToastType('success');
-            setToastMessage(
-                userHelpAction === 'receiving'
+            pushAlert({
+                type: 'success',
+                message: userHelpAction === 'receiving'
                     ? 'Help acceptance cancelled. Status reverted to pending.'
                     : `Cancelled accepting ${otherUsername}'s request. Status reverted to pending.`
-            );
+            });
             onInteraction?.();
         }
         catch (err) {
             console.error('Failed to undo accept', err);
             setError('Failed to undo accept');
-            setToastType('error');
-            setToastMessage('Failed to undo acceptance. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to undo acceptance. Please try again.'
+            });
         }
         finally {
             setProcessing(false);
@@ -280,15 +276,19 @@ const HandshakeCard: React.FC<Props> = ({
             setStatus('cancelled');
             setIsChatOpen(false);
             onDelete?.(handshake.id);
-            setToastType('success');
-            setToastMessage('Deleted.');
+            pushAlert({
+                type: 'success',
+                message: 'Deleted.'
+            });
             onInteraction?.();
         }
         catch (err) {
             console.error('Failed to cancel handshake', err);
             setError('Failed to delete.');
-            setToastType('error');
-            setToastMessage('Failed to delete. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to delete. Please try again.'
+            });
         }
         finally {
             setCancelling(false);
@@ -304,8 +304,10 @@ const HandshakeCard: React.FC<Props> = ({
 
         if (!kudosValue || isNaN(Number(kudosValue))) {
             setError('Enter a valid kudos number.');
-            setToastType('error');
-            setToastMessage('Please enter a valid kudos amount.');
+            pushAlert({
+                type: 'danger',
+                message: 'Please enter a valid kudos amount.'
+            });
             return;
         }
 
@@ -321,18 +323,20 @@ const HandshakeCard: React.FC<Props> = ({
             await completeHandshakeMutation.mutateAsync(handshake.id);
             setStatus('completed');
             setKudosValue('');
-            setToastType('success');
-            setToastMessage(
-                userHelpAction === 'receiving'
-                    ? `You received help! ${kudosValue} kudos sent successfully.`
+            pushAlert({
+                type: 'success',
+                message: userHelpAction === 'receiving'
+                    ? `${kudosValue} kudos sent successfully.`
                     : `You helped ${otherUsername}! Waiting for them to complete.`
-            );
+            });
         }
         catch (err) {
             console.error(err);
             setError('Failed to submit kudos.');
-            setToastType('error');
-            setToastMessage('Failed to submit kudos. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to submit kudos. Please try again.'
+            });
         }
         finally {
             setSubmitting(false);
@@ -698,20 +702,6 @@ const HandshakeCard: React.FC<Props> = ({
                 cancelText="No, Keep It"
                 variant="warning"
             />
-
-            {/* Toast Notification */}
-            {toastMessage && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-                    <Alert
-                        type={toastType === 'success' ? 'success' : 'danger'}
-                        title={toastType === 'success' ? 'Success' : 'Error'}
-                        message={toastMessage}
-                        show={!!toastMessage}
-                        onClose={() => setToastMessage(null)}
-                        closable={true}
-                    />
-                </div>
-            )}
         </>
     );
 };

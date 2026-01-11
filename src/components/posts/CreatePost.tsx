@@ -64,8 +64,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [location, setLocation] = React.useState<LocationDTO | null>(null);
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
-    const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-    const [toastType, setToastType] = React.useState<'success' | 'error'>('success');
     const [placeholder, setPlaceholder] = React.useState<string>('1');
 
     React.useEffect(() => {
@@ -80,12 +78,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         const loc = routerLocation.state as LocationDTO | null;
         if (loc) setLocation(loc);
     }, [routerLocation.state]);
-
-    React.useEffect(() => {
-        if (!toastMessage) return;
-        const t = setTimeout(() => setToastMessage(null), 3000);
-        return () => clearTimeout(t);
-    }, [toastMessage]);
 
     const handleTagsChange = React.useCallback(
         (tags: { id: string; name: string }[]) => {
@@ -179,8 +171,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             setSelectedImages([]);
             setLocation(null);
             setPostType('gift');
-            setToastType('success');
-            setToastMessage(`${postType === 'gift' ? 'Gift' : 'Request'} post created successfully!`);
 
             // Navigate after a short delay to allow toast to be visible
             setTimeout(() => {
@@ -454,20 +444,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             >
                 {createPost.isPending ? 'Creating...' : 'Create'}
             </Button>
-
-            {/* Toast Notification */}
-            {toastMessage && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-                    <Alert
-                        type={toastType === 'success' ? 'success' : 'danger'}
-                        title={toastType === 'success' ? 'Success' : 'Error'}
-                        message={toastMessage}
-                        show={!!toastMessage}
-                        onClose={() => setToastMessage(null)}
-                        closable={true}
-                    />
-                </div>
-            )}
         </Form>
     );
 }

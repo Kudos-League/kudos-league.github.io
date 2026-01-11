@@ -160,7 +160,7 @@ export function useCreateHandshake() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['posts', 'infinite'] });
-            pushAlert({ type: 'success', message: 'Handshake created.' });
+            pushAlert({ type: 'success', message: 'Help request created' });
         },
         onError: (err) => {
             pushAlert({ type: 'danger', message: extractErrMessage(err) });
