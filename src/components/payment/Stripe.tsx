@@ -133,10 +133,6 @@ export default function StripeWeb() {
                     <select
                         className='w-full border rounded p-2'
                         {...formMethods.register('interval')}
-                        value={formMethods.getValues('interval') ?? ''}
-                        onChange={(e) =>
-                            formMethods.setValue('interval', e.target.value)
-                        }
                     >
                         <option value=''>One-time</option>
                         <option value='week'>Weekly</option>
