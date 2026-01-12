@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { CreateMessageDTO, MessageDTO } from '@/shared/api/types';
-import { useSendMessage, useUpdateMessage, useDeleteMessage } from '@/shared/api/mutations/messages';
+import {
+    useSendMessage,
+    useUpdateMessage,
+    useDeleteMessage
+} from '@/shared/api/mutations/messages';
 import { useAuth } from '@/contexts/useAuth';
 import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
@@ -65,13 +69,14 @@ const MessageList: React.FC<Props> = ({
         };
 
         try {
-            const response = await sendMessageMutation.mutateAsync(newMessage as any);
+            const response = await sendMessageMutation.mutateAsync(
+                newMessage as any
+            );
             // Ensure author info is present locally to avoid "Anonymous" until refresh
             const enriched: MessageDTO = {
                 ...response,
                 author: response.author || user || undefined,
-                authorID:
-                    response.authorID ?? user.id ?? response.author?.id
+                authorID: response.authorID ?? user.id ?? response.author?.id
             } as MessageDTO;
             callback?.(enriched);
             setMessageContent('');
@@ -98,7 +103,10 @@ const MessageList: React.FC<Props> = ({
         if (!originalMessage) return;
 
         try {
-            const response = await updateMessageMutation.mutateAsync({ id: messageId, content: editContent });
+            const response = await updateMessageMutation.mutateAsync({
+                id: messageId,
+                content: editContent
+            });
 
             // Merge the response with original author data to ensure we don't lose it
             const updatedMessage: MessageDTO = {
@@ -139,7 +147,9 @@ const MessageList: React.FC<Props> = ({
         try {
             await deleteMessageMutation.mutateAsync(messageToDelete);
 
-            const original = processedMessages.find((m) => m.id === messageToDelete);
+            const original = processedMessages.find(
+                (m) => m.id === messageToDelete
+            );
             if (!original) {
                 onMessageDelete?.(messageToDelete);
                 callback?.({ type: 'delete', messageId: messageToDelete });
@@ -210,9 +220,14 @@ const MessageList: React.FC<Props> = ({
                             <div className='space-y-2'>
                                 <textarea
                                     value={editContent}
-                                    onChange={(e) => setEditContent(e.target.value)}
+                                    onChange={(e) =>
+                                        setEditContent(e.target.value)
+                                    }
                                     className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
-                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                                    style={{
+                                        WebkitOverflowScrolling: 'touch',
+                                        touchAction: 'pan-y'
+                                    }}
                                     rows={3}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && e.ctrlKey) {
@@ -230,30 +245,28 @@ const MessageList: React.FC<Props> = ({
                                         disabled={!editContent.trim()}
                                         className='text-xs'
                                     >
-                Save
+                                        Save
                                     </Button>
                                     <Button
                                         onClick={handleEditCancel}
                                         variant='secondary'
                                         className='text-xs'
                                     >
-                Cancel
+                                        Cancel
                                     </Button>
                                 </div>
                                 <p className='text-xs text-gray-500'>
-            Press Ctrl+Enter to save, Esc to cancel
+                                    Press Ctrl+Enter to save, Esc to cancel
                                 </p>
                             </div>
+                        ) : msg.deletedAt ? (
+                            <div className='text-zinc-400 dark:text-zinc-400 italic'>
+                                [deleted message]
+                            </div>
                         ) : (
-                            msg.deletedAt ? (
-                                <div className='text-zinc-400 dark:text-zinc-400 italic'>
-            [deleted message]
-                                </div>
-                            ) : (
-                                <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
-                                    {msg.content}
-                                </TextWithLinks>
-                            )
+                            <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                                {msg.content}
+                            </TextWithLinks>
                         )}
                         {(showEditButton || showDeleteButton) && !isEditing && (
                             <>
@@ -268,7 +281,10 @@ const MessageList: React.FC<Props> = ({
                                 )}
                                 {showDeleteButton && (
                                     <Button
-                                        onClick={() => { if (!msg.deletedAt) handleDeleteClick(msg.id); }}
+                                        onClick={() => {
+                                            if (!msg.deletedAt)
+                                                handleDeleteClick(msg.id);
+                                        }}
                                         variant='danger'
                                         className={`text-xs ${msg.deletedAt ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         disabled={Boolean(msg.deletedAt)}
@@ -296,7 +312,10 @@ const MessageList: React.FC<Props> = ({
                                             behavior: 'smooth',
                                             block: 'center'
                                         });
-                                        el.classList.add('ring-2', 'ring-teal-400');
+                                        el.classList.add(
+                                            'ring-2',
+                                            'ring-teal-400'
+                                        );
                                         setTimeout(() => {
                                             el.classList.remove(
                                                 'ring-2',
@@ -320,11 +339,14 @@ const MessageList: React.FC<Props> = ({
                             <span className='font-semibold inline-flex items-center gap-1 shrink-0'>
                                 <UserCard
                                     triggerVariant='name'
-                                    user={byId.get(msg.replyToMessageID)?.author}
+                                    user={
+                                        byId.get(msg.replyToMessageID)?.author
+                                    }
                                 />
                             </span>
                             <span className='opacity-90 truncate'>
-                                {byId.get(msg.replyToMessageID)?.content ?? 'Original message'}
+                                {byId.get(msg.replyToMessageID)?.content ??
+                                    'Original message'}
                             </span>
                         </button>
                     </div>
@@ -337,7 +359,10 @@ const MessageList: React.FC<Props> = ({
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
                             className='w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             rows={3}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.ctrlKey) {
@@ -483,7 +508,8 @@ const MessageList: React.FC<Props> = ({
                             Delete Message
                         </h3>
                         <p className='text-sm text-gray-600 dark:text-gray-300 mb-6'>
-                            Are you sure you want to delete this message? This action cannot be undone.
+                            Are you sure you want to delete this message? This
+                            action cannot be undone.
                         </p>
                         <div className='flex gap-3 justify-end'>
                             <Button

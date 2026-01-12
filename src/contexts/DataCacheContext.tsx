@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useRef, useCallback, ReactNode } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useRef,
+    useCallback,
+    ReactNode
+} from 'react';
 import { apiGet } from '@/shared/api/apiClient';
 import type { HandshakeDTO, UserDTO, PostDTO } from '@/shared/api/types';
 
@@ -16,50 +22,62 @@ interface DataCacheContextType {
     invalidatePost: (id: number) => void;
 }
 
-const DataCacheContext = createContext<DataCacheContextType | undefined>(undefined);
+const DataCacheContext = createContext<DataCacheContextType | undefined>(
+    undefined
+);
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export function DataCacheProvider({ children }: { children: ReactNode }) {
     // Use refs instead of state to prevent getCached* functions from being recreated
-    const handshakeCacheRef = useRef<Map<number, CacheEntry<HandshakeDTO>>>(new Map());
+    const handshakeCacheRef = useRef<Map<number, CacheEntry<HandshakeDTO>>>(
+        new Map()
+    );
     const userCacheRef = useRef<Map<number, CacheEntry<UserDTO>>>(new Map());
     const postCacheRef = useRef<Map<number, CacheEntry<PostDTO>>>(new Map());
-    const fetchingHandshakesRef = useRef<Map<number, Promise<HandshakeDTO>>>(new Map());
+    const fetchingHandshakesRef = useRef<Map<number, Promise<HandshakeDTO>>>(
+        new Map()
+    );
     const fetchingUsersRef = useRef<Map<number, Promise<UserDTO>>>(new Map());
     const fetchingPostsRef = useRef<Map<number, Promise<PostDTO>>>(new Map());
 
-    const getCachedHandshake = useCallback(async (id: number): Promise<HandshakeDTO> => {
-        const now = Date.now();
-        const cached = handshakeCacheRef.current.get(id);
+    const getCachedHandshake = useCallback(
+        async (id: number): Promise<HandshakeDTO> => {
+            const now = Date.now();
+            const cached = handshakeCacheRef.current.get(id);
 
-        // Return cached data if it's still fresh
-        if (cached && now - cached.timestamp < CACHE_DURATION) {
-            return cached.data;
-        }
+            // Return cached data if it's still fresh
+            if (cached && now - cached.timestamp < CACHE_DURATION) {
+                return cached.data;
+            }
 
-        // If already fetching, return the existing promise to avoid duplicate requests
-        const existingFetch = fetchingHandshakesRef.current.get(id);
-        if (existingFetch) {
-            return existingFetch;
-        }
+            // If already fetching, return the existing promise to avoid duplicate requests
+            const existingFetch = fetchingHandshakesRef.current.get(id);
+            if (existingFetch) {
+                return existingFetch;
+            }
 
-        // Create new fetch promise
-        const fetchPromise = apiGet<HandshakeDTO>(`/handshakes/${id}`)
-            .then((data) => {
-                handshakeCacheRef.current.set(id, { data, timestamp: Date.now() });
-                fetchingHandshakesRef.current.delete(id);
-                return data;
-            })
-            .catch((err) => {
-                fetchingHandshakesRef.current.delete(id);
-                throw err;
-            });
+            // Create new fetch promise
+            const fetchPromise = apiGet<HandshakeDTO>(`/handshakes/${id}`)
+                .then((data) => {
+                    handshakeCacheRef.current.set(id, {
+                        data,
+                        timestamp: Date.now()
+                    });
+                    fetchingHandshakesRef.current.delete(id);
+                    return data;
+                })
+                .catch((err) => {
+                    fetchingHandshakesRef.current.delete(id);
+                    throw err;
+                });
 
-        fetchingHandshakesRef.current.set(id, fetchPromise);
+            fetchingHandshakesRef.current.set(id, fetchPromise);
 
-        return fetchPromise;
-    }, []);
+            return fetchPromise;
+        },
+        []
+    );
 
     const getCachedUser = useCallback(async (id: number): Promise<UserDTO> => {
         const now = Date.now();
@@ -145,7 +163,16 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <DataCacheContext.Provider value={{ getCachedHandshake, getCachedUser, getCachedPost, clearCache, invalidateHandshake, invalidatePost }}>
+        <DataCacheContext.Provider
+            value={{
+                getCachedHandshake,
+                getCachedUser,
+                getCachedPost,
+                clearCache,
+                invalidateHandshake,
+                invalidatePost
+            }}
+        >
             {children}
         </DataCacheContext.Provider>
     );
@@ -180,7 +207,8 @@ export function useCachedHandshake(id: number | undefined) {
         // Only show loading state if:
         // 1. We don't have any data yet (initial load), OR
         // 2. The ID changed (different handshake)
-        const isIdChange = prevIdRef.current !== undefined && prevIdRef.current !== id;
+        const isIdChange =
+            prevIdRef.current !== undefined && prevIdRef.current !== id;
 
         if (isIdChange) {
             // ID changed, reset everything and show loading
@@ -234,7 +262,8 @@ export function useCachedUser(id: number | undefined) {
         // Only show loading state if:
         // 1. We don't have any data yet (initial load), OR
         // 2. The ID changed (different user)
-        const isIdChange = prevIdRef.current !== undefined && prevIdRef.current !== id;
+        const isIdChange =
+            prevIdRef.current !== undefined && prevIdRef.current !== id;
 
         if (isIdChange) {
             // ID changed, reset everything and show loading
@@ -288,7 +317,8 @@ export function useCachedPost(id: number | undefined) {
         // Only show loading state if:
         // 1. We don't have any data yet (initial load), OR
         // 2. The ID changed (different post)
-        const isIdChange = prevIdRef.current !== undefined && prevIdRef.current !== id;
+        const isIdChange =
+            prevIdRef.current !== undefined && prevIdRef.current !== id;
 
         if (isIdChange) {
             // ID changed, reset everything and show loading

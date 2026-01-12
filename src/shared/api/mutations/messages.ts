@@ -2,14 +2,21 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
 import type { CreateMessageDTO, MessageDTO } from '@/shared/api/types';
 
-const channelKey = (id: number | string) => ['channel', id, 'messages'] as const;
+const channelKey = (id: number | string) =>
+    ['channel', id, 'messages'] as const;
 
 export function useSendMessage(channelId?: number) {
     const qc = useQueryClient();
     return useMutation<MessageDTO, any, CreateMessageDTO>({
-        mutationFn: (payload) => apiMutate<MessageDTO, CreateMessageDTO>('/messages', 'post', payload),
+        mutationFn: (payload) =>
+            apiMutate<MessageDTO, CreateMessageDTO>(
+                '/messages',
+                'post',
+                payload
+            ),
         onSuccess: () => {
-            if (channelId) qc.invalidateQueries({ queryKey: channelKey(channelId) });
+            if (channelId)
+                qc.invalidateQueries({ queryKey: channelKey(channelId) });
         }
     });
 }
@@ -17,9 +24,16 @@ export function useSendMessage(channelId?: number) {
 export function useUpdateMessage() {
     const qc = useQueryClient();
     return useMutation<MessageDTO, any, { id: number; content: string }>({
-        mutationFn: ({ id, content }) => apiMutate<MessageDTO, { content: string }>(`/messages/${id}`, 'put', { content }),
+        mutationFn: ({ id, content }) =>
+            apiMutate<MessageDTO, { content: string }>(
+                `/messages/${id}`,
+                'put',
+                { content }
+            ),
         onSuccess: (data) => {
-            qc.invalidateQueries({ queryKey: channelKey(data.channelID ?? 'unknown') });
+            qc.invalidateQueries({
+                queryKey: channelKey(data.channelID ?? 'unknown')
+            });
         }
     });
 }
@@ -37,15 +51,24 @@ export function useDeleteMessage() {
 export function useSendDirectMessage(recipientId?: number) {
     const qc = useQueryClient();
     return useMutation<MessageDTO, any, CreateMessageDTO>({
-        mutationFn: (payload) => apiMutate<MessageDTO, CreateMessageDTO>(`/users/${recipientId}/dm`, 'post', payload),
+        mutationFn: (payload) =>
+            apiMutate<MessageDTO, CreateMessageDTO>(
+                `/users/${recipientId}/dm`,
+                'post',
+                payload
+            ),
         onSuccess: (data) => {
             qc.invalidateQueries({ queryKey: ['channels'] });
             if (data.channelID) {
                 // Invalidate full message list
-                qc.invalidateQueries({ queryKey: ['channel', data.channelID, 'messages'] });
-                
+                qc.invalidateQueries({
+                    queryKey: ['channel', data.channelID, 'messages']
+                });
+
                 // 🚨 FIX 3: Invalidate the latest message for the newly created channel
-                qc.invalidateQueries({ queryKey: ['latestChannelMessage', data.channelID] });
+                qc.invalidateQueries({
+                    queryKey: ['latestChannelMessage', data.channelID]
+                });
             }
         }
     });

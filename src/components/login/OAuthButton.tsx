@@ -9,7 +9,15 @@ const styles: Record<Provider, { bg: string; label: string; text: string }> = {
     google: { bg: '!bg-[#4285F4]', label: 'Login with Google', text: 'G' }
 };
 
-export default function OAuthButton({ provider, inviteToken, emailToken }: { provider: Provider; inviteToken?: string; emailToken?: string }) {
+export default function OAuthButton({
+    provider,
+    inviteToken,
+    emailToken
+}: {
+    provider: Provider;
+    inviteToken?: string;
+    emailToken?: string;
+}) {
     const { bg, label, text } = styles[provider];
 
     const handle = () => {

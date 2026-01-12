@@ -101,7 +101,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             setConnectingText(null);
             clearPolling();
 
-            if (currentUserId != null && joinedUserId.current !== currentUserId) {
+            if (
+                currentUserId != null &&
+                joinedUserId.current !== currentUserId
+            ) {
                 sock.emit('joinUser', { userID: currentUserId });
                 joinedUserId.current = currentUserId;
             }
@@ -144,9 +147,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
                     ...(m as any),
                     author:
                         (m as any).author ||
-                        ((currentUserId != null &&
-                            ((m as any).authorID === currentUserId ||
-                                (m as any).author?.id === currentUserId))
+                        (currentUserId != null &&
+                        ((m as any).authorID === currentUserId ||
+                            (m as any).author?.id === currentUserId)
                             ? (user as any)
                             : undefined),
                     authorID:
@@ -176,10 +179,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             });
         };
 
-        const handleKudosUpdate = (p: { delta: number; total: number } | null | undefined) => {
-            if (!p || typeof p.delta !== 'number' || typeof p.total !== 'number') return;
+        const handleKudosUpdate = (
+            p: { delta: number; total: number } | null | undefined
+        ) => {
+            if (
+                !p ||
+                typeof p.delta !== 'number' ||
+                typeof p.total !== 'number'
+            )
+                return;
             const sign = p.delta >= 0 ? '+' : '';
-            pushAlert({ type: 'success', message: `You ${p.delta >= 0 ? 'gained' : 'lost'} ${sign}${p.delta} kudos. Total: ${p.total}` });
+            pushAlert({
+                type: 'success',
+                message: `You ${p.delta >= 0 ? 'gained' : 'lost'} ${sign}${p.delta} kudos. Total: ${p.total}`
+            });
         };
 
         if (!(sock as any).__listenersAttached) {
@@ -200,33 +213,29 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         };
     }, [token, currentUserId, clearPolling]);
 
-    const actuallyJoin = useCallback(
-        (channelID: number, sock: Socket) => {
-            const onJoined = (data: {
-                channelID: number;
-                success: boolean;
-            }) => {
-                if (data.channelID === channelID && data.success) {
-                    apiGet<any>(`/channels/${channelID}/messages`).then((list) => {
-                        if (Array.isArray(list)) {
-                            const cleaned = list.filter(Boolean);
-                            setMessages(cleaned);
-                        }
-                    });
-                }
-            };
-            sock.once('joinedChannel', onJoined);
-            sock.emit('joinChannel', { channelID });
-        },
-        []
-    );
+    const actuallyJoin = useCallback((channelID: number, sock: Socket) => {
+        const onJoined = (data: { channelID: number; success: boolean }) => {
+            if (data.channelID === channelID && data.success) {
+                apiGet<any>(`/channels/${channelID}/messages`).then((list) => {
+                    if (Array.isArray(list)) {
+                        const cleaned = list.filter(Boolean);
+                        setMessages(cleaned);
+                    }
+                });
+            }
+        };
+        sock.once('joinedChannel', onJoined);
+        sock.emit('joinChannel', { channelID });
+    }, []);
 
     const startPolling = useCallback(
         (channelID: number) => {
             clearPolling();
             pollInterval.current = setInterval(async () => {
                 try {
-                    const fresh = await apiGet<any>(`/channels/${channelID}/messages`);
+                    const fresh = await apiGet<any>(
+                        `/channels/${channelID}/messages`
+                    );
                     if (Array.isArray(fresh)) {
                         setMessages(fresh.filter(Boolean));
                     }
@@ -293,10 +302,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
                 let newMsg: any = null;
 
                 if (receiverID) {
-                    newMsg = await apiMutate(`/users/${receiverID}/dm`, 'post', {
-                        content,
-                        ...(replyToMessageID ? { replyToMessageID } : {})
-                    });
+                    newMsg = await apiMutate(
+                        `/users/${receiverID}/dm`,
+                        'post',
+                        {
+                            content,
+                            ...(replyToMessageID ? { replyToMessageID } : {})
+                        }
+                    );
                 }
                 else if (channel && channel.id != null) {
                     newMsg = await apiMutate('/messages', 'post', {

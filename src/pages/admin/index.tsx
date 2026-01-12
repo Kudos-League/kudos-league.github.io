@@ -14,7 +14,9 @@ import { FeedbackDTO } from '@/shared/api/types';
 export default function AdminDashboard() {
     const { user } = useAuth();
 
-    const [tab, setTab] = useState<'reports' | 'feedback' | 'analytics' | 'suspicious'>('reports');
+    const [tab, setTab] = useState<
+        'reports' | 'feedback' | 'analytics' | 'suspicious'
+    >('reports');
 
     const [reports, setReports] = useState<any[]>([]);
     const [feedbacks, setFeedbacks] = useState<FeedbackDTO[]>([]);
@@ -50,7 +52,9 @@ export default function AdminDashboard() {
         load();
     }, [user]);
 
-    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(null);
+    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(
+        null
+    );
 
     if (loading) {
         return <div className='text-center mt-10 text-gray-500'>Loading…</div>;
@@ -101,22 +105,34 @@ export default function AdminDashboard() {
                     setFeedbacks={setFeedbacks}
                 />
             )}
-            {tab === 'analytics' && (
-                <AdminAnalytics />
-            )}
+            {tab === 'analytics' && <AdminAnalytics />}
             {tab === 'suspicious' && (
                 <div>
-                    <h2 className='text-xl font-semibold mb-3'>Suspicious IP groups</h2>
-                    <SuspiciousPanel onInvestigate={(id: number) => setAdminReportOpenFor(id)} />
+                    <h2 className='text-xl font-semibold mb-3'>
+                        Suspicious IP groups
+                    </h2>
+                    <SuspiciousPanel
+                        onInvestigate={(id: number) =>
+                            setAdminReportOpenFor(id)
+                        }
+                    />
                 </div>
             )}
 
-            <AdminReportModal open={!!adminReportOpenFor} userID={adminReportOpenFor} onClose={() => setAdminReportOpenFor(null)} />
+            <AdminReportModal
+                open={!!adminReportOpenFor}
+                userID={adminReportOpenFor}
+                onClose={() => setAdminReportOpenFor(null)}
+            />
         </div>
     );
 }
 
-function SuspiciousPanel({ onInvestigate }: { onInvestigate?: (userID: number) => void }) {
+function SuspiciousPanel({
+    onInvestigate
+}: {
+    onInvestigate?: (userID: number) => void;
+}) {
     const { user } = useAuth();
     const [groups, setGroups] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);
@@ -134,22 +150,31 @@ function SuspiciousPanel({ onInvestigate }: { onInvestigate?: (userID: number) =
             .finally(() => setLoading(false));
     }, [user]);
 
-    if (!user?.admin) return <p className='text-red-600'>Admin access required.</p>;
+    if (!user?.admin)
+        return <p className='text-red-600'>Admin access required.</p>;
     if (loading) return <div className='text-gray-500'>Loading…</div>;
     if (error) return <p className='text-red-600'>{error}</p>;
-    if (!groups || groups.length === 0) return <p>No suspicious groups found.</p>;
+    if (!groups || groups.length === 0)
+        return <p>No suspicious groups found.</p>;
 
     return (
         <div className='space-y-3'>
             {groups.map((g) => (
                 <div key={g.ipAddress} className='p-3 border rounded'>
                     <div className='flex items-center justify-between mb-2'>
-                        <div className='font-mono text-sm'>IP: {g.ipAddress}</div>
-                        <div className='text-sm text-gray-600'>Count: {g.userCount}</div>
+                        <div className='font-mono text-sm'>
+                            IP: {g.ipAddress}
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                            Count: {g.userCount}
+                        </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
                         {g.users?.map((u: any) => (
-                            <div key={u.id} className='col-span-1 flex items-center justify-between p-2 border rounded'>
+                            <div
+                                key={u.id}
+                                className='col-span-1 flex items-center justify-between p-2 border rounded'
+                            >
                                 <div className='flex items-center gap-3'>
                                     <UserCard user={u} />
                                 </div>
@@ -158,13 +183,21 @@ function SuspiciousPanel({ onInvestigate }: { onInvestigate?: (userID: number) =
                                         placement='top'
                                         delay={[100, 0]}
                                         render={(attrs) => (
-                                            <div {...attrs} className='bg-black text-white text-xs rounded px-2 py-1'>Open admin report</div>
+                                            <div
+                                                {...attrs}
+                                                className='bg-black text-white text-xs rounded px-2 py-1'
+                                            >
+                                                Open admin report
+                                            </div>
                                         )}
                                     >
                                         <button
                                             aria-label={`Investigate user ${u.username ?? u.id}`}
                                             className='ml-2 p-1 rounded hover:bg-red-50 active:bg-red-100'
-                                            onClick={() => onInvestigate && onInvestigate(u.id)}
+                                            onClick={() =>
+                                                onInvestigate &&
+                                                onInvestigate(u.id)
+                                            }
                                         >
                                             <ExclamationTriangleIcon className='h-5 w-5 text-red-600' />
                                         </button>

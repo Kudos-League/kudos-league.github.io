@@ -35,7 +35,7 @@ export default function SearchDebugSection() {
         setSelectedItem({
             type: 'post',
             id: post.id,
-            data: post,
+            data: post
         });
     };
 
@@ -43,7 +43,7 @@ export default function SearchDebugSection() {
         setSelectedItem({
             type: 'user',
             id: user.id,
-            data: user,
+            data: user
         });
     };
 
@@ -71,7 +71,9 @@ export default function SearchDebugSection() {
                                 {postResults.map((post) => (
                                     <li key={post.id}>
                                         <button
-                                            onClick={() => handleSelectPost(post)}
+                                            onClick={() =>
+                                                handleSelectPost(post)
+                                            }
                                             className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
                                                 selectedItem?.type === 'post' &&
                                                 selectedItem?.id === post.id
@@ -82,25 +84,57 @@ export default function SearchDebugSection() {
                                             <div className='flex items-start justify-between gap-2'>
                                                 <div className='flex-1 min-w-0'>
                                                     <div className='font-medium text-sm text-gray-900 dark:text-white truncate'>
-                                                        {post.title || 'Untitled'}
+                                                        {post.title ||
+                                                            'Untitled'}
                                                     </div>
                                                     <div className='text-xs text-gray-600 dark:text-gray-400 line-clamp-2'>
-                                                        {post.body?.substring(0, 80)}...
+                                                        {post.body?.substring(
+                                                            0,
+                                                            80
+                                                        )}
+                                                        ...
                                                     </div>
                                                 </div>
-                                                <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
-                                                    post.type === 'gift'
-                                                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                                                        : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                                                }`}>
+                                                <span
+                                                    className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
+                                                        post.type === 'gift'
+                                                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                                            : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                                                    }`}
+                                                >
                                                     {post.type}
                                                 </span>
                                             </div>
                                             <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1'>
-                                                <div>ID: {post.id} • {post.category?.name || 'No category'}</div>
                                                 <div>
-                                                    {post.sender?.username && <span>By @{post.sender.username}</span>}
-                                                    {post.handshakes && post.handshakes.length > 0 && <span> • {post.handshakes.length} response(s)</span>}
+                                                    ID: {post.id} •{' '}
+                                                    {post.category?.name ||
+                                                        'No category'}
+                                                </div>
+                                                <div>
+                                                    {post.sender?.username && (
+                                                        <span>
+                                                            By @
+                                                            {
+                                                                post.sender
+                                                                    .username
+                                                            }
+                                                        </span>
+                                                    )}
+                                                    {post.handshakes &&
+                                                        post.handshakes.length >
+                                                            0 && (
+                                                        <span>
+                                                            {' '}
+                                                                •{' '}
+                                                            {
+                                                                post
+                                                                    .handshakes
+                                                                    .length
+                                                            }{' '}
+                                                                response(s)
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </button>
@@ -135,7 +169,9 @@ export default function SearchDebugSection() {
                                 {userResults.map((user) => (
                                     <li key={user.id}>
                                         <button
-                                            onClick={() => handleSelectUser(user)}
+                                            onClick={() =>
+                                                handleSelectUser(user)
+                                            }
                                             className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
                                                 selectedItem?.type === 'user' &&
                                                 selectedItem?.id === user.id
@@ -144,7 +180,8 @@ export default function SearchDebugSection() {
                                             }`}
                                         >
                                             <div className='font-medium text-sm text-gray-900 dark:text-white'>
-                                                {user.displayName || user.username}
+                                                {user.displayName ||
+                                                    user.username}
                                             </div>
                                             <div className='text-xs text-gray-500 dark:text-gray-400'>
                                                 @{user.username} (ID: {user.id})
@@ -175,16 +212,24 @@ export default function SearchDebugSection() {
                                 </h4>
                                 <div className='text-xs space-y-1 text-gray-600 dark:text-gray-400'>
                                     <div>
-                                        <span className='font-medium'>ID:</span> {selectedItem.id}
+                                        <span className='font-medium'>ID:</span>{' '}
+                                        {selectedItem.id}
                                     </div>
                                     <div>
-                                        <span className='font-medium'>Type:</span>{' '}
-                                        {(selectedItem.data as PostDTO).type || 'unknown'}
+                                        <span className='font-medium'>
+                                            Type:
+                                        </span>{' '}
+                                        {(selectedItem.data as PostDTO).type ||
+                                            'unknown'}
                                     </div>
                                     <div>
-                                        <span className='font-medium'>Created:</span>{' '}
+                                        <span className='font-medium'>
+                                            Created:
+                                        </span>{' '}
                                         {new Date(
-                                            (selectedItem.data as PostDTO).createdAt
+                                            (
+                                                selectedItem.data as PostDTO
+                                            ).createdAt
                                         ).toLocaleString()}
                                     </div>
                                 </div>
@@ -193,20 +238,31 @@ export default function SearchDebugSection() {
                         {isUser && (
                             <div>
                                 <h4 className='font-semibold text-purple-900 dark:text-purple-200 mb-2'>
-                                    User: {(selectedItem.data as UserDTO).displayName ||
+                                    User:{' '}
+                                    {(selectedItem.data as UserDTO)
+                                        .displayName ||
                                         (selectedItem.data as UserDTO).username}
                                 </h4>
                                 <div className='text-xs space-y-1 text-gray-600 dark:text-gray-400'>
                                     <div>
-                                        <span className='font-medium'>ID:</span> {selectedItem.id}
+                                        <span className='font-medium'>ID:</span>{' '}
+                                        {selectedItem.id}
                                     </div>
                                     <div>
-                                        <span className='font-medium'>Username:</span>{' '}
-                                        {(selectedItem.data as UserDTO).username}
+                                        <span className='font-medium'>
+                                            Username:
+                                        </span>{' '}
+                                        {
+                                            (selectedItem.data as UserDTO)
+                                                .username
+                                        }
                                     </div>
                                     <div>
-                                        <span className='font-medium'>Email:</span>{' '}
-                                        {(selectedItem.data as UserDTO).email || 'N/A'}
+                                        <span className='font-medium'>
+                                            Email:
+                                        </span>{' '}
+                                        {(selectedItem.data as UserDTO).email ||
+                                            'N/A'}
                                     </div>
                                 </div>
                             </div>

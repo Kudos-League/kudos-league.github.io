@@ -6,9 +6,13 @@ interface LogsFilterBarProps {
     currentFilter?: LogFilter;
 }
 
-
-export default function LogsFilterBar({ onFilterChange, currentFilter }: LogsFilterBarProps) {
-    const [searchText, setSearchText] = useState(() => currentFilter?.searchText || '');
+export default function LogsFilterBar({
+    onFilterChange,
+    currentFilter
+}: LogsFilterBarProps) {
+    const [searchText, setSearchText] = useState(
+        () => currentFilter?.searchText || ''
+    );
 
     // Sync search text with currentFilter when it changes
     useEffect(() => {
@@ -22,7 +26,7 @@ export default function LogsFilterBar({ onFilterChange, currentFilter }: LogsFil
         const timer = setTimeout(() => {
             onFilterChange({
                 ...currentFilter,
-                searchText,
+                searchText
             });
         }, 300);
 

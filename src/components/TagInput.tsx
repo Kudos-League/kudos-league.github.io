@@ -56,8 +56,9 @@ const TagInput: React.FC<TagInputProps> = ({
                 }
 
                 if (requestID === currentRequestRef.current) {
-                    const filtered = tags.filter((tag: Tag) =>
-                        !selectedTags.some((sel) => sel.name === tag.name)
+                    const filtered = tags.filter(
+                        (tag: Tag) =>
+                            !selectedTags.some((sel) => sel.name === tag.name)
                     );
                     setSuggestedTags(filtered);
                 }
@@ -199,7 +200,7 @@ const TagInput: React.FC<TagInputProps> = ({
                     autoComplete='off'
                 />
                 <Button
-                    type="button"
+                    type='button'
                     onClick={handleAddTag}
                     disabled={!currentTagInput.trim() || isLoading}
                     className='flex-shrink-0 bg-brand-600'

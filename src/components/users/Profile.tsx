@@ -58,9 +58,18 @@ const Profile: React.FC<Props> = ({
     const [reportNotes, setReportNotes] = useState('');
     const reportMutation = useReportUser();
     const [reportFiles, setReportFiles] = useState<File[]>([]);
-    const [reportServerError, setReportServerError] = useState<string | null>(null);
-    const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
-    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
+    const [reportServerError, setReportServerError] = useState<string | null>(
+        null
+    );
+    const {
+        blockedUsers,
+        loading: blockingLoading,
+        block,
+        unblock
+    } = useBlockedUsers();
+    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>(
+        []
+    );
 
     // Define available filters - show handshakes only for own profile
     const availableFilters: FilterType[] = isSelf
@@ -68,7 +77,8 @@ const Profile: React.FC<Props> = ({
         : ['all', 'posts', 'events'];
 
     const [filter, setFilter] = useState<FilterType>('all');
-    const [eventFilter, setEventFilter] = useState<EventFilterType>('all-events');
+    const [eventFilter, setEventFilter] =
+        useState<EventFilterType>('all-events');
 
     // Fetch blocked users details
     React.useEffect(() => {
@@ -85,12 +95,17 @@ const Profile: React.FC<Props> = ({
                             return await apiGet<UserDTO>(`/users/${userId}`);
                         }
                         catch (err) {
-                            console.error(`Failed to fetch user ${userId}`, err);
+                            console.error(
+                                `Failed to fetch user ${userId}`,
+                                err
+                            );
                             return null;
                         }
                     })
                 );
-                setBlockedUsersDetails(usersData.filter((u): u is UserDTO => u !== null));
+                setBlockedUsersDetails(
+                    usersData.filter((u): u is UserDTO => u !== null)
+                );
             }
             catch (err) {
                 console.error('Failed to fetch blocked users', err);
@@ -119,11 +134,11 @@ const Profile: React.FC<Props> = ({
 
     // Separate events into created and participating
     const createdEvents = useMemo(() => {
-        return sortedEvents.filter(event => event.creatorID === user.id);
+        return sortedEvents.filter((event) => event.creatorID === user.id);
     }, [sortedEvents, user.id]);
 
     const participatingEvents = useMemo(() => {
-        return sortedEvents.filter(event => event.creatorID !== user.id);
+        return sortedEvents.filter((event) => event.creatorID !== user.id);
     }, [sortedEvents, user.id]);
 
     // Filter events based on the selected event filter
@@ -136,9 +151,9 @@ const Profile: React.FC<Props> = ({
     const sortedHandshakes = useMemo(() => {
         // Status priority: new (pending) > accepted > completed
         const statusPriority: Record<string, number> = {
-            'new': 0,
-            'accepted': 1,
-            'completed': 2
+            new: 0,
+            accepted: 1,
+            completed: 2
         };
 
         return [...handshakes]
@@ -163,13 +178,18 @@ const Profile: React.FC<Props> = ({
         if (!files) return null;
         const MAX_FILE_COUNT = 4;
         const MAX_FILE_SIZE_MB = 10;
-        if (files.length > MAX_FILE_COUNT) return `Max ${MAX_FILE_COUNT} files allowed.`;
-        const tooLarge = files.find((f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
         if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
         return null;
     };
 
-    const handleReportImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleReportImageUpload = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const files = e.target.files;
         if (!files) return;
         const updated = [...reportFiles, ...Array.from(files)];
@@ -203,8 +223,8 @@ const Profile: React.FC<Props> = ({
             });
             navigate(`/dms/${user.id}`);
         }
-        // eslint-disable-next-line brace-style
         catch (err) {
+            // eslint-disable-next-line brace-style
             console.error('Failed to create or get DM channel', err);
             alert('Failed to start a direct message. Please try again.');
         }
@@ -234,8 +254,8 @@ const Profile: React.FC<Props> = ({
             setUser?.(updated);
             alert('User reactivated.');
         }
-        // eslint-disable-next-line brace-style
         catch (err) {
+            // eslint-disable-next-line brace-style
             console.error('Failed to reactivate user', err);
             alert('Failed to reactivate user.');
         }
@@ -318,7 +338,9 @@ const Profile: React.FC<Props> = ({
                             Created ({createdEvents.length})
                         </Button>
                         <Button
-                            onClick={() => setEventFilter('participating-events')}
+                            onClick={() =>
+                                setEventFilter('participating-events')
+                            }
                             className={[
                                 'px-3 py-1.5 rounded-md border transition-colors text-sm',
                                 eventFilter === 'participating-events'
@@ -333,19 +355,26 @@ const Profile: React.FC<Props> = ({
                     <ul className='space-y-2 sm:space-y-3 list-none'>
                         {filteredEvents.length === 0 ? (
                             <p className='text-center text-gray-500 dark:text-gray-400'>
-                                {eventFilter === 'created-events' && 'No created events.'}
-                                {eventFilter === 'participating-events' && 'Not participating in any events.'}
-                                {eventFilter === 'all-events' && 'No events available.'}
+                                {eventFilter === 'created-events' &&
+                                    'No created events.'}
+                                {eventFilter === 'participating-events' &&
+                                    'Not participating in any events.'}
+                                {eventFilter === 'all-events' &&
+                                    'No events available.'}
                             </p>
                         ) : (
                             filteredEvents.map((event) => (
                                 <li
                                     key={event.id}
-                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    onClick={() =>
+                                        navigate(`/event/${event.id}`)
+                                    }
                                     className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                                 >
                                     <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
+                                            {event.title}
+                                        </p>
                                         {event.location?.global ? (
                                             <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                                 🌐 Global
@@ -357,19 +386,39 @@ const Profile: React.FC<Props> = ({
                                         )}
                                     </div>
                                     {event.description && (
-                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
+                                            {event.description}
+                                        </p>
                                     )}
                                     <div className='space-y-0.5 sm:space-y-1'>
                                         <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2 mb-2'>
                                             <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                             <span className='truncate'>
-                                                {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                                {format(
+                                                    toZonedTime(
+                                                        new Date(
+                                                            event.startTime
+                                                        ),
+                                                        tz
+                                                    ),
+                                                    'MMM d, yyyy • h:mm a'
+                                                )}{' '}
+                                                –{' '}
                                                 {event.endTime
-                                                    ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                    ? format(
+                                                        toZonedTime(
+                                                            new Date(
+                                                                event.endTime
+                                                            ),
+                                                            tz
+                                                        ),
+                                                        'MMM d, yyyy • h:mm a'
+                                                    )
                                                     : 'Ongoing'}
                                             </span>
                                         </p>
-                                        {event.location?.name && !event.location.global && (
+                                        {event.location?.name &&
+                                            !event.location.global && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                                 {event.location.name}
@@ -377,13 +426,22 @@ const Profile: React.FC<Props> = ({
                                         )}
                                         {event.creator && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
-                                                <UserCard user={event.creator} />
+                                                <UserCard
+                                                    user={event.creator}
+                                                />
                                             </p>
                                         )}
-                                        {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                        {typeof event.participantCount ===
+                                            'number' &&
+                                            event.participantCount > 0 && (
                                             <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                {event.participantCount}{' '}
+                                                    participant
+                                                {event.participantCount !==
+                                                    1
+                                                    ? 's'
+                                                    : ''}
                                             </p>
                                         )}
                                     </div>
@@ -430,9 +488,12 @@ const Profile: React.FC<Props> = ({
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Events ({sortedEvents.length})
-                            {createdEvents.length > 0 && participatingEvents.length > 0 && (
+                            {createdEvents.length > 0 &&
+                                participatingEvents.length > 0 && (
                                 <span className='text-sm font-normal text-gray-600 dark:text-gray-400 ml-2'>
-                                    ({createdEvents.length} created, {participatingEvents.length} participating)
+                                        ({createdEvents.length} created,{' '}
+                                    {participatingEvents.length}{' '}
+                                        participating)
                                 </span>
                             )}
                         </h3>
@@ -440,11 +501,15 @@ const Profile: React.FC<Props> = ({
                             {sortedEvents.slice(0, 2).map((event) => (
                                 <li
                                     key={event.id}
-                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    onClick={() =>
+                                        navigate(`/event/${event.id}`)
+                                    }
                                     className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                                 >
                                     <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
+                                            {event.title}
+                                        </p>
                                         {event.location?.global ? (
                                             <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                                 🌐 Global
@@ -456,19 +521,39 @@ const Profile: React.FC<Props> = ({
                                         )}
                                     </div>
                                     {event.description && (
-                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
+                                            {event.description}
+                                        </p>
                                     )}
                                     <div className='space-y-0.5 sm:space-y-1'>
                                         <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
                                             <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                             <span className='truncate'>
-                                                {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                                {format(
+                                                    toZonedTime(
+                                                        new Date(
+                                                            event.startTime
+                                                        ),
+                                                        tz
+                                                    ),
+                                                    'MMM d, yyyy • h:mm a'
+                                                )}{' '}
+                                                –{' '}
                                                 {event.endTime
-                                                    ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                    ? format(
+                                                        toZonedTime(
+                                                            new Date(
+                                                                event.endTime
+                                                            ),
+                                                            tz
+                                                        ),
+                                                        'MMM d, yyyy • h:mm a'
+                                                    )
                                                     : 'Ongoing'}
                                             </span>
                                         </p>
-                                        {event.location?.name && !event.location.global && (
+                                        {event.location?.name &&
+                                            !event.location.global && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                                 {event.location.name}
@@ -476,13 +561,22 @@ const Profile: React.FC<Props> = ({
                                         )}
                                         {event.creator && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <UserCard user={event.creator} />
+                                                <UserCard
+                                                    user={event.creator}
+                                                />
                                             </p>
                                         )}
-                                        {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                        {typeof event.participantCount ===
+                                            'number' &&
+                                            event.participantCount > 0 && (
                                             <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                                {event.participantCount}{' '}
+                                                    participant
+                                                {event.participantCount !==
+                                                    1
+                                                    ? 's'
+                                                    : ''}
                                             </p>
                                         )}
                                     </div>
@@ -552,9 +646,7 @@ const Profile: React.FC<Props> = ({
                     onStartDM={handleStartDM}
                 />
 
-                {isSelf && currentUser?.admin && (
-                    <InviteManager />
-                )}
+                {isSelf && currentUser?.admin && <InviteManager />}
 
                 {/* Log Past Gift button - available for all users on their own profile */}
                 {/* {isSelf && (
@@ -571,7 +663,6 @@ const Profile: React.FC<Props> = ({
                     </div>
                 )} */}
 
-
                 {!isSelf && (
                     <div className='flex justify-center'>
                         <div className='flex gap-3'>
@@ -582,8 +673,9 @@ const Profile: React.FC<Props> = ({
                             >
                                 Report
                             </Button>
-                            {currentUser && currentUser.id !== user.id && (
-                                (blockedUsers ?? []).includes(user.id) ? (
+                            {currentUser &&
+                                currentUser.id !== user.id &&
+                                ((blockedUsers ?? []).includes(user.id) ? (
                                     <Button
                                         onClick={async () => {
                                             if (blockingLoading) return;
@@ -613,13 +705,14 @@ const Profile: React.FC<Props> = ({
                                     >
                                         Block
                                     </Button>
-                                )
-                            )}
+                                ))}
                             {currentUser?.admin && (
                                 <>
                                     {!(user as any).banEndDate ? (
                                         <Button
-                                            onClick={() => setShowBanModal(true)}
+                                            onClick={() =>
+                                                setShowBanModal(true)
+                                            }
                                             className='!bg-red-700 !text-white'
                                             variant='danger'
                                         >
@@ -628,22 +721,42 @@ const Profile: React.FC<Props> = ({
                                     ) : (
                                         <Button
                                             onClick={async () => {
-                                                if (!token) return alert('Missing auth token');
-                                                const confirmUnban = window.confirm('Unban this user?');
+                                                if (!token)
+                                                    return alert(
+                                                        'Missing auth token'
+                                                    );
+                                                const confirmUnban =
+                                                    window.confirm(
+                                                        'Unban this user?'
+                                                    );
                                                 if (!confirmUnban) return;
                                                 try {
-                                                    await apiMutate(`/admin/users/${user.id}/unban`, 'post');
+                                                    await apiMutate(
+                                                        `/admin/users/${user.id}/unban`,
+                                                        'post'
+                                                    );
                                                     if (setUser) {
-                                                        setUser({ ...(user as any), banEndDate: null } as any);
+                                                        setUser({
+                                                            ...(user as any),
+                                                            banEndDate: null
+                                                        } as any);
                                                     }
                                                     else {
-                                                        console.warn('Unbanned user; setUser not provided so local UI may need refresh');
+                                                        console.warn(
+                                                            'Unbanned user; setUser not provided so local UI may need refresh'
+                                                        );
                                                     }
                                                     alert('User unbanned.');
                                                 }
                                                 catch (err: any) {
-                                                    console.error('Failed to unban user', err);
-                                                    alert(err?.message || 'Failed to unban user.');
+                                                    console.error(
+                                                        'Failed to unban user',
+                                                        err
+                                                    );
+                                                    alert(
+                                                        err?.message ||
+                                                            'Failed to unban user.'
+                                                    );
                                                 }
                                             }}
                                             className='!bg-green-600 !text-white'
@@ -693,11 +806,15 @@ const Profile: React.FC<Props> = ({
                 {isSelf && (
                     <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden'>
                         <button
-                            onClick={() => setShowBlockedUsers(!showBlockedUsers)}
+                            onClick={() =>
+                                setShowBlockedUsers(!showBlockedUsers)
+                            }
                             className='w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors'
                         >
                             <div className='flex items-center gap-2'>
-                                <span className='text-red-600 dark:text-red-400 text-lg'>🔐</span>
+                                <span className='text-red-600 dark:text-red-400 text-lg'>
+                                    🔐
+                                </span>
                                 <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
                                     Blocked Users
                                 </span>
@@ -713,7 +830,12 @@ const Profile: React.FC<Props> = ({
                                 stroke='currentColor'
                                 viewBox='0 0 24 24'
                             >
-                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                                <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M19 9l-7 7-7-7'
+                                />
                             </svg>
                         </button>
 
@@ -729,32 +851,44 @@ const Profile: React.FC<Props> = ({
                                     </p>
                                 ) : (
                                     <div className='space-y-3'>
-                                        {blockedUsersDetails.map((blockedUser) => (
-                                            <div
-                                                key={blockedUser.id}
-                                                className='flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'
-                                            >
-                                                <div className='flex items-center gap-3 flex-1 min-w-0'>
-                                                    <UserCard user={blockedUser} />
-                                                </div>
-                                                <Button
-                                                    onClick={async () => {
-                                                        if (blockingLoading) return;
-                                                        try {
-                                                            await unblock(blockedUser.id);
-                                                        }
-                                                        catch (err) {
-                                                            console.error('Failed to unblock user', err);
-                                                        }
-                                                    }}
-                                                    variant='secondary'
-                                                    className='text-xs shrink-0 ml-3'
-                                                    disabled={blockingLoading}
+                                        {blockedUsersDetails.map(
+                                            (blockedUser) => (
+                                                <div
+                                                    key={blockedUser.id}
+                                                    className='flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700'
                                                 >
-                                                    Unblock
-                                                </Button>
-                                            </div>
-                                        ))}
+                                                    <div className='flex items-center gap-3 flex-1 min-w-0'>
+                                                        <UserCard
+                                                            user={blockedUser}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        onClick={async () => {
+                                                            if (blockingLoading)
+                                                                return;
+                                                            try {
+                                                                await unblock(
+                                                                    blockedUser.id
+                                                                );
+                                                            }
+                                                            catch (err) {
+                                                                console.error(
+                                                                    'Failed to unblock user',
+                                                                    err
+                                                                );
+                                                            }
+                                                        }}
+                                                        variant='secondary'
+                                                        className='text-xs shrink-0 ml-3'
+                                                        disabled={
+                                                            blockingLoading
+                                                        }
+                                                    >
+                                                        Unblock
+                                                    </Button>
+                                                </div>
+                                            )
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -798,7 +932,9 @@ const Profile: React.FC<Props> = ({
                 {showReportModal && (
                     <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
                         <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
-                            <h2 className='text-xl font-bold mb-2'>Report User</h2>
+                            <h2 className='text-xl font-bold mb-2'>
+                                Report User
+                            </h2>
                             <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
                                 Why are you reporting this user?
                             </p>
@@ -806,17 +942,24 @@ const Profile: React.FC<Props> = ({
                                 className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 mb-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                                 placeholder='Short reason (e.g. harassment)'
                                 value={reportReason}
-                                onChange={(e) => setReportReason(e.target.value)}
+                                onChange={(e) =>
+                                    setReportReason(e.target.value)
+                                }
                             />
                             <textarea
                                 className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
-                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                                style={{
+                                    WebkitOverflowScrolling: 'touch',
+                                    touchAction: 'pan-y'
+                                }}
                                 rows={4}
                                 placeholder='Optional details...'
                                 value={reportNotes}
                                 onChange={(e) => setReportNotes(e.target.value)}
                             />
-                            <label className='block text-sm font-semibold mb-2'>Attach Images (optional)</label>
+                            <label className='block text-sm font-semibold mb-2'>
+                                Attach Images (optional)
+                            </label>
                             <input
                                 type='file'
                                 accept='image/*'
@@ -826,12 +969,17 @@ const Profile: React.FC<Props> = ({
                                 disabled={reportFiles.length >= 4}
                             />
                             {reportServerError && (
-                                <div className='text-xs text-red-600 mb-2'>{reportServerError}</div>
+                                <div className='text-xs text-red-600 mb-2'>
+                                    {reportServerError}
+                                </div>
                             )}
                             {reportFiles.length > 0 && (
                                 <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4'>
                                     {reportFiles.map((file, index) => (
-                                        <div key={index} className='relative group'>
+                                        <div
+                                            key={index}
+                                            className='relative group'
+                                        >
                                             <img
                                                 src={createImagePreview(file)}
                                                 alt={`Preview ${index + 1}`}
@@ -841,7 +989,9 @@ const Profile: React.FC<Props> = ({
                                                 type='button'
                                                 shape='circle'
                                                 variant='danger'
-                                                onClick={() => removeReportImage(index)}
+                                                onClick={() =>
+                                                    removeReportImage(index)
+                                                }
                                                 className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm'
                                                 title='Remove image'
                                             >
@@ -862,15 +1012,27 @@ const Profile: React.FC<Props> = ({
                                     onClick={async () => {
                                         if (!user?.id) return;
                                         try {
-                                            await reportMutation.mutateAsync({ id: user.id, reason: reportReason || 'Report', notes: reportNotes || undefined });
-                                            alert('Report submitted. Thank you.');
+                                            await reportMutation.mutateAsync({
+                                                id: user.id,
+                                                reason:
+                                                    reportReason || 'Report',
+                                                notes: reportNotes || undefined
+                                            });
+                                            alert(
+                                                'Report submitted. Thank you.'
+                                            );
                                             setShowReportModal(false);
                                             setReportReason('');
                                             setReportNotes('');
                                         }
                                         catch (err) {
-                                            console.error('Failed to submit report', err);
-                                            alert('Failed to submit report. Please try again.');
+                                            console.error(
+                                                'Failed to submit report',
+                                                err
+                                            );
+                                            alert(
+                                                'Failed to submit report. Please try again.'
+                                            );
                                         }
                                     }}
                                     variant='danger'
@@ -887,10 +1049,13 @@ const Profile: React.FC<Props> = ({
                         <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
                             <h2 className='text-xl font-bold mb-2'>Ban User</h2>
                             <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
-                                Provide an optional end date/time for the ban, or mark it as indefinite.
+                                Provide an optional end date/time for the ban,
+                                or mark it as indefinite.
                             </p>
 
-                            <label className='block text-sm font-medium mb-1'>End date (optional)</label>
+                            <label className='block text-sm font-medium mb-1'>
+                                End date (optional)
+                            </label>
                             <input
                                 type='datetime-local'
                                 value={banEndDate}
@@ -903,13 +1068,17 @@ const Profile: React.FC<Props> = ({
                                 <input
                                     type='checkbox'
                                     checked={banIndefinite}
-                                    onChange={(e) => setBanIndefinite(e.target.checked)}
+                                    onChange={(e) =>
+                                        setBanIndefinite(e.target.checked)
+                                    }
                                 />
                                 <span className='text-sm'>Indefinite ban</span>
                             </label>
 
                             {banServerError && (
-                                <div className='text-xs text-red-600 mb-2'>{banServerError}</div>
+                                <div className='text-xs text-red-600 mb-2'>
+                                    {banServerError}
+                                </div>
                             )}
 
                             <div className='flex justify-end gap-2'>
@@ -926,20 +1095,53 @@ const Profile: React.FC<Props> = ({
                                 </Button>
                                 <Button
                                     onClick={async () => {
-                                        if (!currentUser?.admin || !user?.id) return;
-                                        const confirmBan = window.confirm('Ban this user? This will immediately prevent them from logging in while the ban is active.');
+                                        if (!currentUser?.admin || !user?.id)
+                                            return;
+                                        const confirmBan = window.confirm(
+                                            'Ban this user? This will immediately prevent them from logging in while the ban is active.'
+                                        );
                                         if (!confirmBan) return;
                                         try {
-                                            const payload: Record<string, unknown> = {};
-                                            if (banIndefinite) payload.indefinite = true;
-                                            else if (banEndDate) payload.banEndDate = new Date(banEndDate).toISOString();
-                                            await apiMutate(`/admin/users/${user.id}/ban`, 'post', payload);
-                                            const endDate = banIndefinite ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString() : (banEndDate ? new Date(banEndDate).toISOString() : null);
+                                            const payload: Record<
+                                                string,
+                                                unknown
+                                            > = {};
+                                            if (banIndefinite)
+                                                payload.indefinite = true;
+                                            else if (banEndDate)
+                                                payload.banEndDate = new Date(
+                                                    banEndDate
+                                                ).toISOString();
+                                            await apiMutate(
+                                                `/admin/users/${user.id}/ban`,
+                                                'post',
+                                                payload
+                                            );
+                                            const endDate = banIndefinite
+                                                ? new Date(
+                                                    Date.now() +
+                                                          1000 *
+                                                              60 *
+                                                              60 *
+                                                              24 *
+                                                              365 *
+                                                              10
+                                                ).toISOString()
+                                                : banEndDate
+                                                    ? new Date(
+                                                        banEndDate
+                                                    ).toISOString()
+                                                    : null;
                                             if (setUser) {
-                                                setUser({ ...(user as any), banEndDate: endDate } as any);
+                                                setUser({
+                                                    ...(user as any),
+                                                    banEndDate: endDate
+                                                } as any);
                                             }
                                             else {
-                                                console.warn('User banned; setUser not provided so local UI may need refresh');
+                                                console.warn(
+                                                    'User banned; setUser not provided so local UI may need refresh'
+                                                );
                                             }
                                             alert('User banned.');
                                             setShowBanModal(false);
@@ -947,8 +1149,14 @@ const Profile: React.FC<Props> = ({
                                             setBanIndefinite(false);
                                         }
                                         catch (err: any) {
-                                            console.error('Failed to ban user', err);
-                                            setBanServerError(err?.message || 'Failed to ban user.');
+                                            console.error(
+                                                'Failed to ban user',
+                                                err
+                                            );
+                                            setBanServerError(
+                                                err?.message ||
+                                                    'Failed to ban user.'
+                                            );
                                         }
                                     }}
                                     variant='danger'

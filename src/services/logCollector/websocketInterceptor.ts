@@ -33,11 +33,14 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                         direction: 'sent',
                         event,
                         payload: serializePayload(payload),
-                        socketId,
+                        socketId
                     } as any);
                 }
                 catch (e) {
-                    console.error('[LogCollector WebSocket] Failed to log emit:', e);
+                    console.error(
+                        '[LogCollector WebSocket] Failed to log emit:',
+                        e
+                    );
                 }
             }
 
@@ -46,7 +49,10 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
         } as any;
 
         // Override on to log incoming messages
-        socket.on = function (event: string, listener: (...args: any[]) => void) {
+        socket.on = function (
+            event: string,
+            listener: (...args: any[]) => void
+        ) {
             // Create a wrapper that logs before calling the original listener
             const wrappedListener = (...args: any[]) => {
                 if (service.getEnabled()) {
@@ -60,11 +66,14 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                             direction: 'received',
                             event,
                             payload: serializePayload(payload),
-                            socketId,
+                            socketId
                         } as any);
                     }
                     catch (e) {
-                        console.error('[LogCollector WebSocket] Failed to log on:', e);
+                        console.error(
+                            '[LogCollector WebSocket] Failed to log on:',
+                            e
+                        );
                     }
                 }
 
@@ -77,7 +86,10 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
         } as any;
 
         // Override once similarly
-        socket.once = function (event: string, listener: (...args: any[]) => void) {
+        socket.once = function (
+            event: string,
+            listener: (...args: any[]) => void
+        ) {
             const wrappedListener = (...args: any[]) => {
                 if (service.getEnabled()) {
                     try {
@@ -90,11 +102,14 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                             direction: 'received',
                             event,
                             payload: serializePayload(payload),
-                            socketId,
+                            socketId
                         } as any);
                     }
                     catch (e) {
-                        console.error('[LogCollector WebSocket] Failed to log once:', e);
+                        console.error(
+                            '[LogCollector WebSocket] Failed to log once:',
+                            e
+                        );
                     }
                 }
 
@@ -112,7 +127,7 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                     message: '✓ Connected',
                     direction: 'received',
                     event: 'connect',
-                    socketId: socket.id || 'unknown',
+                    socketId: socket.id || 'unknown'
                 } as any);
             });
 
@@ -123,7 +138,7 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                     direction: 'received',
                     event: 'disconnect',
                     payload: { reason },
-                    socketId: socketId,
+                    socketId: socketId
                 } as any);
             });
 
@@ -134,7 +149,7 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
                     direction: 'received',
                     event: 'connect_error',
                     payload: { error: error.message },
-                    socketId: socketId,
+                    socketId: socketId
                 } as any);
             });
         }
@@ -142,7 +157,10 @@ export function wrapSocketWithInterceptor(socket: Socket): Socket {
         console.log('[LogCollector] WebSocket interceptor initialized');
     }
     catch (e) {
-        console.error('[LogCollector] Failed to initialize WebSocket interceptor:', e);
+        console.error(
+            '[LogCollector] Failed to initialize WebSocket interceptor:',
+            e
+        );
     }
 
     return socket;

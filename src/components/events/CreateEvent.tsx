@@ -21,7 +21,10 @@ export default function CreateEvent() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['user-events'] });
-            pushAlert({ type: 'success', message: 'Event created successfully!' });
+            pushAlert({
+                type: 'success',
+                message: 'Event created successfully!'
+            });
             navigate('/events');
         }
     });
@@ -50,7 +53,10 @@ export default function CreateEvent() {
         const periodEndDate = new Date(endDateParam);
 
         // Use the later of: 5 minutes from now, or the period start date
-        initialStartDate = fiveMinutesFromNow > periodStartDate ? fiveMinutesFromNow : periodStartDate;
+        initialStartDate =
+            fiveMinutesFromNow > periodStartDate
+                ? fiveMinutesFromNow
+                : periodStartDate;
         initialEndDate = endOfDay(periodEndDate);
     }
     else {
@@ -169,8 +175,9 @@ export default function CreateEvent() {
         }
 
         const isValid = errors.length === 0;
-        const hasLocation = global || (location?.regionID != null);
-        const canSubmit = isValid && title.trim() && description.trim() && hasLocation;
+        const hasLocation = global || location?.regionID != null;
+        const canSubmit =
+            isValid && title.trim() && description.trim() && hasLocation;
 
         return { errors, warnings, info, isValid, canSubmit };
     }, [startDate, endDate, title, description, global, location]);
@@ -208,14 +215,18 @@ export default function CreateEvent() {
     const onSubmit = async () => {
         setErrorMessages([]);
 
-        const hasLocation = global || (location?.regionID != null);
+        const hasLocation = global || location?.regionID != null;
 
         if (!dateValidation.canSubmit) {
             setErrorMessages([
                 ...dateValidation.errors,
                 ...(title.trim() ? [] : ['Title is required']),
                 ...(description.trim() ? [] : ['Description is required']),
-                ...(hasLocation ? [] : ['Location is required (select a location or check Global Event)'])
+                ...(hasLocation
+                    ? []
+                    : [
+                        'Location is required (select a location or check Global Event)'
+                    ])
             ]);
             return;
         }
@@ -249,13 +260,16 @@ export default function CreateEvent() {
     };
 
     const getValidationClasses = (hasErrors: boolean, hasWarnings: boolean) => {
-        if (hasErrors) return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30';
-        if (hasWarnings) return 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30';
+        if (hasErrors)
+            return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30';
+        if (hasWarnings)
+            return 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30';
         return 'border-gray-300 bg-white dark:border-neutral-700 dark:bg-neutral-900';
     };
 
     const getInputClasses = (isRequired: boolean, hasError = false) => {
-        const baseClasses = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 dark:bg-neutral-800 dark:text-neutral-100';
+        const baseClasses =
+            'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 dark:bg-neutral-800 dark:text-neutral-100';
 
         if (hasError) {
             return `${baseClasses} border-red-300 bg-red-50 focus:ring-red-500 dark:border-red-800 dark:bg-red-950/30`;
@@ -282,33 +296,52 @@ export default function CreateEvent() {
             {/* Required fields notice */}
             <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 dark:bg-blue-950/30 dark:border-blue-800'>
                 <p className='text-sm text-blue-800 dark:text-blue-300'>
-                    <span className='font-medium'>Fields marked with</span> <span className='text-red-500 font-bold dark:text-red-400'>*</span> <span className='font-medium'>are required</span>
+                    <span className='font-medium'>Fields marked with</span>{' '}
+                    <span className='text-red-500 font-bold dark:text-red-400'>
+                        *
+                    </span>{' '}
+                    <span className='font-medium'>are required</span>
                 </p>
             </div>
 
             <div>
                 <label className='block font-semibold mb-1'>
-                    Title <span className='text-red-500 dark:text-red-400'>*</span>
+                    Title{' '}
+                    <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <input
-                    className={getInputClasses(true, !title.trim() && errorMessages.length > 0)}
+                    className={getInputClasses(
+                        true,
+                        !title.trim() && errorMessages.length > 0
+                    )}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder='Enter event title'
                     required
                 />
                 {!title.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>Title is required</p>
+                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>
+                        Title is required
+                    </p>
                 )}
             </div>
 
             <div>
                 <label className='block font-semibold mb-1'>
-                    Description <span className='text-red-500 dark:text-red-400'>*</span>
+                    Description{' '}
+                    <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <textarea
-                    className={getInputClasses(true, !description.trim() && errorMessages.length > 0) + ' overflow-y-auto'}
-                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                    className={
+                        getInputClasses(
+                            true,
+                            !description.trim() && errorMessages.length > 0
+                        ) + ' overflow-y-auto'
+                    }
+                    style={{
+                        WebkitOverflowScrolling: 'touch',
+                        touchAction: 'pan-y'
+                    }}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Enter event description'
@@ -316,13 +349,18 @@ export default function CreateEvent() {
                     required
                 />
                 {!description.trim() && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>Description is required</p>
+                    <p className='text-red-600 text-sm mt-1 dark:text-red-400'>
+                        Description is required
+                    </p>
                 )}
             </div>
 
-            <div className={`p-4 rounded-lg border-2 ${!global && !location?.regionID && errorMessages.length > 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-gray-300 bg-white dark:border-neutral-700 dark:bg-neutral-900'}`}>
+            <div
+                className={`p-4 rounded-lg border-2 ${!global && !location?.regionID && errorMessages.length > 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-gray-300 bg-white dark:border-neutral-700 dark:bg-neutral-900'}`}
+            >
                 <label className='block font-semibold mb-2'>
-                    Location <span className='text-red-500 dark:text-red-400'>*</span>
+                    Location{' '}
+                    <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <div className='flex items-center gap-3 mb-3'>
                     <input
@@ -335,10 +373,17 @@ export default function CreateEvent() {
                     <span className='text-sm text-gray-600 dark:text-neutral-400'>
                         (Global events are visible to everyone)
                     </span>
-                    {global && <span className='text-green-600 text-sm ml-2 dark:text-green-400'>✓ Location set to Global</span>}
+                    {global && (
+                        <span className='text-green-600 text-sm ml-2 dark:text-green-400'>
+                            ✓ Location set to Global
+                        </span>
+                    )}
                 </div>
                 {!global && !location?.regionID && errorMessages.length > 0 && (
-                    <p className='text-red-600 text-sm mb-2 dark:text-red-400'>Location is required (select a location or check Global Event)</p>
+                    <p className='text-red-600 text-sm mb-2 dark:text-red-400'>
+                        Location is required (select a location or check Global
+                        Event)
+                    </p>
                 )}
 
                 {!global && (
@@ -348,7 +393,10 @@ export default function CreateEvent() {
                         </label>
                         <p className='text-yellow-700 text-sm font-medium flex items-start gap-2 dark:text-yellow-300'>
                             <span className='flex-shrink-0'>⚠️</span>
-                            <span>The <u>EXACT</u> event location will be visible to all participants.</span>
+                            <span>
+                                The <u>EXACT</u> event location will be visible
+                                to all participants.
+                            </span>
                         </p>
                         <div className='border-2 rounded-lg overflow-hidden dark:border-neutral-700'>
                             <MapDisplay
@@ -369,7 +417,9 @@ export default function CreateEvent() {
                             />
                         </div>
                         {!location?.regionID && errorMessages.length > 0 && (
-                            <p className='text-red-600 text-sm dark:text-red-400'>Please select a location on the map</p>
+                            <p className='text-red-600 text-sm dark:text-red-400'>
+                                Please select a location on the map
+                            </p>
                         )}
                     </div>
                 )}
@@ -382,7 +432,8 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    Start Time <span className='text-red-500 dark:text-red-400'>*</span>
+                    Start Time{' '}
+                    <span className='text-red-500 dark:text-red-400'>*</span>
                 </label>
                 <UniversalDatePicker
                     label=''
@@ -411,7 +462,10 @@ export default function CreateEvent() {
                 )}`}
             >
                 <label className='block font-semibold mb-2'>
-                    End Time <span className='text-gray-500 text-sm font-normal dark:text-neutral-400'>(Optional)</span>
+                    End Time{' '}
+                    <span className='text-gray-500 text-sm font-normal dark:text-neutral-400'>
+                        (Optional)
+                    </span>
                 </label>
                 {endDate !== null ? (
                     <>
@@ -504,7 +558,10 @@ export default function CreateEvent() {
             {errorMessages?.length && !createEvent.isError ? (
                 <div className='bg-red-100 border border-red-300 rounded p-4 dark:bg-red-950/30 dark:border-red-800'>
                     {errorMessages.map((msg, i) => (
-                        <p key={i} className='text-red-700 text-sm dark:text-red-300'>
+                        <p
+                            key={i}
+                            className='text-red-700 text-sm dark:text-red-300'
+                        >
                             {msg}
                         </p>
                     ))}

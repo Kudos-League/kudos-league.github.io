@@ -56,7 +56,10 @@ const AvatarMenu: React.FC<{
                         className='flex-1 min-w-0 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
                         onKeyDown={(e) => e.key === 'Enter' && onURLSubmit()}
                     />
-                    <Button onClick={onURLSubmit} className='text-sm whitespace-nowrap flex-shrink-0'>
+                    <Button
+                        onClick={onURLSubmit}
+                        className='text-sm whitespace-nowrap flex-shrink-0'
+                    >
                         Apply
                     </Button>
                 </div>

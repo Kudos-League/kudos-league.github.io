@@ -7,7 +7,7 @@ const originalConsole = {
     info: console.info,
     warn: console.warn,
     error: console.error,
-    debug: console.debug,
+    debug: console.debug
 };
 
 /**
@@ -25,7 +25,7 @@ function serializeArgs(args: any[]): any[] {
             if (arg instanceof Error) {
                 return {
                     message: arg.message,
-                    stack: arg.stack,
+                    stack: arg.stack
                 };
             }
 
@@ -90,7 +90,10 @@ function createMessage(args: any[]): string {
 /**
  * Override a console method
  */
-function overrideConsoleMethod(method: LogLevel, originalMethod: (...args: any[]) => void): void {
+function overrideConsoleMethod(
+    method: LogLevel,
+    originalMethod: (...args: any[]) => void
+): void {
     (console as any)[method] = function (...args: any[]) {
         // Call original console method first
         originalMethod.apply(console, args);
@@ -108,7 +111,7 @@ function overrideConsoleMethod(method: LogLevel, originalMethod: (...args: any[]
                     level: method,
                     message,
                     args: serialized,
-                    stack,
+                    stack
                 } as any);
             }
         }
@@ -140,7 +143,10 @@ export function initConsoleInterceptor(): void {
         originalConsole.log('[LogCollector] Console interceptor initialized');
     }
     catch (e) {
-        originalConsole.error('[LogCollector] Failed to initialize console interceptor:', e);
+        originalConsole.error(
+            '[LogCollector] Failed to initialize console interceptor:',
+            e
+        );
     }
 }
 

@@ -11,13 +11,20 @@
     }
 
     /* Headings use Poppins (bold, friendly) */
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         @apply font-heading;
     }
 
     /* Code blocks */
-    code, pre {
-        font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    code,
+    pre {
+        font-family:
+            source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
     }
 }
 
@@ -41,13 +48,15 @@
 /* OpenDyslexic Font for Accessibility */
 .dyslexic-font,
 .dyslexic-font * {
-    font-family: 'OpenDyslexicRegular', 'OpenDyslexic3Regular', sans-serif !important;
+    font-family:
+        'OpenDyslexicRegular', 'OpenDyslexic3Regular', sans-serif !important;
 }
 
 /* Preserve code blocks even with dyslexic font */
 .dyslexic-font code,
 .dyslexic-font pre {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
+    font-family:
+        source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
 }
 
 /* Dynamic Viewport Height with fallbacks for mobile and older browsers */
@@ -57,7 +66,10 @@
     /* iOS Safari fallback */
     height: -webkit-fill-available;
     /* Modern browsers - accounts for mobile browser UI and safe areas */
-    height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    height: calc(
+        100dvh - env(safe-area-inset-top, 0px) -
+            env(safe-area-inset-bottom, 0px)
+    );
 }
 
 /* Min height variant */
@@ -67,11 +79,15 @@
     /* iOS Safari fallback */
     min-height: -webkit-fill-available;
     /* Modern browsers - accounts for mobile browser UI and safe areas */
-    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: calc(
+        100dvh - env(safe-area-inset-top, 0px) -
+            env(safe-area-inset-bottom, 0px)
+    );
 }
 
 /* Mobile scroll behavior fixes */
-html, body {
+html,
+body {
     /* Prevent overscroll/bounce on iOS that affects sticky headers */
     overscroll-behavior: none;
     overscroll-behavior-y: none;

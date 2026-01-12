@@ -1,6 +1,14 @@
 import React, { Fragment, useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogPanel, DialogBackdrop, TransitionChild } from '@headlessui/react';
-import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import {
+    Dialog,
+    DialogPanel,
+    DialogBackdrop,
+    TransitionChild
+} from '@headlessui/react';
+import {
+    MagnifyingGlassIcon,
+    ArrowRightIcon
+} from '@heroicons/react/24/outline';
 import { Link, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -22,8 +30,10 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
     const searchingActive = debouncedSearch.length >= 2;
 
-    const { data: searchResults = [], isFetching: searching } = useSearchPostsQuery(debouncedSearch);
-    const { data: userSearchResults = [], isFetching: searchingUsers } = useSearchUsersQuery(debouncedSearch);
+    const { data: searchResults = [], isFetching: searching } =
+        useSearchPostsQuery(debouncedSearch);
+    const { data: userSearchResults = [], isFetching: searchingUsers } =
+        useSearchUsersQuery(debouncedSearch);
     // const { data: allEvents = [] } = useEvents();
 
     // Filter events client-side based on search text
@@ -37,7 +47,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     //     );
     // }, [debouncedSearch, allEvents, searchingActive]);
 
-    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 // || eventSearchResults.length > 0;
+    const hasResults = userSearchResults.length > 0 || searchResults.length > 0; // || eventSearchResults.length > 0;
 
     // Reset search when modal closes, and focus input when modal opens
     useEffect(() => {
@@ -69,7 +79,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     // Format date for events
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     };
 
     return (
@@ -108,7 +122,9 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     type='text'
                                     placeholder='Search users, posts…'
                                     value={searchText}
-                                    onChange={(e) => setSearchText(e.target.value)}
+                                    onChange={(e) =>
+                                        setSearchText(e.target.value)
+                                    }
                                     className='w-full pl-12 pr-10 py-3 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 transition-all'
                                     autoFocus
                                 />
@@ -144,7 +160,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     <MagnifyingGlassIcon className='h-12 w-12 mx-auto mb-3 opacity-50' />
                                     <p>Start typing to search</p>
                                 </div>
-                            ) : (searching || searchingUsers) ? (
+                            ) : searching || searchingUsers ? (
                                 <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                     Searching...
                                 </div>
@@ -161,30 +177,42 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                 Users
                                             </h3>
                                             <div className='space-y-2'>
-                                                {userSearchResults.slice(0, 3).map((user) => (
-                                                    <Link
-                                                        key={user.id}
-                                                        to={`/user/${user.id}`}
-                                                        onClick={handleResultClick}
-                                                        className='flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                                    >
-                                                        <img
-                                                            src={getImagePath(user.avatar)}
-                                                            alt={user.username}
-                                                            className='w-12 h-12 rounded-full object-cover'
-                                                        />
-                                                        <div className='flex-1 min-w-0'>
-                                                            <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                                {user.displayName || user.username}
-                                                            </p>
-                                                            {user.displayName && (
-                                                                <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
-                                                                    @{user.username}
+                                                {userSearchResults
+                                                    .slice(0, 3)
+                                                    .map((user) => (
+                                                        <Link
+                                                            key={user.id}
+                                                            to={`/user/${user.id}`}
+                                                            onClick={
+                                                                handleResultClick
+                                                            }
+                                                            className='flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                                        >
+                                                            <img
+                                                                src={getImagePath(
+                                                                    user.avatar
+                                                                )}
+                                                                alt={
+                                                                    user.username
+                                                                }
+                                                                className='w-12 h-12 rounded-full object-cover'
+                                                            />
+                                                            <div className='flex-1 min-w-0'>
+                                                                <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
+                                                                    {user.displayName ||
+                                                                        user.username}
                                                                 </p>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                ))}
+                                                                {user.displayName && (
+                                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
+                                                                        @
+                                                                        {
+                                                                            user.username
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </Link>
+                                                    ))}
                                             </div>
                                         </div>
                                     )}
@@ -196,33 +224,50 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                 Posts
                                             </h3>
                                             <div className='space-y-2'>
-                                                {searchResults.slice(0, 3).map((post) => (
-                                                    <Link
-                                                        key={post.id}
-                                                        to={`/post/${post.id}`}
-                                                        onClick={handleResultClick}
-                                                        className='flex items-start gap-3 p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                                    >
-                                                        <img
-                                                            src={getImagePath(post.sender?.avatar)}
-                                                            alt={post.sender?.username || 'User'}
-                                                            className='w-10 h-10 rounded-full object-cover flex-shrink-0'
-                                                        />
-                                                        <div className='flex-1 min-w-0'>
-                                                            <p className='text-sm text-gray-500 dark:text-zinc-400 mb-1'>
-                                                                {post.sender?.displayName || post.sender?.username}
-                                                            </p>
-                                                            <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                                {post.title}
-                                                            </p>
-                                                            {post.body && (
-                                                                <p className='text-sm text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1'>
-                                                                    {post.body}
+                                                {searchResults
+                                                    .slice(0, 3)
+                                                    .map((post) => (
+                                                        <Link
+                                                            key={post.id}
+                                                            to={`/post/${post.id}`}
+                                                            onClick={
+                                                                handleResultClick
+                                                            }
+                                                            className='flex items-start gap-3 p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                                        >
+                                                            <img
+                                                                src={getImagePath(
+                                                                    post.sender
+                                                                        ?.avatar
+                                                                )}
+                                                                alt={
+                                                                    post.sender
+                                                                        ?.username ||
+                                                                    'User'
+                                                                }
+                                                                className='w-10 h-10 rounded-full object-cover flex-shrink-0'
+                                                            />
+                                                            <div className='flex-1 min-w-0'>
+                                                                <p className='text-sm text-gray-500 dark:text-zinc-400 mb-1'>
+                                                                    {post.sender
+                                                                        ?.displayName ||
+                                                                        post
+                                                                            .sender
+                                                                            ?.username}
                                                                 </p>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                ))}
+                                                                <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
+                                                                    {post.title}
+                                                                </p>
+                                                                {post.body && (
+                                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1'>
+                                                                        {
+                                                                            post.body
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </Link>
+                                                    ))}
                                             </div>
                                         </div>
                                     )}

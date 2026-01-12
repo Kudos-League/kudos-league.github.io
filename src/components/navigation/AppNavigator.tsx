@@ -50,10 +50,12 @@ const HomeOrAbout = () => {
 
 function AppNavigator() {
     return (
-        <Suspense fallback={<Spinner text='Loading app...' variant='fullscreen' />}>
+        <Suspense
+            fallback={<Spinner text='Loading app...' variant='fullscreen' />}
+        >
             <Routes>
                 <Route path='' element={<Layout />}>
-                    <Route path={routes.about} element={<About/>} />
+                    <Route path={routes.about} element={<About />} />
                     <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />

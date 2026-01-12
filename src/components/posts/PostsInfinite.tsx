@@ -23,10 +23,14 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
-    const safeIncomingFilters = React.useMemo(() => ({ ...(filters ?? {}) }), [filters]);
+    const safeIncomingFilters = React.useMemo(
+        () => ({ ...(filters ?? {}) }),
+        [filters]
+    );
 
     const queryFilters = React.useMemo(() => {
-        const sort: 'date' | 'tags' | 'location' | 'kudos' = ordering.type === 'distance' ? 'location' : ordering.type;
+        const sort: 'date' | 'tags' | 'location' | 'kudos' =
+            ordering.type === 'distance' ? 'location' : ordering.type;
         return {
             ...safeIncomingFilters,
             includeSender: true,
@@ -66,7 +70,11 @@ export default function PostsInfinite({
         const observer = new IntersectionObserver(
             (entries) => {
                 const first = entries[0];
-                if (first?.isIntersecting && !isFetchingNextPage && hasNextPage) {
+                if (
+                    first?.isIntersecting &&
+                    !isFetchingNextPage &&
+                    hasNextPage
+                ) {
                     fetchNextPage();
                 }
             },
@@ -88,7 +96,13 @@ export default function PostsInfinite({
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex flex-col items-center'>
-                {isFetchingNextPage && <Spinner text='Loading more...' size='lg' className='mt-8' />}
+                {isFetchingNextPage && (
+                    <Spinner
+                        text='Loading more...'
+                        size='lg'
+                        className='mt-8'
+                    />
+                )}
                 {hasNextPage && !isFetchingNextPage && (
                     <div className='flex flex-col items-center gap-2 py-4'>
                         <ChevronDownIcon

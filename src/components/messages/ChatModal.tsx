@@ -11,8 +11,16 @@ import {
 import Button from '../common/Button';
 import { useWebSocketContext } from '@/contexts/WebSocketContext';
 import TextWithLinks from '../common/TextWithLinks';
-import { ArrowUturnLeftIcon, TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useSendDirectMessage, useUpdateMessage } from '@/shared/api/mutations/messages';
+import {
+    ArrowUturnLeftIcon,
+    TrashIcon,
+    PencilIcon,
+    XMarkIcon
+} from '@heroicons/react/24/outline';
+import {
+    useSendDirectMessage,
+    useUpdateMessage
+} from '@/shared/api/mutations/messages';
 import UserCard from '../users/UserCard';
 
 interface ChatModalProps {
@@ -145,7 +153,7 @@ const sortMessagesByTime = (messages: MessageDTO[]): MessageDTO[] => {
     return [...messages].sort((a, b) => {
         const timeA = parseMessageDate(getMessageTimestamp(a))?.getTime() || 0;
         const timeB = parseMessageDate(getMessageTimestamp(b))?.getTime() || 0;
-        
+
         if (timeA !== timeB) {
             return timeA - timeB;
         }
@@ -177,7 +185,9 @@ export default function ChatModal({
         initialSelected || null
     );
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
-    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(
+        null
+    );
     const [editContent, setEditContent] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
     const token = useAppSelector((s) => s.auth.token);
@@ -215,7 +225,9 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const userDetails = await apiGet<any>('/users/me', { params: { dmChannels: true } });
+            const userDetails = await apiGet<any>('/users/me', {
+                params: { dmChannels: true }
+            });
             let channel = userDetails.dmChannels.find((ch: any) =>
                 ch.users.some((u: any) => u.id === recipientId)
             );
@@ -247,24 +259,28 @@ export default function ChatModal({
         if (!token) return;
         setLoading(true);
         try {
-            const msgs = await apiGet<MessageDTO[]>(`/channels/${channelId}/messages`);
+            const msgs = await apiGet<MessageDTO[]>(
+                `/channels/${channelId}/messages`
+            );
 
             const processedMessages: MessageDTO[] = msgs.map((msg) => {
                 const timestamp = getMessageTimestamp(msg);
 
                 return {
                     ...msg,
-                    createdAt: (parseMessageDate(timestamp) as Date) || new Date(),
-                    author: (msg.author ?? ({
-                        id: 0,
-                        username: 'Unknown',
-                        email: '',
-                        admin: false,
-                        kudos: 0,
-                        locationID: null,
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                    } as any)) as UserDTO
+                    createdAt:
+                        (parseMessageDate(timestamp) as Date) || new Date(),
+                    author: (msg.author ??
+                        ({
+                            id: 0,
+                            username: 'Unknown',
+                            email: '',
+                            admin: false,
+                            kudos: 0,
+                            locationID: null,
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        } as any)) as UserDTO
                 };
             });
 
@@ -311,7 +327,11 @@ export default function ChatModal({
                     (u) => u.id !== user?.id
                 );
                 if (!receiver) return;
-                response = await apiMutate<MessageDTO, CreateMessageDTO>(`/users/${receiver.id}/dm`, 'post', msg);
+                response = await apiMutate<MessageDTO, CreateMessageDTO>(
+                    `/users/${receiver.id}/dm`,
+                    'post',
+                    msg
+                );
             }
 
             const fullMessage: MessageDTO = {
@@ -327,7 +347,9 @@ export default function ChatModal({
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
-                createdAt: (parseMessageDate(getMessageTimestamp(response)) as Date) || new Date()
+                createdAt:
+                    (parseMessageDate(getMessageTimestamp(response)) as Date) ||
+                    new Date()
             };
 
             setMessages((prev) => [...prev, fullMessage]);
@@ -353,7 +375,7 @@ export default function ChatModal({
     const handleEditSave = async (messageId: number) => {
         if (!editContent.trim() || !token) return;
 
-        const originalMessage = messages.find(m => m.id === messageId);
+        const originalMessage = messages.find((m) => m.id === messageId);
         if (!originalMessage) return;
 
         try {
@@ -395,7 +417,8 @@ export default function ChatModal({
                 {/* Header */}
                 <div className='flex justify-between items-center border-b border-zinc-200 dark:border-zinc-700 pb-3 mb-4'>
                     <h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>
-                        {getDisplayName(selectedChannel?.otherUser) || 'Direct Message'}
+                        {getDisplayName(selectedChannel?.otherUser) ||
+                            'Direct Message'}
                     </h2>
                     <Button
                         className='text-sm text-red-500 hover:text-red-600'
@@ -458,7 +481,8 @@ export default function ChatModal({
                             const isOwn =
                                 (safeMsg.author?.id ?? safeMsg.authorID) ===
                                 user?.id;
-                            const previousMsg = i > 0 ? sortedMessages[i - 1] : null;
+                            const previousMsg =
+                                i > 0 ? sortedMessages[i - 1] : null;
                             const showDateSeparator = shouldShowDateSeparator(
                                 safeMsg,
                                 previousMsg
@@ -468,7 +492,8 @@ export default function ChatModal({
                                 getMessageTimestamp(safeMsg);
 
                             const canDelete = !!user && isOwn;
-                            const canEdit = !!user && isOwn && !safeMsg.deletedAt;
+                            const canEdit =
+                                !!user && isOwn && !safeMsg.deletedAt;
                             const isEditing = editingMessageId === safeMsg.id;
                             const repliedTo = safeMsg.replyToMessageID
                                 ? sortedMessages.find(
@@ -494,19 +519,30 @@ export default function ChatModal({
 
                                     {/* Reply Preview - WhatsApp style */}
                                     {repliedTo && !isEditing && (
-                                        <div className={`max-w-xs ${isOwn ? 'ml-auto mr-1' : 'ml-1'} mb-1`}>
+                                        <div
+                                            className={`max-w-xs ${isOwn ? 'ml-auto mr-1' : 'ml-1'} mb-1`}
+                                        >
                                             <button
                                                 type='button'
                                                 onClick={() => {
-                                                    const el = document.getElementById(`msg-${repliedTo.id}`);
+                                                    const el =
+                                                        document.getElementById(
+                                                            `msg-${repliedTo.id}`
+                                                        );
                                                     if (el) {
                                                         el.scrollIntoView({
                                                             behavior: 'smooth',
                                                             block: 'center'
                                                         });
-                                                        el.classList.add('ring-2', 'ring-brand-400');
+                                                        el.classList.add(
+                                                            'ring-2',
+                                                            'ring-brand-400'
+                                                        );
                                                         setTimeout(() => {
-                                                            el.classList.remove('ring-2', 'ring-brand-400');
+                                                            el.classList.remove(
+                                                                'ring-2',
+                                                                'ring-brand-400'
+                                                            );
                                                         }, 1200);
                                                     }
                                                 }}
@@ -524,22 +560,25 @@ export default function ChatModal({
                                                         ?.username ?? 'Unknown'
                                                 }: ${repliedTo.content}`}
                                             >
-                                                <div className={`text-xs font-semibold mb-0.5 ${
-                                                    isOwn 
-                                                        ? 'text-brand-200' 
-                                                        : 'text-brand-600 dark:text-brand-300'
-                                                }`}>
+                                                <div
+                                                    className={`text-xs font-semibold mb-0.5 ${
+                                                        isOwn
+                                                            ? 'text-brand-200'
+                                                            : 'text-brand-600 dark:text-brand-300'
+                                                    }`}
+                                                >
                                                     <UserCard
                                                         triggerVariant='name'
                                                         user={replyTo.author}
                                                     />
-
                                                 </div>
-                                                <div className={`text-xs line-clamp-2 ${
-                                                    isOwn 
-                                                        ? 'text-brand-200' 
-                                                        : 'text-zinc-600 dark:text-zinc-300'
-                                                }`}>
+                                                <div
+                                                    className={`text-xs line-clamp-2 ${
+                                                        isOwn
+                                                            ? 'text-brand-200'
+                                                            : 'text-zinc-600 dark:text-zinc-300'
+                                                    }`}
+                                                >
                                                     {repliedTo.content}
                                                 </div>
                                             </button>
@@ -549,9 +588,13 @@ export default function ChatModal({
                                     <div
                                         id={`msg-${safeMsg.id}`}
                                         className={`group relative max-w-xs px-4 py-3 ${
-                                            repliedTo && !isEditing ? 'rounded-b-xl' : 'rounded-xl'
+                                            repliedTo && !isEditing
+                                                ? 'rounded-b-xl'
+                                                : 'rounded-xl'
                                         } ${
-                                            isOwn ? 'rounded-br-none' : 'rounded-bl-none'
+                                            isOwn
+                                                ? 'rounded-br-none'
+                                                : 'rounded-bl-none'
                                         } text-sm shadow-sm transition-colors transform-gpu break-words overflow-wrap-anywhere ${
                                             isOwn
                                                 ? 'bg-brand-600 dark:bg-brand-400 text-white self-end ml-auto'
@@ -563,17 +606,32 @@ export default function ChatModal({
                                             <div className='space-y-2'>
                                                 <textarea
                                                     value={editContent}
-                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    onChange={(e) =>
+                                                        setEditContent(
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     className='w-full max-w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 text-zinc-900 bg-white dark:bg-zinc-800 dark:border-zinc-600 dark:text-white overflow-y-auto'
-                                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                                                    style={{
+                                                        WebkitOverflowScrolling:
+                                                            'touch',
+                                                        touchAction: 'pan-y'
+                                                    }}
                                                     rows={3}
                                                     autoFocus
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && e.ctrlKey) {
+                                                        if (
+                                                            e.key === 'Enter' &&
+                                                            e.ctrlKey
+                                                        ) {
                                                             e.preventDefault();
-                                                            handleEditSave(safeMsg.id);
+                                                            handleEditSave(
+                                                                safeMsg.id
+                                                            );
                                                         }
-                                                        else if (e.key === 'Escape') {
+                                                        else if (
+                                                            e.key === 'Escape'
+                                                        ) {
                                                             e.preventDefault();
                                                             handleEditCancel();
                                                         }
@@ -581,14 +639,22 @@ export default function ChatModal({
                                                 />
                                                 <div className='flex gap-2'>
                                                     <Button
-                                                        onClick={() => handleEditSave(safeMsg.id)}
-                                                        disabled={!editContent.trim()}
+                                                        onClick={() =>
+                                                            handleEditSave(
+                                                                safeMsg.id
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !editContent.trim()
+                                                        }
                                                         className='text-xs px-3 py-1 bg-brand-600 hover:bg-brand-500 dark:bg-brand-400 dark:hover:bg-brand-300 text-white rounded'
                                                     >
                                                         Save
                                                     </Button>
                                                     <Button
-                                                        onClick={handleEditCancel}
+                                                        onClick={
+                                                            handleEditCancel
+                                                        }
                                                         variant='secondary'
                                                         className='text-xs px-3 py-1'
                                                     >
@@ -596,7 +662,8 @@ export default function ChatModal({
                                                     </Button>
                                                 </div>
                                                 <p className='text-xs text-zinc-500 dark:text-zinc-400'>
-                                                    Press Ctrl+Enter to save, Esc to cancel
+                                                    Press Ctrl+Enter to save,
+                                                    Esc to cancel
                                                 </p>
                                             </div>
                                         ) : (
@@ -604,10 +671,12 @@ export default function ChatModal({
                                             <>
                                                 {/* Show sender name for non-own messages */}
                                                 {!isOwn && (
-                                                    <div className="text-xs font-semibold mb-1 text-brand-600 dark:text-brand-300">
+                                                    <div className='text-xs font-semibold mb-1 text-brand-600 dark:text-brand-300'>
                                                         <UserCard
                                                             triggerVariant='name'
-                                                            user={replyTo.author}
+                                                            user={
+                                                                replyTo.author
+                                                            }
                                                         />
                                                     </div>
                                                 )}
@@ -618,22 +687,31 @@ export default function ChatModal({
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        {safeMsg.updatedAt !== safeMsg.createdAt && (
-                                                            <span className='italic opacity-80 text-xs mr-1'>[edited]</span>
+                                                        {safeMsg.updatedAt !==
+                                                            safeMsg.createdAt && (
+                                                            <span className='italic opacity-80 text-xs mr-1'>
+                                                                [edited]
+                                                            </span>
                                                         )}
-                                                        <TextWithLinks>{safeMsg.content}</TextWithLinks>
+                                                        <TextWithLinks>
+                                                            {safeMsg.content}
+                                                        </TextWithLinks>
                                                     </>
                                                 )}
-                                                
+
                                                 <div
                                                     className={`absolute z-10 -top-3 ${
-                                                        isOwn ? 'left-2' : 'right-2'
+                                                        isOwn
+                                                            ? 'left-2'
+                                                            : 'right-2'
                                                     } opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white/90 dark:bg-zinc-800/90 rounded px-1 py-0.5 shadow`}
                                                 >
                                                     <button
                                                         type='button'
                                                         title='Reply'
-                                                        onClick={() => setReplyTo(safeMsg)}
+                                                        onClick={() =>
+                                                            setReplyTo(safeMsg)
+                                                        }
                                                         className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                                     >
                                                         <ArrowUturnLeftIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
@@ -642,7 +720,11 @@ export default function ChatModal({
                                                         <button
                                                             type='button'
                                                             title='Edit'
-                                                            onClick={() => handleEditStart(safeMsg)}
+                                                            onClick={() =>
+                                                                handleEditStart(
+                                                                    safeMsg
+                                                                )
+                                                            }
                                                             className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                                         >
                                                             <PencilIcon className='w-4 h-4 text-zinc-700 dark:text-zinc-200' />
@@ -653,9 +735,16 @@ export default function ChatModal({
                                                             type='button'
                                                             title='Delete'
                                                             onClick={async () => {
-                                                                if (!token) return;
+                                                                if (!token)
+                                                                    return;
                                                                 try {
-                                                                    await apiMutate<void, void>(`/messages/${safeMsg.id}`, 'delete');
+                                                                    await apiMutate<
+                                                                        void,
+                                                                        void
+                                                                    >(
+                                                                        `/messages/${safeMsg.id}`,
+                                                                        'delete'
+                                                                    );
                                                                 }
                                                                 catch (e) {
                                                                     console.error(
@@ -664,48 +753,64 @@ export default function ChatModal({
                                                                     );
                                                                     return;
                                                                 }
-                                                                setMessages((prev) => {
-                                                                    const idx =
-                                                                        prev.findIndex(
-                                                                            (x) =>
-                                                                                x.id ===
-                                                                                safeMsg.id
-                                                                        );
-                                                                    if (idx === -1)
-                                                                        return prev;
-                                                                    const original =
-                                                                        prev[idx];
-                                                                    if (
-                                                                        user &&
-                                                                        (user.admin ||
-                                                                            original.authorID ===
-                                                                                user.id ||
-                                                                            original
-                                                                                .author
-                                                                                ?.id ===
-                                                                                user.id)
-                                                                    ) {
-                                                                        const updated =
-                                                                            {
-                                                                                ...original,
-                                                                                content: '', // Clear content
-                                                                                deletedAt: new Date().toISOString()
-                                                                            } as MessageDTO;
-                                                                        const copy = [
-                                                                            ...prev
-                                                                        ];
-                                                                        copy[idx] =
-                                                                            updated;
-                                                                        return copy;
+                                                                setMessages(
+                                                                    (prev) => {
+                                                                        const idx =
+                                                                            prev.findIndex(
+                                                                                (
+                                                                                    x
+                                                                                ) =>
+                                                                                    x.id ===
+                                                                                    safeMsg.id
+                                                                            );
+                                                                        if (
+                                                                            idx ===
+                                                                            -1
+                                                                        )
+                                                                            return prev;
+                                                                        const original =
+                                                                            prev[
+                                                                                idx
+                                                                            ];
+                                                                        if (
+                                                                            user &&
+                                                                            (user.admin ||
+                                                                                original.authorID ===
+                                                                                    user.id ||
+                                                                                original
+                                                                                    .author
+                                                                                    ?.id ===
+                                                                                    user.id)
+                                                                        ) {
+                                                                            const updated =
+                                                                                {
+                                                                                    ...original,
+                                                                                    content:
+                                                                                        '', // Clear content
+                                                                                    deletedAt:
+                                                                                        new Date().toISOString()
+                                                                                } as MessageDTO;
+                                                                            const copy =
+                                                                                [
+                                                                                    ...prev
+                                                                                ];
+                                                                            copy[
+                                                                                idx
+                                                                            ] =
+                                                                                updated;
+                                                                            return copy;
+                                                                        }
+                                                                        else {
+                                                                            return prev.filter(
+                                                                                (
+                                                                                    x
+                                                                                ) =>
+                                                                                    x.id !==
+                                                                                    safeMsg.id
+                                                                            );
+                                                                        }
                                                                     }
-                                                                    else {
-                                                                        return prev.filter(
-                                                                            (x) =>
-                                                                                x.id !==
-                                                                                safeMsg.id
-                                                                        );
-                                                                    }
-                                                                });
+                                                                );
                                                             }}
                                                             className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                                         >
@@ -743,14 +848,14 @@ export default function ChatModal({
                 <div className='flex flex-col gap-2'>
                     {replyTo && (
                         <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
-                            <div className="flex items-center justify-between mb-1">
+                            <div className='flex items-center justify-between mb-1'>
                                 <span className='text-xs font-semibold text-zinc-900 dark:text-zinc-100'>
                                     Replying to {getDisplayName(replyTo.author)}
                                 </span>
                                 <button
                                     className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
                                     onClick={() => setReplyTo(null)}
-                                    title="Cancel reply"
+                                    title='Cancel reply'
                                 >
                                     ✕
                                 </button>
@@ -772,7 +877,10 @@ export default function ChatModal({
                                 }
                             }}
                             className='flex-1 border border-zinc-300 dark:border-zinc-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 transition-colors overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             placeholder='Type your message...'
                         />
                         <Button

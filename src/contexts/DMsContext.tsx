@@ -9,7 +9,9 @@ interface DMsContextType {
 
 const DMsContext = createContext<DMsContextType | undefined>(undefined);
 
-export const DMsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const DMsProvider: React.FC<{ children: ReactNode }> = ({
+    children
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
@@ -26,7 +28,9 @@ export const DMsProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     return (
-        <DMsContext.Provider value={{ isOpen, selectedUserId, openDMs, closeDMs }}>
+        <DMsContext.Provider
+            value={{ isOpen, selectedUserId, openDMs, closeDMs }}
+        >
             {children}
         </DMsContext.Provider>
     );

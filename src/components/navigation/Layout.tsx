@@ -42,7 +42,6 @@ const LayoutFooter: React.FC = () => {
             <div className='flex justify-around items-center gap-4'>
                 {isLoggedIn ? (
                     <>
-
                         {/* TODO: Rename later to home bc it's where recommended stuff is going to go */}
                         <FooterLink
                             to={routes.home}
@@ -156,8 +155,8 @@ const Layout: React.FC = () => {
         >
             <img
                 src={`${process.env.PUBLIC_URL}/logo.webp`}
-                alt="Kudos League"
-                className="h-6 w-auto sm:h-8"
+                alt='Kudos League'
+                className='h-6 w-auto sm:h-8'
             />
         </Link>
     );
@@ -174,10 +173,7 @@ const Layout: React.FC = () => {
             />
 
             {/* DMs Modal */}
-            <DMsModal
-                open={dmsModalOpen}
-                onClose={closeDMs}
-            />
+            <DMsModal open={dmsModalOpen} onClose={closeDMs} />
 
             {/* Search Modal */}
             <SearchModal
@@ -186,7 +182,9 @@ const Layout: React.FC = () => {
             />
 
             {/* Main content area - offset by sidebar width on desktop when logged in */}
-            <div className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}>
+            <div
+                className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}
+            >
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
                     onOpenDMs={() => openDMs()}

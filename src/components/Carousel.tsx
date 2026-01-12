@@ -10,11 +10,11 @@ type Props = {
     onImageClick?: (index: number) => void;
 };
 
-const ImageCarousel: React.FC<Props> = ({ 
-    images, 
-    interval = 5000, 
-    variant = 'postCard', 
-    onImageClick 
+const ImageCarousel: React.FC<Props> = ({
+    images,
+    interval = 5000,
+    variant = 'postCard',
+    onImageClick
 }) => {
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [idx, setIdx] = useState(0);
@@ -36,19 +36,27 @@ const ImageCarousel: React.FC<Props> = ({
         if (idx > total - 1) setIdx(total - 1);
     }, [total, idx]);
 
-    const goRight = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
-        if (total === 0) return;
-        setIdx((i) => (i + 1) % total);
-        setLastManualChange(Date.now());
-        if (e && e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
-    }, [total]);
+    const goRight = useCallback(
+        (e?: React.MouseEvent | React.TouchEvent) => {
+            if (total === 0) return;
+            setIdx((i) => (i + 1) % total);
+            setLastManualChange(Date.now());
+            if (e && e.currentTarget instanceof HTMLElement)
+                e.currentTarget.blur();
+        },
+        [total]
+    );
 
-    const goLeft = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
-        if (total === 0) return;
-        setIdx((i) => (i - 1 + total) % total);
-        setLastManualChange(Date.now());
-        if (e && e.currentTarget instanceof HTMLElement) e.currentTarget.blur();
-    }, [total]);
+    const goLeft = useCallback(
+        (e?: React.MouseEvent | React.TouchEvent) => {
+            if (total === 0) return;
+            setIdx((i) => (i - 1 + total) % total);
+            setLastManualChange(Date.now());
+            if (e && e.currentTarget instanceof HTMLElement)
+                e.currentTarget.blur();
+        },
+        [total]
+    );
 
     const onImgError = useCallback((origIndex: number) => {
         setFailed((prev) => {
@@ -98,8 +106,8 @@ const ImageCarousel: React.FC<Props> = ({
     };
 
     // Use flex-shrink-0 on slides to ensure they don't collapse in the track
-    const slideClass = isPostCard 
-        ? 'h-full flex-shrink-0' 
+    const slideClass = isPostCard
+        ? 'h-full flex-shrink-0'
         : 'h-full flex-shrink-0 flex items-center justify-center overflow-hidden';
 
     const imgClass = isPostCard
@@ -126,7 +134,7 @@ const ImageCarousel: React.FC<Props> = ({
             )}
 
             <div
-                className="flex transition-transform duration-500 ease-out h-full"
+                className='flex transition-transform duration-500 ease-out h-full'
                 style={trackStyle}
             >
                 {valid.map(({ src, orig }, i) => (
@@ -141,7 +149,7 @@ const ImageCarousel: React.FC<Props> = ({
                             className={imgClass}
                             onError={() => onImgError(orig)}
                             onClick={() => onImageClick?.(orig)}
-                            loading={i === 0 ? "eager" : "lazy"}
+                            loading={i === 0 ? 'eager' : 'lazy'}
                         />
                     </div>
                 ))}

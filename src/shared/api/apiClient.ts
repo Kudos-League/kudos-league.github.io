@@ -28,7 +28,10 @@ export async function apiMutate<T, B>(
 
         const { data, headers } = buildBody(body, opts?.as ?? 'auto');
 
-        console.log('[apiMutate] After buildBody - data type:', data instanceof FormData ? 'FormData' : typeof data);
+        console.log(
+            '[apiMutate] After buildBody - data type:',
+            data instanceof FormData ? 'FormData' : typeof data
+        );
         console.log('[apiMutate] Headers:', headers);
 
         const res = await http.request<T>({

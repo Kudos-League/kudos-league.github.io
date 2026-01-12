@@ -38,9 +38,13 @@ interface UseLogCollectorReturn {
 export function useLogCollector(): UseLogCollectorReturn {
     const service = LogCollectorService.getInstance();
     const [logs, setLogs] = useState<LogEntry[]>(service.getLogs());
-    const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(service.getLogs());
+    const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(
+        service.getLogs()
+    );
     const [statistics, setStatistics] = useState(service.getStatistics());
-    const [recordings, setRecordings] = useState<Recording[]>(service.getRecordings());
+    const [recordings, setRecordings] = useState<Recording[]>(
+        service.getRecordings()
+    );
     const [isRecording, setIsRecording] = useState(service.getIsRecording());
 
     // Subscribe to log changes on mount
@@ -59,10 +63,12 @@ export function useLogCollector(): UseLogCollectorReturn {
 
     // Subscribe to recording changes on mount
     useEffect(() => {
-        const unsubscribe = service.subscribeToRecordings((updatedRecordings) => {
-            setRecordings(updatedRecordings);
-            setIsRecording(service.getIsRecording());
-        });
+        const unsubscribe = service.subscribeToRecordings(
+            (updatedRecordings) => {
+                setRecordings(updatedRecordings);
+                setIsRecording(service.getIsRecording());
+            }
+        );
 
         // Cleanup subscription on unmount
         return () => {
@@ -157,6 +163,6 @@ export function useLogCollector(): UseLogCollectorReturn {
         removeLogFromRecording,
         deleteRecording,
         exportRecordingAsText,
-        exportRecordingAsJson,
+        exportRecordingAsJson
     };
 }

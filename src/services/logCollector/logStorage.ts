@@ -31,7 +31,7 @@ function safeStringify(obj: any, depth = 0): string {
         if (value instanceof Error) {
             return {
                 message: value.message,
-                stack: value.stack,
+                stack: value.stack
             };
         }
 
@@ -44,7 +44,11 @@ function safeStringify(obj: any, depth = 0): string {
         }
 
         if (value && typeof value === 'object') {
-            if (value.constructor && value.constructor.name !== 'Object' && value.constructor.name !== 'Array') {
+            if (
+                value.constructor &&
+                value.constructor.name !== 'Object' &&
+                value.constructor.name !== 'Array'
+            ) {
                 return `[${value.constructor.name}]`;
             }
         }
@@ -85,7 +89,7 @@ export function loadLogs(): LogEntry[] {
             logs: [],
             maxSize: MAX_LOGS,
             currentSize: 0,
-            lastCleanup: Date.now(),
+            lastCleanup: Date.now()
         });
         return parsed.logs || [];
     }
@@ -108,13 +112,14 @@ export function saveLogs(logs: LogEntry[]): void {
     debounceTimer = setTimeout(() => {
         try {
             // Trim logs if exceeds max size
-            const trimmedLogs = logs.length > MAX_LOGS ? logs.slice(-MAX_LOGS) : logs;
+            const trimmedLogs =
+                logs.length > MAX_LOGS ? logs.slice(-MAX_LOGS) : logs;
 
             const storageData: LogStorageData = {
                 logs: trimmedLogs,
                 maxSize: MAX_LOGS,
                 currentSize: trimmedLogs.length,
-                lastCleanup: Date.now(),
+                lastCleanup: Date.now()
             };
 
             const serialized = safeStringify(storageData);
@@ -123,19 +128,27 @@ export function saveLogs(logs: LogEntry[]): void {
         catch (e) {
             if (e instanceof Error && e.name === 'QuotaExceededError') {
                 // localStorage is full, clear oldest logs
-                console.warn('[LogStorage] localStorage quota exceeded, clearing oldest logs');
+                console.warn(
+                    '[LogStorage] localStorage quota exceeded, clearing oldest logs'
+                );
                 const trimmedLogs = logs.slice(-500);
                 const storageData: LogStorageData = {
                     logs: trimmedLogs,
                     maxSize: MAX_LOGS,
                     currentSize: trimmedLogs.length,
-                    lastCleanup: Date.now(),
+                    lastCleanup: Date.now()
                 };
                 try {
-                    localStorage.setItem(STORAGE_KEY, safeStringify(storageData));
+                    localStorage.setItem(
+                        STORAGE_KEY,
+                        safeStringify(storageData)
+                    );
                 }
                 catch (innerE) {
-                    console.error('[LogStorage] Failed to save logs even after cleanup:', innerE);
+                    console.error(
+                        '[LogStorage] Failed to save logs even after cleanup:',
+                        innerE
+                    );
                 }
             }
             else {

@@ -42,7 +42,10 @@ export function toFormData(obj: Record<string, any>): FormData {
                     isFileish(v) ||
                     v === null
             );
-            console.log(`[FormData] Array key: ${key}, length: ${val.length}, containsObjects: ${containsObjects}`, val);
+            console.log(
+                `[FormData] Array key: ${key}, length: ${val.length}, containsObjects: ${containsObjects}`,
+                val
+            );
             if (containsObjects) {
                 val.forEach((v, i) => {
                     console.log(`[FormData] Recursing for ${key}[${i}]`);
@@ -51,13 +54,19 @@ export function toFormData(obj: Record<string, any>): FormData {
             }
             else {
                 const jsonStr = JSON.stringify(val);
-                console.log(`[FormData] Appending JSON array for key: ${key}`, jsonStr);
+                console.log(
+                    `[FormData] Appending JSON array for key: ${key}`,
+                    jsonStr
+                );
                 fd.append(key, jsonStr);
             }
         }
         else if (isPlainObject(val)) {
             const jsonStr = JSON.stringify(val);
-            console.log(`[FormData] Appending JSON object for key: ${key}`, jsonStr);
+            console.log(
+                `[FormData] Appending JSON object for key: ${key}`,
+                jsonStr
+            );
             fd.append(key, jsonStr);
         }
         else {
@@ -67,7 +76,10 @@ export function toFormData(obj: Record<string, any>): FormData {
         }
     };
 
-    console.log('[FormData] Starting toFormData conversion with keys:', Object.keys(obj));
+    console.log(
+        '[FormData] Starting toFormData conversion with keys:',
+        Object.keys(obj)
+    );
     Object.entries(obj).forEach(([k, v]) => append(k, v));
 
     console.log('[FormData] Final FormData entries:');

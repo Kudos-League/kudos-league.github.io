@@ -32,7 +32,7 @@ const sortMessages = (messages: MessageDTO[]): MessageDTO[] => {
         // Sort by createdAt timestamp
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        
+
         if (timeA !== timeB) {
             return timeA - timeB; // Chronological order (oldest to newest)
         }
@@ -57,7 +57,9 @@ const ChatWindow: React.FC<Props> = ({
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [replyTo, setReplyTo] = useState<MessageDTO | null>(null);
-    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(
+        null
+    );
     const [editContent, setEditContent] = useState('');
 
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -76,7 +78,7 @@ const ChatWindow: React.FC<Props> = ({
     // Create a map for finding messages by ID (for replies)
     const messageById = useMemo(() => {
         const map = new Map<number, MessageDTO>();
-        sortedMessages.forEach(m => map.set(m.id, m));
+        sortedMessages.forEach((m) => map.set(m.id, m));
         return map;
     }, [sortedMessages]);
 
@@ -175,17 +177,26 @@ const ChatWindow: React.FC<Props> = ({
     };
 
     const canEdit = (message: MessageDTO) => {
-        return allowEdit && user && user.id === message.authorID && !message.deletedAt;
+        return (
+            allowEdit &&
+            user &&
+            user.id === message.authorID &&
+            !message.deletedAt
+        );
     };
 
     if (!channel) {
         return (
-            <div className={`${
-                isMobile ? 'w-full' : 'w-full'
-            } flex items-center justify-center text-gray-500 p-8`}>
+            <div
+                className={`${
+                    isMobile ? 'w-full' : 'w-full'
+                } flex items-center justify-center text-gray-500 p-8`}
+            >
                 <div className='text-center'>
                     <p className={isMobile ? 'text-lg' : 'text-base'}>
-                        {isMobile ? 'Select a conversation to start chatting' : 'Select a conversation to start chatting.'}
+                        {isMobile
+                            ? 'Select a conversation to start chatting'
+                            : 'Select a conversation to start chatting.'}
                     </p>
                     {isMobile && (
                         <Button
@@ -202,7 +213,8 @@ const ChatWindow: React.FC<Props> = ({
     }
 
     const otherUser = channel.users?.find((u) => u.id !== user?.id);
-    const isBlocked = otherUser && blockedUsers ? blockedUsers.includes(otherUser.id) : false;
+    const isBlocked =
+        otherUser && blockedUsers ? blockedUsers.includes(otherUser.id) : false;
 
     return (
         <div className='flex flex-col h-full w-full min-h-0 overflow-hidden overflow-x-hidden'>
@@ -225,13 +237,19 @@ const ChatWindow: React.FC<Props> = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/user/${otherUser.id}`, { state: { fromConversation: true } });
+                                navigate(`/user/${otherUser.id}`, {
+                                    state: { fromConversation: true }
+                                });
                             }}
                             className='hover:opacity-80 transition-opacity flex-shrink-0'
                             aria-label={`View ${otherUser.username}'s profile`}
                         >
                             <AvatarComponent
-                                avatar={otherUser.avatar ? getImagePath(otherUser.avatar) : null}
+                                avatar={
+                                    otherUser.avatar
+                                        ? getImagePath(otherUser.avatar)
+                                        : null
+                                }
                                 username={otherUser.username}
                                 size={40}
                                 pointer={true}
@@ -254,19 +272,28 @@ const ChatWindow: React.FC<Props> = ({
 
             {/* Main chat area */}
             <div className='flex flex-col flex-1 h-full min-h-0 overflow-hidden overflow-x-hidden'>
-
                 {/* Message list - Scrollable middle section */}
-                <div className={`flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-zinc-800 ${
-                    isMobile ? 'p-3' : 'p-4'
-                }`}>
+                <div
+                    className={`flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-zinc-800 ${
+                        isMobile ? 'p-3' : 'p-4'
+                    }`}
+                >
                     {isLoading ? (
                         <div className='flex flex-col items-center justify-center h-full text-gray-500'>
                             <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 dark:border-teal-400'></div>
-                            <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>Loading messages...</p>
+                            <p className='text-sm text-gray-500 dark:text-gray-400 mt-3'>
+                                Loading messages...
+                            </p>
                         </div>
                     ) : groupedMessages.length === 0 ? (
                         <div className='flex flex-col items-center justify-center h-full text-gray-500'>
-                            <p className={isMobile ? 'text-base text-center' : 'text-sm'}>
+                            <p
+                                className={
+                                    isMobile
+                                        ? 'text-base text-center'
+                                        : 'text-sm'
+                                }
+                            >
                                 No messages yet. Start the conversation!
                             </p>
                         </div>
@@ -275,12 +302,25 @@ const ChatWindow: React.FC<Props> = ({
                             <SlideInOnScroll key={group[0].id} index={idx}>
                                 <MessageGroup
                                     messages={group}
-                                    isOwn={!!user?.id && group[0].author?.id === user.id}
+                                    isOwn={
+                                        !!user?.id &&
+                                        group[0].author?.id === user.id
+                                    }
                                     onReply={handleReply}
                                     onDelete={onDelete}
-                                    canDelete={allowDelete ? (m) => !!user && user.id === m.authorID : undefined}
-                                    findMessageById={(id) => messageById.get(id)}
-                                    onEdit={allowEdit ? handleEditStart : undefined}
+                                    canDelete={
+                                        allowDelete
+                                            ? (m) =>
+                                                !!user &&
+                                                  user.id === m.authorID
+                                            : undefined
+                                    }
+                                    findMessageById={(id) =>
+                                        messageById.get(id)
+                                    }
+                                    onEdit={
+                                        allowEdit ? handleEditStart : undefined
+                                    }
                                     editingMessageId={editingMessageId}
                                     editContent={editContent}
                                     onEditChange={setEditContent}
@@ -295,13 +335,16 @@ const ChatWindow: React.FC<Props> = ({
                 </div>
 
                 {/* Message input - Fixed at bottom */}
-                <div className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
-                    isMobile ? 'p-3' : 'p-4'
-                }`}>
+                <div
+                    className={`flex-shrink-0 border-t bg-white dark:bg-zinc-900 ${
+                        isMobile ? 'p-3' : 'p-4'
+                    }`}
+                >
                     {isBlocked ? (
                         <div className='flex items-center justify-center py-4'>
                             <p className='text-zinc-500 dark:text-zinc-400 text-sm'>
-                                You have blocked this user. Unblock them to send messages.
+                                You have blocked this user. Unblock them to send
+                                messages.
                             </p>
                         </div>
                     ) : (
@@ -332,7 +375,11 @@ const ChatWindow: React.FC<Props> = ({
                                 <div className='flex items-center justify-between mb-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
                                     <div className='flex-1 min-w-0'>
                                         <p className='text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1'>
-                                            Replying to <UserCard triggerVariant='name' user={replyTo.author} />
+                                            Replying to{' '}
+                                            <UserCard
+                                                triggerVariant='name'
+                                                user={replyTo.author}
+                                            />
                                         </p>
                                         <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>
                                             {replyTo.content}
@@ -360,7 +407,9 @@ const ChatWindow: React.FC<Props> = ({
                                                 : 'Type a message...'
                                     }
                                     value={messageInput}
-                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onChange={(e) =>
+                                        setMessageInput(e.target.value)
+                                    }
                                     onKeyDown={handleKeyPress}
                                     disabled={isLoading}
                                     className={`flex-1 min-w-0 border rounded focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -372,9 +421,10 @@ const ChatWindow: React.FC<Props> = ({
                                 <Button
                                     onClick={handleSend}
                                     disabled={!messageInput.trim() || isLoading}
-                                    className={`flex-shrink-0 ${isMobile
-                                        ? 'px-6 py-3 text-base font-medium'
-                                        : 'px-4 py-2'
+                                    className={`flex-shrink-0 ${
+                                        isMobile
+                                            ? 'px-6 py-3 text-base font-medium'
+                                            : 'px-4 py-2'
                                     }`}
                                 >
                                     {editingMessageId ? 'Update' : 'Send'}

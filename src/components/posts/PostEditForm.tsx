@@ -4,9 +4,7 @@ import MapDisplay from '@/components/Map';
 import ImageCarousel from '@/components/Carousel';
 import TagInput from '@/components/TagInput';
 import { useAuth } from '@/contexts/useAuth';
-import {
-    useUpdatePost
-} from '@/shared/api/mutations/posts';
+import { useUpdatePost } from '@/shared/api/mutations/posts';
 import { useCategories } from '@/shared/api/queries/categories';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -41,9 +39,9 @@ export default function PostEditForm({
         title: post.title,
         body: post.body,
         tags: post.tags?.map((tag) => tag.name) || [],
-        location: post.location || null as LocationDTO | null,
+        location: post.location || (null as LocationDTO | null),
         type: post.type as 'gift' | 'request',
-        categoryID: post.category?.id || null as number | null,
+        categoryID: post.category?.id || (null as number | null),
         itemsLimit:
             typeof post.itemsLimit === 'number' && post.itemsLimit > 0
                 ? String(post.itemsLimit)
@@ -52,7 +50,9 @@ export default function PostEditForm({
     const [editImages, setEditImages] = useState<File[]>([]);
     const [editImageError, setEditImageError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
+    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(
+        new Set()
+    );
 
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
@@ -101,12 +101,21 @@ export default function PostEditForm({
     const handleLocationChange = (data: any) => {
         if (data.coordinates) {
             const locationData: LocationDTO = {
-                name: data.name || data.businessName || data.formattedAddress || '',
+                name:
+                    data.name ||
+                    data.businessName ||
+                    data.formattedAddress ||
+                    '',
                 regionID: data.placeID,
                 latitude: data.coordinates.latitude,
                 longitude: data.coordinates.longitude
             };
-            console.log('[PostEditForm] Location changed:', data, 'Extracted name:', locationData.name);
+            console.log(
+                '[PostEditForm] Location changed:',
+                data,
+                'Extracted name:',
+                locationData.name
+            );
             setEditData({ ...editData, location: locationData });
         }
     };
@@ -140,7 +149,8 @@ export default function PostEditForm({
 
             const limitStr = (editData.itemsLimit || '').trim();
             if (limitStr === '') updateData.itemsLimit = null;
-            else if (/^\d+$/.test(limitStr)) updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
+            else if (/^\d+$/.test(limitStr))
+                updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
 
             // Send new files to upload
             if (editImages.length > 0) {
@@ -149,7 +159,10 @@ export default function PostEditForm({
 
             // Send remaining images (with deleted ones filtered out)
             if (deletedImageIndices.size > 0) {
-                const remainingImages = post.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
+                const remainingImages =
+                    post.images?.filter(
+                        (_, idx) => !deletedImageIndices.has(idx)
+                    ) || [];
                 updateData.images = remainingImages;
             }
 
@@ -165,7 +178,9 @@ export default function PostEditForm({
         }
         catch (err) {
             console.error('Failed to save changes', err);
-            setEditImageError(err instanceof Error ? err.message : 'Failed to save changes');
+            setEditImageError(
+                err instanceof Error ? err.message : 'Failed to save changes'
+            );
         }
         finally {
             setIsSaving(false);
@@ -181,7 +196,9 @@ export default function PostEditForm({
     if (!isPostOwner) {
         return (
             <div className='max-w-4xl mx-auto p-4 text-center mt-20'>
-                <p className='text-red-500'>You don&apos;t have permission to edit this post.</p>
+                <p className='text-red-500'>
+                    You don&apos;t have permission to edit this post.
+                </p>
                 <Button onClick={handleCancel} className='mt-4'>
                     Go Back
                 </Button>
@@ -208,7 +225,9 @@ export default function PostEditForm({
 
                 <div className='flex gap-3'>
                     <Button
-                        variant={editData.type === 'gift' ? 'primary' : 'secondary'}
+                        variant={
+                            editData.type === 'gift' ? 'primary' : 'secondary'
+                        }
                         onClick={() =>
                             setEditData({
                                 ...editData,
@@ -220,7 +239,11 @@ export default function PostEditForm({
                         Give stuff
                     </Button>
                     <Button
-                        variant={editData.type === 'request' ? 'primary' : 'secondary'}
+                        variant={
+                            editData.type === 'request'
+                                ? 'primary'
+                                : 'secondary'
+                        }
                         onClick={() =>
                             setEditData({
                                 ...editData,
@@ -242,7 +265,11 @@ export default function PostEditForm({
                             label: c.name,
                             value: String(c.id)
                         }))}
-                        value={editData.categoryID !== null ? String(editData.categoryID) : ''}
+                        value={
+                            editData.categoryID !== null
+                                ? String(editData.categoryID)
+                                : ''
+                        }
                         onChange={(val) => {
                             const parsed = val ? parseInt(val) : null;
                             setEditData({
@@ -277,7 +304,10 @@ export default function PostEditForm({
                     </label>
                     <textarea
                         className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed'
-                        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                        style={{
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y'
+                        }}
                         rows={4}
                         value={editData.body}
                         onChange={(e) =>
@@ -311,7 +341,9 @@ export default function PostEditForm({
                             <Button
                                 type='button'
                                 variant='ghost'
-                                onClick={() => setEditData({ ...editData, location: null })}
+                                onClick={() =>
+                                    setEditData({ ...editData, location: null })
+                                }
                                 className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
                                 disabled={isSaving}
                             >
@@ -324,11 +356,15 @@ export default function PostEditForm({
                         key={editData.location?.regionID || 'no-location'}
                         edit
                         regionID={editData.location?.regionID || undefined}
-                        coordinates={editData.location ? {
-                            latitude: editData.location.latitude,
-                            longitude: editData.location.longitude,
-                            name: editData.location.name
-                        } : undefined}
+                        coordinates={
+                            editData.location
+                                ? {
+                                    latitude: editData.location.latitude,
+                                    longitude: editData.location.longitude,
+                                    name: editData.location.name
+                                }
+                                : undefined
+                        }
                         height={300}
                         exactLocation={isPostOwner}
                         onLocationChange={handleLocationChange}
@@ -338,7 +374,8 @@ export default function PostEditForm({
 
                 <div>
                     <label className='block text-sm font-medium mb-1'>
-                        Number of items if applicable (leave blank for unlimited, 1 in case of doubt or not applicable)
+                        Number of items if applicable (leave blank for
+                        unlimited, 1 in case of doubt or not applicable)
                     </label>
                     <input
                         className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -349,21 +386,31 @@ export default function PostEditForm({
                         onChange={(e) =>
                             setEditData({
                                 ...editData,
-                                itemsLimit: e.target.value.replace(/[^0-9]/g, '')
+                                itemsLimit: e.target.value.replace(
+                                    /[^0-9]/g,
+                                    ''
+                                )
                             })
                         }
                     />
                     <p className='text-xs text-gray-500 mt-1'>
-                        Limits how many accepted/completed handshakes the post can have.
+                        Limits how many accepted/completed handshakes the post
+                        can have.
                     </p>
                 </div>
 
                 <div className='w-full overflow-hidden box-border'>
                     <label className='block text-sm font-semibold mb-2'>
-                        Images ({(post.images?.length || 0) - deletedImageIndices.size + editImages.length}/{MAX_FILE_COUNT})
+                        Images (
+                        {(post.images?.length || 0) -
+                            deletedImageIndices.size +
+                            editImages.length}
+                        /{MAX_FILE_COUNT})
                     </label>
                     {editImageError && (
-                        <p className='text-sm text-red-600 dark:text-red-400 mb-2'>{editImageError}</p>
+                        <p className='text-sm text-red-600 dark:text-red-400 mb-2'>
+                            {editImageError}
+                        </p>
                     )}
                     <input
                         type='file'
@@ -371,9 +418,15 @@ export default function PostEditForm({
                         multiple
                         onChange={handleImageUpload}
                         className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'
-                        disabled={((post.images?.length || 0) - deletedImageIndices.size + editImages.length) >= MAX_FILE_COUNT || isSaving}
+                        disabled={
+                            (post.images?.length || 0) -
+                                deletedImageIndices.size +
+                                editImages.length >=
+                                MAX_FILE_COUNT || isSaving
+                        }
                     />
-                    {((post.images && post.images.length > 0) || editImages.length > 0) && (
+                    {((post.images && post.images.length > 0) ||
+                        editImages.length > 0) && (
                         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
                             {/* Existing images from the post */}
                             {post.images?.map((url, index) => {
@@ -381,7 +434,10 @@ export default function PostEditForm({
                                 const imagePath = getImagePath(url);
                                 if (!imagePath) return null;
                                 return (
-                                    <div key={`existing-${index}`} className='relative group'>
+                                    <div
+                                        key={`existing-${index}`}
+                                        className='relative group'
+                                    >
                                         <img
                                             src={imagePath}
                                             alt={`Image ${index + 1}`}
@@ -391,7 +447,9 @@ export default function PostEditForm({
                                             type='button'
                                             shape='circle'
                                             variant='danger'
-                                            onClick={() => removeExistingImage(index)}
+                                            onClick={() =>
+                                                removeExistingImage(index)
+                                            }
                                             className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
                                             title='Remove image'
                                         >
@@ -405,7 +463,10 @@ export default function PostEditForm({
                             })}
                             {/* New images being added */}
                             {editImages.map((file, index) => (
-                                <div key={`new-${index}`} className='relative group'>
+                                <div
+                                    key={`new-${index}`}
+                                    className='relative group'
+                                >
                                     <img
                                         src={createImagePreview(file)}
                                         alt={`Preview ${index + 1}`}

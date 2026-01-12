@@ -1,10 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
-import type { EventDTO, CreateEventDTO, UpdateEventDTO } from '@/shared/api/types';
+import type {
+    EventDTO,
+    CreateEventDTO,
+    UpdateEventDTO
+} from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
 
-export function useCreateEvent(p0: { onSuccess: () => void; }) {
+export function useCreateEvent(p0: { onSuccess: () => void }) {
     const { token } = useAuth();
     const qc = useQueryClient();
 
@@ -68,15 +72,22 @@ interface UpdateEventMutationData {
     data: UpdateEventDTO;
 }
 
-
 export const useUpdateEvent = () => {
     const { token } = useAuth();
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: UpdateEventMutationData): Promise<EventDTO> => {
+        mutationFn: async ({
+            id,
+            data
+        }: UpdateEventMutationData): Promise<EventDTO> => {
             if (!token) throw new Error('Authentication required');
-            return apiMutate<EventDTO, UpdateEventDTO>(`/events/${id}`, 'patch', data, { as: 'form' });
+            return apiMutate<EventDTO, UpdateEventDTO>(
+                `/events/${id}`,
+                'patch',
+                data,
+                { as: 'form' }
+            );
         },
         onSuccess: (updatedEvent) => {
             // Update the specific event in the cache

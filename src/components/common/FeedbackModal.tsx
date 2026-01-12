@@ -42,7 +42,12 @@ const humanize = (value: string) =>
 const toOptions = (list: readonly string[]) =>
     list.map((value) => ({ label: humanize(value), value }));
 
-export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit, onClose, open }: Props) {
+export default function FeedbackModal({
+    defaultType = 'site-feedback',
+    onSubmit,
+    onClose,
+    open
+}: Props) {
     const [activeType, setActiveType] = useState<FeedbackKind>(defaultType);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [submitting, setSubmitting] = useState(false);
@@ -103,7 +108,7 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
     // Prevent body scroll when modal is open (only for modal mode)
     useEffect(() => {
         if (!onClose) return;
-        
+
         if (open) {
             document.body.style.overflow = 'hidden';
         }
@@ -178,19 +183,24 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
             }
             else {
                 // Otherwise use the default API call
-                await apiMutate('/feedback', 'post', {
-                    title: values.title,
-                    description: values.description,
-                    category: values.category,
-                    type: activeType,
-                    tags: values.tags,
-                    files: selectedImages
-                }, { as: 'form' });
+                await apiMutate(
+                    '/feedback',
+                    'post',
+                    {
+                        title: values.title,
+                        description: values.description,
+                        category: values.category,
+                        type: activeType,
+                        tags: values.tags,
+                        files: selectedImages
+                    },
+                    { as: 'form' }
+                );
             }
 
             setSuccess(true);
             resetForm();
-            
+
             // Close modal after successful submission (only in modal mode)
             if (onClose) {
                 setTimeout(() => {
@@ -216,7 +226,9 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
         setServerError(null);
         setSuccess(false);
         const categories =
-            next === 'bug-report' ? BUG_REPORT_CATEGORIES : SITE_FEEDBACK_CATEGORIES;
+            next === 'bug-report'
+                ? BUG_REPORT_CATEGORIES
+                : SITE_FEEDBACK_CATEGORIES;
         form.setValue('category', categories[0]);
         form.setValue('tags', []);
     };
@@ -237,7 +249,9 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                         Share Feedback
                     </h1>
                     <p className='text-sm text-gray-600 dark:text-gray-300'>
-                        Submitting feedback grants you {FEEDBACK_BASE_REWARD} kudos automatically. Kudos league may award additional kudos for especially helpful reports.
+                        Submitting feedback grants you {FEEDBACK_BASE_REWARD}{' '}
+                        kudos automatically. Kudos league may award additional
+                        kudos for especially helpful reports.
                     </p>
                 </header>
 
@@ -267,11 +281,22 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                 </div>
 
                 <section className='bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-2xl p-6 space-y-3 text-sm text-teal-900 dark:text-teal-100'>
-                    <h2 className='text-base font-semibold'>Tips for useful submissions</h2>
+                    <h2 className='text-base font-semibold'>
+                        Tips for useful submissions
+                    </h2>
                     <ul className='list-disc pl-5 space-y-2'>
-                        <li>For bugs, include what you tried, what you expected, and what actually happened.</li>
-                        <li>Add screenshots when they help illustrate the issue or feedback.</li>
-                        <li>Feature requests are welcome—share the problem you are solving and why it matters.</li>
+                        <li>
+                            For bugs, include what you tried, what you expected,
+                            and what actually happened.
+                        </li>
+                        <li>
+                            Add screenshots when they help illustrate the issue
+                            or feedback.
+                        </li>
+                        <li>
+                            Feature requests are welcome—share the problem you
+                            are solving and why it matters.
+                        </li>
                     </ul>
                 </section>
 
@@ -283,16 +308,26 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                     />
                 )}
                 {serverError && (
-                    <Alert type='danger' title='Unable to submit' message={serverError} />
+                    <Alert
+                        type='danger'
+                        title='Unable to submit'
+                        message={serverError}
+                    />
                 )}
 
-                <Form methods={form} onSubmit={handleSubmit} className='space-y-5'>
+                <Form
+                    methods={form}
+                    onSubmit={handleSubmit}
+                    className='space-y-5'
+                >
                     <FormField name='title' label='Title *'>
                         <Input
                             name='title'
                             label=''
                             form={form}
-                            registerOptions={{ required: 'Please add a title.' }}
+                            registerOptions={{
+                                required: 'Please add a title.'
+                            }}
                         />
                     </FormField>
 
@@ -302,7 +337,9 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                             label=''
                             form={form}
                             multiline
-                            registerOptions={{ required: 'Please describe the feedback.' }}
+                            registerOptions={{
+                                required: 'Please describe the feedback.'
+                            }}
                         />
                     </FormField>
 
@@ -345,7 +382,8 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                             disabled={selectedImages.length >= MAX_FILE_COUNT}
                         />
                         <p className='text-xs text-gray-500 dark:text-gray-400'>
-                            Up to {MAX_FILE_COUNT} images, each under {MAX_FILE_SIZE_MB}MB.
+                            Up to {MAX_FILE_COUNT} images, each under{' '}
+                            {MAX_FILE_SIZE_MB}MB.
                         </p>
 
                         {previews.length > 0 && (
@@ -374,7 +412,11 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                     </div>
 
                     <div className='flex justify-end gap-2'>
-                        <Button type='submit' variant='success' disabled={submitting}>
+                        <Button
+                            type='submit'
+                            variant='success'
+                            disabled={submitting}
+                        >
                             {submitting ? 'Submitting…' : 'Submit feedback'}
                         </Button>
                     </div>
@@ -389,14 +431,14 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
     return (
         <>
             {/* Backdrop */}
-            <div 
+            <div
                 className='fixed inset-0 z-50 bg-black/50 backdrop-blur-sm'
                 onClick={handleClose}
             />
-            
+
             {/* Modal */}
             <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-                <div 
+                <div
                     ref={modalRef}
                     className='relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl'
                     onClick={(e) => e.stopPropagation()}
@@ -417,7 +459,10 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                                 Share Feedback
                             </h1>
                             <p className='text-sm text-gray-600 dark:text-gray-300'>
-                                Submitting feedback grants you {FEEDBACK_BASE_REWARD} kudos automatically. Kudos league may award additional kudos for especially helpful reports.
+                                Submitting feedback grants you{' '}
+                                {FEEDBACK_BASE_REWARD} kudos automatically.
+                                Kudos league may award additional kudos for
+                                especially helpful reports.
                             </p>
                         </header>
 
@@ -454,16 +499,26 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                             />
                         )}
                         {serverError && (
-                            <Alert type='danger' title='Unable to submit' message={serverError} />
+                            <Alert
+                                type='danger'
+                                title='Unable to submit'
+                                message={serverError}
+                            />
                         )}
 
-                        <Form methods={form} onSubmit={handleSubmit} className='space-y-5'>
+                        <Form
+                            methods={form}
+                            onSubmit={handleSubmit}
+                            className='space-y-5'
+                        >
                             <FormField name='title' label='Title *'>
                                 <Input
                                     name='title'
                                     label=''
                                     form={form}
-                                    registerOptions={{ required: 'Please add a title.' }}
+                                    registerOptions={{
+                                        required: 'Please add a title.'
+                                    }}
                                 />
                             </FormField>
 
@@ -473,7 +528,10 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                                     label=''
                                     form={form}
                                     multiline
-                                    registerOptions={{ required: 'Please describe the feedback.' }}
+                                    registerOptions={{
+                                        required:
+                                            'Please describe the feedback.'
+                                    }}
                                 />
                             </FormField>
 
@@ -486,7 +544,9 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                                         <DropdownPicker
                                             options={categoryOptions}
                                             value={field.value}
-                                            onChange={(next) => field.onChange(next)}
+                                            onChange={(next) =>
+                                                field.onChange(next)
+                                            }
                                             onBlur={field.onBlur}
                                             placeholder='Select category'
                                         />
@@ -513,10 +573,13 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                                     accept='image/*'
                                     multiple
                                     onChange={handleImageUpload}
-                                    disabled={selectedImages.length >= MAX_FILE_COUNT}
+                                    disabled={
+                                        selectedImages.length >= MAX_FILE_COUNT
+                                    }
                                 />
                                 <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    Up to {MAX_FILE_COUNT} images, each under {MAX_FILE_SIZE_MB}MB.
+                                    Up to {MAX_FILE_COUNT} images, each under{' '}
+                                    {MAX_FILE_SIZE_MB}MB.
                                 </p>
 
                                 {previews.length > 0 && (
@@ -534,7 +597,9 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                                                 <button
                                                     type='button'
                                                     className='absolute top-1 right-1 rounded-full bg-black/60 px-2 text-xs text-white'
-                                                    onClick={() => removeImage(index)}
+                                                    onClick={() =>
+                                                        removeImage(index)
+                                                    }
                                                 >
                                                     Remove
                                                 </button>
@@ -545,11 +610,21 @@ export default function FeedbackModal({ defaultType = 'site-feedback', onSubmit,
                             </div>
 
                             <div className='flex justify-end gap-2'>
-                                <Button type='button' variant='secondary' onClick={handleClose}>
+                                <Button
+                                    type='button'
+                                    variant='secondary'
+                                    onClick={handleClose}
+                                >
                                     Cancel
                                 </Button>
-                                <Button type='submit' variant='success' disabled={submitting}>
-                                    {submitting ? 'Submitting…' : 'Submit feedback'}
+                                <Button
+                                    type='submit'
+                                    variant='success'
+                                    disabled={submitting}
+                                >
+                                    {submitting
+                                        ? 'Submitting…'
+                                        : 'Submit feedback'}
                                 </Button>
                             </div>
                         </Form>

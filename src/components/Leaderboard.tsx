@@ -53,7 +53,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
     const getHeaderLabel = () => {
         if (timeFilter === 'all') return 'Most Kudos';
-        const period = TIME_FILTERS.find((f) => f.value === timeFilter)?.label || '';
+        const period =
+            TIME_FILTERS.find((f) => f.value === timeFilter)?.label || '';
         return compact ? period.replace('This ', '') : `Kudos ${period}`;
     };
 
@@ -102,7 +103,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 setLeaderboard(response.data || []);
             }
             else {
-                setLeaderboard(prev => [...prev, ...(response.data || [])]);
+                setLeaderboard((prev) => [...prev, ...(response.data || [])]);
             }
             setNextCursor(response.nextCursor);
         }
@@ -124,7 +125,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setShowDropdown(false);
             }
         }
@@ -146,7 +150,12 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         const observer = new IntersectionObserver(
             (entries) => {
                 const firstEntry = entries[0];
-                if (firstEntry.isIntersecting && nextCursor && !loadingMore && !loading) {
+                if (
+                    firstEntry.isIntersecting &&
+                    nextCursor &&
+                    !loadingMore &&
+                    !loading
+                ) {
                     loadLeaderboard(false);
                 }
             },
@@ -177,15 +186,24 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             >
                 {leaderboard?.map((entry, index) => {
                     const medalColor = getMedalColor(index);
+                    const position = index + 1;
+                    const isCurrentUser = entry.id === user?.id;
                     return (
                         <li
                             key={entry.id}
-                            className={`flex justify-between gap-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded ${
+                            className={`flex justify-between gap-x-2 cursor-pointer ${isCurrentUser ? 'hover:bg-brand-100 dark:hover:bg-brand-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'} rounded mx-1 ${
                                 compact ? 'py-2 px-1' : 'py-7 px-2'
-                            }`}
+                            } ${isCurrentUser ? 'bg-brand-50 dark:bg-brand-900 ring-2 ring-brand-400 dark:ring-brand-600' : ''}`}
                             onClick={() => navigate(`/user/${entry.id}`)}
                         >
-                            <div className='flex min-w-0 gap-x-2 flex-1'>
+                            <div className='flex min-w-0 gap-x-2 flex-1 items-center'>
+                                <div
+                                    className={`flex-shrink-0 font-semibold ml-1 ${medalColor || (isCurrentUser ? 'text-brand-600 dark:text-brand-400' : 'text-gray-600 dark:text-gray-400')} ${
+                                        compact ? 'text-sm w-6' : 'text-lg w-8'
+                                    }`}
+                                >
+                                    {position}
+                                </div>
                                 <UserCard
                                     user={
                                         {
@@ -203,17 +221,23 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             </div>
 
                             <div className='flex shrink-0 flex-col items-end justify-center'>
-                                <p className={`font-semibold text-gray-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+                                <p
+                                    className={`font-semibold ${isCurrentUser ? 'text-brand-700 dark:text-brand-300' : 'text-gray-900 dark:text-white'} ${compact ? 'text-xs' : 'text-sm'}`}
+                                >
                                     {entry.totalKudos.toLocaleString()}
                                 </p>
                                 {compact && timeFilter !== 'all' && (
                                     <p className='text-[10px] text-gray-500 dark:text-gray-400'>
-                                        {timeFilter === 'week' ? 'this wk' : 'this mo'}
+                                        {timeFilter === 'week'
+                                            ? 'this wk'
+                                            : 'this mo'}
                                     </p>
                                 )}
                                 {!compact && (
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                        {timeFilter === 'all' ? 'Kudos' : `This ${timeFilter === 'week' ? 'Week' : 'Month'}`}
+                                        {timeFilter === 'all'
+                                            ? 'Kudos'
+                                            : `This ${timeFilter === 'week' ? 'Week' : 'Month'}`}
                                     </p>
                                 )}
                             </div>
@@ -224,16 +248,25 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
             {/* Infinite scroll trigger */}
             {nextCursor && (
-                <div ref={loadMoreTriggerRef} className={`flex items-center justify-center ${compact ? 'h-6' : 'h-10'}`}>
+                <div
+                    ref={loadMoreTriggerRef}
+                    className={`flex items-center justify-center ${compact ? 'h-6' : 'h-10'}`}
+                >
                     {loadingMore && (
-                        <div className={`text-gray-500 ${compact ? 'text-xs' : 'text-sm'}`}>Loading more...</div>
+                        <div
+                            className={`text-gray-500 ${compact ? 'text-xs' : 'text-sm'}`}
+                        >
+                            Loading more...
+                        </div>
                     )}
                 </div>
             )}
 
             {/* End of list message */}
             {!nextCursor && leaderboard.length > 0 && (
-                <div className={`text-center text-gray-500 ${compact ? 'py-2 text-xs' : 'py-4 text-sm'}`}>
+                <div
+                    className={`text-center text-gray-500 ${compact ? 'py-2 text-xs' : 'py-4 text-sm'}`}
+                >
                     You&apos;ve reached the end
                 </div>
             )}
@@ -241,12 +274,22 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     );
 
     return (
-        <div className={compact ? '' : 'md:ml-8 sticky top-4 max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'}>
-            <h1 className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}>
+        <div
+            className={
+                compact
+                    ? ''
+                    : 'sticky top-4 max-w-3xl ml-auto mr-16 lg:mr-24 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'
+            }
+        >
+            <h1
+                className={`font-bold text-center ${compact ? 'text-base mb-2' : 'text-2xl mb-6'}`}
+            >
                 {getHeaderLabel()}
             </h1>
 
-            <div className={`ml-4 flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}>
+            <div
+                className={`ml-4 flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}
+            >
                 {/* Time Filter Dropdown */}
                 <div className='relative mr-2' ref={dropdownRef}>
                     <button
@@ -255,8 +298,14 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             compact ? 'px-2 py-1 text-xs' : 'px-4 py-2'
                         }`}
                     >
-                        <span className='font-medium'>{compact ? getLabel().replace('This ', '') : getLabel()}</span>
-                        <span className='text-xs text-gray-500 dark:text-zinc-400'>▼</span>
+                        <span className='font-medium'>
+                            {compact
+                                ? getLabel().replace('This ', '')
+                                : getLabel()}
+                        </span>
+                        <span className='text-xs text-gray-500 dark:text-zinc-400'>
+                                ▼
+                        </span>
                     </button>
 
                     {showDropdown && (
@@ -282,7 +331,9 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 </div>
 
                 {/* Local/Global Switch */}
-                <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
+                <div
+                    className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}
+                >
                     {hasSavedLocation ? (
                         <>
                             <span
@@ -298,19 +349,29 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                     onChange={() => setUseLocal((v) => !v)}
                                     className='sr-only'
                                 />
-                                <div className={`relative bg-gray-300 dark:bg-zinc-600 rounded-full shadow-inner ${
-                                    compact ? 'w-8 h-4' : 'w-10 h-5'
-                                }`}>
+                                <div
+                                    className={`relative bg-gray-300 dark:bg-zinc-600 rounded-full shadow-inner ${
+                                        compact ? 'w-8 h-4' : 'w-10 h-5'
+                                    }`}
+                                >
                                     <div
                                         className={`absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform ${
                                             compact ? 'w-3 h-3' : 'w-4 h-4'
                                         } ${
-                                            useLocal ? '' : (compact ? 'translate-x-4' : 'translate-x-5')
+                                            useLocal
+                                                ? ''
+                                                : compact
+                                                    ? 'translate-x-4'
+                                                    : 'translate-x-5'
                                         }`}
                                     />
                                 </div>
                             </label>
-                            <span className={compact ? 'text-xs' : 'text-sm'}>Global</span>
+                            <span
+                                className={compact ? 'text-xs' : 'text-sm'}
+                            >
+                                    Global
+                            </span>
                         </>
                     ) : (
                         <button
@@ -318,15 +379,28 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${compact ? 'text-xs' : 'text-sm'}`}
                             title='Add your location to see local leaderboard'
                         >
-                            <span className={compact ? '' : 'hidden sm:inline'}>Add location on your profile for local filter</span>
-                            <span className={compact ? 'hidden' : 'sm:hidden'}>Local</span>
+                            <span
+                                className={
+                                    compact ? '' : 'hidden sm:inline'
+                                }
+                            >
+                                    Add location on your profile for local
+                                    filter
+                            </span>
+                            <span
+                                className={compact ? 'hidden' : 'sm:hidden'}
+                            >
+                                    Local
+                            </span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Status */}
-            {loading && <p className='text-center text-gray-500'>Loading...</p>}
+            {loading && (
+                <p className='text-center text-gray-500'>Loading...</p>
+            )}
             {error && <p className='text-center text-red-500'>{error}</p>}
 
             {/* Leaderboard List Container */}
@@ -359,7 +433,11 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     `}</style>
                     <div
                         ref={scrollContainerRef}
-                        className={compact ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1' : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'}
+                        className={
+                            compact
+                                ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1'
+                                : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'
+                        }
                         style={{ scrollbarGutter: 'stable' }}
                     >
                         {LeaderboardContent}

@@ -76,7 +76,8 @@ export default function RewardKudosModal({
                                light:text-gray-600
                                dark:text-neutral-300'
                 >
-                    How many <span className='font-semibold'>additional</span> kudos should be granted when resolving this?
+                    How many <span className='font-semibold'>additional</span>{' '}
+                    kudos should be granted when resolving this?
                     <br />
                     <span className='text-xs text-gray-500 dark:text-gray-400'>
                         Base reward: {baseReward}

@@ -12,6 +12,7 @@ interface HandshakesProps {
     showPostDetails?: boolean;
     onHandshakeDeleted?: (id: number) => void;
     showSenderOrReceiver?: 'sender' | 'receiver';
+    showUserKudos?: boolean;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -22,14 +23,17 @@ const Handshakes: React.FC<HandshakesProps> = ({
     onHandshakeCreated,
     showPostDetails,
     onHandshakeDeleted,
-    showSenderOrReceiver
+    showSenderOrReceiver,
+    showUserKudos = false
 }) => {
     // Filter out cancelled handshakes
     const activeHandshakes = handshakes.filter(
-        handshake => handshake.status !== 'cancelled'
+        (handshake) => handshake.status !== 'cancelled'
     );
-    
-    const visibleHandshakes = showAll ? activeHandshakes : activeHandshakes.slice(0, 2);
+
+    const visibleHandshakes = showAll
+        ? activeHandshakes
+        : activeHandshakes.slice(0, 2);
 
     if (!activeHandshakes.length) {
         return <p className='text-sm text-gray-500'>Nothing yet!</p>;
@@ -46,6 +50,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     showPostDetails={showPostDetails}
                     onDelete={onHandshakeDeleted}
                     showSenderOrReceiver={showSenderOrReceiver}
+                    showUserKudos={showUserKudos}
                 />
             ))}
 

@@ -12,7 +12,12 @@ export const qk = {
 };
 
 type Filters =
-    | { filter?: 'all' | 'ongoing' | 'upcoming' | 'past'; location?: string; local?: boolean; radiusKm?: number }
+    | {
+          filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
+          location?: string;
+          local?: boolean;
+          radiusKm?: number;
+      }
     | undefined;
 
 type EventsKey = ReturnType<typeof qk.events>;

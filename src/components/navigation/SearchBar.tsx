@@ -14,7 +14,12 @@ interface SearchBarProps {
     onOpenSearchModal?: () => void;
 }
 
-export default function SearchBar({ onClose, autoFocus = false, className = '', onOpenSearchModal }: SearchBarProps) {
+export default function SearchBar({
+    onClose,
+    autoFocus = false,
+    className = '',
+    onOpenSearchModal
+}: SearchBarProps) {
     const navigate = useNavigate();
     const [searchText, setSearchText] = React.useState('');
     const [showSearchDropdown, setShowSearchDropdown] = React.useState(false);
@@ -35,17 +40,21 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
     const eventSearchResults = React.useMemo(() => {
         if (!searchingActive) return [];
         const searchLower = debouncedSearch.toLowerCase();
-        return allEvents.filter(event =>
-            event.title.toLowerCase().includes(searchLower) ||
-            event.description.toLowerCase().includes(searchLower) ||
-            event.location?.name?.toLowerCase().includes(searchLower)
+        return allEvents.filter(
+            (event) =>
+                event.title.toLowerCase().includes(searchLower) ||
+                event.description.toLowerCase().includes(searchLower) ||
+                event.location?.name?.toLowerCase().includes(searchLower)
         );
     }, [debouncedSearch, allEvents, searchingActive]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+            if (
+                searchRef.current &&
+                !searchRef.current.contains(event.target as Node)
+            ) {
                 setShowSearchDropdown(false);
             }
         }
@@ -61,10 +70,20 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
 
     // Show dropdown when there are search results
     useEffect(() => {
-        if (searchingActive && (userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0)) {
+        if (
+            searchingActive &&
+            (userSearchResults.length > 0 ||
+                searchResults.length > 0 ||
+                eventSearchResults.length > 0)
+        ) {
             setShowSearchDropdown(true);
         }
-    }, [searchingActive, userSearchResults.length, searchResults.length, eventSearchResults.length]);
+    }, [
+        searchingActive,
+        userSearchResults.length,
+        searchResults.length,
+        eventSearchResults.length
+    ]);
 
     const handleResultClick = () => {
         setShowSearchDropdown(false);
@@ -86,14 +105,22 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
                 }}
                 onFocus={() => {
                     // Only show dropdown on desktop (lg and above)
-                    if (window.innerWidth >= 1024 && searchingActive && (userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0)) {
+                    if (
+                        window.innerWidth >= 1024 &&
+                        searchingActive &&
+                        (userSearchResults.length > 0 ||
+                            searchResults.length > 0 ||
+                            eventSearchResults.length > 0)
+                    ) {
                         setShowSearchDropdown(true);
                     }
                 }}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchText.trim()) {
                         e.preventDefault();
-                        navigate(`/search?q=${encodeURIComponent(searchText.trim())}`);
+                        navigate(
+                            `/search?q=${encodeURIComponent(searchText.trim())}`
+                        );
                         setShowSearchDropdown(false);
                         onClose?.();
                     }
@@ -123,38 +150,47 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
                             {/* User Results */}
                             {userSearchResults.length > 0 && (
                                 <div className='space-y-2'>
-                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>Users</h3>
-                                    {userSearchResults.slice(0, 3).map((user) => (
-                                        <Link
-                                            key={user.id}
-                                            to={`/user/${user.id}`}
-                                            onClick={handleResultClick}
-                                            className='flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                        >
-                                            <img
-                                                src={getImagePath(user.avatar)}
-                                                alt={user.username}
-                                                className='w-10 h-10 rounded-full object-cover'
-                                            />
-                                            <div className='flex-1 min-w-0'>
-                                                <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                    {user.displayName || user.username}
-                                                </p>
-                                                {user.displayName && (
-                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
-                                                        @{user.username}
+                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>
+                                        Users
+                                    </h3>
+                                    {userSearchResults
+                                        .slice(0, 3)
+                                        .map((user) => (
+                                            <Link
+                                                key={user.id}
+                                                to={`/user/${user.id}`}
+                                                onClick={handleResultClick}
+                                                className='flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                            >
+                                                <img
+                                                    src={getImagePath(
+                                                        user.avatar
+                                                    )}
+                                                    alt={user.username}
+                                                    className='w-10 h-10 rounded-full object-cover'
+                                                />
+                                                <div className='flex-1 min-w-0'>
+                                                    <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
+                                                        {user.displayName ||
+                                                            user.username}
                                                     </p>
-                                                )}
-                                            </div>
-                                        </Link>
-                                    ))}
+                                                    {user.displayName && (
+                                                        <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
+                                                            @{user.username}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                        ))}
                                 </div>
                             )}
 
                             {/* Post Results */}
                             {searchResults.length > 0 && (
                                 <div className='space-y-2'>
-                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>Posts</h3>
+                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>
+                                        Posts
+                                    </h3>
                                     {searchResults.slice(0, 3).map((post) => (
                                         <Link
                                             key={post.id}
@@ -178,34 +214,39 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
                             {/* Event Results */}
                             {eventSearchResults.length > 0 && (
                                 <div className='space-y-2'>
-                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>Events</h3>
-                                    {eventSearchResults.slice(0, 3).map((event) => (
-                                        <Link
-                                            key={event.id}
-                                            to={`/event/${event.id}`}
-                                            onClick={handleResultClick}
-                                            className='block p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                        >
-                                            <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                {event.title}
-                                            </p>
-                                            {event.location?.name && (
-                                                <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
-                                                    📍 {event.location.name}
+                                    <h3 className='text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase px-2'>
+                                        Events
+                                    </h3>
+                                    {eventSearchResults
+                                        .slice(0, 3)
+                                        .map((event) => (
+                                            <Link
+                                                key={event.id}
+                                                to={`/event/${event.id}`}
+                                                onClick={handleResultClick}
+                                                className='block p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                            >
+                                                <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
+                                                    {event.title}
                                                 </p>
-                                            )}
-                                        </Link>
-                                    ))}
+                                                {event.location?.name && (
+                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
+                                                        📍 {event.location.name}
+                                                    </p>
+                                                )}
+                                            </Link>
+                                        ))}
                                 </div>
                             )}
 
                             {/* No Results */}
-                            {!searching && !searchingUsers &&
+                            {!searching &&
+                                !searchingUsers &&
                                 userSearchResults.length === 0 &&
                                 searchResults.length === 0 &&
                                 eventSearchResults.length === 0 && (
                                 <div className='text-center py-8 text-gray-500 dark:text-zinc-400'>
-                                    No results found
+                                        No results found
                                 </div>
                             )}
 
@@ -218,11 +259,15 @@ export default function SearchBar({ onClose, autoFocus = false, className = '', 
                         </div>
 
                         {/* Show All Results Button */}
-                        {(userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0) && (
+                        {(userSearchResults.length > 0 ||
+                            searchResults.length > 0 ||
+                            eventSearchResults.length > 0) && (
                             <div className='border-t dark:border-zinc-700 pt-2'>
                                 <button
                                     onClick={() => {
-                                        navigate(`/search?q=${encodeURIComponent(searchText)}`);
+                                        navigate(
+                                            `/search?q=${encodeURIComponent(searchText)}`
+                                        );
                                         setShowSearchDropdown(false);
                                         onClose?.();
                                     }}

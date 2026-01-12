@@ -31,7 +31,7 @@ type NavItem = {
 function useUserMenuItems(isAdmin?: boolean): NavItem[] {
     const items: NavItem[] = [
         { name: 'About', to: routes.about, icon: InformationCircleIcon },
-        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
+        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon }
     ];
     if (isAdmin) {
         items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
@@ -67,12 +67,10 @@ function NavItemComponent({
                 )}
             >
                 {children}
-
             </Link>
         </li>
     );
 }
-
 
 function DesktopNavigation({ items }: { items: NavItem[] }) {
     return (
@@ -92,7 +90,9 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
                                     )}
                                 />
                             )}
-                            <span className='text-xs lg:text-sm'>{item.name}</span>
+                            <span className='text-xs lg:text-sm'>
+                                {item.name}
+                            </span>
                         </NavItemComponent>
                     </li>
                 ))}
@@ -100,8 +100,6 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
         </nav>
     );
 }
-
-
 
 // function ThemeToggleButton() {
 //     const { theme, toggleTheme } = useTheme();
@@ -144,7 +142,13 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
 //     );
 // }
 
-function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: NavItem[] }) {
+function UserMenu({
+    onLogout,
+    menuItems
+}: {
+    onLogout: () => void;
+    menuItems: NavItem[];
+}) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
@@ -152,7 +156,10 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(event.target as Node)
+            ) {
                 setOpen(false);
             }
         }
@@ -201,7 +208,9 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
                                 onClick={() => setOpen(false)}
                                 className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
                             >
-                                {Icon && <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />}
+                                {Icon && (
+                                    <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />
+                                )}
                                 <span>{item.name}</span>
                             </Link>
                         );
@@ -242,7 +251,10 @@ export default function Navbar({
     onOpenSearch
 }: NavbarProps) {
     const navigate = useNavigate();
-    const userMenuItems = useMemo(() => useUserMenuItems(user?.admin), [user?.admin]);
+    const userMenuItems = useMemo(
+        () => useUserMenuItems(user?.admin),
+        [user?.admin]
+    );
     const { state: notificationsState } = useNotifications();
 
     // Count unread DM notifications
@@ -256,9 +268,7 @@ export default function Navbar({
         <>
             <header className='sticky-nav top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
-                    <div className='flex-shrink-0 mr-2'>
-                        {brand || <></>}
-                    </div>
+                    <div className='flex-shrink-0 mr-2'>{brand || <></>}</div>
                     <Link
                         to={routes.donate}
                         className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
@@ -272,7 +282,10 @@ export default function Navbar({
                 <div className='flex flex-1 items-center min-w-0 px-2'>
                     {isLoggedIn && (
                         <div className='flex w-full justify-center'>
-                            <SearchBar className='w-full max-w-3xl' onOpenSearchModal={onOpenSearch} />
+                            <SearchBar
+                                className='w-full max-w-3xl'
+                                onOpenSearchModal={onOpenSearch}
+                            />
                         </div>
                     )}
                 </div>
@@ -312,7 +325,10 @@ export default function Navbar({
                                 <NotificationsBell />
                             </div>
                             <div className='flex-shrink-0 pr-2 sm:pr-4'>
-                                <UserMenu onLogout={onLogout} menuItems={userMenuItems} />
+                                <UserMenu
+                                    onLogout={onLogout}
+                                    menuItems={userMenuItems}
+                                />
                             </div>
                         </>
                     ) : (

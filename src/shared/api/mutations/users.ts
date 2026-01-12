@@ -36,16 +36,25 @@ export function useUpdateUser(userId?: number | string) {
     });
 }
 
-type ReportUserPayload = { id: number | string; reason: string; notes?: string; files?: File[] };
+type ReportUserPayload = {
+    id: number | string;
+    reason: string;
+    notes?: string;
+    files?: File[];
+};
 
 export function useReportUser() {
     return useMutation<void, Error, ReportUserPayload>({
         mutationFn: ({ id, reason, notes, files }) =>
-            apiMutate<void, { reason: string; notes?: string; files?: File[] }>(`/users/${id}/report`, 'post', {
-                reason,
-                notes,
-                files
-            }),
+            apiMutate<void, { reason: string; notes?: string; files?: File[] }>(
+                `/users/${id}/report`,
+                'post',
+                {
+                    reason,
+                    notes,
+                    files
+                }
+            ),
         onSuccess: () => {
             // TODO: Could use alertBus
         }

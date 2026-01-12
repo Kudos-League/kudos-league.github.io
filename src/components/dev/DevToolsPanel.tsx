@@ -47,16 +47,21 @@ export default function DevToolsPanel() {
         return saved ? parseInt(saved) : DEFAULT_PANEL_WIDTH;
     });
     const [isResizing, setIsResizing] = useState(false);
-    const [selectedLogs, setSelectedLogsState] = useState<any[]>(() => aiContextLogsStore);
+    const [selectedLogs, setSelectedLogsState] = useState<any[]>(
+        () => aiContextLogsStore
+    );
 
     // Wrapper to keep module store and sessionStorage in sync
     const setSelectedLogs = (logs: any[] | ((prev: any[]) => any[])) => {
-        setSelectedLogsState(prev => {
+        setSelectedLogsState((prev) => {
             const newLogs = typeof logs === 'function' ? logs(prev) : logs;
             aiContextLogsStore = newLogs;
             // Persist immediately to sessionStorage
             try {
-                sessionStorage.setItem('devtools-ai-context-logs', JSON.stringify(newLogs));
+                sessionStorage.setItem(
+                    'devtools-ai-context-logs',
+                    JSON.stringify(newLogs)
+                );
             }
             catch (e) {
                 console.warn('Failed to persist AI context logs', e);
@@ -71,7 +76,9 @@ export default function DevToolsPanel() {
         let logsToRestore = aiContextLogsStore;
         if (logsToRestore.length === 0) {
             try {
-                const saved = sessionStorage.getItem('devtools-ai-context-logs');
+                const saved = sessionStorage.getItem(
+                    'devtools-ai-context-logs'
+                );
                 if (saved) {
                     logsToRestore = JSON.parse(saved);
                     aiContextLogsStore = logsToRestore;
@@ -86,10 +93,18 @@ export default function DevToolsPanel() {
         }
     }, []);
     const [showAIContext, setShowAIContext] = useState(false);
-    const [aiContextMode, setAIContextMode] = useState<'summarized' | 'full'>('summarized');
-    const [logDisplayModes, setLogDisplayModes] = useState<Map<string, 'summarized' | 'full'>>(new Map());
-    const [aiContextExclusions, setAIContextExclusions] = useState<Set<string>>(new Set());
-    const [aiContextTitleExclusions, setAIContextTitleExclusions] = useState<Set<string>>(() => {
+    const [aiContextMode, setAIContextMode] = useState<'summarized' | 'full'>(
+        'summarized'
+    );
+    const [logDisplayModes, setLogDisplayModes] = useState<
+        Map<string, 'summarized' | 'full'>
+    >(new Map());
+    const [aiContextExclusions, setAIContextExclusions] = useState<Set<string>>(
+        new Set()
+    );
+    const [aiContextTitleExclusions, setAIContextTitleExclusions] = useState<
+        Set<string>
+    >(() => {
         try {
             const saved = localStorage.getItem('devtools-ai-title-exclusions');
             return new Set(saved ? JSON.parse(saved) : []);
@@ -98,7 +113,9 @@ export default function DevToolsPanel() {
             return new Set();
         }
     });
-    const [aiContextTitleInclusions, setAIContextTitleInclusions] = useState<Set<string>>(() => {
+    const [aiContextTitleInclusions, setAIContextTitleInclusions] = useState<
+        Set<string>
+    >(() => {
         try {
             const saved = localStorage.getItem('devtools-ai-title-inclusions');
             return new Set(saved ? JSON.parse(saved) : []);
@@ -110,7 +127,12 @@ export default function DevToolsPanel() {
     const [newTitleExclusion, setNewTitleExclusion] = useState('');
     const [newTitleInclusion, setNewTitleInclusion] = useState('');
     const { user } = useAuth();
-    const resizeStartPos = useRef({ x: 0, y: 0, startHeight: 0, startWidth: 0 });
+    const resizeStartPos = useRef({
+        x: 0,
+        y: 0,
+        startHeight: 0,
+        startWidth: 0
+    });
 
     const isDevMode =
         process.env.REACT_APP_BACKEND_URI?.includes('localhost') ||
@@ -130,11 +152,12 @@ export default function DevToolsPanel() {
     // Listen for toggle event from navbar
     useEffect(() => {
         const handleToggle = () => {
-            setIsOpen(prev => !prev);
+            setIsOpen((prev) => !prev);
         };
 
         window.addEventListener('toggle-devtools', handleToggle);
-        return () => window.removeEventListener('toggle-devtools', handleToggle);
+        return () =>
+            window.removeEventListener('toggle-devtools', handleToggle);
     }, []);
 
     // Handle resize
@@ -144,12 +167,18 @@ export default function DevToolsPanel() {
         const handleMouseMove = (e: MouseEvent) => {
             if (layoutMode === 'bottom') {
                 const diff = resizeStartPos.current.y - e.clientY;
-                const newHeight = Math.max(MIN_PANEL_SIZE, resizeStartPos.current.startHeight + diff);
+                const newHeight = Math.max(
+                    MIN_PANEL_SIZE,
+                    resizeStartPos.current.startHeight + diff
+                );
                 setPanelHeight(newHeight);
             }
             else if (layoutMode === 'right') {
                 const diff = e.clientX - resizeStartPos.current.x;
-                const newWidth = Math.max(MIN_PANEL_SIZE, resizeStartPos.current.startWidth - diff);
+                const newWidth = Math.max(
+                    MIN_PANEL_SIZE,
+                    resizeStartPos.current.startWidth - diff
+                );
                 setPanelWidth(newWidth);
             }
         };
@@ -157,10 +186,16 @@ export default function DevToolsPanel() {
         const handleMouseUp = () => {
             setIsResizing(false);
             if (layoutMode === 'bottom') {
-                localStorage.setItem('devtools-panel-height', panelHeight.toString());
+                localStorage.setItem(
+                    'devtools-panel-height',
+                    panelHeight.toString()
+                );
             }
             else if (layoutMode === 'right') {
-                localStorage.setItem('devtools-panel-width', panelWidth.toString());
+                localStorage.setItem(
+                    'devtools-panel-width',
+                    panelWidth.toString()
+                );
             }
         };
 
@@ -179,7 +214,7 @@ export default function DevToolsPanel() {
             x: e.clientX,
             y: e.clientY,
             startHeight: panelHeight,
-            startWidth: panelWidth,
+            startWidth: panelWidth
         };
     };
 
@@ -201,25 +236,32 @@ export default function DevToolsPanel() {
         if (selectedLogs.length === 0) return '';
 
         const lines: string[] = [];
-        const firstTime = new Date(selectedLogs[0].timestamp).toLocaleTimeString('en-US', {
+        const firstTime = new Date(
+            selectedLogs[0].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
-        const lastTime = new Date(selectedLogs[selectedLogs.length - 1].timestamp).toLocaleTimeString('en-US', {
+        const lastTime = new Date(
+            selectedLogs[selectedLogs.length - 1].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
 
         // Group logs by type and generate context
-        const byType = selectedLogs.reduce((acc, log) => {
-            if (!acc[log.type]) acc[log.type] = [];
-            acc[log.type].push(log);
-            return acc;
-        }, {} as Record<string, any[]>);
+        const byType = selectedLogs.reduce(
+            (acc, log) => {
+                if (!acc[log.type]) acc[log.type] = [];
+                acc[log.type].push(log);
+                return acc;
+            },
+            {} as Record<string, any[]>
+        );
 
         // Generate intro
         lines.push(`Logs from ${firstTime} to ${lastTime}:\n`);
@@ -227,7 +269,9 @@ export default function DevToolsPanel() {
         // Add context for each type
         if (byType.websocket) {
             const urls = new Set(byType.websocket.map((l: any) => l.event));
-            lines.push(`WebSocket messages (${byType.websocket.length}): ${Array.from(urls).join(', ')}`);
+            lines.push(
+                `WebSocket messages (${byType.websocket.length}): ${Array.from(urls).join(', ')}`
+            );
             byType.websocket.forEach((log: any) => {
                 const dir = log.direction === 'sent' ? '→' : '←';
                 lines.push(`  ${dir} ${log.event}: ${log.message}`);
@@ -237,7 +281,9 @@ export default function DevToolsPanel() {
 
         if (byType.network) {
             const urls = new Set(byType.network.map((l: any) => l.url));
-            lines.push(`Network requests (${byType.network.length}): ${Array.from(urls).join(', ')}`);
+            lines.push(
+                `Network requests (${byType.network.length}): ${Array.from(urls).join(', ')}`
+            );
             byType.network.forEach((log: any) => {
                 lines.push(`  ${log.method} ${log.url} → ${log.status}`);
             });
@@ -245,9 +291,13 @@ export default function DevToolsPanel() {
         }
 
         if (byType['react-query']) {
-            lines.push(`React Query operations (${byType['react-query'].length}):`);
+            lines.push(
+                `React Query operations (${byType['react-query'].length}):`
+            );
             byType['react-query'].forEach((log: any) => {
-                lines.push(`  ${log.operation}: ${log.queryKey} (${log.status})`);
+                lines.push(
+                    `  ${log.operation}: ${log.queryKey} (${log.status})`
+                );
             });
             lines.push('');
         }
@@ -268,17 +318,21 @@ export default function DevToolsPanel() {
         if (filteredLogs.length === 0) return '';
 
         const lines: string[] = [];
-        const firstTime = new Date(filteredLogs[0].timestamp).toLocaleTimeString('en-US', {
+        const firstTime = new Date(
+            filteredLogs[0].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
-        const lastTime = new Date(filteredLogs[filteredLogs.length - 1].timestamp).toLocaleTimeString('en-US', {
+        const lastTime = new Date(
+            filteredLogs[filteredLogs.length - 1].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
 
         lines.push(`Full Logs from ${firstTime} to ${lastTime}:\n`);
@@ -297,13 +351,13 @@ export default function DevToolsPanel() {
         if (filteredLogs.length === 0) return '';
 
         // Check if all logs should use full mode (either global full or all individual overrides are full)
-        const allFullMode = filteredLogs.every(log => {
+        const allFullMode = filteredLogs.every((log) => {
             const displayMode = logDisplayModes.get(log.id) || aiContextMode;
             return displayMode === 'full';
         });
 
         // Check if all logs should use summary mode
-        const allSummaryMode = filteredLogs.every(log => {
+        const allSummaryMode = filteredLogs.every((log) => {
             const displayMode = logDisplayModes.get(log.id) || aiContextMode;
             return displayMode === 'summarized';
         });
@@ -318,20 +372,26 @@ export default function DevToolsPanel() {
 
         // Mixed mode: generate text respecting individual log modes
         const lines: string[] = [];
-        const firstTime = new Date(filteredLogs[0].timestamp).toLocaleTimeString('en-US', {
+        const firstTime = new Date(
+            filteredLogs[0].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
-        const lastTime = new Date(filteredLogs[filteredLogs.length - 1].timestamp).toLocaleTimeString('en-US', {
+        const lastTime = new Date(
+            filteredLogs[filteredLogs.length - 1].timestamp
+        ).toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            second: '2-digit'
         });
 
-        lines.push(`Logs from ${firstTime} to ${lastTime} (mixed detail levels):\n`);
+        lines.push(
+            `Logs from ${firstTime} to ${lastTime} (mixed detail levels):\n`
+        );
         lines.push('═'.repeat(60) + '\n');
 
         filteredLogs.forEach((log, idx) => {
@@ -342,26 +402,38 @@ export default function DevToolsPanel() {
             }
             else {
                 // Summary format for this log
-                const time = new Date(log.timestamp).toLocaleTimeString('en-US', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                });
+                const time = new Date(log.timestamp).toLocaleTimeString(
+                    'en-US',
+                    {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }
+                );
                 switch (log.type) {
                 case 'console':
-                    lines.push(`[${idx + 1}] [${time}] [${(log as any).level?.toUpperCase() || 'LOG'}] ${log.message}`);
+                    lines.push(
+                        `[${idx + 1}] [${time}] [${(log as any).level?.toUpperCase() || 'LOG'}] ${log.message}`
+                    );
                     break;
                 case 'network':
-                    lines.push(`[${idx + 1}] [${time}] ${(log as any).method} ${(log as any).url} → ${(log as any).status}`);
+                    lines.push(
+                        `[${idx + 1}] [${time}] ${(log as any).method} ${(log as any).url} → ${(log as any).status}`
+                    );
                     break;
                 case 'websocket': {
-                    const dir = (log as any).direction === 'sent' ? '→' : '←';
-                    lines.push(`[${idx + 1}] [${time}] ${dir} ${(log as any).event}: ${log.message}`);
+                    const dir =
+                            (log as any).direction === 'sent' ? '→' : '←';
+                    lines.push(
+                        `[${idx + 1}] [${time}] ${dir} ${(log as any).event}: ${log.message}`
+                    );
                     break;
                 }
                 case 'react-query':
-                    lines.push(`[${idx + 1}] [${time}] ${(log as any).operation}: ${(log as any).queryKey} (${(log as any).status})`);
+                    lines.push(
+                        `[${idx + 1}] [${time}] ${(log as any).operation}: ${(log as any).queryKey} (${(log as any).status})`
+                    );
                     break;
                 default:
                     lines.push(`[${idx + 1}] [${time}] ${log.message}`);
@@ -383,7 +455,7 @@ export default function DevToolsPanel() {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            fractionalSecondDigits: 3,
+            fractionalSecondDigits: 3
         });
 
         let content = `[${time}] ${log.type.toUpperCase()}\n`;
@@ -460,17 +532,26 @@ export default function DevToolsPanel() {
 
     // Persist selected logs to sessionStorage
     useEffect(() => {
-        sessionStorage.setItem('devtools-ai-context-logs', JSON.stringify(selectedLogs));
+        sessionStorage.setItem(
+            'devtools-ai-context-logs',
+            JSON.stringify(selectedLogs)
+        );
     }, [selectedLogs]);
 
     // Persist title exclusions to localStorage
     useEffect(() => {
-        localStorage.setItem('devtools-ai-title-exclusions', JSON.stringify(Array.from(aiContextTitleExclusions)));
+        localStorage.setItem(
+            'devtools-ai-title-exclusions',
+            JSON.stringify(Array.from(aiContextTitleExclusions))
+        );
     }, [aiContextTitleExclusions]);
 
     // Persist title inclusions to localStorage
     useEffect(() => {
-        localStorage.setItem('devtools-ai-title-inclusions', JSON.stringify(Array.from(aiContextTitleInclusions)));
+        localStorage.setItem(
+            'devtools-ai-title-inclusions',
+            JSON.stringify(Array.from(aiContextTitleInclusions))
+        );
     }, [aiContextTitleInclusions]);
 
     const addTitleExclusion = (title: string) => {
@@ -509,15 +590,27 @@ export default function DevToolsPanel() {
 
         // Check specific exclusions
         if (aiContextExclusions.has(`${log.type}:${log.message}}`)) return true;
-        if (log.type === 'react-query' && aiContextExclusions.has(`query:${log.queryKey}`)) return true;
-        if (log.type === 'network' && aiContextExclusions.has(`network:${log.url}`)) return true;
+        if (
+            log.type === 'react-query' &&
+            aiContextExclusions.has(`query:${log.queryKey}`)
+        )
+            return true;
+        if (
+            log.type === 'network' &&
+            aiContextExclusions.has(`network:${log.url}`)
+        )
+            return true;
 
         // Check title-based inclusions first (if any exist, log must match at least one)
         const titleInclusionsArray = Array.from(aiContextTitleInclusions);
         if (titleInclusionsArray.length > 0) {
             let matchesInclusion = false;
             for (let i = 0; i < titleInclusionsArray.length; i++) {
-                if (log.message.toLowerCase().includes(titleInclusionsArray[i].toLowerCase())) {
+                if (
+                    log.message
+                        .toLowerCase()
+                        .includes(titleInclusionsArray[i].toLowerCase())
+                ) {
                     matchesInclusion = true;
                     break;
                 }
@@ -528,7 +621,11 @@ export default function DevToolsPanel() {
         // Check title-based exclusions (matches if log message contains excluded pattern)
         const titleExclusionsArray = Array.from(aiContextTitleExclusions);
         for (let i = 0; i < titleExclusionsArray.length; i++) {
-            if (log.message.toLowerCase().includes(titleExclusionsArray[i].toLowerCase())) {
+            if (
+                log.message
+                    .toLowerCase()
+                    .includes(titleExclusionsArray[i].toLowerCase())
+            ) {
                 return true;
             }
         }
@@ -537,7 +634,7 @@ export default function DevToolsPanel() {
     };
 
     const getFilteredLogs = (): any[] => {
-        return selectedLogs.filter(log => !isLogExcluded(log));
+        return selectedLogs.filter((log) => !isLogExcluded(log));
     };
 
     // Render inline AI Context panel (replaces modal)
@@ -551,7 +648,10 @@ export default function DevToolsPanel() {
                 {/* Compact header with controls */}
                 <div className='bg-purple-700 px-3 py-2 flex items-center gap-3 flex-wrap'>
                     <div className='flex items-center gap-2'>
-                        <span className='text-white text-xs font-semibold'>AI Context ({filteredLogs.length}/{selectedLogs.length})</span>
+                        <span className='text-white text-xs font-semibold'>
+                            AI Context ({filteredLogs.length}/
+                            {selectedLogs.length})
+                        </span>
                         <button
                             onClick={handleCopyAIText}
                             title='Copy filtered to clipboard'
@@ -570,7 +670,9 @@ export default function DevToolsPanel() {
 
                     {/* Display mode */}
                     <div className='flex items-center gap-1'>
-                        <span className='text-purple-200 text-xs'>Set all:</span>
+                        <span className='text-purple-200 text-xs'>
+                            Set all:
+                        </span>
                         <button
                             onClick={() => setAIContextMode('summarized')}
                             className={`px-2 py-0.5 text-xs rounded transition-colors ${
@@ -595,20 +697,27 @@ export default function DevToolsPanel() {
 
                     {/* Type exclusions */}
                     <div className='flex items-center gap-1'>
-                        <span className='text-purple-200 text-xs'>Exclude:</span>
-                        {['console', 'network', 'websocket', 'react-query'].map(type => (
-                            <button
-                                key={type}
-                                onClick={() => toggleExclusion(type)}
-                                className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                                    aiContextExclusions.has(type)
-                                        ? 'bg-red-500 text-white'
-                                        : 'bg-purple-600 hover:bg-purple-500 text-white'
-                                }`}
-                            >
-                                {type === 'react-query' ? 'Query' : type.charAt(0).toUpperCase() + type.slice(1)}
-                            </button>
-                        ))}
+                        <span className='text-purple-200 text-xs'>
+                            Exclude:
+                        </span>
+                        {['console', 'network', 'websocket', 'react-query'].map(
+                            (type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => toggleExclusion(type)}
+                                    className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                                        aiContextExclusions.has(type)
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-purple-600 hover:bg-purple-500 text-white'
+                                    }`}
+                                >
+                                    {type === 'react-query'
+                                        ? 'Query'
+                                        : type.charAt(0).toUpperCase() +
+                                          type.slice(1)}
+                                </button>
+                            )
+                        )}
                     </div>
                 </div>
 
@@ -616,13 +725,18 @@ export default function DevToolsPanel() {
                 <div className='bg-purple-800 px-3 py-1.5 flex items-center gap-4 flex-wrap'>
                     {/* Include by title */}
                     <div className='flex items-center gap-1'>
-                        <span className='text-purple-200 text-xs'>Include:</span>
+                        <span className='text-purple-200 text-xs'>
+                            Include:
+                        </span>
                         <input
                             type='text'
                             value={newTitleInclusion}
-                            onChange={(e) => setNewTitleInclusion(e.target.value)}
+                            onChange={(e) =>
+                                setNewTitleInclusion(e.target.value)
+                            }
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') addTitleInclusion(newTitleInclusion);
+                                if (e.key === 'Enter')
+                                    addTitleInclusion(newTitleInclusion);
                             }}
                             placeholder='e.g. Query: posts'
                             className='w-32 px-2 py-0.5 text-xs bg-purple-900 border border-purple-600 rounded text-white placeholder-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400'
@@ -634,26 +748,40 @@ export default function DevToolsPanel() {
                         >
                             +
                         </button>
-                        {Array.from(aiContextTitleInclusions).map(inclusion => (
-                            <span
-                                key={inclusion}
-                                className='inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-green-600 text-white rounded'
-                            >
-                                {inclusion}
-                                <button onClick={() => removeTitleInclusion(inclusion)} className='hover:bg-green-700 rounded'>×</button>
-                            </span>
-                        ))}
+                        {Array.from(aiContextTitleInclusions).map(
+                            (inclusion) => (
+                                <span
+                                    key={inclusion}
+                                    className='inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-green-600 text-white rounded'
+                                >
+                                    {inclusion}
+                                    <button
+                                        onClick={() =>
+                                            removeTitleInclusion(inclusion)
+                                        }
+                                        className='hover:bg-green-700 rounded'
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            )
+                        )}
                     </div>
 
                     {/* Exclude by title */}
                     <div className='flex items-center gap-1'>
-                        <span className='text-purple-200 text-xs'>Exclude:</span>
+                        <span className='text-purple-200 text-xs'>
+                            Exclude:
+                        </span>
                         <input
                             type='text'
                             value={newTitleExclusion}
-                            onChange={(e) => setNewTitleExclusion(e.target.value)}
+                            onChange={(e) =>
+                                setNewTitleExclusion(e.target.value)
+                            }
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') addTitleExclusion(newTitleExclusion);
+                                if (e.key === 'Enter')
+                                    addTitleExclusion(newTitleExclusion);
                             }}
                             placeholder='e.g. Query: events'
                             className='w-32 px-2 py-0.5 text-xs bg-purple-900 border border-purple-600 rounded text-white placeholder-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400'
@@ -665,15 +793,24 @@ export default function DevToolsPanel() {
                         >
                             +
                         </button>
-                        {Array.from(aiContextTitleExclusions).map(exclusion => (
-                            <span
-                                key={exclusion}
-                                className='inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-red-600 text-white rounded'
-                            >
-                                {exclusion}
-                                <button onClick={() => removeTitleExclusion(exclusion)} className='hover:bg-red-700 rounded'>×</button>
-                            </span>
-                        ))}
+                        {Array.from(aiContextTitleExclusions).map(
+                            (exclusion) => (
+                                <span
+                                    key={exclusion}
+                                    className='inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-red-600 text-white rounded'
+                                >
+                                    {exclusion}
+                                    <button
+                                        onClick={() =>
+                                            removeTitleExclusion(exclusion)
+                                        }
+                                        className='hover:bg-red-700 rounded'
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            )
+                        )}
                     </div>
                 </div>
 
@@ -681,7 +818,8 @@ export default function DevToolsPanel() {
                 <div className='max-h-48 overflow-y-auto bg-slate-800'>
                     {filteredLogs.length > 0 ? (
                         filteredLogs.map((log, idx) => {
-                            const displayMode = logDisplayModes.get(log.id) || aiContextMode;
+                            const displayMode =
+                                logDisplayModes.get(log.id) || aiContextMode;
                             const isFullMode = displayMode === 'full';
 
                             return (
@@ -690,18 +828,35 @@ export default function DevToolsPanel() {
                                     className='border-b border-slate-700 hover:bg-slate-700/50 transition-colors'
                                 >
                                     <div className='px-3 py-1.5 flex items-center gap-2'>
-                                        <span className='text-gray-400 text-xs w-6'>{idx + 1}.</span>
-                                        <span className='text-gray-200 text-xs flex-1 truncate'>{log.message}</span>
+                                        <span className='text-gray-400 text-xs w-6'>
+                                            {idx + 1}.
+                                        </span>
+                                        <span className='text-gray-200 text-xs flex-1 truncate'>
+                                            {log.message}
+                                        </span>
                                         <div className='flex gap-1 flex-shrink-0'>
                                             <button
-                                                onClick={() => toggleLogMode(log.id)}
+                                                onClick={() =>
+                                                    toggleLogMode(log.id)
+                                                }
                                                 className={`w-6 h-6 rounded text-xs ${isFullMode ? 'bg-blue-600 text-white' : 'bg-slate-600 text-gray-300'}`}
-                                                title={isFullMode ? 'Show summary' : 'Show full'}
+                                                title={
+                                                    isFullMode
+                                                        ? 'Show summary'
+                                                        : 'Show full'
+                                                }
                                             >
                                                 {isFullMode ? '📄' : '📋'}
                                             </button>
                                             <button
-                                                onClick={() => setSelectedLogs(selectedLogs.filter(l => l.id !== log.id))}
+                                                onClick={() =>
+                                                    setSelectedLogs(
+                                                        selectedLogs.filter(
+                                                            (l) =>
+                                                                l.id !== log.id
+                                                        )
+                                                    )
+                                                }
                                                 className='w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded text-xs'
                                                 title='Remove'
                                             >
@@ -718,7 +873,9 @@ export default function DevToolsPanel() {
                             );
                         })
                     ) : (
-                        <div className='py-4 text-center text-gray-500 text-xs'>All logs are filtered out</div>
+                        <div className='py-4 text-center text-gray-500 text-xs'>
+                            All logs are filtered out
+                        </div>
                     )}
                 </div>
             </div>
@@ -737,7 +894,11 @@ export default function DevToolsPanel() {
                         title='Cycle layout mode'
                         className='text-xs bg-purple-700 hover:bg-purple-600 px-2 py-1 rounded transition-colors cursor-pointer'
                     >
-                        {layoutMode === 'bottom' ? '⬇ Bottom' : layoutMode === 'right' ? '→ Right' : '⛶ Fullscreen'}
+                        {layoutMode === 'bottom'
+                            ? '⬇ Bottom'
+                            : layoutMode === 'right'
+                                ? '→ Right'
+                                : '⛶ Fullscreen'}
                     </button>
                     {/* AI Context toggle - integrated into header */}
                     {selectedLogs.length > 0 && (
@@ -801,7 +962,10 @@ export default function DevToolsPanel() {
                         <button
                             onClick={() => {
                                 setLayoutMode('bottom');
-                                localStorage.setItem('devtools-layout-mode', 'bottom');
+                                localStorage.setItem(
+                                    'devtools-layout-mode',
+                                    'bottom'
+                                );
                             }}
                             className='text-lg hover:opacity-75 transition-opacity ml-2'
                         >
@@ -815,7 +979,10 @@ export default function DevToolsPanel() {
             {renderInlineAIContext()}
 
             {/* Tabs */}
-            <div className='border-b border-purple-200 dark:border-purple-900 shrink-0 bg-gray-50 dark:bg-slate-900 overflow-x-auto' style={{ scrollBehavior: 'smooth' }}>
+            <div
+                className='border-b border-purple-200 dark:border-purple-900 shrink-0 bg-gray-50 dark:bg-slate-900 overflow-x-auto'
+                style={{ scrollBehavior: 'smooth' }}
+            >
                 <div className='flex whitespace-nowrap'>
                     <button
                         onClick={() => setActiveTab('test')}
@@ -852,7 +1019,10 @@ export default function DevToolsPanel() {
 
             {/* Subtabs for Test tab */}
             {activeTab === 'test' && (
-                <div className='border-b border-purple-100 dark:border-purple-800 shrink-0 bg-gray-100 dark:bg-slate-800 overflow-x-auto' style={{ scrollBehavior: 'smooth' }}>
+                <div
+                    className='border-b border-purple-100 dark:border-purple-800 shrink-0 bg-gray-100 dark:bg-slate-800 overflow-x-auto'
+                    style={{ scrollBehavior: 'smooth' }}
+                >
                     <div className='flex whitespace-nowrap'>
                         <button
                             onClick={() => setTestSubTab('posts')}
@@ -900,11 +1070,24 @@ export default function DevToolsPanel() {
 
             {/* Content */}
             <div className='flex-1 overflow-y-auto p-4'>
-                {activeTab === 'test' && testSubTab === 'posts' && <PostDebugSection />}
-                {activeTab === 'test' && testSubTab === 'search' && <SearchDebugSection />}
-                {activeTab === 'test' && testSubTab === 'add-handshake' && <AddHandshakeSection />}
-                {activeTab === 'test' && testSubTab === 'comments' && <AddCommentsSection />}
-                {activeTab === 'logs' && <LogsSection selectedLogs={selectedLogs} onSelectedLogsChange={setSelectedLogs} />}
+                {activeTab === 'test' && testSubTab === 'posts' && (
+                    <PostDebugSection />
+                )}
+                {activeTab === 'test' && testSubTab === 'search' && (
+                    <SearchDebugSection />
+                )}
+                {activeTab === 'test' && testSubTab === 'add-handshake' && (
+                    <AddHandshakeSection />
+                )}
+                {activeTab === 'test' && testSubTab === 'comments' && (
+                    <AddCommentsSection />
+                )}
+                {activeTab === 'logs' && (
+                    <LogsSection
+                        selectedLogs={selectedLogs}
+                        onSelectedLogsChange={setSelectedLogs}
+                    />
+                )}
                 {activeTab === 'state' && <StateDebugSection user={user} />}
             </div>
         </>
@@ -923,7 +1106,10 @@ export default function DevToolsPanel() {
     if (layoutMode === 'bottom' && isOpen) {
         return (
             <>
-                <div className='fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden' style={{ height: `${panelHeight}px` }}>
+                <div
+                    className='fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden'
+                    style={{ height: `${panelHeight}px` }}
+                >
                     {/* Resize handle */}
                     <div
                         onMouseDown={handleResizeStart}
@@ -941,7 +1127,10 @@ export default function DevToolsPanel() {
     if (layoutMode === 'right' && isOpen) {
         return (
             <>
-                <div className='fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-slate-800 border-l border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden' style={{ width: `${panelWidth}px` }}>
+                <div
+                    className='fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-slate-800 border-l border-purple-200 dark:border-purple-900 flex flex-col overflow-hidden'
+                    style={{ width: `${panelWidth}px` }}
+                >
                     {/* Resize handle */}
                     <div
                         onMouseDown={handleResizeStart}
@@ -958,14 +1147,12 @@ export default function DevToolsPanel() {
         );
     }
 
-
     // When closed on desktop, show toggle button
     return (
         <button
             onClick={() => setIsOpen(true)}
             className='fixed bottom-6 left-6 z-40 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-lg transition-all hover:scale-110'
             title='Dev Tools'
-        >
-        </button>
+        ></button>
     );
 }

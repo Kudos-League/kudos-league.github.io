@@ -9,7 +9,6 @@ import {
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
-
 import AvatarComponent from '@/components/users/Avatar';
 import { getImagePath } from '@/shared/api/config';
 import Pill from '@/components/common/Pill';
@@ -20,7 +19,17 @@ import type { UserDTO } from '@/shared/api/types';
 const DISCORD_ICON_SRC = '/images/discord.svg';
 const GOOGLE_ICON_SRC = '/images/google.png';
 
-const SocialBadgeIcon = ({ src, alt, bg, label }: { src?: string; alt: string; bg?: string; label?: string }) => {
+const SocialBadgeIcon = ({
+    src,
+    alt,
+    bg,
+    label
+}: {
+    src?: string;
+    alt: string;
+    bg?: string;
+    label?: string;
+}) => {
     if (src) {
         return (
             <img
@@ -48,25 +57,25 @@ const SocialBadgeIcon = ({ src, alt, bg, label }: { src?: string; alt: string; b
 type TriggerVariant = 'name' | 'avatar-name';
 
 interface Props {
-  user?: UserDTO;
-  reportsThisMonth?: number;
-  large?: boolean;
-  triggerVariant?: TriggerVariant;
-  className?: string;
-  hoverDelayOpenMs?: number;
-  hoverDelayCloseMs?: number;
-  panelWidth?: number;
-  sideOffset?: number;
-  interactive?: boolean;
-  triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
-  subtitle?: React.ReactNode;
-  centered?: boolean;
-  nameClassName?: string;
-  subtitleClassName?: string;
-  disableTooltip?: boolean;
-  onAdminReportOpen?: (userID: number) => void;
-  showKudos?: boolean;
-  compact?: boolean;
+    user?: UserDTO;
+    reportsThisMonth?: number;
+    large?: boolean;
+    triggerVariant?: TriggerVariant;
+    className?: string;
+    hoverDelayOpenMs?: number;
+    hoverDelayCloseMs?: number;
+    panelWidth?: number;
+    sideOffset?: number;
+    interactive?: boolean;
+    triggerMode?: 'hover' | 'click' | 'focus' | 'hover+focus';
+    subtitle?: React.ReactNode;
+    centered?: boolean;
+    nameClassName?: string;
+    subtitleClassName?: string;
+    disableTooltip?: boolean;
+    onAdminReportOpen?: (userID: number) => void;
+    showKudos?: boolean;
+    compact?: boolean;
 }
 
 function fmtDate(d?: Date | string) {
@@ -104,13 +113,20 @@ const UserCard: React.FC<Props> = ({
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     const [adminReportOpen, setAdminReportOpen] = useState(false);
-    const { blockedUsers, loading: blockingLoading, block, unblock } = useBlockedUsers();
+    const {
+        blockedUsers,
+        loading: blockingLoading,
+        block,
+        unblock
+    } = useBlockedUsers();
 
     // Detect mobile devices
     const isMobile = useMemo(() => {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            navigator.userAgent
-        ) || window.innerWidth < 768;
+        return (
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                navigator.userAgent
+            ) || window.innerWidth < 768
+        );
     }, []);
 
     const username = user?.username;
@@ -119,12 +135,12 @@ const UserCard: React.FC<Props> = ({
 
     // 1. Define the handler that navigates to the profile
     const handleNavigate = (e: React.MouseEvent) => {
-    // Prevent Tippy/other parent handlers from firing on this click
+        // Prevent Tippy/other parent handlers from firing on this click
         e.stopPropagation();
         if (user?.id) {
             navigate(`/user/${user.id}`);
         }
-    }
+    };
 
     const trigger = useMemo(() => {
         const baseNameClasses = [
@@ -138,19 +154,24 @@ const UserCard: React.FC<Props> = ({
         const nameEl = (
             <span
                 className={baseNameClasses}
-                title={displayName ? displayName : username ? username : 'Anonymous'}
+                title={
+                    displayName
+                        ? displayName
+                        : username
+                            ? username
+                            : 'Anonymous'
+                }
             >
-                <span>
-                    {displayName}
-                </span>
+                <span>{displayName}</span>
             </span>
         );
 
-        const kudosEl = showKudos && !compact ? (
-            <span className='text-xs text-gray-500 dark:text-gray-400 font-normal'>
-                {kudos} Kudos
-            </span>
-        ) : null;
+        const kudosEl =
+            showKudos && !compact ? (
+                <span className='text-xs text-gray-500 dark:text-gray-400 font-normal ml-2'>
+                    {kudos} Kudos
+                </span>
+            ) : null;
 
         const wrapperClasses = [
             centered && subtitle
@@ -160,7 +181,9 @@ const UserCard: React.FC<Props> = ({
             'cursor-pointer',
             'hover:underline decoration-neutral-900 dark:decoration-neutral-100',
             // Ensure underline is only on text, not the avatar area
-            centered && subtitle ? '' : 'group-hover:[&>div:last-child>div>span:first-child]:underline'
+            centered && subtitle
+                ? ''
+                : 'group-hover:[&>div:last-child>div>span:first-child]:underline'
         ].join(' ');
 
         const avatar = (
@@ -184,8 +207,10 @@ const UserCard: React.FC<Props> = ({
                         : 'min-w-0'
                 }
             >
-                {nameEl}
-                {kudosEl}
+                <div className='flex flex-wrap items-center gap-x-0'>
+                    {nameEl}
+                    {kudosEl}
+                </div>
                 {subtitle ? (
                     <div
                         className={[
@@ -202,7 +227,9 @@ const UserCard: React.FC<Props> = ({
         // Apply onClick handler to all trigger variants
         return (
             <div className={wrapperClasses} onClick={handleNavigate}>
-                {triggerVariant === 'name' ? content : (
+                {triggerVariant === 'name' ? (
+                    content
+                ) : (
                     <>
                         {avatar}
                         {content}
@@ -230,13 +257,13 @@ const UserCard: React.FC<Props> = ({
     // useBlockedUsers handles fetching and state
 
     const tippyTrigger =
-    triggerMode === 'hover'
-        ? 'mouseenter'
-        : triggerMode === 'click'
-            ? 'click'
-            : triggerMode === 'focus'
-                ? 'focus'
-                : 'mouseenter focus';
+        triggerMode === 'hover'
+            ? 'mouseenter'
+            : triggerMode === 'click'
+                ? 'click'
+                : triggerMode === 'focus'
+                    ? 'focus'
+                    : 'mouseenter focus';
 
     if (disableTooltip || isMobile) {
         return (
@@ -269,7 +296,8 @@ const UserCard: React.FC<Props> = ({
                 animation={false}
                 duration={0}
                 onMount={(inst) => {
-                    const el = inst.popper.firstElementChild as HTMLElement | null;
+                    const el = inst.popper
+                        .firstElementChild as HTMLElement | null;
                     if (!el) return;
                     el.removeAttribute('data-open');
                     requestAnimationFrame(() =>
@@ -277,12 +305,15 @@ const UserCard: React.FC<Props> = ({
                     );
                 }}
                 onHidden={(inst) => {
-                    const el = inst.popper.firstElementChild as HTMLElement | null;
+                    const el = inst.popper
+                        .firstElementChild as HTMLElement | null;
                     if (!el) return;
                     el.removeAttribute('data-open');
                     return new Promise<void>((resolve) => {
                         const done = () => resolve();
-                        el.addEventListener('transitionend', done, { once: true });
+                        el.addEventListener('transitionend', done, {
+                            once: true
+                        });
                         setTimeout(done, 250);
                     });
                 }}
@@ -302,9 +333,9 @@ const UserCard: React.FC<Props> = ({
                             "data-[open='true']:translate-y-0"
                         ].join(' ')}
                         style={
-              {
-                  ['--card-w' as any]: `${panelWidth}px`
-              } as React.CSSProperties
+                            {
+                                ['--card-w' as any]: `${panelWidth}px`
+                            } as React.CSSProperties
                         }
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -326,10 +357,12 @@ const UserCard: React.FC<Props> = ({
                                             <button
                                                 onClick={() =>
                                                     user.id &&
-                          navigate(`/user/${user.id}`)
+                                                    navigate(`/user/${user.id}`)
                                                 }
                                                 className='text-sm font-bold hover:underline truncate'
-                                                title={username ?? 'View profile'}
+                                                title={
+                                                    username ?? 'View profile'
+                                                }
                                             >
                                                 {displayName}
                                             </button>
@@ -339,19 +372,31 @@ const UserCard: React.FC<Props> = ({
                                                     placement='top'
                                                     delay={[100, 0]}
                                                     render={(attrs) => (
-                                                        <div {...attrs} className='bg-black text-white text-xs rounded px-2 py-1'>Open admin report</div>
+                                                        <div
+                                                            {...attrs}
+                                                            className='bg-black text-white text-xs rounded px-2 py-1'
+                                                        >
+                                                            Open admin report
+                                                        </div>
                                                     )}
                                                 >
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             e.preventDefault();
-                                                            if (!user?.id) return;
-                                                            if (onAdminReportOpen) {
-                                                                onAdminReportOpen(user.id);
+                                                            if (!user?.id)
+                                                                return;
+                                                            if (
+                                                                onAdminReportOpen
+                                                            ) {
+                                                                onAdminReportOpen(
+                                                                    user.id
+                                                                );
                                                             }
                                                             else {
-                                                                setAdminReportOpen(true);
+                                                                setAdminReportOpen(
+                                                                    true
+                                                                );
                                                             }
                                                         }}
                                                         title='Open admin report'
@@ -367,11 +412,33 @@ const UserCard: React.FC<Props> = ({
                                                     placement='top'
                                                     delay={[100, 0]}
                                                     render={(attrs) => (
-                                                        <div {...attrs} className='bg-black text-white text-xs rounded px-2 py-1'>User has several outstanding reports</div>
+                                                        <div
+                                                            {...attrs}
+                                                            className='bg-black text-white text-xs rounded px-2 py-1'
+                                                        >
+                                                            User has several
+                                                            outstanding reports
+                                                        </div>
                                                     )}
                                                 >
-                                                    <span className='ml-1 inline-block' title='User has several outstanding reports'>
-                                                        <span style={{ display: 'inline-block', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: '12px solid #ef4444' }} />
+                                                    <span
+                                                        className='ml-1 inline-block'
+                                                        title='User has several outstanding reports'
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                display:
+                                                                    'inline-block',
+                                                                width: 0,
+                                                                height: 0,
+                                                                borderLeft:
+                                                                    '6px solid transparent',
+                                                                borderRight:
+                                                                    '6px solid transparent',
+                                                                borderBottom:
+                                                                    '12px solid #ef4444'
+                                                            }}
+                                                        />
                                                     </span>
                                                 </Tippy>
                                             )}
@@ -384,7 +451,7 @@ const UserCard: React.FC<Props> = ({
                                                         <ShieldCheckIcon className='h-4 w-4' />
                                                     }
                                                 >
-                          Verified
+                                                    Verified
                                                 </Pill>
                                             ) : (
                                                 <Pill
@@ -394,7 +461,7 @@ const UserCard: React.FC<Props> = ({
                                                         <ShieldExclamationIcon className='h-4 w-4' />
                                                     }
                                                 >
-                          Not Verified
+                                                    Not Verified
                                                 </Pill>
                                             )}
                                             <div className='ml-1 inline-flex items-center gap-1'>
@@ -421,7 +488,7 @@ const UserCard: React.FC<Props> = ({
                                     <div className='mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300'>
                                         <div className='truncate'>
                                             <span className='opacity-70'>
-                        Kudos:
+                                                Kudos:
                                             </span>{' '}
                                             {typeof user.kudos === 'number'
                                                 ? user.kudos
@@ -429,14 +496,14 @@ const UserCard: React.FC<Props> = ({
                                         </div>
                                         <div className='truncate'>
                                             <span className='opacity-70'>
-                        Joined:
+                                                Joined:
                                             </span>{' '}
                                             {fmtDate(user.createdAt) || '—'}
                                         </div>
                                         {user.email ? (
                                             <div className='truncate col-span-2'>
                                                 <span className='opacity-70'>
-                          Email:
+                                                    Email:
                                                 </span>{' '}
                                                 {user.email}
                                             </div>
@@ -447,52 +514,70 @@ const UserCard: React.FC<Props> = ({
                                         <button
                                             onClick={() =>
                                                 user.id &&
-                        navigate(`/user/${user.id}`)
+                                                navigate(`/user/${user.id}`)
                                             }
                                             className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                             bg-neutral-900 text-white dark:bg-white dark:text-neutral-900
                                             hover:opacity-90 active:opacity-80 transition'
                                         >
-                      View Profile
+                                            View Profile
                                         </button>
-                                        {currentUser && user?.id && currentUser.id !== user.id && (
+                                        {currentUser &&
+                                            user?.id &&
+                                            currentUser.id !== user.id && (
                                             <div className='inline-block ml-2'>
-                                                {(blockedUsers ?? []).includes(user.id) ? (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            if (blockingLoading) return;
-                                                            try {
-                                                                await unblock(user.id);
-                                                            }
-                                                            catch (err) {
-                                                                // noop - hook will refresh/rollback as needed
-                                                            }
-                                                        }}
-                                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                                {(
+                                                    blockedUsers ?? []
+                                                ).includes(user.id) ? (
+                                                        <button
+                                                            onClick={async (
+                                                                e
+                                                            ) => {
+                                                                e.stopPropagation();
+                                                                if (
+                                                                    blockingLoading
+                                                                )
+                                                                    return;
+                                                                try {
+                                                                    await unblock(
+                                                                        user.id
+                                                                    );
+                                                                }
+                                                                catch (err) {
+                                                                    // noop - hook will refresh/rollback as needed
+                                                                }
+                                                            }}
+                                                            className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                                         bg-white text-neutral-900 dark:bg-neutral-800 dark:text-white border border-neutral-200 dark:border-neutral-700
                                                         hover:opacity-90 active:opacity-80 transition'
-                                                    >
-                            Unblock
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            if (blockingLoading) return;
-                                                            try {
-                                                                await block(user.id);
-                                                            }
-                                                            catch (err) {
-                                                                // noop
-                                                            }
-                                                        }}
-                                                        className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                                        >
+                                                            Unblock
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={async (
+                                                                e
+                                                            ) => {
+                                                                e.stopPropagation();
+                                                                if (
+                                                                    blockingLoading
+                                                                )
+                                                                    return;
+                                                                try {
+                                                                    await block(
+                                                                        user.id
+                                                                    );
+                                                                }
+                                                                catch (err) {
+                                                                    // noop
+                                                                }
+                                                            }}
+                                                            className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
                                                         bg-red-600 text-white hover:opacity-90 active:opacity-80 transition'
-                                                    >
-                            Block
-                                                    </button>
-                                                )}
+                                                        >
+                                                            Block
+                                                        </button>
+                                                    )}
                                             </div>
                                         )}
                                     </div>
@@ -502,7 +587,7 @@ const UserCard: React.FC<Props> = ({
                             <div className='flex items-center justify-center py-6'>
                                 <div className='h-5 w-5 rounded-full border-2 border-neutral-400 border-t-transparent animate-spin' />
                                 <span className='ml-2 text-xs text-neutral-600 dark:text-neutral-300'>
-                  Loading...
+                                    Loading...
                                 </span>
                             </div>
                         )}
@@ -524,7 +609,11 @@ const UserCard: React.FC<Props> = ({
                     {trigger}
                 </div>
             </Tippy>
-            <AdminReportModal open={adminReportOpen} userID={user?.id ?? null} onClose={() => setAdminReportOpen(false)} />
+            <AdminReportModal
+                open={adminReportOpen}
+                userID={user?.id ?? null}
+                onClose={() => setAdminReportOpen(false)}
+            />
         </>
     );
 };

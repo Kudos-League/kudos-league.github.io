@@ -78,7 +78,7 @@ export default function MobileTabBar() {
         {
             name: 'Groups',
             path: routes.communities,
-            icon:  UserGroupIcon,
+            icon: UserGroupIcon,
             iconSolid: UserGroupIcon,
             badge: 0
         }
@@ -92,8 +92,8 @@ export default function MobileTabBar() {
     };
 
     return (
-        <nav className="lg:hidden sticky-nav top-[64px] sm:top-[72px] z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <div className="flex items-center px-1 py-1">
+        <nav className='lg:hidden sticky-nav top-[64px] sm:top-[72px] z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm'>
+            <div className='flex items-center px-1 py-1'>
                 {tabs.map((tab) => {
                     const active = isActive(tab.path);
                     const Icon = active ? tab.iconSolid : tab.icon;
@@ -115,13 +115,13 @@ export default function MobileTabBar() {
                                     : 'text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400'
                             )}
                         >
-                            <Icon className="h-6 w-6 mb-0.5" />
-                            <span className="text-[10px] font-medium truncate">
+                            <Icon className='h-6 w-6 mb-0.5' />
+                            <span className='text-[10px] font-medium truncate'>
                                 {tab.name}
                             </span>
 
                             {tab.badge > 0 && (
-                                <span className="absolute top-1.5 right-4 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold text-white">
+                                <span className='absolute top-1.5 right-4 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold text-white'>
                                     {tab.badge > 9 ? '9+' : tab.badge}
                                 </span>
                             )}
@@ -130,6 +130,5 @@ export default function MobileTabBar() {
                 })}
             </div>
         </nav>
-
     );
 }

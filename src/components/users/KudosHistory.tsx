@@ -28,8 +28,6 @@ const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
     other: 'Kudos update'
 };
 
-
-
 function formatCurrencyFromCents(value?: unknown) {
     const cents = typeof value === 'number' ? value : Number(value ?? NaN);
     if (!Number.isFinite(cents)) return undefined;
@@ -217,8 +215,8 @@ export default function KudosHistoryList() {
                                         <span>Updated by:</span>
                                         <UserCard
                                             user={item.actor}
-                                            triggerVariant="name"
-                                            className="text-xs"
+                                            triggerVariant='name'
+                                            className='text-xs'
                                             panelWidth={280}
                                             disableTooltip={false}
                                         />

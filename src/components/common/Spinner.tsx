@@ -41,14 +41,13 @@ export default function Spinner({
 
     const { size: sizeClass, border } = sizeConfig[size];
 
-    const containerClass = variant === 'fullscreen'
-        ? 'flex items-center justify-center min-h-screen w-full p-3'
-        : 'flex items-center justify-center h-full w-full p-3';
+    const containerClass =
+        variant === 'fullscreen'
+            ? 'flex items-center justify-center min-h-screen w-full p-3'
+            : 'flex items-center justify-center h-full w-full p-3';
 
     return (
-        <div
-            className={`${containerClass} ${className}`}
-        >
+        <div className={`${containerClass} ${className}`}>
             <div className='flex flex-col items-center gap-4'>
                 <div className='relative'>
                     {/* Outer spinning ring */}
@@ -63,7 +62,7 @@ export default function Spinner({
                             borderTopColor: '#3b49cb',
                             borderRightColor: '#5867d6',
                             borderBottomColor: '#828de0',
-                            borderLeftColor: 'transparent',
+                            borderLeftColor: 'transparent'
                         }}
                     />
                     {/* Inner glow effect */}

@@ -2,10 +2,23 @@
 export type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
 // Log type enumeration
-export type LogType = 'all' | 'console' | 'network' | 'websocket' | 'react-query';
+export type LogType =
+    | 'all'
+    | 'console'
+    | 'network'
+    | 'websocket'
+    | 'react-query';
 
 // HTTP method enumeration
-export type HttpMethod = 'all' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD';
+export type HttpMethod =
+    | 'all'
+    | 'GET'
+    | 'POST'
+    | 'PUT'
+    | 'PATCH'
+    | 'DELETE'
+    | 'OPTIONS'
+    | 'HEAD';
 
 // Base log entry interface - all logs inherit from this
 export interface BaseLogEntry {
@@ -58,7 +71,11 @@ export interface ReactQueryLogEntry extends BaseLogEntry {
 }
 
 // Discriminated union of all log entry types
-export type LogEntry = ConsoleLogEntry | NetworkLogEntry | WebSocketLogEntry | ReactQueryLogEntry;
+export type LogEntry =
+    | ConsoleLogEntry
+    | NetworkLogEntry
+    | WebSocketLogEntry
+    | ReactQueryLogEntry;
 
 // Filter configuration for searching logs
 export interface LogFilter {

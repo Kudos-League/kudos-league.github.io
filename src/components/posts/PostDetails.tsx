@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/solid';
-import { ExclamationTriangleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import {
+    ExclamationTriangleIcon,
+    ArrowLeftIcon
+} from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
@@ -51,7 +54,13 @@ interface Props {
     fetchPostDetails?: (id: number) => void;
 }
 
-function EditPostButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+function EditPostButton({
+    onClick,
+    disabled
+}: {
+    onClick: () => void;
+    disabled?: boolean;
+}) {
     return (
         <Button
             onClick={onClick}
@@ -77,7 +86,11 @@ export default function PostDetails(props: Props) {
     } = props;
 
     const { user, token } = useAuth();
-    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
+    const {
+        blockedUsers,
+        unblock,
+        loading: blockingLoading
+    } = useBlockedUsers();
 
     const updatePostMut = useUpdatePost();
     const likeMut = useLikePost();
@@ -97,7 +110,9 @@ export default function PostDetails(props: Props) {
     });
     const [editImages, setEditImages] = useState<File[]>([]);
     const [editImageError, setEditImageError] = useState<string | null>(null);
-    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(new Set());
+    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(
+        new Set()
+    );
     const [imageModalVisible, setImageModalVisible] = useState(false);
     const [imageModalIndex, setImageModalIndex] = useState(0);
     const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -105,10 +120,13 @@ export default function PostDetails(props: Props) {
     const [showAllHandshakes, setShowAllHandshakes] = useState(false);
     const [creatingHandshake, setCreatingHandshake] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(null);
+    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(
+        null
+    );
     const [selectedChannel] = useState<ChannelDTO | null>(null);
     const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
-    const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
+    const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] =
+        useState(false);
     const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
     const navigate = useNavigate();
 
@@ -128,9 +146,20 @@ export default function PostDetails(props: Props) {
                 b.receiverID === userId ||
                 b.recipientID === userId;
 
+            // User's handshakes always come first
             if (aIsUser && !bIsUser) return -1;
             if (!aIsUser && bIsUser) return 1;
 
+            // For non-user handshakes, sort by sender's kudos (descending)
+            if (!aIsUser && !bIsUser) {
+                const aKudos = a.sender?.kudos || 0;
+                const bKudos = b.sender?.kudos || 0;
+                if (aKudos !== bKudos) {
+                    return bKudos - aKudos;
+                }
+            }
+
+            // If both are user handshakes or kudos are equal, sort by date
             return (
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
@@ -216,7 +245,10 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
@@ -305,7 +337,10 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
@@ -369,7 +404,10 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
@@ -429,7 +467,9 @@ export default function PostDetails(props: Props) {
             if (!prev) return prev as any;
             return {
                 ...prev,
-                handshakes: (prev.handshakes || []).filter((h: { id: number }) => h.id !== id)
+                handshakes: (prev.handshakes || []).filter(
+                    (h: { id: number }) => h.id !== id
+                )
             } as PostDTO;
         });
     };
@@ -529,7 +569,8 @@ export default function PostDetails(props: Props) {
             categoryID: postDetails.category?.id || null,
             location: postDetails.location || null,
             itemsLimit:
-                typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0
+                typeof postDetails.itemsLimit === 'number' &&
+                postDetails.itemsLimit > 0
                     ? String(postDetails.itemsLimit)
                     : ''
         });
@@ -564,14 +605,18 @@ export default function PostDetails(props: Props) {
 
             const limitStr = (editData.itemsLimit || '').trim();
             if (limitStr === '') updateData.itemsLimit = null;
-            else if (/^\d+$/.test(limitStr)) updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
+            else if (/^\d+$/.test(limitStr))
+                updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
 
             if (editImages.length > 0) {
                 updateData.files = editImages;
             }
 
             // Always send remaining images (with deleted ones filtered out)
-            const remainingImages = postDetails.images?.filter((_, idx) => !deletedImageIndices.has(idx)) || [];
+            const remainingImages =
+                postDetails.images?.filter(
+                    (_, idx) => !deletedImageIndices.has(idx)
+                ) || [];
             updateData.images = remainingImages;
 
             const updated = await updatePostMut.mutateAsync({
@@ -586,13 +631,15 @@ export default function PostDetails(props: Props) {
         }
         catch (err) {
             console.error('Failed to save changes', err);
-            setEditImageError(err instanceof Error ? err.message : 'Failed to save changes');
+            setEditImageError(
+                err instanceof Error ? err.message : 'Failed to save changes'
+            );
         }
     };
 
     const handleAcceptHighestKudos = async () => {
         if (!postDetails || !user) return;
-        
+
         const pendingHandshakes = (postDetails.handshakes || []).filter(
             (h: any) => h.status === 'new'
         );
@@ -602,11 +649,15 @@ export default function PostDetails(props: Props) {
             return;
         }
 
-        const highestKudosHandshake = pendingHandshakes.reduce((highest, current) => {
-            const currentSender = current.sender || { kudos: 0 };
-            const highestSender = highest.sender || { kudos: 0 };
-            return (currentSender.kudos || 0) > (highestSender.kudos || 0) ? current : highest;
-        });
+        const highestKudosHandshake = pendingHandshakes.reduce(
+            (highest, current) => {
+                const currentSender = current.sender || { kudos: 0 };
+                const highestSender = highest.sender || { kudos: 0 };
+                return (currentSender.kudos || 0) > (highestSender.kudos || 0)
+                    ? current
+                    : highest;
+            }
+        );
 
         if (!highestKudosHandshake) {
             alert('Could not find handshake to accept.');
@@ -619,8 +670,12 @@ export default function PostDetails(props: Props) {
         setAcceptingHighestKudos(true);
 
         try {
-            await apiMutate(`/handshakes/${highestKudosHandshake.id}`, 'patch', { status: 'accepted' });
-            
+            await apiMutate(
+                `/handshakes/${highestKudosHandshake.id}`,
+                'patch',
+                { status: 'accepted' }
+            );
+
             setPostDetails((prev: PostDTO) => {
                 if (!prev) return prev;
                 return {
@@ -633,8 +688,10 @@ export default function PostDetails(props: Props) {
                 };
             });
 
-            alert(`Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`);
-            
+            alert(
+                `Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`
+            );
+
             if (fetchPostDetails) {
                 fetchPostDetails(postDetails.id);
             }
@@ -648,53 +705,86 @@ export default function PostDetails(props: Props) {
         }
     };
 
-
     if (loading) {
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
     }
 
     if (error) {
-        const isBlockedUser = postDetails?.sender?.id && 
+        const isBlockedUser =
+            postDetails?.sender?.id &&
             (blockedUsers ?? []).includes(postDetails.sender.id);
-        
+
         if (isBlockedUser && postDetails?.sender) {
             return (
                 <div className='text-center mt-20 max-w-md mx-auto px-4'>
                     <div className='bg-gray-100 dark:bg-gray-800 rounded-lg p-6 border border-gray-300 dark:border-gray-700'>
                         <div className='mb-4'>
                             <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center'>
-                                <svg className='w-8 h-8 text-red-600 dark:text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' />
+                                <svg
+                                    className='w-8 h-8 text-red-600 dark:text-red-400'
+                                    fill='none'
+                                    viewBox='0 0 24 24'
+                                    stroke='currentColor'
+                                >
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+                                    />
                                 </svg>
                             </div>
                             <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
                                 Post from Blocked User
                             </h3>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                This post is from <span className='font-semibold'>{postDetails.sender.displayName || postDetails.sender.username}</span>, 
-                                whom you have blocked. You cannot view their content.
+                                This post is from{' '}
+                                <span className='font-semibold'>
+                                    {postDetails.sender.displayName ||
+                                        postDetails.sender.username}
+                                </span>
+                                , whom you have blocked. You cannot view their
+                                content.
                             </p>
                         </div>
-                        
+
                         <div className='flex flex-col gap-2'>
                             <Button
                                 onClick={async () => {
-                                    if (blockingLoading || !postDetails.sender?.id) return;
+                                    if (
+                                        blockingLoading ||
+                                        !postDetails.sender?.id
+                                    )
+                                        return;
                                     try {
                                         await unblock(postDetails.sender.id);
-                                        if (fetchPostDetails && postDetails?.id) {
-                                            setTimeout(() => fetchPostDetails(postDetails.id), 300);
+                                        if (
+                                            fetchPostDetails &&
+                                            postDetails?.id
+                                        ) {
+                                            setTimeout(
+                                                () =>
+                                                    fetchPostDetails(
+                                                        postDetails.id
+                                                    ),
+                                                300
+                                            );
                                         }
                                     }
                                     catch (err) {
-                                        console.error('Failed to unblock user:', err);
+                                        console.error(
+                                            'Failed to unblock user:',
+                                            err
+                                        );
                                     }
                                 }}
                                 disabled={blockingLoading}
                                 variant='primary'
                                 className='w-full justify-center'
                             >
-                                {blockingLoading ? 'Unblocking...' : 'Unblock User'}
+                                {blockingLoading
+                                    ? 'Unblocking...'
+                                    : 'Unblock User'}
                             </Button>
                             <Button
                                 onClick={() => window.history.back()}
@@ -708,7 +798,7 @@ export default function PostDetails(props: Props) {
                 </div>
             );
         }
-        
+
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
@@ -730,8 +820,9 @@ export default function PostDetails(props: Props) {
     const hasPendingHandshakes = (postDetails.handshakes || []).some(
         (h: any) => h.status === 'new'
     );
-    const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
-    
+    const showAcceptHighestKudosButton =
+        isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
+
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
             {/* Overlay when editing */}
@@ -767,7 +858,10 @@ export default function PostDetails(props: Props) {
                 {/* Post Owner Actions */}
                 {isPostOwner && (
                     <div className='flex flex-row gap-2 flex-shrink-0'>
-                        <EditPostButton onClick={handleStartEdit} disabled={isEditing} />
+                        <EditPostButton
+                            onClick={handleStartEdit}
+                            disabled={isEditing}
+                        />
                         {postDetails.status !== 'closed' && (
                             <Button
                                 onClick={handleClosePost}
@@ -794,7 +888,9 @@ export default function PostDetails(props: Props) {
                 <div className='flex flex-wrap gap-2 sm:gap-3 items-center'>
                     {/* Type Badge */}
                     <Pill
-                        tone={postDetails.type === 'request' ? 'info' : 'success'}
+                        tone={
+                            postDetails.type === 'request' ? 'info' : 'success'
+                        }
                         className='uppercase font-semibold text-xs'
                     >
                         {postDetails.type}
@@ -802,23 +898,37 @@ export default function PostDetails(props: Props) {
 
                     {/* Status Badge */}
                     {postDetails.status === 'closed' ? (
-                        <Pill tone='danger' className='uppercase font-semibold text-xs'>CLOSED</Pill>
+                        <Pill
+                            tone='danger'
+                            className='uppercase font-semibold text-xs'
+                        >
+                            CLOSED
+                        </Pill>
                     ) : (
-                        <Pill tone='neutral' className='uppercase text-xs'>{postDetails.status}</Pill>
+                        <Pill tone='neutral' className='uppercase text-xs'>
+                            {postDetails.status}
+                        </Pill>
                     )}
 
                     {/* Category */}
                     {postDetails.category?.name && (
                         <div className='flex items-center gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2.5 sm:px-3 py-1 rounded-full'>
-                            <span className='font-medium'>{postDetails.category.name}</span>
+                            <span className='font-medium'>
+                                {postDetails.category.name}
+                            </span>
                         </div>
                     )}
 
                     {/* Items Limit */}
-                    {typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0 && (
+                    {typeof postDetails.itemsLimit === 'number' &&
+                        postDetails.itemsLimit > 0 && (
                         <div className='flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 sm:px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800'>
                             <span className='font-medium'>
-                                {postDetails.itemsLimit} {postDetails.itemsLimit === 1 ? 'item' : 'items'} max
+                                {postDetails.itemsLimit}{' '}
+                                {postDetails.itemsLimit === 1
+                                    ? 'item'
+                                    : 'items'}{' '}
+                                    max
                             </span>
                         </div>
                     )}
@@ -855,15 +965,29 @@ export default function PostDetails(props: Props) {
                         aria-label='Close edit form'
                         title='Close'
                     >
-                        <svg className='w-5 h-5 text-gray-500 dark:text-gray-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                        <svg
+                            className='w-5 h-5 text-gray-500 dark:text-gray-400'
+                            fill='none'
+                            viewBox='0 0 24 24'
+                            stroke='currentColor'
+                        >
+                            <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M6 18L18 6M6 6l12 12'
+                            />
                         </svg>
                     </button>
                     <h3 className='text-lg font-semibold pr-8'>Edit Post</h3>
 
                     <div className='flex gap-3'>
                         <Button
-                            variant={editData.type === 'gift' ? 'primary' : 'secondary'}
+                            variant={
+                                editData.type === 'gift'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
                             onClick={() =>
                                 setEditData({
                                     ...editData,
@@ -874,7 +998,11 @@ export default function PostDetails(props: Props) {
                             Give stuff
                         </Button>
                         <Button
-                            variant={editData.type === 'request' ? 'primary' : 'secondary'}
+                            variant={
+                                editData.type === 'request'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
                             onClick={() =>
                                 setEditData({
                                     ...editData,
@@ -895,7 +1023,11 @@ export default function PostDetails(props: Props) {
                                 label: c.name,
                                 value: String(c.id)
                             }))}
-                            value={editData.categoryID !== null ? String(editData.categoryID) : ''}
+                            value={
+                                editData.categoryID !== null
+                                    ? String(editData.categoryID)
+                                    : ''
+                            }
                             onChange={(val) => {
                                 const parsed = val ? parseInt(val) : null;
                                 setEditData({
@@ -929,7 +1061,10 @@ export default function PostDetails(props: Props) {
                         </label>
                         <textarea
                             className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             rows={4}
                             value={editData.body}
                             onChange={(e) =>
@@ -962,7 +1097,12 @@ export default function PostDetails(props: Props) {
                                 <Button
                                     type='button'
                                     variant='ghost'
-                                    onClick={() => setEditData({ ...editData, location: null })}
+                                    onClick={() =>
+                                        setEditData({
+                                            ...editData,
+                                            location: null
+                                        })
+                                    }
                                     className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
                                 >
                                     ✕ Remove
@@ -983,7 +1123,8 @@ export default function PostDetails(props: Props) {
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
-                            Number of items if applicable (leave blank for unlimited, 1 in case of doubt or non applicable)
+                            Number of items if applicable (leave blank for
+                            unlimited, 1 in case of doubt or non applicable)
                         </label>
                         <input
                             className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -994,21 +1135,31 @@ export default function PostDetails(props: Props) {
                             onChange={(e) =>
                                 setEditData({
                                     ...editData,
-                                    itemsLimit: e.target.value.replace(/[^0-9]/g, '')
+                                    itemsLimit: e.target.value.replace(
+                                        /[^0-9]/g,
+                                        ''
+                                    )
                                 })
                             }
                         />
                         <p className='text-xs text-gray-500 mt-1'>
-                            Limits how many accepted/completed handshakes the post can have.
+                            Limits how many accepted/completed handshakes the
+                            post can have.
                         </p>
                     </div>
 
                     <div className='w-full overflow-hidden box-border'>
                         <label className='block text-sm font-semibold mb-2'>
-                            Images ({(postDetails.images?.length || 0) - deletedImageIndices.size + editImages.length}/{MAX_FILE_COUNT})
+                            Images (
+                            {(postDetails.images?.length || 0) -
+                                deletedImageIndices.size +
+                                editImages.length}
+                            /{MAX_FILE_COUNT})
                         </label>
                         {editImageError && (
-                            <p className='text-sm text-red-600 dark:text-red-400 mb-2'>{editImageError}</p>
+                            <p className='text-sm text-red-600 dark:text-red-400 mb-2'>
+                                {editImageError}
+                            </p>
                         )}
                         <input
                             type='file'
@@ -1016,17 +1167,28 @@ export default function PostDetails(props: Props) {
                             multiple
                             onChange={handleImageUpload}
                             className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
-                            disabled={((postDetails.images?.length || 0) - deletedImageIndices.size + editImages.length) >= MAX_FILE_COUNT}
+                            disabled={
+                                (postDetails.images?.length || 0) -
+                                    deletedImageIndices.size +
+                                    editImages.length >=
+                                MAX_FILE_COUNT
+                            }
                         />
-                        {((postDetails.images && postDetails.images.length > 0) || editImages.length > 0) && (
+                        {((postDetails.images &&
+                            postDetails.images.length > 0) ||
+                            editImages.length > 0) && (
                             <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
                                 {/* Existing images from the post */}
                                 {postDetails.images?.map((url, index) => {
-                                    if (deletedImageIndices.has(index)) return null;
+                                    if (deletedImageIndices.has(index))
+                                        return null;
                                     const imagePath = getImagePath(url);
                                     if (!imagePath) return null;
                                     return (
-                                        <div key={`existing-${index}`} className='relative group'>
+                                        <div
+                                            key={`existing-${index}`}
+                                            className='relative group'
+                                        >
                                             <img
                                                 src={imagePath}
                                                 alt={`Image ${index + 1}`}
@@ -1036,7 +1198,9 @@ export default function PostDetails(props: Props) {
                                                 type='button'
                                                 shape='circle'
                                                 variant='danger'
-                                                onClick={() => removeExistingImage(index)}
+                                                onClick={() =>
+                                                    removeExistingImage(index)
+                                                }
                                                 className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
                                                 title='Remove image'
                                             >
@@ -1050,7 +1214,10 @@ export default function PostDetails(props: Props) {
                                 })}
                                 {/* New images being added */}
                                 {editImages.map((file, index) => (
-                                    <div key={`new-${index}`} className='relative group'>
+                                    <div
+                                        key={`new-${index}`}
+                                        className='relative group'
+                                    >
                                         <img
                                             src={createImagePreview(file)}
                                             alt={`Preview ${index + 1}`}
@@ -1060,7 +1227,9 @@ export default function PostDetails(props: Props) {
                                             type='button'
                                             shape='circle'
                                             variant='danger'
-                                            onClick={() => removeEditImage(index)}
+                                            onClick={() =>
+                                                removeEditImage(index)
+                                            }
                                             className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
                                             title='Remove image'
                                         >
@@ -1139,14 +1308,17 @@ export default function PostDetails(props: Props) {
             )}
 
             {/* Map */}
-            {(postDetails.location?.regionID || (postDetails.location?.latitude && postDetails.location?.longitude)) && (
+            {(postDetails.location?.regionID ||
+                (postDetails.location?.latitude &&
+                    postDetails.location?.longitude)) && (
                 <div className='mb-6 flex justify-center'>
                     <MapDisplay
                         edit={false}
                         exactLocation={isPostOwner}
                         regionID={postDetails.location?.regionID}
                         coordinates={
-                            postDetails.location?.latitude && postDetails.location?.longitude
+                            postDetails.location?.latitude &&
+                            postDetails.location?.longitude
                                 ? {
                                     latitude: postDetails.location.latitude,
                                     longitude: postDetails.location.longitude
@@ -1164,11 +1336,9 @@ export default function PostDetails(props: Props) {
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
-                        {postDetails.type === 'request'
-                            ? 'Offers'
-                            : 'Requests'}
+                        {postDetails.type === 'request' ? 'Offers' : 'Requests'}
                     </h2>
-                    
+
                     {showAcceptHighestKudosButton && (
                         <Button
                             onClick={handleAcceptHighestKudos}
@@ -1182,9 +1352,7 @@ export default function PostDetails(props: Props) {
                                     Accepting...
                                 </>
                             ) : (
-                                <>
-                                    ⭐ Accept Highest Kudos
-                                </>
+                                <>⭐ Accept Highest Kudos</>
                             )}
                         </Button>
                     )}
@@ -1195,7 +1363,10 @@ export default function PostDetails(props: Props) {
                         (postDetails.handshakes || []).map((h) => ({
                             ...h,
                             post: postDetails,
-                            _stage: getHandshakeStage({ ...h, post: postDetails }, user?.id)
+                            _stage: getHandshakeStage(
+                                { ...h, post: postDetails },
+                                user?.id
+                            )
                         })) || [],
                         user?.id
                     )}
@@ -1218,32 +1389,29 @@ export default function PostDetails(props: Props) {
                     onHandshakeDeleted={handleHandshakeDeleted}
                     showPostDetails={false}
                     showSenderOrReceiver={'sender'}
+                    showUserKudos={true}
                 />
-
 
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some((h: any) =>
-                        h.senderID === user?.id && h.status !== 'cancelled'
-                    ) &&
-                    (
-                        <div className='mt-4 flex justify-center'>
-                            <Button
-                                onClick={handleSubmitHandshake}
-                                disabled={creatingHandshake || isEditing}
-                            >
-                                {creatingHandshake
-                                    ? 'Creating...'
-                                    : postDetails.type === 'gift'
-                                        ? 'Request This'
-                                        : 'Gift This'}
-                            </Button>
-                        </div>
-                    )
-                }
-
+                    !postDetails.handshakes?.some(
+                        (h: any) =>
+                            h.senderID === user?.id && h.status !== 'cancelled'
+                    ) && (
+                    <div className='mt-4 flex justify-center'>
+                        <Button
+                            onClick={handleSubmitHandshake}
+                            disabled={creatingHandshake || isEditing}
+                        >
+                            {creatingHandshake
+                                ? 'Creating...'
+                                : postDetails.type === 'gift'
+                                    ? 'Request This'
+                                    : 'Gift This'}
+                        </Button>
+                    </div>
+                )}
             </div>
-
 
             {/* Comments */}
             <div className='p-4 mb-6'>
@@ -1295,7 +1463,10 @@ export default function PostDetails(props: Props) {
                         </p>
                         <textarea
                             className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             rows={4}
                             placeholder='Enter reason...'
                             value={reportReason}
@@ -1322,17 +1493,32 @@ export default function PostDetails(props: Props) {
                     <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
                         <div className='text-center mb-4'>
                             <div className='mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4'>
-                                <svg className='h-8 w-8 text-green-600 dark:text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                <svg
+                                    className='h-8 w-8 text-green-600 dark:text-green-400'
+                                    fill='none'
+                                    viewBox='0 0 24 24'
+                                    stroke='currentColor'
+                                >
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M5 13l4 4L19 7'
+                                    />
                                 </svg>
                             </div>
-                            <h2 className='text-2xl font-bold mb-3'>Help request/offer Created!</h2>
+                            <h2 className='text-2xl font-bold mb-3'>
+                                Help request/offer Created!
+                            </h2>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                Your help request/offer has been successfully created. The post owner has been notified.
+                                Your help request/offer has been successfully
+                                created. The post owner has been notified.
                             </p>
                             <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
                                 <p className='text-xs text-blue-800 dark:text-blue-200'>
-                                    💡 You can message the post owner now to coordinate details, or do it later from your handshakes page.
+                                    💡 You can message the post owner now to
+                                    coordinate details, or do it later from your
+                                    handshakes page.
                                 </p>
                             </div>
                         </div>
@@ -1357,7 +1543,9 @@ export default function PostDetails(props: Props) {
             )}
 
             {/* Image Modal Carousel */}
-            {imageModalVisible && postDetails.images && postDetails.images.length > 0 && (
+            {imageModalVisible &&
+                postDetails.images &&
+                postDetails.images.length > 0 && (
                 <ImageModalCarousel
                     images={postDetails.images}
                     initialIndex={imageModalIndex}

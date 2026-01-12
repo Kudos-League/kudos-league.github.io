@@ -21,9 +21,16 @@ function generateRequestId(): string {
 /**
  * Sanitize sensitive headers
  */
-function sanitizeHeaders(headers: Record<string, any> = {}): Record<string, string> {
+function sanitizeHeaders(
+    headers: Record<string, any> = {}
+): Record<string, string> {
     const sanitized: Record<string, string> = {};
-    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+    const sensitiveHeaders = [
+        'authorization',
+        'cookie',
+        'x-api-key',
+        'x-auth-token'
+    ];
 
     for (const [key, value] of Object.entries(headers)) {
         if (sensitiveHeaders.includes(key.toLowerCase())) {
@@ -116,8 +123,10 @@ export function createRequestInterceptor(_axios: any) {
                 startTime: Date.now(),
                 method: config.method?.toUpperCase(),
                 url: config.url,
-                requestHeaders: sanitizeHeaders(config.headers as Record<string, any>),
-                requestBody: serializeRequestBody(config),
+                requestHeaders: sanitizeHeaders(
+                    config.headers as Record<string, any>
+                ),
+                requestBody: serializeRequestBody(config)
             };
 
             pendingRequests.set(requestId, pending);
@@ -126,7 +135,10 @@ export function createRequestInterceptor(_axios: any) {
             (config as any).__logRequestId = requestId;
         }
         catch (e) {
-            console.error('[LogCollector Network] Failed to process request:', e);
+            console.error(
+                '[LogCollector Network] Failed to process request:',
+                e
+            );
         }
 
         return config;
@@ -171,15 +183,20 @@ export function createResponseInterceptor(_axios: any) {
                 duration,
                 requestHeaders: pending.requestHeaders,
                 requestBody: pending.requestBody,
-                responseHeaders: sanitizeHeaders(response.headers as Record<string, any>),
-                responseBody: serializeResponseBody(response.data),
+                responseHeaders: sanitizeHeaders(
+                    response.headers as Record<string, any>
+                ),
+                responseBody: serializeResponseBody(response.data)
             } as any);
 
             // Cleanup
             pendingRequests.delete(requestId);
         }
         catch (e) {
-            console.error('[LogCollector Network] Failed to process response:', e);
+            console.error(
+                '[LogCollector Network] Failed to process response:',
+                e
+            );
         }
 
         return response;
@@ -224,12 +241,14 @@ export function createErrorInterceptor(_axios: any) {
                     requestHeaders: pending.requestHeaders,
                     requestBody: pending.requestBody,
                     responseHeaders: error.response
-                        ? sanitizeHeaders(error.response.headers as Record<string, any>)
+                        ? sanitizeHeaders(
+                              error.response.headers as Record<string, any>
+                        )
                         : undefined,
                     responseBody: error.response
                         ? serializeResponseBody(error.response.data)
                         : undefined,
-                    error: error.message,
+                    error: error.message
                 } as any);
 
                 // Cleanup
@@ -255,7 +274,9 @@ export function initNetworkInterceptor(axiosInstance: any): void {
     if (!isDevMode) return;
 
     try {
-        axiosInstance.interceptors.request.use(createRequestInterceptor(axiosInstance));
+        axiosInstance.interceptors.request.use(
+            createRequestInterceptor(axiosInstance)
+        );
         axiosInstance.interceptors.response.use(
             createResponseInterceptor(axiosInstance),
             createErrorInterceptor(axiosInstance)
@@ -264,6 +285,9 @@ export function initNetworkInterceptor(axiosInstance: any): void {
         console.log('[LogCollector] Network interceptor initialized');
     }
     catch (e) {
-        console.error('[LogCollector] Failed to initialize network interceptor:', e);
+        console.error(
+            '[LogCollector] Failed to initialize network interceptor:',
+            e
+        );
     }
 }

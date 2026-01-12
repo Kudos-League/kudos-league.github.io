@@ -50,11 +50,11 @@ const TextWithLinks: React.FC<TextWithLinksProps> = ({
                 return (
                     <a
                         key={index}
-                        href="#"
+                        href='#'
                         className={linkClassName}
                         onClick={(e) => handleLinkClick(e, segment.url!)}
                         title={segment.url}
-                        role="button"
+                        role='button'
                     >
                         {segment.content}
                     </a>

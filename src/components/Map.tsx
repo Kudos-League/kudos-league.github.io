@@ -9,7 +9,11 @@ import {
 import debounce from '@/shared/debounce';
 import useUserLocation from '@/hooks/useLocation';
 import { GOOGLE_LIBRARIES } from '@/shared/constants';
-import { XMarkIcon, GlobeAmericasIcon, MapPinIcon } from '@heroicons/react/16/solid';
+import {
+    XMarkIcon,
+    GlobeAmericasIcon,
+    MapPinIcon
+} from '@heroicons/react/16/solid';
 import { useAuth } from '@/contexts/useAuth';
 
 const SearchInput: React.FC<{
@@ -132,19 +136,32 @@ async function fetchCoordinatesFromRegionID(
     if (typeof window !== 'undefined' && window.google?.maps?.places) {
         return new Promise<MapCoordinates>((resolve, reject) => {
             try {
-                const svc = new google.maps.places.PlacesService(document.createElement('div'));
-                svc.getDetails({ placeId: regionID, fields: ['geometry'] }, (result, status) => {
-                    if (
-                        status === google.maps.places.PlacesServiceStatus.OK &&
-                        result?.geometry?.location
-                    ) {
-                        const loc = result.geometry.location;
-                        resolve({ latitude: loc.lat(), longitude: loc.lng() });
+                const svc = new google.maps.places.PlacesService(
+                    document.createElement('div')
+                );
+                svc.getDetails(
+                    { placeId: regionID, fields: ['geometry'] },
+                    (result, status) => {
+                        if (
+                            status ===
+                                google.maps.places.PlacesServiceStatus.OK &&
+                            result?.geometry?.location
+                        ) {
+                            const loc = result.geometry.location;
+                            resolve({
+                                latitude: loc.lat(),
+                                longitude: loc.lng()
+                            });
+                        }
+                        else {
+                            reject(
+                                new Error(
+                                    'PlacesService.getDetails failed: ' + status
+                                )
+                            );
+                        }
                     }
-                    else {
-                        reject(new Error('PlacesService.getDetails failed: ' + status));
-                    }
-                });
+                );
             }
             catch (err) {
                 reject(err as Error);
@@ -158,7 +175,7 @@ async function fetchCoordinatesFromRegionID(
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_KEY
     };
-    
+
     headers['X-Goog-FieldMask'] = '*';
 
     const res = await fetch(url, { method: 'GET', headers });
@@ -210,25 +227,34 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [isSearching, setIsSearching] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
-    
+
     const hasInitialExplicitLocation = !!coordinates || !!regionID;
     const [isCleared, setIsCleared] = useState(!hasInitialExplicitLocation);
 
     const [selectedSuggestionId, setSelectedSuggestionId] =
         useState<string>('');
 
-    const selectPlaceById = async (placeId: string, fallbackDescription?: string) => {
+    const selectPlaceById = async (
+        placeId: string,
+        fallbackDescription?: string
+    ) => {
         if (placesRef.current) {
             try {
                 await new Promise<void>((resolve) => {
                     placesRef.current!.getDetails(
                         {
                             placeId,
-                            fields: ['geometry', 'formatted_address', 'name', 'place_id']
+                            fields: [
+                                'geometry',
+                                'formatted_address',
+                                'name',
+                                'place_id'
+                            ]
                         },
                         (det, status) => {
                             if (
-                                status === google.maps.places.PlacesServiceStatus.OK &&
+                                status ===
+                                    google.maps.places.PlacesServiceStatus.OK &&
                                 det?.geometry?.location
                             ) {
                                 const newLat = det.geometry.location.lat();
@@ -237,12 +263,19 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     latitude: newLat,
                                     longitude: newLng,
                                     changed:
-                                        Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
-                                        Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                                        Math.abs(
+                                            newLat - mapCoordinates.latitude
+                                        ) > 1e-5 ||
+                                        Math.abs(
+                                            newLng - mapCoordinates.longitude
+                                        ) > 1e-5
                                 };
 
                                 const business = det.name ?? '';
-                                const formatted = det.formatted_address ?? fallbackDescription ?? '';
+                                const formatted =
+                                    det.formatted_address ??
+                                    fallbackDescription ??
+                                    '';
                                 const label =
                                     business && !formatted.startsWith(business)
                                         ? `${business}, ${formatted}`
@@ -265,15 +298,21 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     changed: coords.changed
                                 });
 
-                                setTimeout(() => (suppressSearchRef.current = false), 500);
+                                setTimeout(
+                                    () => (suppressSearchRef.current = false),
+                                    500
+                                );
                                 try {
                                     sessionTokenRef.current =
-                                        typeof crypto !== 'undefined' && (crypto as any).randomUUID
+                                        typeof crypto !== 'undefined' &&
+                                        (crypto as any).randomUUID
                                             ? (crypto as any).randomUUID()
                                             : String(Date.now());
                                 }
                                 catch {
-                                    sessionTokenRef.current = String(Date.now());
+                                    sessionTokenRef.current = String(
+                                        Date.now()
+                                    );
                                 }
                             }
                             resolve();
@@ -283,7 +322,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 return;
             }
             catch (err) {
-                console.warn('PlacesService.getDetails failed, falling back to Places v1', err);
+                console.warn(
+                    'PlacesService.getDetails failed, falling back to Places v1',
+                    err
+                );
             }
         }
 
@@ -326,8 +368,15 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             };
 
             const business = p.displayName ?? p.name ?? '';
-            const formatted = p.formattedAddress ?? p.formatted_address ?? fallbackDescription ?? '';
-            const label = business && !formatted.startsWith(business) ? `${business}, ${formatted}` : formatted || business;
+            const formatted =
+                p.formattedAddress ??
+                p.formatted_address ??
+                fallbackDescription ??
+                '';
+            const label =
+                business && !formatted.startsWith(business)
+                    ? `${business}, ${formatted}`
+                    : formatted || business;
 
             suppressSearchRef.current = true;
             setSuggestions([]);
@@ -361,7 +410,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         const savedLocation = user.location as MapCoordinates;
         const toNum = (v: any) => {
             if (v == null) return NaN;
-            const s = String(v).trim().replace(/[,\s]+/g, '');
+            const s = String(v)
+                .trim()
+                .replace(/[,\s]+/g, '');
             return Number.parseFloat(s);
         };
 
@@ -382,12 +433,20 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             try {
                 const request = { placeId: savedLocation.regionID };
                 placesRef.current.getDetails(request, (place, status) => {
-                    if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                    if (
+                        status === google.maps.places.PlacesServiceStatus.OK &&
+                        place
+                    ) {
                         const business = place.name ?? '';
-                        const formatted = place.formatted_address ?? savedLocation.name ?? '';
-                        const label = business && !formatted.startsWith(business)
-                            ? `${business}, ${formatted}`
-                            : formatted || business || savedLocation.name || 'Saved Location';
+                        const formatted =
+                            place.formatted_address ?? savedLocation.name ?? '';
+                        const label =
+                            business && !formatted.startsWith(business)
+                                ? `${business}, ${formatted}`
+                                : formatted ||
+                                  business ||
+                                  savedLocation.name ||
+                                  'Saved Location';
 
                         setSearchInput(label);
                         setDisplayLabel(label);
@@ -402,7 +461,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                         });
                     }
                     else {
-                        const fallbackLabel = savedLocation.name || 'Saved Location';
+                        const fallbackLabel =
+                            savedLocation.name || 'Saved Location';
                         setSearchInput(fallbackLabel);
                         setDisplayLabel(fallbackLabel);
                         onLabelChange?.(fallbackLabel);
@@ -463,7 +523,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     useEffect(() => {
         if (!user) return;
     }, [user]);
-    
+
     useEffect(() => {
         if (edit) return;
         if (coordinates) return;
@@ -472,7 +532,9 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         const savedLocation = user.location as any;
         const toNum = (v: any) => {
             if (v == null) return NaN;
-            const s = String(v).trim().replace(/[,\s]+/g, '');
+            const s = String(v)
+                .trim()
+                .replace(/[,\s]+/g, '');
             return Number.parseFloat(s);
         };
 
@@ -480,14 +542,17 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         const lng = toNum(savedLocation.longitude);
 
         if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            const coords = { latitude: lat, longitude: lng, changed: false } as MapCoordinates;
+            const coords = {
+                latitude: lat,
+                longitude: lng,
+                changed: false
+            } as MapCoordinates;
             setMapCoordinates(coords);
             setIsCleared(false);
-            
+
             if (savedLocation.name) {
                 setDisplayLabel(savedLocation.name);
             }
-            
         }
     }, [user, edit, coordinates]);
     const suppressSearchRef = useRef(false);
@@ -623,7 +688,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             if (
                                 status ===
                                     google.maps.places.PlacesServiceStatus.OK &&
-                                    preds
+                                preds
                             ) {
                                 setSuggestions(preds as any[]);
                             }
@@ -635,10 +700,13 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     return;
                 }
                 catch (err) {
-                    console.warn('AutocompleteService failed, falling back to proxy', err);
+                    console.warn(
+                        'AutocompleteService failed, falling back to proxy',
+                        err
+                    );
                 }
             }
-            
+
             try {
                 const GOOGLE_KEY = GOOGLE_MAPS_KEY;
                 const url = `https://places.googleapis.com/v1/places:autocomplete`;
@@ -652,19 +720,33 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     'X-Goog-Api-Key': GOOGLE_KEY
                 };
 
-                const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body)
+                });
                 if (!res.ok) {
                     setSuggestions([]);
                     return;
                 }
                 const data = await res.json();
 
-                
-                const raw = data.predictions ?? data.candidates ?? data.results ?? [];
-                const normalized = (Array.isArray(raw) ? raw : []).map((p: any) => ({
-                    description: p.description ?? p.displayName ?? p.text ?? p.label ?? p.formattedAddress ?? p.name ?? '',
-                    place_id: p.place_id ?? p.id ?? p.placeId ?? p.name ?? ''
-                }));
+                const raw =
+                    data.predictions ?? data.candidates ?? data.results ?? [];
+                const normalized = (Array.isArray(raw) ? raw : []).map(
+                    (p: any) => ({
+                        description:
+                            p.description ??
+                            p.displayName ??
+                            p.text ??
+                            p.label ??
+                            p.formattedAddress ??
+                            p.name ??
+                            '',
+                        place_id:
+                            p.place_id ?? p.id ?? p.placeId ?? p.name ?? ''
+                    })
+                );
 
                 setSuggestions(normalized);
             }
@@ -678,7 +760,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     }, [searchInput, isLoaded]);
     const centerLat = Number(mapCoordinates?.latitude);
     const centerLng = Number(mapCoordinates?.longitude);
-    const [randomizedCenter, setRandomizedCenter] = useState<{ lat: number; lng: number } | null>(null);
+    const [randomizedCenter, setRandomizedCenter] = useState<{
+        lat: number;
+        lng: number;
+    } | null>(null);
 
     useEffect(() => {
         if (exactLocation) {
@@ -699,8 +784,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         const bearing = Math.random() * 2 * Math.PI;
 
         const earthRadius = 6378137;
-        const deltaLat = (randDist * Math.cos(bearing)) / earthRadius * (180 / Math.PI);
-        const deltaLng = (randDist * Math.sin(bearing)) / (earthRadius * Math.cos(lat * Math.PI / 180)) * (180 / Math.PI);
+        const deltaLat =
+            ((randDist * Math.cos(bearing)) / earthRadius) * (180 / Math.PI);
+        const deltaLng =
+            ((randDist * Math.sin(bearing)) /
+                (earthRadius * Math.cos((lat * Math.PI) / 180))) *
+            (180 / Math.PI);
 
         setRandomizedCenter({ lat: lat + deltaLat, lng: lng + deltaLng });
     }, [mapCoordinates, exactLocation, isCleared, approximateRadiusMeters]);
@@ -721,9 +810,10 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         value: s.place_id as string
     }));
 
-    const hasSavedLocation = user?.location && 
-        typeof user.location === 'object' && 
-        'latitude' in user.location && 
+    const hasSavedLocation =
+        user?.location &&
+        typeof user.location === 'object' &&
+        'latitude' in user.location &&
         'longitude' in user.location;
 
     return (
@@ -756,10 +846,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             setMapCoordinates(DEFAULT_CENTER);
                             onLocationChange?.(null);
                             onLabelChange?.('');
-                            
+
                             try {
                                 sessionTokenRef.current =
-                                    typeof crypto !== 'undefined' && (crypto as any).randomUUID
+                                    typeof crypto !== 'undefined' &&
+                                    (crypto as any).randomUUID
                                         ? (crypto as any).randomUUID()
                                         : String(Date.now());
                             }
@@ -823,20 +914,36 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     let formatted = '';
                                     let business = '';
 
-                                    if (typeof window !== 'undefined' && window.google?.maps?.Geocoder) {
+                                    if (
+                                        typeof window !== 'undefined' &&
+                                        window.google?.maps?.Geocoder
+                                    ) {
                                         await new Promise<void>((resolve) => {
-                                            const geocoder = new google.maps.Geocoder();
+                                            const geocoder =
+                                                new google.maps.Geocoder();
                                             geocoder.geocode(
-                                                { location: { lat: newLat, lng: newLng } },
+                                                {
+                                                    location: {
+                                                        lat: newLat,
+                                                        lng: newLng
+                                                    }
+                                                },
                                                 (results, status) => {
                                                     if (
-                                                        status === google.maps.GeocoderStatus.OK &&
+                                                        status ===
+                                                            google.maps
+                                                                .GeocoderStatus
+                                                                .OK &&
                                                         results &&
                                                         results.length > 0
                                                     ) {
                                                         const res = results[0];
-                                                        placeID = (res as any).place_id ?? '';
-                                                        formatted = res.formatted_address ?? '';
+                                                        placeID =
+                                                            (res as any)
+                                                                .place_id ?? '';
+                                                        formatted =
+                                                            res.formatted_address ??
+                                                            '';
                                                     }
                                                     resolve();
                                                 }
@@ -844,33 +951,50 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                         });
 
                                         if (placeID && placesRef.current) {
-                                            await new Promise<void>((resolve) => {
-                                                placesRef.current!.getDetails(
-                                                    { placeId: placeID, fields: ['name', 'formatted_address'] },
-                                                    (det, status) => {
-                                                        if (
-                                                            status ===
-                                                                google.maps.places.PlacesServiceStatus.OK &&
-                                                            det
-                                                        ) {
-                                                            business = det.name ?? '';
-                                                            formatted = det.formatted_address ?? formatted;
+                                            await new Promise<void>(
+                                                (resolve) => {
+                                                    placesRef.current!.getDetails(
+                                                        {
+                                                            placeId: placeID,
+                                                            fields: [
+                                                                'name',
+                                                                'formatted_address'
+                                                            ]
+                                                        },
+                                                        (det, status) => {
+                                                            if (
+                                                                status ===
+                                                                    google.maps
+                                                                        .places
+                                                                        .PlacesServiceStatus
+                                                                        .OK &&
+                                                                det
+                                                            ) {
+                                                                business =
+                                                                    det.name ??
+                                                                    '';
+                                                                formatted =
+                                                                    det.formatted_address ??
+                                                                    formatted;
+                                                            }
+                                                            resolve();
                                                         }
-                                                        resolve();
-                                                    }
-                                                );
-                                            });
+                                                    );
+                                                }
+                                            );
                                         }
                                     }
                                     else {
                                         const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLat},${newLng}&key=${GOOGLE_MAPS_KEY}`;
 
-                                        const response = await fetch(geocodeUrl);
+                                        const response =
+                                            await fetch(geocodeUrl);
                                         if (response.ok) {
                                             const data = await response.json();
                                             const result = data.results?.[0];
                                             placeID = result?.place_id ?? '';
-                                            formatted = result?.formatted_address ?? '';
+                                            formatted =
+                                                result?.formatted_address ?? '';
                                         }
                                     }
                                     const label =

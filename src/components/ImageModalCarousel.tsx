@@ -1,6 +1,10 @@
 import { getImagePath } from '@/shared/api/config';
 import React, { useMemo, useState, useCallback } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import {
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    XMarkIcon
+} from '@heroicons/react/24/solid';
 
 type Props = {
     images: string[];
@@ -8,7 +12,11 @@ type Props = {
     onClose: () => void;
 };
 
-const ImageModalCarousel: React.FC<Props> = ({ images, initialIndex = 0, onClose }) => {
+const ImageModalCarousel: React.FC<Props> = ({
+    images,
+    initialIndex = 0,
+    onClose
+}) => {
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [idx, setIdx] = useState(initialIndex);
     const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -87,7 +95,10 @@ const ImageModalCarousel: React.FC<Props> = ({ images, initialIndex = 0, onClose
     };
 
     return (
-        <div className='fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4' onClick={onClose}>
+        <div
+            className='fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4'
+            onClick={onClose}
+        >
             <div
                 className='relative w-full h-full flex items-center justify-center max-w-6xl'
                 onClick={(e) => e.stopPropagation()}
@@ -106,7 +117,10 @@ const ImageModalCarousel: React.FC<Props> = ({ images, initialIndex = 0, onClose
                 </button>
 
                 {/* Image Container */}
-                <div className='relative w-full h-full flex items-center justify-center overflow-hidden rounded-lg' onClick={(e) => e.stopPropagation()}>
+                <div
+                    className='relative w-full h-full flex items-center justify-center overflow-hidden rounded-lg'
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {valid[idx] && (
                         <img
                             src={getImagePath(valid[idx].src)}

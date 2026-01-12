@@ -5,8 +5,14 @@ import type { PostDTO } from '@/shared/api/types';
 export const qk = {
     posts: (filters?: { includeTags?: boolean; includeSender?: boolean }) =>
         ['posts', filters] as const,
-    search: (query: string, filters?: { includeTags?: boolean; includeSender?: boolean; includeImages?: boolean }) =>
-        ['postSearch', query, filters] as const,
+    search: (
+        query: string,
+        filters?: {
+            includeTags?: boolean;
+            includeSender?: boolean;
+            includeImages?: boolean;
+        }
+    ) => ['postSearch', query, filters] as const,
     postsInfinite: (f?: any) => ['posts', 'infinite', f] as const
 };
 
@@ -33,7 +39,11 @@ export function usePostsQuery(filters?: {
 }
 
 export function useSearchPostsQuery(query: string) {
-    const filters = { includeTags: true, includeSender: true, includeImages: true };
+    const filters = {
+        includeTags: true,
+        includeSender: true,
+        includeImages: true
+    };
     return useQuery<PostDTO[]>({
         queryKey: qk.search(query, filters),
         queryFn: () =>

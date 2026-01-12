@@ -31,7 +31,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                         message: `→ Query: ${queryKey}`,
                         operation: 'query',
                         queryKey,
-                        status: 'loading',
+                        status: 'loading'
                     } as any);
                     break;
 
@@ -42,7 +42,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             message: `... Query: ${queryKey}`,
                             operation: 'query',
                             queryKey,
-                            status: 'loading',
+                            status: 'loading'
                         } as any);
                     }
                     else if (state.status === 'error') {
@@ -54,7 +54,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             status: 'error',
                             error: state.error
                                 ? String(state.error)
-                                : 'Unknown error',
+                                : 'Unknown error'
                         } as any);
                     }
                     else if (state.status === 'success') {
@@ -64,7 +64,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             operation: 'query',
                             queryKey,
                             status: 'success',
-                            data: state.data,
+                            data: state.data
                         } as any);
                     }
                     break;
@@ -74,13 +74,16 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                         type: 'react-query',
                         message: `✗ Query removed: ${queryKey}`,
                         operation: 'query',
-                        queryKey,
+                        queryKey
                     } as any);
                     break;
                 }
             }
             catch (e) {
-                console.error('[LogCollector ReactQuery] Failed to log query event:', e);
+                console.error(
+                    '[LogCollector ReactQuery] Failed to log query event:',
+                    e
+                );
             }
         });
 
@@ -99,7 +102,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                         type: 'react-query',
                         message: `→ Mutation started`,
                         operation: 'mutation',
-                        status: 'loading',
+                        status: 'loading'
                     } as any);
                     break;
 
@@ -109,7 +112,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             type: 'react-query',
                             message: `... Mutation in progress`,
                             operation: 'mutation',
-                            status: 'loading',
+                            status: 'loading'
                         } as any);
                     }
                     else if (state.status === 'error') {
@@ -120,7 +123,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             status: 'error',
                             error: state.error
                                 ? String(state.error)
-                                : 'Unknown error',
+                                : 'Unknown error'
                         } as any);
                     }
                     else if (state.status === 'success') {
@@ -129,7 +132,7 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                             message: `✓ Mutation successful`,
                             operation: 'mutation',
                             status: 'success',
-                            data: state.data,
+                            data: state.data
                         } as any);
                     }
                     break;
@@ -138,20 +141,26 @@ export function initReactQueryInterceptor(queryClient: QueryClient): void {
                     service.addLog({
                         type: 'react-query',
                         message: `Mutation completed`,
-                        operation: 'mutation',
+                        operation: 'mutation'
                     } as any);
                     break;
                 }
             }
             catch (e) {
-                console.error('[LogCollector ReactQuery] Failed to log mutation event:', e);
+                console.error(
+                    '[LogCollector ReactQuery] Failed to log mutation event:',
+                    e
+                );
             }
         });
 
         console.log('[LogCollector] React Query interceptor initialized');
     }
     catch (e) {
-        console.error('[LogCollector] Failed to initialize React Query interceptor:', e);
+        console.error(
+            '[LogCollector] Failed to initialize React Query interceptor:',
+            e
+        );
     }
 }
 

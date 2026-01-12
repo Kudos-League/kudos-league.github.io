@@ -67,27 +67,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [qc]);
 
     type LoginData = { token: string; user?: { username?: string } };
-    type LoginPayload = { username?: string; password?: string; token?: string };
+    type LoginPayload = {
+        username?: string;
+        password?: string;
+        token?: string;
+    };
 
     const loginMutation = useMutation<LoginData, any, LoginPayload>({
         mutationFn: (payload: LoginPayload) => {
             if (payload.token && isJwt(payload.token)) {
-                return Promise.resolve({ token: payload.token, user: { username: '' } });
+                return Promise.resolve({
+                    token: payload.token,
+                    user: { username: '' }
+                });
             }
 
             if (payload.token) {
-                return apiMutate<LoginData, { token: string }>('/users/login', 'post', { token: payload.token });
+                return apiMutate<LoginData, { token: string }>(
+                    '/users/login',
+                    'post',
+                    { token: payload.token }
+                );
             }
 
-            return apiMutate<LoginData, { username?: string; password?: string }>('/users/login', 'post', { username: payload.username, password: payload.password });
+            return apiMutate<
+                LoginData,
+                { username?: string; password?: string }
+            >('/users/login', 'post', {
+                username: payload.username,
+                password: payload.password
+            });
         }
     });
 
-    const registerMutation = useMutation<any, any, { username: string; email: string; password: string; inviteToken: string; emailToken?: string }>({
+    const registerMutation = useMutation<
+        any,
+        any,
+        {
+            username: string;
+            email: string;
+            password: string;
+            inviteToken: string;
+            emailToken?: string;
+        }
+    >({
         mutationFn: (payload) => apiMutate('/users/register', 'post', payload)
     });
 
-    const loginHandler = async ({ username, password, token }: { username?: string; password?: string; token?: string; }) => {
+    const loginHandler = async ({
+        username,
+        password,
+        token
+    }: {
+        username?: string;
+        password?: string;
+        token?: string;
+    }) => {
         setErrorMessage(null);
 
         if (!token && (!username || !password)) {
@@ -101,7 +136,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         try {
-            const response = await loginMutation.mutateAsync({ username, password, token });
+            const response = await loginMutation.mutateAsync({
+                username,
+                password,
+                token
+            });
             const newAuthState: AuthState = {
                 token: response.token,
                 username: response.user?.username ?? '',
@@ -109,11 +148,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             };
             setAuthState(newAuthState);
             dispatch(updateAuth(newAuthState));
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
+            localStorage.setItem(
+                AUTH_STORAGE_KEY,
+                JSON.stringify(newAuthState)
+            );
             setAuthToken(newAuthState.token);
             clearPostsCache();
             try {
-                await qc.fetchQuery({ queryKey: ['user', 'me'], queryFn: () => apiGet<UserDTO>('/users/me') });
+                await qc.fetchQuery({
+                    queryKey: ['user', 'me'],
+                    queryFn: () => apiGet<UserDTO>('/users/me')
+                });
                 const cached = qc.getQueryData<UserDTO>(['user', 'me']);
                 if (cached) setUserProfile(cached);
             }
@@ -124,9 +169,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         catch (error: any) {
             let message = 'Login failed. Please try again.';
-            if (Array.isArray(error) && error.length) message = String(error[0]);
+            if (Array.isArray(error) && error.length)
+                message = String(error[0]);
             else if (typeof error === 'string') message = error;
-            else if (error?.response?.data?.message) message = error.response.data.message;
+            else if (error?.response?.data?.message)
+                message = error.response.data.message;
             else if (error?.message) message = error.message;
 
             setErrorMessage(message);
@@ -170,7 +217,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const pathName = url.pathname;
 
                 const isPasswordFlow =
-                    pathName === '/reset-password' || pathName === '/forgot-password';
+                    pathName === '/reset-password' ||
+                    pathName === '/forgot-password';
 
                 if (tokenFromQuery && !isPasswordFlow) {
                     console.log('[AUTH DEBUG] Found token in query params');
@@ -178,7 +226,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         await loginHandler({ token: tokenFromQuery });
                         url.searchParams.delete('token');
                         const remainingSearch = url.searchParams.toString();
-                        const nextUrl = remainingSearch ? `${pathName}?${remainingSearch}` : pathName;
+                        const nextUrl = remainingSearch
+                            ? `${pathName}?${remainingSearch}`
+                            : pathName;
                         window.history.replaceState({}, '', nextUrl);
                     }
                     catch (err) {
@@ -187,11 +237,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                console.log('[AUTH DEBUG] Checking localStorage, found:', !!stored);
+                console.log(
+                    '[AUTH DEBUG] Checking localStorage, found:',
+                    !!stored
+                );
                 if (stored) {
                     const cached = JSON.parse(stored) as AuthState;
                     if (cached.token) {
-                        console.log('[AUTH DEBUG] Setting auth state from localStorage');
+                        console.log(
+                            '[AUTH DEBUG] Setting auth state from localStorage'
+                        );
                         setAuthState(cached);
                         dispatch(updateAuth(cached));
                     }
@@ -199,11 +254,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (isJwt(authState?.token ?? '')) {
                     if (!authState?.username && userQuery.data) {
-                        const usernameFromData = (userQuery.data as UserDTO).username || '';
-                        const patched = { ...authState, username: usernameFromData } as AuthState;
+                        const usernameFromData =
+                            (userQuery.data as UserDTO).username || '';
+                        const patched = {
+                            ...authState,
+                            username: usernameFromData
+                        } as AuthState;
                         setAuthState(patched);
                         dispatch(updateAuth(patched));
-                        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(patched));
+                        localStorage.setItem(
+                            AUTH_STORAGE_KEY,
+                            JSON.stringify(patched)
+                        );
                     }
                 }
             }
@@ -214,7 +276,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 dispatch(updateAuth({} as any));
             }
             finally {
-                console.log('[AUTH DEBUG] Bootstrap finished, setting loading to false');
+                console.log(
+                    '[AUTH DEBUG] Bootstrap finished, setting loading to false'
+                );
                 setLoading(false);
             }
         };
@@ -259,7 +323,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             let msg = 'Sign-up failed.';
             if (Array.isArray(error) && error.length) msg = String(error[0]);
             else if (typeof error === 'string') msg = error;
-            else if (error?.response?.data?.message) msg = error.response.data.message;
+            else if (error?.response?.data?.message)
+                msg = error.response.data.message;
             else if (error?.message) msg = error.message;
 
             throw new Error(msg);
@@ -271,7 +336,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     // Keep loading true until we have both token AND user profile (or confirmed no token)
-    const isActuallyLoading = loading || (!!token && (!userProfile || userQuery.isLoading));
+    const isActuallyLoading =
+        loading || (!!token && (!userProfile || userQuery.isLoading));
 
     // Debug logging
     useEffect(() => {
@@ -285,7 +351,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             userQueryIsError: userQuery.isError,
             userQueryData: !!userQuery.data
         });
-    }, [loading, isActuallyLoading, token, userProfile, userQuery.isLoading, userQuery.isError, userQuery.data]);
+    }, [
+        loading,
+        isActuallyLoading,
+        token,
+        userProfile,
+        userQuery.isLoading,
+        userQuery.isError,
+        userQuery.data
+    ]);
 
     return (
         <AuthContext.Provider

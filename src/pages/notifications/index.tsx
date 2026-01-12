@@ -1,7 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    useRef,
+    memo
+} from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Filter, Handshake, MessageCircle, MoreHorizontal, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    Filter,
+    Handshake,
+    MessageCircle,
+    MoreHorizontal,
+    Check,
+    ChevronDown,
+    ChevronUp
+} from 'lucide-react';
 
 import Spinner from '@/components/common/Spinner';
 import Alert from '@/components/common/Alert';
@@ -23,9 +38,11 @@ const PAGE_SIZE = 20;
 const historyQueryKey = ['notifications', 'history'] as const;
 
 // Simple UserCard wrapper (delays removed to fix staggering loading)
-const DelayedUserCard = memo(({ user, triggerVariant }: { user: any; triggerVariant: string }) => {
-    return <UserCard user={user} triggerVariant={triggerVariant as any} />;
-});
+const DelayedUserCard = memo(
+    ({ user, triggerVariant }: { user: any; triggerVariant: string }) => {
+        return <UserCard user={user} triggerVariant={triggerVariant as any} />;
+    }
+);
 
 DelayedUserCard.displayName = 'DelayedUserCard';
 
@@ -43,7 +60,14 @@ function HandshakeNotificationByPost({
     const { post, loading, error } = useCachedPost(postID);
     const [showError, setShowError] = useState(false);
 
-    console.log('[HandshakeNotificationByPost] Using cached post:', { postID, userID, notificationType, post, loading, error });
+    console.log('[HandshakeNotificationByPost] Using cached post:', {
+        postID,
+        userID,
+        notificationType,
+        post,
+        loading,
+        error
+    });
 
     // Delay showing error message
     useEffect(() => {
@@ -67,7 +91,10 @@ function HandshakeNotificationByPost({
     }
 
     if (error && showError) {
-        console.error('[HandshakeNotificationByPost] Error loading post:', error);
+        console.error(
+            '[HandshakeNotificationByPost] Error loading post:',
+            error
+        );
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
@@ -83,7 +110,9 @@ function HandshakeNotificationByPost({
     }
 
     if (!post) {
-        console.error('[HandshakeNotificationByPost] Post not found:', { postID });
+        console.error('[HandshakeNotificationByPost] Post not found:', {
+            postID
+        });
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
@@ -95,8 +124,8 @@ function HandshakeNotificationByPost({
 
     // Find the relevant handshake for this user
     const handshakes = post.handshakes || [];
-    const relevantHandshake = handshakes.find((h: any) =>
-        h.senderID === userID || h.receiverID === userID
+    const relevantHandshake = handshakes.find(
+        (h: any) => h.senderID === userID || h.receiverID === userID
     );
 
     console.log('[HandshakeNotificationByPost] Looking for handshake:', {
@@ -106,7 +135,10 @@ function HandshakeNotificationByPost({
     });
 
     if (!relevantHandshake) {
-        console.error('[HandshakeNotificationByPost] No handshake found for user:', { userID, handshakes });
+        console.error(
+            '[HandshakeNotificationByPost] No handshake found for user:',
+            { userID, handshakes }
+        );
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
@@ -116,7 +148,10 @@ function HandshakeNotificationByPost({
         );
     }
 
-    console.log('[HandshakeNotificationByPost] Rendering HandshakeCard with:', relevantHandshake);
+    console.log(
+        '[HandshakeNotificationByPost] Rendering HandshakeCard with:',
+        relevantHandshake
+    );
 
     return (
         <div
@@ -162,9 +197,14 @@ function NotificationContentWrapper({
 }: {
     notification: NotificationRecord;
     shouldShowHandshakeCard: boolean;
-    renderContent: (notification: NotificationRecord, shouldShowHandshakeCard: boolean, handshake?: any) => React.ReactNode;
+    renderContent: (
+        notification: NotificationRecord,
+        shouldShowHandshakeCard: boolean,
+        handshake?: any
+    ) => React.ReactNode;
 }) {
-    const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
+    const handshakeID =
+        'handshakeID' in notification ? notification.handshakeID : undefined;
     const { handshake, loading } = useCachedHandshake(handshakeID || 0);
 
     // For handshake notifications, wait for handshake data if we have an ID
@@ -180,12 +220,22 @@ function NotificationContentWrapper({
         return (
             <div className='flex items-center gap-2 py-2'>
                 <div className='h-4 w-4 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin' />
-                <span className='text-sm text-zinc-500 dark:text-zinc-400'>Loading...</span>
+                <span className='text-sm text-zinc-500 dark:text-zinc-400'>
+                    Loading...
+                </span>
             </div>
         );
     }
 
-    return <>{renderContent(notification, shouldShowHandshakeCard, isHandshakeNotification ? handshake : undefined)}</>;
+    return (
+        <>
+            {renderContent(
+                notification,
+                shouldShowHandshakeCard,
+                isHandshakeNotification ? handshake : undefined
+            )}
+        </>
+    );
 }
 
 function PreviousNotificationItem({
@@ -197,10 +247,16 @@ function PreviousNotificationItem({
     isDifferentHandshake: boolean;
     userID?: number;
 }) {
-    const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
+    const handshakeID =
+        'handshakeID' in notification ? notification.handshakeID : undefined;
     const { handshake } = useCachedHandshake(handshakeID || 0);
 
-    const prevMeta = describeNotification(notification, false, userID, handshake);
+    const prevMeta = describeNotification(
+        notification,
+        false,
+        userID,
+        handshake
+    );
     const prevCreatedAt = formatCreatedAt(notification.createdAt);
 
     return (
@@ -258,7 +314,10 @@ function HandshakeNotificationCard({
     }
 
     if (error && showError) {
-        console.error('[HandshakeNotificationCard] Error loading handshake:', error);
+        console.error(
+            '[HandshakeNotificationCard] Error loading handshake:',
+            error
+        );
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
@@ -274,7 +333,9 @@ function HandshakeNotificationCard({
     }
 
     if (!handshake) {
-        console.error('[HandshakeNotificationCard] Handshake not found:', { handshakeID });
+        console.error('[HandshakeNotificationCard] Handshake not found:', {
+            handshakeID
+        });
         return (
             <div className='text-center py-4'>
                 <p className='text-sm text-red-600 dark:text-red-400'>
@@ -306,9 +367,14 @@ function HandshakeNotificationCard({
 }
 
 // Helper to get display name - "you" if current user, otherwise username
-const getNotificationDisplayName = (user: any, currentUserID?: number, capitalize = false) => {
+const getNotificationDisplayName = (
+    user: any,
+    currentUserID?: number,
+    capitalize = false
+) => {
     if (!user?.username) return capitalize ? 'Someone' : 'someone';
-    if (currentUserID && user.id === currentUserID) return capitalize ? 'You' : 'you';
+    if (currentUserID && user.id === currentUserID)
+        return capitalize ? 'You' : 'you';
     return user.username;
 };
 
@@ -331,10 +397,18 @@ const getUserFromNotificationOrHandshake = (
     // Otherwise, try to extract from handshake if available
     if (handshake) {
         // Try to find the "other" user (not the current user)
-        if (handshake.sender && handshake.sender.id !== currentUserID && handshake.sender.username) {
+        if (
+            handshake.sender &&
+            handshake.sender.id !== currentUserID &&
+            handshake.sender.username
+        ) {
             return handshake.sender;
         }
-        if (handshake.receiver && handshake.receiver.id !== currentUserID && handshake.receiver.username) {
+        if (
+            handshake.receiver &&
+            handshake.receiver.id !== currentUserID &&
+            handshake.receiver.username
+        ) {
             return handshake.receiver;
         }
         // If we couldn't find the "other" user, try sender first, then receiver
@@ -350,7 +424,12 @@ const getUserFromNotificationOrHandshake = (
     return user;
 };
 
-function describeNotification(notification: NotificationRecord, showingHandshakeCard = true, userID?: number, handshake?: any) {
+function describeNotification(
+    notification: NotificationRecord,
+    showingHandshakeCard = true,
+    userID?: number,
+    handshake?: any
+) {
     switch (notification.type) {
     case NotificationType.POST_REPLY:
         return {
@@ -359,11 +438,11 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         };
     case NotificationType.POST_AUTO_CLOSE: {
         const closeAt =
-            (notification as any).closeAt || (notification as any).closedAt;
+                (notification as any).closeAt || (notification as any).closedAt;
         const when =
-            typeof closeAt === 'string' && closeAt
-                ? new Date(closeAt).toLocaleString()
-                : null;
+                typeof closeAt === 'string' && closeAt
+                    ? new Date(closeAt).toLocaleString()
+                    : null;
         return {
             title: 'Post auto-close',
             description: when
@@ -378,7 +457,9 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         };
     case NotificationType.BUG_REPORT: {
         const feedbackID =
-            'feedbackID' in notification ? notification.feedbackID : undefined;
+                'feedbackID' in notification
+                    ? notification.feedbackID
+                    : undefined;
         return {
             title: 'New bug report submitted',
             description: feedbackID
@@ -388,7 +469,9 @@ function describeNotification(notification: NotificationRecord, showingHandshake
     }
     case NotificationType.SITE_FEEDBACK: {
         const feedbackID =
-            'feedbackID' in notification ? notification.feedbackID : undefined;
+                'feedbackID' in notification
+                    ? notification.feedbackID
+                    : undefined;
         return {
             title: 'New site feedback submitted',
             description: feedbackID
@@ -397,7 +480,11 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         };
     }
     case NotificationType.HANDSHAKE_CREATED: {
-        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const user = getUserFromNotificationOrHandshake(
+            notification,
+            handshake,
+            userID
+        );
         const username = getNotificationDisplayName(user, userID, true);
         return {
             title: 'New offer to help',
@@ -408,9 +495,17 @@ function describeNotification(notification: NotificationRecord, showingHandshake
     }
     case NotificationType.HANDSHAKE_ACCEPTED: {
         // Determine who accepted based on post ownership
-        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const user = getUserFromNotificationOrHandshake(
+            notification,
+            handshake,
+            userID
+        );
         const username = getNotificationDisplayName(user, userID);
-        const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+        const usernameCapitalized = getNotificationDisplayName(
+            user,
+            userID,
+            true
+        );
 
         let title = 'Help offer accepted';
         let description = showingHandshakeCard
@@ -425,7 +520,10 @@ function describeNotification(notification: NotificationRecord, showingHandshake
                     ? `${usernameCapitalized} accepted your help offer! You can now coordinate.`
                     : `${usernameCapitalized} accepted your help offer!`;
             }
-            else if (handshake.receiverID === userID || handshake.recipientID === userID) {
+            else if (
+                handshake.receiverID === userID ||
+                    handshake.recipientID === userID
+            ) {
                 // Current user is the post owner/receiver, so they accepted
                 title = `You accepted ${username}'s help offer`;
                 description = showingHandshakeCard
@@ -437,9 +535,17 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         return { title, description };
     }
     case NotificationType.HANDSHAKE_COMPLETED: {
-        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const user = getUserFromNotificationOrHandshake(
+            notification,
+            handshake,
+            userID
+        );
         const username = getNotificationDisplayName(user, userID);
-        const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+        const usernameCapitalized = getNotificationDisplayName(
+            user,
+            userID,
+            true
+        );
 
         let title = 'Help completed';
         let description = showingHandshakeCard
@@ -449,34 +555,49 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         if (userID && handshake) {
             // Determine if user was receiving or giving help
             const postType = handshake.post?.type;
-            const isReceiver = handshake.receiverID === userID || handshake.recipientID === userID;
+            const isReceiver =
+                    handshake.receiverID === userID ||
+                    handshake.recipientID === userID;
             const isSender = handshake.senderID === userID;
 
-            const userWasReceivingHelp = (postType === 'request' && isReceiver) || (postType === 'gift' && isSender);
+            const userWasReceivingHelp =
+                    (postType === 'request' && isReceiver) ||
+                    (postType === 'gift' && isSender);
 
             if (isSender) {
-                title = userWasReceivingHelp ? `You received help from ${username}` : `You helped ${username}`;
+                title = userWasReceivingHelp
+                    ? `You received help from ${username}`
+                    : `You helped ${username}`;
                 description = userWasReceivingHelp
                     ? `You received help from ${username}.`
                     : `You helped ${username}.`;
             }
             else if (isReceiver) {
-                title = userWasReceivingHelp ? `${usernameCapitalized} helped you` : `${usernameCapitalized} received help from you`;
+                title = userWasReceivingHelp
+                    ? `${usernameCapitalized} helped you`
+                    : `${usernameCapitalized} received help from you`;
                 description = showingHandshakeCard
-                    ? (userWasReceivingHelp
+                    ? userWasReceivingHelp
                         ? `${usernameCapitalized} helped you. The exchange is complete.`
-                        : `${usernameCapitalized} received help from you. The exchange is complete.`)
-                    : (userWasReceivingHelp
+                        : `${usernameCapitalized} received help from you. The exchange is complete.`
+                    : userWasReceivingHelp
                         ? `${usernameCapitalized} helped you.`
-                        : `${usernameCapitalized} received help from you.`);
+                        : `${usernameCapitalized} received help from you.`;
             }
         }
 
         return { title, description };
     }
     case NotificationType.HANDSHAKE_CANCELLED: {
-        const noShow = 'noShowReported' in notification ? notification.noShowReported : false;
-        const user = getUserFromNotificationOrHandshake(notification, handshake, userID);
+        const noShow =
+                'noShowReported' in notification
+                    ? notification.noShowReported
+                    : false;
+        const user = getUserFromNotificationOrHandshake(
+            notification,
+            handshake,
+            userID
+        );
 
         let title = 'Help cancelled';
         let description = noShow
@@ -486,18 +607,28 @@ function describeNotification(notification: NotificationRecord, showingHandshake
         if (userID && handshake && !noShow) {
             const cancelledByUserID = handshake.cancelledByUserID;
             const postType = handshake.post?.type;
-            const isReceiver = handshake.receiverID === userID || handshake.recipientID === userID;
+            const isReceiver =
+                    handshake.receiverID === userID ||
+                    handshake.recipientID === userID;
             const isSender = handshake.senderID === userID;
-            const userWasReceivingHelp = (postType === 'request' && isReceiver) || (postType === 'gift' && isSender);
+            const userWasReceivingHelp =
+                    (postType === 'request' && isReceiver) ||
+                    (postType === 'gift' && isSender);
 
             if (cancelledByUserID === userID) {
-                title = userWasReceivingHelp ? 'You stopped receiving help' : 'You stopped giving help';
+                title = userWasReceivingHelp
+                    ? 'You stopped receiving help'
+                    : 'You stopped giving help';
                 description = userWasReceivingHelp
                     ? 'You stopped receiving help.'
                     : 'You stopped giving help.';
             }
             else if (cancelledByUserID) {
-                const usernameCapitalized = getNotificationDisplayName(user, userID, true);
+                const usernameCapitalized = getNotificationDisplayName(
+                    user,
+                    userID,
+                    true
+                );
                 title = `${usernameCapitalized} stopped helping`;
                 description = `${usernameCapitalized} stopped helping.`;
             }
@@ -539,17 +670,26 @@ type GroupedNotification = {
 
 type NotificationItem = NotificationRecord | GroupedNotification;
 
-function isGroupedNotification(item: NotificationItem): item is GroupedNotification {
+function isGroupedNotification(
+    item: NotificationItem
+): item is GroupedNotification {
     return 'latest' in item && 'previous' in item && 'handshakeIDs' in item;
 }
 
 export default function NotificationsPage() {
     const navigate = useNavigate();
-    const { markActed, acknowledgeAll, hasNewNotifications, clearNewNotifications } = useNotifications();
+    const {
+        markActed,
+        acknowledgeAll,
+        hasNewNotifications,
+        clearNewNotifications
+    } = useNotifications();
     const { user } = useAuth();
     const [filter, setFilter] = useState<NotificationFilter>('all');
     const markedAsReadRef = useRef<Set<number>>(new Set());
-    const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+    const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
+        new Set()
+    );
     const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
     const [showEmptyState, setShowEmptyState] = useState(false);
 
@@ -571,17 +711,24 @@ export default function NotificationsPage() {
     } = useInfiniteQuery({
         queryKey: historyQueryKey,
         queryFn: async ({ pageParam }) => {
-            const response = await apiGet<NotificationsHistoryResponse>('/notifications/history', {
-                params: {
-                    limit: PAGE_SIZE,
-                    cursor: pageParam
+            const response = await apiGet<NotificationsHistoryResponse>(
+                '/notifications/history',
+                {
+                    params: {
+                        limit: PAGE_SIZE,
+                        cursor: pageParam
+                    }
                 }
-            });
+            );
             console.log('[NotificationsPage] API Response:', {
                 itemsCount: response.items.length,
-                types: response.items.map(item => item.type),
-                hasEventUserJoined: response.items.some(item => item.type === 'event-user-joined'),
-                hasEventReply: response.items.some(item => item.type === 'event-reply')
+                types: response.items.map((item) => item.type),
+                hasEventUserJoined: response.items.some(
+                    (item) => item.type === 'event-user-joined'
+                ),
+                hasEventReply: response.items.some(
+                    (item) => item.type === 'event-reply'
+                )
             });
             return response;
         },
@@ -598,40 +745,58 @@ export default function NotificationsPage() {
 
     const items = useMemo(() => {
         // Filter out direct messages - they should only appear in the messages section
-        const itemsWithoutDMs = allItems.filter((item) => item.type !== NotificationType.DIRECT_MESSAGE);
+        const itemsWithoutDMs = allItems.filter(
+            (item) => item.type !== NotificationType.DIRECT_MESSAGE
+        );
 
         // Debug: Log all notification types
         console.log('[NotificationsPage] All notification types:', {
             total: allItems.length,
-            types: allItems.map(item => item.type),
-            eventUserJoined: allItems.filter(item => item.type === NotificationType.EVENT_USER_JOINED).length,
-            eventReply: allItems.filter(item => item.type === NotificationType.EVENT_REPLY).length
+            types: allItems.map((item) => item.type),
+            eventUserJoined: allItems.filter(
+                (item) => item.type === NotificationType.EVENT_USER_JOINED
+            ).length,
+            eventReply: allItems.filter(
+                (item) => item.type === NotificationType.EVENT_REPLY
+            ).length
         });
 
-        const filtered = filter === 'all' ? itemsWithoutDMs : itemsWithoutDMs.filter((item) => {
-            if (filter === 'handshakes') {
-                return (
-                    item.type === NotificationType.HANDSHAKE_CREATED ||
-                    item.type === NotificationType.HANDSHAKE_ACCEPTED ||
-                    item.type === NotificationType.HANDSHAKE_COMPLETED ||
-                    item.type === NotificationType.HANDSHAKE_CANCELLED
-                );
-            }
-            if (filter === 'comments') {
-                return item.type === NotificationType.POST_REPLY || item.type === NotificationType.EVENT_REPLY;
-            }
-            if (filter === 'other') {
-                return (
-                    item.type !== NotificationType.POST_REPLY &&
-                    item.type !== NotificationType.EVENT_REPLY &&
-                    item.type !== NotificationType.HANDSHAKE_CREATED &&
-                    item.type !== NotificationType.HANDSHAKE_ACCEPTED &&
-                    item.type !== NotificationType.HANDSHAKE_COMPLETED &&
-                    item.type !== NotificationType.HANDSHAKE_CANCELLED
-                );
-            }
-            return true;
-        });
+        const filtered =
+            filter === 'all'
+                ? itemsWithoutDMs
+                : itemsWithoutDMs.filter((item) => {
+                    if (filter === 'handshakes') {
+                        return (
+                            item.type ===
+                                  NotificationType.HANDSHAKE_CREATED ||
+                              item.type ===
+                                  NotificationType.HANDSHAKE_ACCEPTED ||
+                              item.type ===
+                                  NotificationType.HANDSHAKE_COMPLETED ||
+                              item.type === NotificationType.HANDSHAKE_CANCELLED
+                        );
+                    }
+                    if (filter === 'comments') {
+                        return (
+                            item.type === NotificationType.POST_REPLY ||
+                              item.type === NotificationType.EVENT_REPLY
+                        );
+                    }
+                    if (filter === 'other') {
+                        return (
+                            item.type !== NotificationType.POST_REPLY &&
+                              item.type !== NotificationType.EVENT_REPLY &&
+                              item.type !==
+                                  NotificationType.HANDSHAKE_CREATED &&
+                              item.type !==
+                                  NotificationType.HANDSHAKE_ACCEPTED &&
+                              item.type !==
+                                  NotificationType.HANDSHAKE_COMPLETED &&
+                              item.type !== NotificationType.HANDSHAKE_CANCELLED
+                        );
+                    }
+                    return true;
+                });
 
         // Group handshake notifications by postID
         const handshakeGroups = new Map<number, NotificationRecord[]>();
@@ -672,8 +837,12 @@ export default function NotificationsPage() {
                 // Multiple notifications, create a group
                 // Sort by createdAt descending (most recent first)
                 const sorted = [...notifications].sort((a, b) => {
-                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    const dateA = a.createdAt
+                        ? new Date(a.createdAt).getTime()
+                        : 0;
+                    const dateB = b.createdAt
+                        ? new Date(b.createdAt).getTime()
+                        : 0;
                     return dateB - dateA;
                 });
 
@@ -681,8 +850,16 @@ export default function NotificationsPage() {
                 const handshakeIDs = Array.from(
                     new Set(
                         sorted
-                            .filter((n): n is NotificationRecord & { handshakeID: number } => 'handshakeID' in n && typeof n.handshakeID === 'number')
-                            .map(n => n.handshakeID)
+                            .filter(
+                                (
+                                    n
+                                ): n is NotificationRecord & {
+                                    handshakeID: number;
+                                } =>
+                                    'handshakeID' in n &&
+                                    typeof n.handshakeID === 'number'
+                            )
+                            .map((n) => n.handshakeID)
                     )
                 );
 
@@ -702,7 +879,9 @@ export default function NotificationsPage() {
         return result.sort((a, b) => {
             const getLatestDate = (item: NotificationItem) => {
                 if (isGroupedNotification(item)) {
-                    return item.latest.createdAt ? new Date(item.latest.createdAt).getTime() : 0;
+                    return item.latest.createdAt
+                        ? new Date(item.latest.createdAt).getTime()
+                        : 0;
                 }
                 return item.createdAt ? new Date(item.createdAt).getTime() : 0;
             };
@@ -751,18 +930,22 @@ export default function NotificationsPage() {
                 // For grouped notifications, check all notifications in the group
                 const allNotifs = [item.latest, ...item.previous];
                 allNotifs.forEach((notif) => {
-                    if (!notif.isActedOn &&
+                    if (
+                        !notif.isActedOn &&
                         (notif.type === NotificationType.HANDSHAKE_COMPLETED ||
-                         notif.type === NotificationType.HANDSHAKE_CANCELLED)) {
+                            notif.type === NotificationType.HANDSHAKE_CANCELLED)
+                    ) {
                         notificationsToMark.push(notif);
                     }
                 });
             }
             else {
                 // For single notifications
-                if (!item.isActedOn &&
+                if (
+                    !item.isActedOn &&
                     (item.type === NotificationType.HANDSHAKE_COMPLETED ||
-                     item.type === NotificationType.HANDSHAKE_CANCELLED)) {
+                        item.type === NotificationType.HANDSHAKE_CANCELLED)
+                ) {
                     notificationsToMark.push(item);
                 }
             }
@@ -771,22 +954,32 @@ export default function NotificationsPage() {
         if (notificationsToMark.length > 0) {
             const markAllAsync = async () => {
                 const toMark = notificationsToMark.filter(
-                    (notification) => !markedAsReadRef.current.has(notification.id)
+                    (notification) =>
+                        !markedAsReadRef.current.has(notification.id)
                 );
 
                 if (toMark.length === 0) return;
 
                 // Add all to the ref to prevent duplicate attempts
-                toMark.forEach((notification) => markedAsReadRef.current.add(notification.id));
+                toMark.forEach((notification) =>
+                    markedAsReadRef.current.add(notification.id)
+                );
 
                 try {
-                    await Promise.all(toMark.map((notification) => markActed(notification.id)));
+                    await Promise.all(
+                        toMark.map((notification) => markActed(notification.id))
+                    );
                     // No need to refetch here - markActed invalidates the query in NotificationsContext
                 }
                 catch (err) {
-                    console.error('Failed to auto-mark handshake notifications as read:', err);
+                    console.error(
+                        'Failed to auto-mark handshake notifications as read:',
+                        err
+                    );
                     // Remove from ref on failure so they can be retried
-                    toMark.forEach((notification) => markedAsReadRef.current.delete(notification.id));
+                    toMark.forEach((notification) =>
+                        markedAsReadRef.current.delete(notification.id)
+                    );
                 }
             };
 
@@ -796,7 +989,9 @@ export default function NotificationsPage() {
 
     const handleOpen = useCallback(
         (item: NotificationItem) => {
-            const notification = isGroupedNotification(item) ? item.latest : item;
+            const notification = isGroupedNotification(item)
+                ? item.latest
+                : item;
 
             if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
@@ -824,7 +1019,9 @@ export default function NotificationsPage() {
             ) {
                 navigate(`/post/${notification.postID}`);
             }
-            else if (notification.type === NotificationType.EVENT_USER_JOINED) {
+            else if (
+                notification.type === NotificationType.EVENT_USER_JOINED
+            ) {
                 navigate(`/event/${notification.eventID}`);
             }
 
@@ -833,16 +1030,19 @@ export default function NotificationsPage() {
                 ? [item.latest, ...item.previous]
                 : [notification];
 
-            const unactedNotifications = notificationsToMark.filter(n => !n.isActedOn);
+            const unactedNotifications = notificationsToMark.filter(
+                (n) => !n.isActedOn
+            );
 
             if (unactedNotifications.length > 0) {
-                Promise.all(unactedNotifications.map(n => markActed(n.id)))
-                    .catch((err) => {
-                        console.error(
-                            'Failed to mark notification(s) acted from history view',
-                            err
-                        );
-                    });
+                Promise.all(
+                    unactedNotifications.map((n) => markActed(n.id))
+                ).catch((err) => {
+                    console.error(
+                        'Failed to mark notification(s) acted from history view',
+                        err
+                    );
+                });
                 // No need to refetch - markActed invalidates the query
             }
         },
@@ -855,7 +1055,11 @@ export default function NotificationsPage() {
             : 'Something went wrong while loading notifications.'
         : '';
 
-    const renderNotificationContent = (notification: NotificationRecord, shouldShowHandshakeCard: boolean, handshake?: any) => {
+    const renderNotificationContent = (
+        notification: NotificationRecord,
+        shouldShowHandshakeCard: boolean,
+        handshake?: any
+    ) => {
         const createdAt = formatCreatedAt(notification.createdAt);
 
         if (notification.type === NotificationType.POST_REPLY) {
@@ -866,15 +1070,25 @@ export default function NotificationsPage() {
                 <div className='flex items-start gap-3'>
                     {isCurrentUser ? (
                         <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>You</span>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                                You
+                            </span>
                         </div>
                     ) : hasUsername ? (
-                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                            <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className='flex-shrink-0'
+                        >
+                            <DelayedUserCard
+                                user={author}
+                                triggerVariant='avatar-name'
+                            />
                         </div>
                     ) : (
                         <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>Someone</span>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                                Someone
+                            </span>
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
@@ -904,15 +1118,25 @@ export default function NotificationsPage() {
                 <div className='flex items-start gap-3'>
                     {isCurrentUser ? (
                         <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>You</span>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                                You
+                            </span>
                         </div>
                     ) : hasUsername ? (
-                        <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                            <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className='flex-shrink-0'
+                        >
+                            <DelayedUserCard
+                                user={author}
+                                triggerVariant='avatar-name'
+                            />
                         </div>
                     ) : (
                         <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>Someone</span>
+                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                                Someone
+                            </span>
                         </div>
                     )}
                     <div className='flex-1 min-w-0'>
@@ -941,9 +1165,18 @@ export default function NotificationsPage() {
             notification.type === NotificationType.HANDSHAKE_COMPLETED ||
             notification.type === NotificationType.HANDSHAKE_CANCELLED
         ) {
-            const handshakeID = 'handshakeID' in notification ? notification.handshakeID : undefined;
-            const postID = 'postID' in notification ? notification.postID : undefined;
-            const meta = describeNotification(notification, shouldShowHandshakeCard, user?.id, handshake);
+            const handshakeID =
+                'handshakeID' in notification
+                    ? notification.handshakeID
+                    : undefined;
+            const postID =
+                'postID' in notification ? notification.postID : undefined;
+            const meta = describeNotification(
+                notification,
+                shouldShowHandshakeCard,
+                user?.id,
+                handshake
+            );
 
             console.log('[renderNotificationContent] Handshake notification:', {
                 type: notification.type,
@@ -956,7 +1189,10 @@ export default function NotificationsPage() {
             const handleHandshakeInteraction = () => {
                 if (!notification.isActedOn) {
                     markActed(notification.id).catch((err) => {
-                        console.error('Failed to mark handshake notification as acted:', err);
+                        console.error(
+                            'Failed to mark handshake notification as acted:',
+                            err
+                        );
                     });
                 }
             };
@@ -979,11 +1215,18 @@ export default function NotificationsPage() {
                 ) : (
                     <div className='text-center py-4'>
                         <p className='text-sm text-red-600 dark:text-red-400'>
-                            Missing handshake data. Notification: {JSON.stringify({
+                            Missing handshake data. Notification:{' '}
+                            {JSON.stringify({
                                 id: notification.id,
                                 type: notification.type,
-                                handshakeID: 'handshakeID' in notification ? notification.handshakeID : 'N/A',
-                                postID: 'postID' in notification ? notification.postID : 'N/A'
+                                handshakeID:
+                                    'handshakeID' in notification
+                                        ? notification.handshakeID
+                                        : 'N/A',
+                                postID:
+                                    'postID' in notification
+                                        ? notification.postID
+                                        : 'N/A'
                             })}
                         </p>
                     </div>
@@ -1012,26 +1255,25 @@ export default function NotificationsPage() {
                             </time>
                         )}
                     </div>
-                    {handshakeContent && (
-                        <div>
-                            {handshakeContent}
-                        </div>
-                    )}
+                    {handshakeContent && <div>{handshakeContent}</div>}
                 </div>
             );
         }
 
         // Event user joined notifications
         if (notification.type === NotificationType.EVENT_USER_JOINED) {
-            const eventUser = 'user' in notification ? notification.user : undefined;
-            const isCurrentUser = eventUser && user?.id && eventUser.id === user.id;
+            const eventUser =
+                'user' in notification ? notification.user : undefined;
+            const isCurrentUser =
+                eventUser && user?.id && eventUser.id === user.id;
             const hasUsername = eventUser?.username || eventUser?.displayName;
             console.log('[NotificationsPage] EVENT_USER_JOINED notification:', {
                 notification,
                 eventUser,
                 hasUser: !!eventUser,
                 hasUsername,
-                userID: 'userID' in notification ? notification.userID : undefined
+                userID:
+                    'userID' in notification ? notification.userID : undefined
             });
             return (
                 <div className='flex flex-col gap-3'>
@@ -1046,7 +1288,10 @@ export default function NotificationsPage() {
                                 </p>
                             ) : hasUsername ? (
                                 <div onClick={(e) => e.stopPropagation()}>
-                                    <DelayedUserCard user={eventUser} triggerVariant='avatar-name' />
+                                    <DelayedUserCard
+                                        user={eventUser}
+                                        triggerVariant='avatar-name'
+                                    />
                                 </div>
                             ) : (
                                 <p className='text-sm text-zinc-700 dark:text-zinc-300'>
@@ -1097,12 +1342,12 @@ export default function NotificationsPage() {
         <div className='mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8'>
             {/* New notifications banner */}
             {hasNewNotifications && (
-                <div className="mb-4">
+                <div className='mb-4'>
                     <button
                         onClick={() => {
                             clearNewNotifications();
                         }}
-                        className="
+                        className='
                             w-full
                             px-4 py-3
                             bg-brand-600 dark:bg-brand-500
@@ -1114,10 +1359,20 @@ export default function NotificationsPage() {
                             transition-all
                             hover:shadow-xl
                             flex items-center justify-center gap-2
-                        "
+                        '
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        <svg
+                            className='w-5 h-5'
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'
+                        >
+                            <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'
+                            />
                         </svg>
                         You have new notifications, click to show them
                     </button>
@@ -1125,20 +1380,30 @@ export default function NotificationsPage() {
             )}
 
             {/* Filter buttons */}
-            <div className="w-full mb-2">
-                <div className="flex w-full border-b border-zinc-200 dark:border-zinc-700">
+            <div className='w-full mb-2'>
+                <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                     {[
                         { key: 'all', label: 'All', Icon: Filter },
-                        { key: 'handshakes', label: 'Handshakes', Icon: Handshake },
-                        { key: 'comments', label: 'Comments', Icon: MessageCircle },
-                        { key: 'other', label: 'Other', Icon: MoreHorizontal},
+                        {
+                            key: 'handshakes',
+                            label: 'Handshakes',
+                            Icon: Handshake
+                        },
+                        {
+                            key: 'comments',
+                            label: 'Comments',
+                            Icon: MessageCircle
+                        },
+                        { key: 'other', label: 'Other', Icon: MoreHorizontal }
                     ].map(({ key, label, Icon }) => {
-                        const isActive = filter === key
+                        const isActive = filter === key;
 
                         return (
                             <button
                                 key={key}
-                                onClick={() => setFilter(key as NotificationFilter)}
+                                onClick={() =>
+                                    setFilter(key as NotificationFilter)
+                                }
                                 className={`
                         group
                         flex flex-1
@@ -1152,9 +1417,11 @@ export default function NotificationsPage() {
                         border-b-2
                         -mb-px
 
-                        ${isActive
+                        ${
+                            isActive
                                 ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
-                                : 'border-transparent text-zinc-500 hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-300'}
+                                : 'border-transparent text-zinc-500 hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-300'
+                            }
                     `}
                             >
                                 {Icon && (
@@ -1169,21 +1436,19 @@ export default function NotificationsPage() {
 
                                 {/* Label */}
                                 <span
-                                    className="
+                                    className='
                             leading-none
                             sm:inline
                             hidden xs:inline
-                        "
+                        '
                                 >
                                     {label}
                                 </span>
                             </button>
-                        )
+                        );
                     })}
                 </div>
             </div>
-
-
 
             <button
                 onClick={async () => {
@@ -1193,10 +1458,13 @@ export default function NotificationsPage() {
                         await acknowledgeAll();
                     }
                     catch (err) {
-                        console.error('Failed to mark all notifications as read:', err);
+                        console.error(
+                            'Failed to mark all notifications as read:',
+                            err
+                        );
                     }
                 }}
-                className="
+                className='
                     w-full mb-3
                     text-xs font-medium
                     text-zinc-500 dark:text-zinc-400
@@ -1204,12 +1472,10 @@ export default function NotificationsPage() {
                     hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50
                     py-2 rounded-md
                     transition
-                "
+                '
             >
                 Mark all as read
             </button>
-
-
 
             {showLoadingSpinner ? (
                 <div className='mt-8'>
@@ -1234,7 +1500,10 @@ export default function NotificationsPage() {
                 </div>
             ) : items.length === 0 ? (
                 showEmptyState ? (
-                    <div className='mt-6' style={{ animation: 'fadeInSlow 0.4s ease-out both' }}>
+                    <div
+                        className='mt-6'
+                        style={{ animation: 'fadeInSlow 0.4s ease-out both' }}
+                    >
                         <Alert
                             type='info'
                             title='You are all caught up'
@@ -1248,10 +1517,17 @@ export default function NotificationsPage() {
                         {items.map((item) => {
                             const isGrouped = isGroupedNotification(item);
                             const notification = isGrouped ? item.latest : item;
-                            const allNotifications = isGrouped ? [item.latest, ...item.previous] : [item];
-                            const hasUnread = allNotifications.some(n => !n.isActedOn);
-                            const itemKey = isGrouped ? `group-${item.postID}` : `notif-${notification.id}`;
-                            const isExpanded = isGrouped && expandedGroups.has(item.postID);
+                            const allNotifications = isGrouped
+                                ? [item.latest, ...item.previous]
+                                : [item];
+                            const hasUnread = allNotifications.some(
+                                (n) => !n.isActedOn
+                            );
+                            const itemKey = isGrouped
+                                ? `group-${item.postID}`
+                                : `notif-${notification.id}`;
+                            const isExpanded =
+                                isGrouped && expandedGroups.has(item.postID);
 
                             const highlight = hasUnread
                                 ? 'border-l-4 border-l-brand-600 dark:border-l-brand-400 bg-brand-50/80 dark:bg-brand-900/30 shadow-md'
@@ -1261,18 +1537,30 @@ export default function NotificationsPage() {
                             // For single notifications, always show the card too (since we're grouping now)
                             const shouldShowHandshakeCard = true;
 
-                            const handleMarkAsRead = async (e: React.MouseEvent) => {
+                            const handleMarkAsRead = async (
+                                e: React.MouseEvent
+                            ) => {
                                 e.stopPropagation();
 
-                                const notificationsToMark = allNotifications.filter(n => !n.isActedOn);
+                                const notificationsToMark =
+                                    allNotifications.filter(
+                                        (n) => !n.isActedOn
+                                    );
 
                                 if (notificationsToMark.length > 0) {
                                     try {
-                                        await Promise.all(notificationsToMark.map(n => markActed(n.id)));
+                                        await Promise.all(
+                                            notificationsToMark.map((n) =>
+                                                markActed(n.id)
+                                            )
+                                        );
                                         // No need to refetch - markActed invalidates the query
                                     }
                                     catch (err) {
-                                        console.error('Failed to mark notification(s) as read:', err);
+                                        console.error(
+                                            'Failed to mark notification(s) as read:',
+                                            err
+                                        );
                                     }
                                 }
                             };
@@ -1280,7 +1568,7 @@ export default function NotificationsPage() {
                             const toggleExpanded = (e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 if (isGrouped) {
-                                    setExpandedGroups(prev => {
+                                    setExpandedGroups((prev) => {
                                         const next = new Set(prev);
                                         if (next.has(item.postID)) {
                                             next.delete(item.postID);
@@ -1299,53 +1587,109 @@ export default function NotificationsPage() {
                                         type='button'
                                         onClick={() => handleOpen(item)}
                                         className={`w-full rounded-lg border px-4 py-4 text-left transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${highlight} overflow-hidden`}
-                                        style={{ animation: `fadeIn 600ms cubic-bezier(0.4, 0, 0.2, 1) both` }}
+                                        style={{
+                                            animation: `fadeIn 600ms cubic-bezier(0.4, 0, 0.2, 1) both`
+                                        }}
                                     >
                                         <NotificationContentWrapper
                                             notification={notification}
-                                            shouldShowHandshakeCard={shouldShowHandshakeCard}
-                                            renderContent={renderNotificationContent}
+                                            shouldShowHandshakeCard={
+                                                shouldShowHandshakeCard
+                                            }
+                                            renderContent={
+                                                renderNotificationContent
+                                            }
                                         />
 
                                         {/* Show count badge and expand button for grouped notifications */}
-                                        {isGrouped && item.previous.length > 0 && (() => {
-                                            const multipleHandshakes = item.handshakeIDs.length > 1;
+                                        {isGrouped &&
+                                            item.previous.length > 0 &&
+                                            (() => {
+                                                const multipleHandshakes =
+                                                    item.handshakeIDs.length >
+                                                    1;
 
-                                            return (
-                                                <div className='mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700'>
-                                                    <button
-                                                        type='button'
-                                                        onClick={toggleExpanded}
-                                                        className='flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition'
-                                                    >
-                                                        {isExpanded ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
-                                                        <span className='font-medium'>
-                                                            +{item.previous.length} earlier update{item.previous.length !== 1 ? 's' : ''} about this {multipleHandshakes ? 'post' : 'help request'}
-                                                        </span>
-                                                    </button>
+                                                return (
+                                                    <div className='mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700'>
+                                                        <button
+                                                            type='button'
+                                                            onClick={
+                                                                toggleExpanded
+                                                            }
+                                                            className='flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition'
+                                                        >
+                                                            {isExpanded ? (
+                                                                <ChevronUp className='w-4 h-4' />
+                                                            ) : (
+                                                                <ChevronDown className='w-4 h-4' />
+                                                            )}
+                                                            <span className='font-medium'>
+                                                                +
+                                                                {
+                                                                    item
+                                                                        .previous
+                                                                        .length
+                                                                }{' '}
+                                                                earlier update
+                                                                {item.previous
+                                                                    .length !==
+                                                                1
+                                                                    ? 's'
+                                                                    : ''}{' '}
+                                                                about this{' '}
+                                                                {multipleHandshakes
+                                                                    ? 'post'
+                                                                    : 'help request'}
+                                                            </span>
+                                                        </button>
 
-                                                    {/* Expanded previous notifications */}
-                                                    {isExpanded && (
-                                                        <div className='mt-3 space-y-2 pl-6 border-l-2 border-zinc-300 dark:border-zinc-600'>
-                                                            {item.previous.map((prevNotif) => {
-                                                                const prevHandshakeID = 'handshakeID' in prevNotif ? prevNotif.handshakeID : null;
-                                                                const latestHandshakeID = 'handshakeID' in item.latest ? item.latest.handshakeID : null;
-                                                                const isDifferentHandshake = multipleHandshakes && prevHandshakeID !== latestHandshakeID;
+                                                        {/* Expanded previous notifications */}
+                                                        {isExpanded && (
+                                                            <div className='mt-3 space-y-2 pl-6 border-l-2 border-zinc-300 dark:border-zinc-600'>
+                                                                {item.previous.map(
+                                                                    (
+                                                                        prevNotif
+                                                                    ) => {
+                                                                        const prevHandshakeID =
+                                                                            'handshakeID' in
+                                                                            prevNotif
+                                                                                ? prevNotif.handshakeID
+                                                                                : null;
+                                                                        const latestHandshakeID =
+                                                                            'handshakeID' in
+                                                                            item.latest
+                                                                                ? item
+                                                                                    .latest
+                                                                                    .handshakeID
+                                                                                : null;
+                                                                        const isDifferentHandshake =
+                                                                            multipleHandshakes &&
+                                                                            prevHandshakeID !==
+                                                                                latestHandshakeID;
 
-                                                                return (
-                                                                    <PreviousNotificationItem
-                                                                        key={prevNotif.id}
-                                                                        notification={prevNotif}
-                                                                        isDifferentHandshake={isDifferentHandshake}
-                                                                        userID={user?.id}
-                                                                    />
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
+                                                                        return (
+                                                                            <PreviousNotificationItem
+                                                                                key={
+                                                                                    prevNotif.id
+                                                                                }
+                                                                                notification={
+                                                                                    prevNotif
+                                                                                }
+                                                                                isDifferentHandshake={
+                                                                                    isDifferentHandshake
+                                                                                }
+                                                                                userID={
+                                                                                    user?.id
+                                                                                }
+                                                                            />
+                                                                        );
+                                                                    }
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
 
                                         <div className='mt-3 flex items-center justify-between gap-2'>
                                             {hasUnread && (
@@ -1364,7 +1708,11 @@ export default function NotificationsPage() {
                                                 disabled={!hasUnread}
                                             >
                                                 <Check className='w-3 h-3' />
-                                                {!hasUnread ? 'Read' : isGrouped ? 'Mark as read' : 'Mark as read'}
+                                                {!hasUnread
+                                                    ? 'Read'
+                                                    : isGrouped
+                                                        ? 'Mark as read'
+                                                        : 'Mark as read'}
                                             </button>
                                         </div>
                                     </button>
@@ -1381,14 +1729,11 @@ export default function NotificationsPage() {
                                 disabled={isFetchingNextPage}
                                 className='inline-flex items-center rounded-md border border-transparent bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600 dark:focus:ring-offset-zinc-900'
                             >
-                                {isFetchingNextPage
-                                    ? 'Loading…'
-                                    : 'Load more'}
+                                {isFetchingNextPage ? 'Loading…' : 'Load more'}
                             </button>
                         ) : (
                             <span className='text-sm text-zinc-500 dark:text-zinc-400'>
-                                You have reached the end of your
-                                notifications.
+                                You have reached the end of your notifications.
                             </span>
                         )}
                     </div>

@@ -1,5 +1,10 @@
 import { LogEntry, LogFilter, Recording, RecordingLogEntry } from './types';
-import { loadLogs, saveLogs, clearLogs as clearStoredLogs, exportLogsAsJson } from './logStorage';
+import {
+    loadLogs,
+    saveLogs,
+    clearLogs as clearStoredLogs,
+    exportLogsAsJson
+} from './logStorage';
 
 // Configurable truncation limits for payload display
 const PAYLOAD_TRUNCATE_LENGTH = 500; // Characters to show before truncation
@@ -99,7 +104,7 @@ class LogCollectorService {
         const entry: LogEntry = {
             ...logEntry,
             id: generateId(),
-            timestamp: Date.now(),
+            timestamp: Date.now()
         } as LogEntry;
 
         this.logs.push(entry);
@@ -165,7 +170,9 @@ class LogCollectorService {
 
         // Filter by log type
         if (filter.logTypes.length > 0) {
-            filtered = filtered.filter((log) => filter.logTypes.includes(log.type));
+            filtered = filtered.filter((log) =>
+                filter.logTypes.includes(log.type)
+            );
         }
 
         // Filter by log level (for console logs) and error status (for network logs)
@@ -175,7 +182,10 @@ class LogCollectorService {
                     return filter.logLevels.includes(log.level);
                 }
                 // For network logs with 'error' level filter, show only 4xx/5xx status codes
-                if (log.type === 'network' && filter.logLevels.includes('error')) {
+                if (
+                    log.type === 'network' &&
+                    filter.logLevels.includes('error')
+                ) {
                     const networkLog = log as any;
                     return networkLog.status && networkLog.status >= 400;
                 }
@@ -197,7 +207,8 @@ class LogCollectorService {
         if (filter.searchText.trim().length > 0) {
             const searchLower = filter.searchText.toLowerCase();
             filtered = filtered.filter((log) => {
-                const searchableText = this.getSearchableText(log).toLowerCase();
+                const searchableText =
+                    this.getSearchableText(log).toLowerCase();
                 return searchableText.includes(searchLower);
             });
         }
@@ -257,7 +268,7 @@ class LogCollectorService {
             websocket: 0,
             reactQuery: 0,
             errors: 0,
-            warnings: 0,
+            warnings: 0
         };
 
         this.logs.forEach((log) => {
@@ -269,7 +280,8 @@ class LogCollectorService {
                 break;
             case 'network':
                 stats.network++;
-                if ((log as any).status && (log as any).status >= 400) stats.errors++;
+                if ((log as any).status && (log as any).status >= 400)
+                    stats.errors++;
                 break;
             case 'websocket':
                 stats.websocket++;
@@ -295,7 +307,7 @@ class LogCollectorService {
             id: recordingId,
             name: name || `Recording ${new Date().toLocaleTimeString()}`,
             createdAt: Date.now(),
-            logs: [],
+            logs: []
         };
 
         this.recordings.set(recordingId, recording);
@@ -336,7 +348,7 @@ class LogCollectorService {
         const recordingEntry: RecordingLogEntry = {
             log,
             addedAt: Date.now(),
-            context,
+            context
         };
 
         recording.logs.push(recordingEntry);
@@ -365,7 +377,7 @@ class LogCollectorService {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            fractionalSecondDigits: 3,
+            fractionalSecondDigits: 3
         });
 
         switch (log.type) {
@@ -429,12 +441,14 @@ class LogCollectorService {
             `Created: ${new Date(recording.createdAt).toLocaleString()}`,
             `Logs: ${recording.logs.length}`,
             '─'.repeat(80),
-            '',
+            ''
         ];
 
         recording.logs.forEach((entry, index) => {
             lines.push(`${index + 1}. ${entry.context}`);
-            lines.push(`   Added: ${new Date(entry.addedAt).toLocaleTimeString()}`);
+            lines.push(
+                `   Added: ${new Date(entry.addedAt).toLocaleTimeString()}`
+            );
 
             // Add relevant details based on log type
             const log = entry.log;
@@ -443,12 +457,24 @@ class LogCollectorService {
                 const networkLog = log as any;
                 if (networkLog.requestBody) {
                     const reqBody = JSON.stringify(networkLog.requestBody);
-                    const truncated = reqBody.length > PAYLOAD_TRUNCATE_LENGTH ? reqBody.substring(0, PAYLOAD_TRUNCATE_LENGTH) + '...' : reqBody;
+                    const truncated =
+                            reqBody.length > PAYLOAD_TRUNCATE_LENGTH
+                                ? reqBody.substring(
+                                    0,
+                                    PAYLOAD_TRUNCATE_LENGTH
+                                ) + '...'
+                                : reqBody;
                     lines.push(`   Request: ${truncated}`);
                 }
                 if (networkLog.responseBody) {
                     const resBody = JSON.stringify(networkLog.responseBody);
-                    const truncated = resBody.length > PAYLOAD_TRUNCATE_LENGTH ? resBody.substring(0, PAYLOAD_TRUNCATE_LENGTH) + '...' : resBody;
+                    const truncated =
+                            resBody.length > PAYLOAD_TRUNCATE_LENGTH
+                                ? resBody.substring(
+                                    0,
+                                    PAYLOAD_TRUNCATE_LENGTH
+                                ) + '...'
+                                : resBody;
                     lines.push(`   Response: ${truncated}`);
                 }
                 break;
@@ -457,7 +483,9 @@ class LogCollectorService {
                 const consoleLog = log as any;
                 if (consoleLog.args && consoleLog.args.length > 0) {
                     const argsStr = JSON.stringify(consoleLog.args);
-                    lines.push(`   Args: ${argsStr.substring(0, PAYLOAD_TRUNCATE_LENGTH)}`);
+                    lines.push(
+                        `   Args: ${argsStr.substring(0, PAYLOAD_TRUNCATE_LENGTH)}`
+                    );
                 }
                 break;
             }
@@ -465,7 +493,9 @@ class LogCollectorService {
                 const wsLog = log as any;
                 if (wsLog.payload) {
                     const payloadStr = JSON.stringify(wsLog.payload);
-                    lines.push(`   Payload: ${payloadStr.substring(0, PAYLOAD_TRUNCATE_LENGTH)}`);
+                    lines.push(
+                        `   Payload: ${payloadStr.substring(0, PAYLOAD_TRUNCATE_LENGTH)}`
+                    );
                 }
                 break;
             }
@@ -508,7 +538,10 @@ class LogCollectorService {
                 callback(recordings);
             }
             catch (e) {
-                console.error('[LogCollector] Error notifying recording listener:', e);
+                console.error(
+                    '[LogCollector] Error notifying recording listener:',
+                    e
+                );
             }
         });
     }

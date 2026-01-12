@@ -156,7 +156,11 @@ export function useCreateHandshake() {
     const qc = useQueryClient();
     return useMutation<HandshakeDTO, Error, CreateHandshakeDTO>({
         mutationFn: (payload) =>
-            apiMutate<HandshakeDTO, CreateHandshakeDTO>('/handshakes', 'post', payload),
+            apiMutate<HandshakeDTO, CreateHandshakeDTO>(
+                '/handshakes',
+                'post',
+                payload
+            ),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['posts', 'infinite'] });
@@ -193,7 +197,7 @@ export function useCreatePost() {
 
 export function useReportPastGift() {
     const qc = useQueryClient();
-    return useMutation<PostDTO, Error, (CreatePostDTO & { receiverID: number })>({
+    return useMutation<PostDTO, Error, CreatePostDTO & { receiverID: number }>({
         mutationFn: (payload) =>
             apiMutate<PostDTO, any>('/posts/past-gift', 'post', payload, {
                 as: 'form'

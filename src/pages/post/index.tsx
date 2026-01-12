@@ -40,16 +40,20 @@ const Post = () => {
 
         const postID = Number(id);
         const postReplyNotifications = notificationsState.items.filter(
-            (n) => n.type === 'post-reply' &&
-                   'postID' in n &&
-                   n.postID === postID &&
-                   !n.isActedOn
+            (n) =>
+                n.type === 'post-reply' &&
+                'postID' in n &&
+                n.postID === postID &&
+                !n.isActedOn
         );
 
         // Mark all post-reply notifications for this post as acted upon
         postReplyNotifications.forEach((notification) => {
             markActed(notification.id).catch((err) => {
-                console.error('Failed to mark post-reply notification as acted:', err);
+                console.error(
+                    'Failed to mark post-reply notification as acted:',
+                    err
+                );
             });
         });
     }, [id, postDetails, notificationsState.items, markActed]);

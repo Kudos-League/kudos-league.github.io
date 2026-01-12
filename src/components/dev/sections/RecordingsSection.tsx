@@ -3,7 +3,13 @@ import { useLogCollector } from '@/hooks/useLogCollector';
 import type { Recording } from '@/services/logCollector/types';
 
 const RecordingRow = React.memo(
-    ({ recording, onDelete, onExportText, onExportJson, onRemoveLog }: {
+    ({
+        recording,
+        onDelete,
+        onExportText,
+        onExportJson,
+        onRemoveLog
+    }: {
         recording: Recording;
         onDelete: (id: string) => void;
         onExportText: (id: string) => void;
@@ -35,10 +41,12 @@ const RecordingRow = React.memo(
                     <div className='bg-gray-100 dark:bg-slate-900 px-3 py-3 border-t border-gray-200 dark:border-gray-700 space-y-3'>
                         <div className='text-xs text-gray-600 dark:text-gray-300'>
                             <div>
-                                <span className='font-semibold'>Created:</span> {new Date(recording.createdAt).toLocaleString()}
+                                <span className='font-semibold'>Created:</span>{' '}
+                                {new Date(recording.createdAt).toLocaleString()}
                             </div>
                             <div>
-                                <span className='font-semibold'>Logs:</span> {recording.logs.length}
+                                <span className='font-semibold'>Logs:</span>{' '}
+                                {recording.logs.length}
                             </div>
                         </div>
 
@@ -46,10 +54,17 @@ const RecordingRow = React.memo(
                         {recording.logs.length > 0 && (
                             <div className='space-y-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 p-2 rounded border border-gray-300 dark:border-gray-600'>
                                 {recording.logs.map((entry, index) => (
-                                    <div key={index} className='text-xs text-gray-700 dark:text-gray-300 font-mono flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 p-1 rounded'>
-                                        <div className='flex-1 truncate'>{index + 1}. {entry.context}</div>
+                                    <div
+                                        key={index}
+                                        className='text-xs text-gray-700 dark:text-gray-300 font-mono flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 p-1 rounded'
+                                    >
+                                        <div className='flex-1 truncate'>
+                                            {index + 1}. {entry.context}
+                                        </div>
                                         <button
-                                            onClick={() => onRemoveLog(recording.id, index)}
+                                            onClick={() =>
+                                                onRemoveLog(recording.id, index)
+                                            }
                                             className='flex-shrink-0 px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs transition-colors'
                                             title='Remove from recording'
                                         >
@@ -91,8 +106,16 @@ const RecordingRow = React.memo(
 RecordingRow.displayName = 'RecordingRow';
 
 export default function RecordingsSection() {
-    const { recordings, startRecording, stopRecording, isRecording, deleteRecording, exportRecordingAsText, exportRecordingAsJson, removeLogFromRecording } =
-        useLogCollector();
+    const {
+        recordings,
+        startRecording,
+        stopRecording,
+        isRecording,
+        deleteRecording,
+        exportRecordingAsText,
+        exportRecordingAsJson,
+        removeLogFromRecording
+    } = useLogCollector();
     const [showNewRecordingInput, setShowNewRecordingInput] = useState(false);
     const [newRecordingName, setNewRecordingName] = useState('');
 
@@ -132,7 +155,10 @@ export default function RecordingsSection() {
         }
     };
 
-    const handleRemoveLogFromRecording = (recordingId: string, logIndex: number) => {
+    const handleRemoveLogFromRecording = (
+        recordingId: string,
+        logIndex: number
+    ) => {
         removeLogFromRecording(recordingId, logIndex);
     };
 
@@ -142,13 +168,16 @@ export default function RecordingsSection() {
             <div className='space-y-2'>
                 <div className='flex items-center gap-2'>
                     <button
-                        onClick={() => setShowNewRecordingInput(!showNewRecordingInput)}
+                        onClick={() =>
+                            setShowNewRecordingInput(!showNewRecordingInput)
+                        }
                         className='px-2 py-1 text-xs font-medium rounded transition-colors bg-blue-600 hover:bg-blue-700 text-white'
                     >
                         + New Recording
                     </button>
                     <span className='text-xs text-gray-600 dark:text-gray-400 font-semibold'>
-                        {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
+                        {recordings.length} recording
+                        {recordings.length !== 1 ? 's' : ''}
                     </span>
                 </div>
 
@@ -158,7 +187,9 @@ export default function RecordingsSection() {
                             type='text'
                             placeholder='Recording name...'
                             value={newRecordingName}
-                            onChange={(e) => setNewRecordingName(e.target.value)}
+                            onChange={(e) =>
+                                setNewRecordingName(e.target.value)
+                            }
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') handleCreateRecording();
                                 if (e.key === 'Escape') {

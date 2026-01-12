@@ -41,12 +41,18 @@ export default function computeChanged(
     if (norm(values.profession) !== norm(baseline.profession))
         changed.profession = (values.profession || '').trim();
 
-    if (typeof values.admin !== 'undefined' && values.admin !== baseline.admin) {
+    if (
+        typeof values.admin !== 'undefined' &&
+        values.admin !== baseline.admin
+    ) {
         changed.admin = !!values.admin;
     }
 
     // kudos
-    if (typeof values.kudos !== 'undefined' && values.kudos !== (baseline as any).kudos) {
+    if (
+        typeof values.kudos !== 'undefined' &&
+        values.kudos !== (baseline as any).kudos
+    ) {
         changed.kudos = values.kudos;
     }
 

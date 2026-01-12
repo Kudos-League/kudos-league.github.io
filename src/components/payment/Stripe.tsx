@@ -21,12 +21,18 @@ export default function StripeWeb() {
 
     const formMethods = useForm<FormValues>({
         mode: 'onBlur',
-        defaultValues: { donationAmount: '', customDonationAmount: '', interval: '' }
+        defaultValues: {
+            donationAmount: '',
+            customDonationAmount: '',
+            interval: ''
+        }
     });
 
     const fetchPublishableKey = async () => {
         try {
-            const body = await apiGet<{ publishableKey: string }>('/stripe/publishable-key');
+            const body = await apiGet<{ publishableKey: string }>(
+                '/stripe/publishable-key'
+            );
             return body.publishableKey;
         }
         catch (err) {
@@ -66,15 +72,24 @@ export default function StripeWeb() {
 
         const amount = parseInt(String(data?.donationAmount || '0'), 10);
         if (!amount || amount <= 0) {
-            formMethods.setError('donationAmount', { type: 'validate', message: 'Please choose a valid donation amount' });
+            formMethods.setError('donationAmount', {
+                type: 'validate',
+                message: 'Please choose a valid donation amount'
+            });
             return;
         }
 
         setCreating(true);
         setError(null);
         try {
-            const session = (await apiMutate('/stripe/checkout-session', 'post', { amount, interval: data.interval || undefined })) as any;
-            const { error: redirectError } = await stripe.redirectToCheckout({ sessionId: session?.id });
+            const session = (await apiMutate(
+                '/stripe/checkout-session',
+                'post',
+                { amount, interval: data.interval || undefined }
+            )) as any;
+            const { error: redirectError } = await stripe.redirectToCheckout({
+                sessionId: session?.id
+            });
             if (redirectError) {
                 console.warn('Stripe checkout error:', redirectError);
                 setError('Failed to redirect to checkout. Please try again.');
@@ -90,37 +105,59 @@ export default function StripeWeb() {
     };
 
     return (
-        <Form methods={formMethods} onSubmit={onSubmit} className="flex flex-col items-center justify-center gap-6 px-4 py-8 mt-20" serverError={error}>
-            <h1 className="text-2xl font-semibold">Support Us with a Donation</h1>
+        <Form
+            methods={formMethods}
+            onSubmit={onSubmit}
+            className='flex flex-col items-center justify-center gap-6 px-4 py-8 mt-20'
+            serverError={error}
+        >
+            <h1 className='text-2xl font-semibold'>
+                Support Us with a Donation
+            </h1>
 
-            <p className="text-center text-gray-600 max-w-md -mt-2">
-                Your donation helps us continue our mission. Every contribution makes a difference.
+            <p className='text-center text-gray-600 max-w-md -mt-2'>
+                Your donation helps us continue our mission. Every contribution
+                makes a difference.
             </p>
 
-            <DonationAmountPicker onAmountChange={(amt) => formMethods.setValue('donationAmount', String(amt), { shouldValidate: true })} />
+            <DonationAmountPicker
+                onAmountChange={(amt) =>
+                    formMethods.setValue('donationAmount', String(amt), {
+                        shouldValidate: true
+                    })
+                }
+            />
 
-            <div className="w-full max-w-xs">
-                <FormField name="interval" label="Donation Type:">
+            <div className='w-full max-w-xs'>
+                <FormField name='interval' label='Donation Type:'>
                     <select
-                        className="w-full border rounded p-2"
+                        className='w-full border rounded p-2'
                         {...formMethods.register('interval')}
                         value={formMethods.getValues('interval') ?? ''}
-                        onChange={(e) => formMethods.setValue('interval', e.target.value)}
+                        onChange={(e) =>
+                            formMethods.setValue('interval', e.target.value)
+                        }
                     >
-                        <option value="">One-time</option>
-                        <option value="week">Weekly</option>
-                        <option value="month">Monthly</option>
+                        <option value=''>One-time</option>
+                        <option value='week'>Weekly</option>
+                        <option value='month'>Monthly</option>
                     </select>
                 </FormField>
             </div>
 
-            <div className="w-full max-w-xs">
-                <button type="submit" className="w-full" disabled={!stripeReady || creating}>
-                    <Button disabled={!stripeReady || creating}>{creating ? 'Processing…' : 'Donate'}</Button>
+            <div className='w-full max-w-xs'>
+                <button
+                    type='submit'
+                    className='w-full'
+                    disabled={!stripeReady || creating}
+                >
+                    <Button disabled={!stripeReady || creating}>
+                        {creating ? 'Processing…' : 'Donate'}
+                    </Button>
                 </button>
             </div>
 
-            <div className="flex gap-3 text-xs text-gray-500 items-center mt-2">
+            <div className='flex gap-3 text-xs text-gray-500 items-center mt-2'>
                 <span>🔒 Secure payment</span>
                 <span>•</span>
                 <span>Powered by Stripe</span>

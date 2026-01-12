@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Alert from '@/components/common/Alert';
-import { subscribeAlerts, subscribeAlertClears, type AlertMsg } from './alertBus';
+import {
+    subscribeAlerts,
+    subscribeAlertClears,
+    type AlertMsg
+} from './alertBus';
 
 export default function AlertHost() {
     const [queue, setQueue] = useState<Array<AlertMsg & { id: number }>>([]);
@@ -14,7 +18,10 @@ export default function AlertHost() {
             console.log('[AlertHost] Received alert:', msg);
             const next = { ...msg, id: ++id };
             setQueue((q) => {
-                console.log('[AlertHost] Adding to queue, current queue size:', q.length);
+                console.log(
+                    '[AlertHost] Adding to queue, current queue size:',
+                    q.length
+                );
                 return [...q, next];
             });
             setTimeout(() => {

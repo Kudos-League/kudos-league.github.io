@@ -5,8 +5,13 @@ import { useDataCache } from '@/contexts/DataCacheContext';
 
 export function useCreateChannel() {
     const qc = useQueryClient();
-    return useMutation<ChannelDTO, any, { name: string; channelType: string; userIDs: number[] }>({
-        mutationFn: (payload) => apiMutate<ChannelDTO, any>('/channels', 'post', payload),
+    return useMutation<
+        ChannelDTO,
+        any,
+        { name: string; channelType: string; userIDs: number[] }
+    >({
+        mutationFn: (payload) =>
+            apiMutate<ChannelDTO, any>('/channels', 'post', payload),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['channels'] });
         }
@@ -21,7 +26,9 @@ export function useAcceptHandshake() {
             if (typeof handshakeID !== 'number') {
                 throw new Error('handshakeID is required');
             }
-            return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'accepted' });
+            return apiMutate(`/handshakes/${handshakeID}`, 'patch', {
+                status: 'accepted'
+            });
         },
         onSuccess: (_, handshakeID) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
@@ -40,7 +47,9 @@ export function useCompleteHandshake() {
             if (typeof handshakeID !== 'number') {
                 throw new Error('handshakeID is required');
             }
-            return apiMutate(`/handshakes/${handshakeID}`, 'patch', { status: 'completed' });
+            return apiMutate(`/handshakes/${handshakeID}`, 'patch', {
+                status: 'completed'
+            });
         },
         onSuccess: (_, handshakeID) => {
             qc.invalidateQueries({ queryKey: ['posts'] });

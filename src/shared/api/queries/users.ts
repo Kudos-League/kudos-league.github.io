@@ -24,7 +24,11 @@ export function useAllUsersQuery() {
     return useQuery<UserDTO[]>({
         queryKey: qkUsers.all(),
         queryFn: async () => {
-            const response = await apiGet<{ data: UserDTO[]; nextCursor?: number; limit: number }>('/users');
+            const response = await apiGet<{
+                data: UserDTO[];
+                nextCursor?: number;
+                limit: number;
+            }>('/users');
             return response.data;
         }
     });

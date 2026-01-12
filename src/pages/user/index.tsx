@@ -39,9 +39,12 @@ export default function UserProfile() {
                                 params: { settings: true }
                             }),
                             apiGet<PostDTO[]>(`/users/${targetUserID}/posts`),
-                            apiGet<EventDTO[]>(`/users/${targetUserID}/events`, {
-                                params: { filter: 'all' }
-                            })
+                            apiGet<EventDTO[]>(
+                                `/users/${targetUserID}/events`,
+                                {
+                                    params: { filter: 'all' }
+                                }
+                            )
                         ]);
 
                     setUser(fetchedUser);
@@ -64,15 +67,23 @@ export default function UserProfile() {
                 }
 
                 if (isViewingOwnProfile && !handshakes.length) {
-                    const [sentHandshakes, receivedHandshakes] = await Promise.all([
-                        apiGet<HandshakeDTO[]>(`/handshakes/by-sender/${targetUserID}`),
-                        apiGet<HandshakeDTO[]>(`/handshakes/by-receiver/${targetUserID}`)
-                    ]);
+                    const [sentHandshakes, receivedHandshakes] =
+                        await Promise.all([
+                            apiGet<HandshakeDTO[]>(
+                                `/handshakes/by-sender/${targetUserID}`
+                            ),
+                            apiGet<HandshakeDTO[]>(
+                                `/handshakes/by-receiver/${targetUserID}`
+                            )
+                        ]);
 
                     // Combine and deduplicate handshakes (by ID)
-                    const allHandshakes = [...sentHandshakes, ...receivedHandshakes];
+                    const allHandshakes = [
+                        ...sentHandshakes,
+                        ...receivedHandshakes
+                    ];
                     const uniqueHandshakes = Array.from(
-                        new Map(allHandshakes.map(h => [h.id, h])).values()
+                        new Map(allHandshakes.map((h) => [h.id, h])).values()
                     );
 
                     setHandshakes(uniqueHandshakes);

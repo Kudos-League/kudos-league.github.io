@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { useForm, useController, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
+import {
+    useForm,
+    useController,
+    type RegisterOptions,
+    type UseFormReturn
+} from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
@@ -22,7 +27,8 @@ type FormValues = {
     password: string;
 };
 
-const passwordInputClasses = 'w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
+const passwordInputClasses =
+    'w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
 
 type PasswordFieldProps = {
     name: keyof FormValues;
@@ -31,7 +37,12 @@ type PasswordFieldProps = {
     registerOptions?: RegisterOptions<FormValues>;
 };
 
-function PasswordField({ name, form, placeholder, registerOptions }: PasswordFieldProps) {
+function PasswordField({
+    name,
+    form,
+    placeholder,
+    registerOptions
+}: PasswordFieldProps) {
     const { field } = useController<FormValues>({
         control: form.control,
         name,
@@ -51,7 +62,9 @@ function PasswordField({ name, form, placeholder, registerOptions }: PasswordFie
                     onChange={(e) => field.onChange(e.target.value)}
                     onBlur={field.onBlur}
                     placeholder={placeholder}
-                    autoComplete={name === 'password' ? 'current-password' : undefined}
+                    autoComplete={
+                        name === 'password' ? 'current-password' : undefined
+                    }
                     className={`${passwordInputClasses} pr-10`}
                 />
                 <button
@@ -75,7 +88,9 @@ export default function LoginForm({
 }: LoginFormProps) {
     const { login, token, logout } = useAuth();
     const methods = useForm<FormValues>({ mode: 'onBlur' });
-    const [errorMessage, setErrorMessage] = useState<React.ReactNode | null>(initialError ?? null);
+    const [errorMessage, setErrorMessage] = useState<React.ReactNode | null>(
+        initialError ?? null
+    );
     const navigate = useNavigate();
 
     const getErrorMessage = (error: any): React.ReactNode => {
@@ -107,11 +122,18 @@ export default function LoginForm({
                 else body = { message: String(first) };
             }
             else if (body.length > 1) {
-                arrayResponseMessage = body.map((it: any) => (typeof it === 'string' ? it : (it?.message ?? it?.error ?? String(it))));
+                arrayResponseMessage = body.map((it: any) =>
+                    typeof it === 'string'
+                        ? it
+                        : (it?.message ?? it?.error ?? String(it))
+                );
             }
         }
 
-        if ((body == null || typeof body !== 'object') && typeof error?.message === 'string') {
+        if (
+            (body == null || typeof body !== 'object') &&
+            typeof error?.message === 'string'
+        ) {
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed && typeof parsed === 'object') body = parsed;
@@ -122,9 +144,17 @@ export default function LoginForm({
         }
 
         const responseMessageRaw =
-            body?.message ?? body?.error ?? body?.msg ?? (typeof error?.message === 'string' ? error.message : undefined);
+            body?.message ??
+            body?.error ??
+            body?.msg ??
+            (typeof error?.message === 'string' ? error.message : undefined);
         const responseMessage = arrayResponseMessage ?? responseMessageRaw;
-        const banEnd = body?.banEndDate ?? body?.ban_end_date ?? body?.ban_end ?? error?.banEndDate ?? null;
+        const banEnd =
+            body?.banEndDate ??
+            body?.ban_end_date ??
+            body?.ban_end ??
+            error?.banEndDate ??
+            null;
 
         const formatBan = (d: any) => {
             try {
@@ -145,7 +175,11 @@ export default function LoginForm({
                 const when = banEnd ? formatBan(banEnd) : null;
                 return (
                     <div>
-                        <p>{when ? `This account is banned (until ${when}):` : 'This account is banned:'}</p>
+                        <p>
+                            {when
+                                ? `This account is banned (until ${when}):`
+                                : 'This account is banned:'}
+                        </p>
                         <ul>
                             {responseMessage.map((m, i) => (
                                 <li key={i}>{m}</li>
@@ -157,12 +191,16 @@ export default function LoginForm({
 
             if (responseMessage && typeof responseMessage === 'string') {
                 const when = banEnd ? formatBan(banEnd) : null;
-                return when ? `${responseMessage} (until ${when})` : responseMessage;
+                return when
+                    ? `${responseMessage} (until ${when})`
+                    : responseMessage;
             }
 
             if (banEnd) {
                 const when = formatBan(banEnd);
-                return when ? `This account is banned until ${when}.` : 'This account is banned.';
+                return when
+                    ? `This account is banned until ${when}.`
+                    : 'This account is banned.';
             }
 
             return 'Your account has been restricted. Contact support for assistance.';
@@ -181,9 +219,11 @@ export default function LoginForm({
                 if (msg && msg.length > 0) return msg;
             }
 
-            if (responseMessage && typeof responseMessage === 'string') return responseMessage;
+            if (responseMessage && typeof responseMessage === 'string')
+                return responseMessage;
 
-            if (!error?.response) return 'Unable to connect to server. Please check your internet connection.';
+            if (!error?.response)
+                return 'Unable to connect to server. Please check your internet connection.';
 
             return error?.message || 'Login failed. Please try again.';
         }
@@ -220,7 +260,9 @@ export default function LoginForm({
                 methods={methods}
                 onSubmit={onSubmit}
                 className='space-y-6'
-                serverError={typeof errorMessage === 'string' ? errorMessage : undefined}
+                serverError={
+                    typeof errorMessage === 'string' ? errorMessage : undefined
+                }
             >
                 <div>
                     <div className='col-span-2'>
@@ -230,7 +272,9 @@ export default function LoginForm({
                                 label=''
                                 placeholder='Username'
                                 form={methods}
-                                registerOptions={{ required: 'Username is required' }}
+                                registerOptions={{
+                                    required: 'Username is required'
+                                }}
                             />
                         </FormField>
                     </div>
@@ -239,7 +283,9 @@ export default function LoginForm({
                             name='password'
                             placeholder='Password'
                             form={methods}
-                            registerOptions={{ required: 'Password is required' }}
+                            registerOptions={{
+                                required: 'Password is required'
+                            }}
                         />
                     </FormField>
                 </div>

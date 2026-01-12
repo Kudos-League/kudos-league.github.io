@@ -22,7 +22,9 @@ export default function AvatarComponent({
 }) {
     const url = avatar ? getImagePath(avatar) : null;
     const [imageError, setImageError] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(url ? loadedImages.has(url) : false);
+    const [imageLoaded, setImageLoaded] = useState(
+        url ? loadedImages.has(url) : false
+    );
     const [showFallback, setShowFallback] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
 
@@ -80,7 +82,15 @@ export default function AvatarComponent({
     }
 
     return (
-        <div className="relative flex-shrink-0" style={{ width: size, height: size, minWidth: size, minHeight: size }}>
+        <div
+            className='relative flex-shrink-0'
+            style={{
+                width: size,
+                height: size,
+                minWidth: size,
+                minHeight: size
+            }}
+        >
             {/* Show fallback until image loads to prevent flicker */}
             {!imageLoaded && showFallback && (
                 <div

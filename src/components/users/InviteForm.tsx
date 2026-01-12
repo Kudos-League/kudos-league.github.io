@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+    ChevronDownIcon,
+    ChevronUpIcon,
+    PlusIcon,
+    XMarkIcon
+} from '@heroicons/react/24/outline';
 import Button from '@/components/common/Button';
 import { apiMutate } from '@/shared/api/apiClient';
 
@@ -15,7 +20,9 @@ export default function InviteForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [generatedLinks, setGeneratedLinks] = useState<Array<{ email: string; link: string }>>([]);
+    const [generatedLinks, setGeneratedLinks] = useState<
+        Array<{ email: string; link: string }>
+    >([]);
 
     const form = useForm<InviteFormValues>({
         defaultValues: { emails: [''] }
@@ -43,13 +50,13 @@ export default function InviteForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (emails.length === 0 || (emails.length === 1 && !emails[0])) {
             setError('Please add at least one email address');
             return;
         }
 
-        const validEmails = emails.filter(e => e && isValidEmail(e));
+        const validEmails = emails.filter((e) => e && isValidEmail(e));
         if (validEmails.length === 0) {
             setError('Please add at least one valid email address');
             return;
@@ -62,19 +69,23 @@ export default function InviteForm() {
 
         try {
             // Call API to generate invite links
-            const response = await apiMutate<{ invites: Array<{ email: string; link: string }> }, { emails: string[] }>(
-                '/users/invites',
-                'post',
-                { emails: validEmails }
-            );
+            const response = await apiMutate<
+                { invites: Array<{ email: string; link: string }> },
+                { emails: string[] }
+            >('/users/invites', 'post', { emails: validEmails });
 
             setGeneratedLinks(response.invites);
-            setSuccess(`Successfully generated ${response.invites.length} invite link(s)`);
+            setSuccess(
+                `Successfully generated ${response.invites.length} invite link(s)`
+            );
             setEmails(['']);
             setEmailInput('');
         }
         catch (err: any) {
-            setError(err?.response?.data?.message || 'Failed to generate invite links. Please try again.');
+            setError(
+                err?.response?.data?.message ||
+                    'Failed to generate invite links. Please try again.'
+            );
         }
         finally {
             setLoading(false);
@@ -127,7 +138,9 @@ export default function InviteForm() {
                                 <input
                                     type='email'
                                     value={emailInput}
-                                    onChange={(e) => setEmailInput(e.target.value)}
+                                    onChange={(e) =>
+                                        setEmailInput(e.target.value)
+                                    }
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
@@ -149,29 +162,34 @@ export default function InviteForm() {
                         </div>
 
                         {/* Email List */}
-                        {emails.length > 0 && emails.some(e => e) && (
+                        {emails.length > 0 && emails.some((e) => e) && (
                             <div className='space-y-2'>
                                 <p className='text-sm font-medium text-gray-700 dark:text-gray-200'>
-                                    Emails to invite ({emails.filter(e => e).length}):
+                                    Emails to invite (
+                                    {emails.filter((e) => e).length}):
                                 </p>
                                 <div className='space-y-1 max-h-48 overflow-y-auto'>
-                                    {emails.filter(e => e).map((email, index) => (
-                                        <div
-                                            key={index}
-                                            className='flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg'
-                                        >
-                                            <span className='text-sm text-gray-700 dark:text-gray-200 truncate'>
-                                                {email}
-                                            </span>
-                                            <button
-                                                type='button'
-                                                onClick={() => removeEmail(index)}
-                                                className='text-gray-400 hover:text-red-500 transition-colors'
+                                    {emails
+                                        .filter((e) => e)
+                                        .map((email, index) => (
+                                            <div
+                                                key={index}
+                                                className='flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg'
                                             >
-                                                <XMarkIcon className='w-4 h-4' />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <span className='text-sm text-gray-700 dark:text-gray-200 truncate'>
+                                                    {email}
+                                                </span>
+                                                <button
+                                                    type='button'
+                                                    onClick={() =>
+                                                        removeEmail(index)
+                                                    }
+                                                    className='text-gray-400 hover:text-red-500 transition-colors'
+                                                >
+                                                    <XMarkIcon className='w-4 h-4' />
+                                                </button>
+                                            </div>
+                                        ))}
                                 </div>
                             </div>
                         )}
@@ -213,7 +231,11 @@ export default function InviteForm() {
                                                 </div>
                                                 <Button
                                                     type='button'
-                                                    onClick={() => copyToClipboard(invite.link)}
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            invite.link
+                                                        )
+                                                    }
                                                     variant='secondary'
                                                     className='text-xs whitespace-nowrap'
                                                 >
@@ -229,7 +251,9 @@ export default function InviteForm() {
                         {/* Submit Button */}
                         <Button
                             type='submit'
-                            disabled={loading || emails.filter(e => e).length === 0}
+                            disabled={
+                                loading || emails.filter((e) => e).length === 0
+                            }
                             variant='success'
                             className='w-full'
                         >
@@ -239,7 +263,7 @@ export default function InviteForm() {
                                     Generating Links...
                                 </div>
                             ) : (
-                                `Generate ${emails.filter(e => e).length} Invite Link${emails.filter(e => e).length !== 1 ? 's' : ''}`
+                                `Generate ${emails.filter((e) => e).length} Invite Link${emails.filter((e) => e).length !== 1 ? 's' : ''}`
                             )}
                         </Button>
                     </form>

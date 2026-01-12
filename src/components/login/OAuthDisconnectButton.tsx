@@ -32,8 +32,10 @@ export default function OAuthDisconnectButton({
         try {
             setPending(true);
             await apiMutate(`/users/connections/${provider}`, 'delete');
-            if (provider === 'discord') updateUser({ discordID: undefined as any });
-            if (provider === 'google') updateUser({ googleID: undefined as any });
+            if (provider === 'discord')
+                updateUser({ discordID: undefined as any });
+            if (provider === 'google')
+                updateUser({ googleID: undefined as any });
             onSuccess?.();
         }
         catch (e: any) {
@@ -58,4 +60,3 @@ export default function OAuthDisconnectButton({
         </Button>
     );
 }
-

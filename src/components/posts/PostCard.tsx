@@ -45,7 +45,14 @@ export default function PostCard(props: Props) {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    console.log('PostCard - Post ID:', id, 'Images:', images, 'Images length:', images?.length);
+    console.log(
+        'PostCard - Post ID:',
+        id,
+        'Images:',
+        images,
+        'Images length:',
+        images?.length
+    );
 
     const hasImages = images && images.length > 0;
 
@@ -56,23 +63,31 @@ export default function PostCard(props: Props) {
             className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden h-full flex flex-col'
             onClick={() => navigate(`/post/${id}`)}
         >
-
             {/* Image Carousel - appears first on all sizes, images fill the space */}
             {hasImages && (
-                <div className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden cursor-pointer h-60' onClick={(e) => {
-                    // Only navigate if clicking directly on the image, not on carousel controls
-                    if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') {
-                        navigate(`/post/${id}`);
-                    }
-                    e.stopPropagation();
-                }}>
+                <div
+                    className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden cursor-pointer h-60'
+                    onClick={(e) => {
+                        // Only navigate if clicking directly on the image, not on carousel controls
+                        if (
+                            e.target === e.currentTarget ||
+                            (e.target as HTMLElement).tagName === 'IMG'
+                        ) {
+                            navigate(`/post/${id}`);
+                        }
+                        e.stopPropagation();
+                    }}
+                >
                     <ImageCarousel images={images} variant='postCard' />
                 </div>
             )}
 
             {/* UserCard - always visible but compact on desktop */}
             {sender && (
-                <div className='mb-2 max-w-fit' onClick={(e) => e.stopPropagation()}>
+                <div
+                    className='mb-2 max-w-fit'
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <UserCard user={sender} compact={true} showKudos={false} />
                 </div>
             )}
@@ -102,11 +117,13 @@ export default function PostCard(props: Props) {
             {/* Tags and Type Badge */}
             <div className='mb-2 flex flex-wrap gap-1 items-center'>
                 {type && (
-                    <span className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
-                        type === 'gift'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    }`}>
+                    <span
+                        className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${
+                            type === 'gift'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        }`}
+                    >
                         {type.toUpperCase()}
                     </span>
                 )}
@@ -122,7 +139,10 @@ export default function PostCard(props: Props) {
 
             {/* HandshakeCard - mobile only */}
             {viewerHandshake && showHandshakeShortcut && (
-                <div onClick={(e) => e.stopPropagation()} className='block sm:hidden mt-4'>
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='block sm:hidden mt-4'
+                >
                     {!viewerHandshake.cancelledAt && (
                         <HandshakeCard
                             handshake={{

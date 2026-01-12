@@ -20,11 +20,7 @@ export function useCreateRandomPosts() {
         }
     >({
         mutationFn: (payload) =>
-            apiMutate(
-                '/dev/posts/create-random',
-                'post',
-                payload
-            ),
+            apiMutate('/dev/posts/create-random', 'post', payload),
         onSuccess: (data) => {
             pushAlert({
                 type: 'success',
@@ -32,7 +28,10 @@ export function useCreateRandomPosts() {
             });
         },
         onError: (err: any) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to create random posts';
+            const message =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to create random posts';
             pushAlert({ type: 'danger', message });
         }
     });
@@ -42,7 +41,10 @@ export function useListDevPosts() {
     return useMutation<any[], Error, void>({
         mutationFn: () => apiGet('/dev/posts'),
         onError: (err: any) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load posts';
+            const message =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to load posts';
             pushAlert({ type: 'danger', message });
         }
     });
@@ -64,12 +66,9 @@ export function useCreatePostAsUser() {
         }
     >({
         mutationFn: (payload) =>
-            apiMutate<PostDTO, any>(
-                '/dev/posts/as-user',
-                'post',
-                payload,
-                { as: 'form' }
-            ),
+            apiMutate<PostDTO, any>('/dev/posts/as-user', 'post', payload, {
+                as: 'form'
+            }),
         onSuccess: () => {
             pushAlert({
                 type: 'success',
@@ -77,7 +76,10 @@ export function useCreatePostAsUser() {
             });
         },
         onError: (err: any) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to create post';
+            const message =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to create post';
             pushAlert({ type: 'danger', message });
         }
     });
