@@ -147,13 +147,6 @@ export default function PostDetails(props: Props) {
         if (!userId || !handshakes?.length) return handshakes || [];
 
         return [...handshakes].sort((a, b) => {
-            // Completed and accepted handshakes always come first
-            const aIsCompleted = a.status === 'completed' || a.status === 'accepted';
-            const bIsCompleted = b.status === 'completed' || b.status === 'accepted';
-
-            if (aIsCompleted && !bIsCompleted) return -1;
-            if (!aIsCompleted && bIsCompleted) return 1;
-
             const aIsUser =
                 a.senderID === userId ||
                 a.receiverID === userId ||
@@ -163,9 +156,24 @@ export default function PostDetails(props: Props) {
                 b.receiverID === userId ||
                 b.recipientID === userId;
 
-            // User's handshakes always come first (within their status group)
+            // User's handshakes always come first
             if (aIsUser && !bIsUser) return -1;
             if (!aIsUser && bIsUser) return 1;
+
+            // Within user's handshakes, completed/accepted come first
+            if (aIsUser && bIsUser) {
+                const aIsCompleted = a.status === 'completed' || a.status === 'accepted';
+                const bIsCompleted = b.status === 'completed' || b.status === 'accepted';
+
+                if (aIsCompleted && !bIsCompleted) return -1;
+                if (!aIsCompleted && bIsCompleted) return 1;
+
+                // If both have same status, sort by date
+                return (
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                );
+            }
 
             // For non-user handshakes, sort by sender's kudos (descending)
             if (!aIsUser && !bIsUser) {
@@ -174,13 +182,15 @@ export default function PostDetails(props: Props) {
                 if (aKudos !== bKudos) {
                     return bKudos - aKudos;
                 }
+
+                // If kudos are equal, sort by date
+                return (
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                );
             }
 
-            // If both are user handshakes or kudos are equal, sort by date
-            return (
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            );
+            return 0;
         });
     };
 

@@ -237,7 +237,7 @@ export default function SearchPage() {
     } as const;
 
     return (
-        <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4'>
+        <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4 mb-2'>
             <div className='flex flex-col gap-4'>
                 <div className='flex items-center gap-3'>
                     <button
