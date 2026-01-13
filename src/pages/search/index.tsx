@@ -153,8 +153,25 @@ export default function SearchPage() {
             });
         }
 
+        // Calculate distance for each post if user location is available
+        const hasUserLocation = user?.location?.latitude && user?.location?.longitude;
+        const postsWithDistance = hasUserLocation
+            ? filtered.map((post) => {
+                if (post.location?.latitude && post.location?.longitude) {
+                    const distance = getDistance(
+                        user.location.latitude,
+                        user.location.longitude,
+                        post.location.latitude,
+                        post.location.longitude
+                    );
+                    return { ...post, distance };
+                }
+                return post;
+            })
+            : filtered;
+
         // Sort posts
-        const sorted = [...filtered].sort((a, b) => {
+        const sorted = [...postsWithDistance].sort((a, b) => {
             if (typeOfOrdering.type === 'date') {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
@@ -171,30 +188,10 @@ export default function SearchPage() {
             }
             else if (typeOfOrdering.type === 'distance') {
                 // Distance sorting requires user location
-                if (!user?.location?.latitude || !user?.location?.longitude)
-                    return 0;
+                if (!hasUserLocation) return 0;
 
-                const userLat = user.location.latitude;
-                const userLng = user.location.longitude;
-
-                const distA =
-                    a.location?.latitude && a.location?.longitude
-                        ? getDistance(
-                            userLat,
-                            userLng,
-                            a.location.latitude,
-                            a.location.longitude
-                        )
-                        : Infinity;
-                const distB =
-                    b.location?.latitude && b.location?.longitude
-                        ? getDistance(
-                            userLat,
-                            userLng,
-                            b.location.latitude,
-                            b.location.longitude
-                        )
-                        : Infinity;
+                const distA = a.distance ?? Infinity;
+                const distB = b.distance ?? Infinity;
 
                 return typeOfOrdering.order === 'asc'
                     ? distA - distB
