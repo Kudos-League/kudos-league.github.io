@@ -4,6 +4,8 @@ import PostsContainer from './PostsContainer';
 import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/useAuth';
+import { PostDTO } from '@/shared/api/types';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -23,6 +25,8 @@ export default function PostsInfinite({
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
+    const { user } = useAuth();
+
     const safeIncomingFilters = React.useMemo(
         () => ({ ...(filters ?? {}) }),
         [filters]
@@ -53,13 +57,33 @@ export default function PostsInfinite({
         [data]
     );
 
-    // Only filter by type, let backend handle sorting
+    // Helper function to check if a post has a completed handshake
+    const hasCompletedHandshake = React.useCallback((post: PostDTO) => {
+        return post.handshakes?.some((h) => h.status === 'completed') ?? false;
+    }, []);
+
+    // Filter by type and hide closed posts unless user is the creator
     const visible = React.useMemo(() => {
-        if (activeTab === 'all') return flat;
-        return flat.filter(
-            (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
-        );
-    }, [flat, activeTab]);
+        let filtered = flat;
+
+        // Filter by type
+        if (activeTab !== 'all') {
+            filtered = filtered.filter(
+                (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
+            );
+        }
+
+        // Filter out posts with completed handshakes unless user is the creator
+        filtered = filtered.filter((post) => {
+            const isClosed = hasCompletedHandshake(post);
+            if (!isClosed) return true; // Show open posts
+
+            // Only show closed posts if user is the creator
+            return user?.id === post.senderID;
+        });
+
+        return filtered;
+    }, [flat, activeTab, hasCompletedHandshake, user?.id]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
