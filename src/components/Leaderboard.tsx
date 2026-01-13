@@ -47,6 +47,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+    const currentUserRef = useRef<HTMLLIElement>(null);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
@@ -177,6 +178,23 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         return '';
     };
 
+    // Scroll to current user
+    const scrollToCurrentUser = useCallback(() => {
+        const currentUserInList = leaderboard.find((entry) => entry.id === user?.id);
+
+        if (currentUserInList && currentUserRef.current) {
+            // User is already in the list, scroll to them
+            currentUserRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+        else if (nextCursor && !loadingMore) {
+            // User not in list yet, keep loading more entries
+            loadLeaderboard(false);
+        }
+    }, [leaderboard, user?.id, nextCursor, loadingMore, loadLeaderboard]);
+
     const LeaderboardContent = (
         <>
             {/* Stacked List */}
@@ -191,6 +209,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     return (
                         <li
                             key={entry.id}
+                            ref={isCurrentUser ? currentUserRef : null}
                             className={`flex justify-between gap-x-2 cursor-pointer ${isCurrentUser ? 'hover:bg-brand-100 dark:hover:bg-brand-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'} rounded mx-1 ${
                                 compact ? 'py-2 px-1' : 'py-7 px-2'
                             } ${isCurrentUser ? 'bg-brand-50 dark:bg-brand-900 ring-2 ring-brand-400 dark:ring-brand-600' : ''}`}
@@ -288,10 +307,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             </h1>
 
             <div
-                className={`ml-4 flex justify-between items-center relative ${compact ? 'mb-2 gap-1' : 'mb-4'}`}
+                className={`ml-4 flex justify-between items-center relative gap-2 ${compact ? 'mb-2' : 'mb-4'}`}
             >
                 {/* Time Filter Dropdown */}
-                <div className='relative mr-2' ref={dropdownRef}>
+                <div className='relative' ref={dropdownRef}>
                     <button
                         onClick={() => setShowDropdown((v) => !v)}
                         className={`bg-white dark:bg-zinc-800 border-2 border-gray-400 dark:border-zinc-600 text-gray-800 dark:text-zinc-200 rounded-lg flex items-center gap-1 hover:border-gray-500 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors shadow-sm ${
@@ -387,6 +406,21 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     )}
                 </div>
             </div>
+
+            {/* Find Me Button */}
+            {!loading && leaderboard.length > 0 && (
+                <div className={`mx-4 ${compact ? 'mb-2' : 'mb-4'}`}>
+                    <button
+                        onClick={scrollToCurrentUser}
+                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] ${
+                            compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'
+                        }`}
+                        title='Scroll to your position in the leaderboard'
+                    >
+                        Find Me
+                    </button>
+                </div>
+            )}
 
             {/* Status */}
             {loading && <p className='text-center text-gray-500'>Loading...</p>}
