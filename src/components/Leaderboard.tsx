@@ -304,7 +304,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                 : getLabel()}
                         </span>
                         <span className='text-xs text-gray-500 dark:text-zinc-400'>
-                                ▼
+                            ▼
                         </span>
                     </button>
 
@@ -367,10 +367,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                     />
                                 </div>
                             </label>
-                            <span
-                                className={compact ? 'text-xs' : 'text-sm'}
-                            >
-                                    Global
+                            <span className={compact ? 'text-xs' : 'text-sm'}>
+                                Global
                             </span>
                         </>
                     ) : (
@@ -379,18 +377,11 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${compact ? 'text-xs' : 'text-sm'}`}
                             title='Add your location to see local leaderboard'
                         >
-                            <span
-                                className={
-                                    compact ? '' : 'hidden sm:inline'
-                                }
-                            >
-                                    Add location on your profile for local
-                                    filter
+                            <span className={compact ? '' : 'hidden sm:inline'}>
+                                Add location on your profile for local filter
                             </span>
-                            <span
-                                className={compact ? 'hidden' : 'sm:hidden'}
-                            >
-                                    Local
+                            <span className={compact ? 'hidden' : 'sm:hidden'}>
+                                Local
                             </span>
                         </button>
                     )}
@@ -398,9 +389,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             </div>
 
             {/* Status */}
-            {loading && (
-                <p className='text-center text-gray-500'>Loading...</p>
-            )}
+            {loading && <p className='text-center text-gray-500'>Loading...</p>}
             {error && <p className='text-center text-red-500'>{error}</p>}
 
             {/* Leaderboard List Container */}

@@ -144,7 +144,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 normalized.type === NotificationType.HANDSHAKE_CREATED ||
                 normalized.type === NotificationType.HANDSHAKE_ACCEPTED ||
                 normalized.type === NotificationType.HANDSHAKE_COMPLETED ||
-                normalized.type === NotificationType.HANDSHAKE_CANCELLED
+                normalized.type === NotificationType.HANDSHAKE_CANCELLED ||
+                normalized.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                normalized.type === NotificationType.POST_REOPENED
             ) {
                 const handshakeID =
                     'handshakeID' in normalized
@@ -274,6 +276,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                         ? 'Help cancelled due to no-show.'
                         : 'Help cancelled.';
                     pushAlert({ type: 'warning', message: msg });
+                }
+                else if (
+                    normalized.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE
+                ) {
+                    pushAlert({
+                        type: 'info',
+                        message: 'A post you initiated a handshake on has been closed by another person.'
+                    });
+                }
+                else if (
+                    normalized.type === NotificationType.POST_REOPENED
+                ) {
+                    pushAlert({
+                        type: 'success',
+                        message: 'A post you initiated a handshake on has been reopened!'
+                    });
                 }
                 else if (
                     normalized.type === NotificationType.EVENT_USER_JOINED

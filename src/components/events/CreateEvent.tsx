@@ -183,16 +183,21 @@ export default function CreateEvent() {
     }, [startDate, endDate, title, description, global, location]);
 
     const handleStartDateChange = (newStartDate: Date) => {
+        const oldStartTime = new Date(startDate).getTime();
+        const newStartTime = new Date(newStartDate).getTime();
+
         setStartDate(newStartDate);
 
-        if (
-            endDate &&
-            new Date(endDate).getTime() <= new Date(newStartDate).getTime()
-        ) {
-            const suggestedEndDate = new Date(
-                new Date(newStartDate).getTime() + 24 * 60 * 60 * 1000
-            );
-            setEndDate(suggestedEndDate);
+        if (endDate) {
+            const oldEndTime = new Date(endDate).getTime();
+            const currentDuration = oldEndTime - oldStartTime;
+
+            // Cap duration at 3 hours (3 * 60 * 60 * 1000 ms)
+            const maxDuration = 3 * 60 * 60 * 1000;
+            const newDuration = Math.min(currentDuration, maxDuration);
+
+            const newEndTime = newStartTime + newDuration;
+            setEndDate(new Date(newEndTime));
         }
 
         setErrorMessages([]);

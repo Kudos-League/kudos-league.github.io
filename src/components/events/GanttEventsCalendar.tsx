@@ -37,11 +37,12 @@ import {
 } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
-import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
 import UserCard from '../users/UserCard';
-import { apiGet } from '@/shared/api/apiClient';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import MobileEventListView from './MobileEventListView';
+import { useAuth } from '@/contexts/useAuth';
+import { useJoinEvent } from '@/shared/api/mutations/events';
 
 interface EventDetailsModalProps {
     event: EventDTO | null;
@@ -55,9 +56,12 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     onViewPeriod
 }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [fullEvent, setFullEvent] = useState<EventDTO | null>(null);
     const [loadingParticipants, setLoadingParticipants] = useState(false);
+    const [joining, setJoining] = useState(false);
+    const joinMutation = useJoinEvent(event?.id || 0);
 
     useEffect(() => {
         const fetchFullEvent = async () => {
@@ -80,6 +84,46 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
         fetchFullEvent();
     }, [event?.id, event]);
+
+    const handleJoin = async () => {
+        if (!user || !event?.id) return;
+        setJoining(true);
+        try {
+            await joinMutation.mutateAsync();
+            setFullEvent((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    participants: [...(prev.participants || []), user]
+                };
+            });
+        }
+        catch (err: any) {
+            console.error('Join failed: ' + err.message);
+        }
+        finally {
+            setJoining(false);
+        }
+    };
+
+    const handleLeave = async () => {
+        if (!user || !event?.id) return;
+        try {
+            await apiMutate(`/events/${event.id}/leave`, 'post');
+            setFullEvent((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    participants: (prev.participants || []).filter(
+                        (p: any) => p.id !== user?.id
+                    )
+                };
+            });
+        }
+        catch (err: any) {
+            console.error('Leave failed: ' + err.message);
+        }
+    };
 
     if (!event) return null;
 
@@ -235,14 +279,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                                                 key={p.id}
                                                 className='flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-lg transition-colors'
                                             >
-                                                <img
-                                                    src={getImagePath(p.avatar)}
-                                                    alt={p.username}
-                                                    className='w-10 h-10 rounded-full border-2 border-gray-200 dark:border-zinc-700'
-                                                />
-                                                <span className='font-medium text-gray-900 dark:text-zinc-100'>
-                                                    {p.username}
-                                                </span>
+                                                <UserCard user={p} large />
                                             </div>
                                         ))}
                                     {displayEvent.participants.length > 8 && (
@@ -283,6 +320,30 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                             View Full Details
                         </Button>
                     </div>
+
+                    {user && (
+                        <div className='pt-4'>
+                            {!displayEvent.participants?.some(
+                                (p: any) => p.id === user?.id
+                            ) ? (
+                                    <Button
+                                        onClick={handleJoin}
+                                        disabled={joining}
+                                        className='w-full'
+                                    >
+                                        {joining ? 'Joining...' : 'Join Event'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleLeave}
+                                        variant='danger'
+                                        className='w-full'
+                                    >
+                                    Leave Event
+                                    </Button>
+                                )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

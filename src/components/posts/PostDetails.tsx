@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/solid';
 import {
     ExclamationTriangleIcon,
-    ArrowLeftIcon
+    ArrowLeftIcon,
+    QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -15,6 +15,7 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import DropdownPicker from '@/components/forms/DropdownPicker';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useCategories } from '@/shared/api/queries/categories';
@@ -22,6 +23,7 @@ import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { apiMutate } from '@/shared/api/apiClient';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { getImagePath } from '@/shared/api/config';
+import { pushAlert } from '@/components/common/alertBus';
 import {
     useUpdatePost,
     useLikePost,
@@ -128,6 +130,14 @@ export default function PostDetails(props: Props) {
     const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] =
         useState(false);
     const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
+    const [acceptHighestKudosModal, setAcceptHighestKudosModal] =
+        useState(false);
+    const [highestKudosHandshakeData, setHighestKudosHandshakeData] = useState<{
+        handshake: any;
+        username: string;
+        kudos: number;
+    } | null>(null);
+    const [showKudosTooltip, setShowKudosTooltip] = useState(false);
     const navigate = useNavigate();
 
     const sortHandshakesWithUserFirst = (
@@ -259,7 +269,10 @@ export default function PostDetails(props: Props) {
         }
         catch (error) {
             console.error('Error creating handshake:', error);
-            alert('Failed to create handshake. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to create handshake. Please try again.'
+            });
         }
         finally {
             setCreatingHandshake(false);
@@ -280,7 +293,10 @@ export default function PostDetails(props: Props) {
         }
         catch (err) {
             console.error('Failed to create or get DM channel', err);
-            alert('Failed to start a direct message. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to start a direct message. Please try again.'
+            });
         }
     };
 
@@ -344,9 +360,11 @@ export default function PostDetails(props: Props) {
                 } as PostDTO;
             });
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
+            pushAlert({
+                type: 'success',
+                message:
+                    'Handshake created successfully! You can now coordinate the details with the post owner.'
+            });
             setIsChatOpen(false);
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
@@ -411,9 +429,11 @@ export default function PostDetails(props: Props) {
                 } as PostDTO;
             });
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
+            pushAlert({
+                type: 'success',
+                message:
+                    'Handshake created successfully! You can now coordinate the details with the post owner.'
+            });
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
         }
@@ -477,7 +497,10 @@ export default function PostDetails(props: Props) {
     const handleReport = async () => {
         if (!postDetails) return;
         if (!reportReason.trim()) {
-            alert('Please enter a reason for reporting.');
+            pushAlert({
+                type: 'warning',
+                message: 'Please enter a reason for reporting.'
+            });
             return;
         }
 
@@ -486,7 +509,10 @@ export default function PostDetails(props: Props) {
                 id: postDetails.id,
                 reason: reportReason.trim()
             });
-            alert('Post reported successfully.');
+            pushAlert({
+                type: 'success',
+                message: 'Post reported successfully.'
+            });
             setReportModalVisible(false);
             setReportReason('');
         }
@@ -637,7 +663,7 @@ export default function PostDetails(props: Props) {
         }
     };
 
-    const handleAcceptHighestKudos = async () => {
+    const handleAcceptHighestKudos = () => {
         if (!postDetails || !user) return;
 
         const pendingHandshakes = (postDetails.handshakes || []).filter(
@@ -645,7 +671,10 @@ export default function PostDetails(props: Props) {
         );
 
         if (pendingHandshakes.length === 0) {
-            alert('No pending handshakes to accept.');
+            pushAlert({
+                type: 'warning',
+                message: 'No pending handshakes to accept.'
+            });
             return;
         }
 
@@ -660,18 +689,30 @@ export default function PostDetails(props: Props) {
         );
 
         if (!highestKudosHandshake) {
-            alert('Could not find handshake to accept.');
+            pushAlert({
+                type: 'danger',
+                message: 'Could not find handshake to accept.'
+            });
             return;
         }
 
-        const confirmMessage = `Accept handshake from ${highestKudosHandshake.sender?.username || 'user'} (${highestKudosHandshake.sender?.kudos || 0} Kudos)?`;
-        if (!confirm(confirmMessage)) return;
+        // Show confirmation modal
+        setHighestKudosHandshakeData({
+            handshake: highestKudosHandshake,
+            username: highestKudosHandshake.sender?.username || 'user',
+            kudos: highestKudosHandshake.sender?.kudos || 0
+        });
+        setAcceptHighestKudosModal(true);
+    };
+
+    const confirmAcceptHighestKudos = async () => {
+        if (!highestKudosHandshakeData || !postDetails) return;
 
         setAcceptingHighestKudos(true);
 
         try {
             await apiMutate(
-                `/handshakes/${highestKudosHandshake.id}`,
+                `/handshakes/${highestKudosHandshakeData.handshake.id}`,
                 'patch',
                 { status: 'accepted' }
             );
@@ -681,16 +722,17 @@ export default function PostDetails(props: Props) {
                 return {
                     ...prev,
                     handshakes: (prev.handshakes || []).map((h: any) =>
-                        h.id === highestKudosHandshake.id
+                        h.id === highestKudosHandshakeData.handshake.id
                             ? { ...h, status: 'accepted' }
                             : h
                     )
                 };
             });
 
-            alert(
-                `Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`
-            );
+            pushAlert({
+                type: 'success',
+                message: `Successfully accepted handshake from ${highestKudosHandshakeData.username}!`
+            });
 
             if (fetchPostDetails) {
                 fetchPostDetails(postDetails.id);
@@ -698,10 +740,15 @@ export default function PostDetails(props: Props) {
         }
         catch (err) {
             console.error('Failed to accept handshake:', err);
-            alert('Failed to accept handshake. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to accept handshake. Please try again.'
+            });
         }
         finally {
             setAcceptingHighestKudos(false);
+            setAcceptHighestKudosModal(false);
+            setHighestKudosHandshakeData(null);
         }
     };
 
@@ -1340,21 +1387,41 @@ export default function PostDetails(props: Props) {
                     </h2>
 
                     {showAcceptHighestKudosButton && (
-                        <Button
-                            onClick={handleAcceptHighestKudos}
-                            disabled={acceptingHighestKudos || isEditing}
-                            variant='success'
-                            className='flex items-center gap-2'
-                        >
-                            {acceptingHighestKudos ? (
-                                <>
-                                    <span className='animate-spin'>⏳</span>
-                                    Accepting...
-                                </>
-                            ) : (
-                                <>⭐ Accept Highest Kudos</>
-                            )}
-                        </Button>
+                        <div className='flex items-center gap-2'>
+                            <Button
+                                onClick={handleAcceptHighestKudos}
+                                disabled={acceptingHighestKudos || isEditing}
+                                variant='success'
+                                className='flex items-center gap-2'
+                            >
+                                {acceptingHighestKudos ? (
+                                    <>
+                                        <span className='animate-spin'>⏳</span>
+                                        Accepting...
+                                    </>
+                                ) : (
+                                    <>⭐ Accept Highest Kudos</>
+                                )}
+                            </Button>
+                            <div className='relative group'>
+                                <button
+                                    type='button'
+                                    onClick={() => setShowKudosTooltip(!showKudosTooltip)}
+                                    onMouseEnter={() => setShowKudosTooltip(true)}
+                                    onMouseLeave={() => setShowKudosTooltip(false)}
+                                    className='text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors'
+                                    aria-label='Help information'
+                                >
+                                    <QuestionMarkCircleIcon className='w-5 h-5' />
+                                </button>
+                                {showKudosTooltip && (
+                                    <div className='absolute right-0 top-8 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                        <div className='absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45'></div>
+                                        Automatically accepts the help request with the highest kudos. If multiple offers have the same kudos, one will be chosen randomly.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -1552,6 +1619,33 @@ export default function PostDetails(props: Props) {
                     onClose={() => setImageModalVisible(false)}
                 />
             )}
+
+            {/* Accept Highest Kudos Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={acceptHighestKudosModal}
+                onClose={() => {
+                    setAcceptHighestKudosModal(false);
+                    setHighestKudosHandshakeData(null);
+                }}
+                onConfirm={confirmAcceptHighestKudos}
+                title='Accept Highest Kudos'
+                message={
+                    highestKudosHandshakeData
+                        ? `You're about to accept the help request from ${highestKudosHandshakeData.username} (${highestKudosHandshakeData.kudos} Kudos), which has the highest kudos among pending offers. ${
+                            (postDetails?.handshakes || []).filter(
+                                (h: any) =>
+                                    h.status === 'new' &&
+                                    (h.sender?.kudos || 0) === highestKudosHandshakeData.kudos
+                            ).length > 1
+                                ? 'Note: Multiple offers have the same kudos amount.'
+                                : ''
+                        }`
+                        : ''
+                }
+                confirmText='Accept'
+                cancelText='Cancel'
+                variant='info'
+            />
         </div>
     );
 }

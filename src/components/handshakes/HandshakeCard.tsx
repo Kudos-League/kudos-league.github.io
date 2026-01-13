@@ -75,6 +75,11 @@ const HandshakeCard: React.FC<Props> = ({
     const [fadeInUser, setFadeInUser] = useState(false);
     const [fadeInCard, setFadeInCard] = useState(false);
 
+    // Sync internal status state with prop changes
+    useEffect(() => {
+        setStatus(handshake.status);
+    }, [handshake.status]);
+
     useEffect(() => {
         // Only show user after data is loaded
         if (
@@ -152,6 +157,18 @@ const HandshakeCard: React.FC<Props> = ({
         if (user.id === userID) return capitalize ? 'You' : 'you';
         return user.username;
     };
+
+    // Check if another handshake on this post has been completed
+    const otherCompletedHandshake = useMemo(() => {
+        if (!handshake.post?.handshakes) return null;
+        return handshake.post.handshakes.find(
+            (h) => h.id !== handshake.id && h.status === 'completed'
+        );
+    }, [handshake.post?.handshakes, handshake.id]);
+
+    const isPostClosedByOther =
+        otherCompletedHandshake &&
+        (status === 'new' || status === 'accepted');
 
     useEffect(() => {
         const fetchLastMessage = async () => {
@@ -525,8 +542,28 @@ const HandshakeCard: React.FC<Props> = ({
 
                 {/* Actions Row */}
                 <div className={compact ? 'space-y-2' : 'space-y-3'}>
+                    {/* Post Closed by Another Handshake Warning */}
+                    {isPostClosedByOther && showUser && (
+                        <div className='p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800'>
+                            <p
+                                className={`${compact ? 'text-sm' : 'text-base'} text-red-800 dark:text-red-300`}
+                            >
+                                <span className='font-semibold'>
+                                    This post is no longer available.
+                                </span>{' '}
+                                Another person is{' '}
+                                {handshake.post?.type === 'request'
+                                    ? 'helping with this request'
+                                    : handshake.post?.type === 'gift'
+                                        ? 'receiving this item'
+                                        : 'completing this exchange'}
+                                .
+                            </p>
+                        </div>
+                    )}
+
                     {/* Status Message */}
-                    {status === 'new' && showUser && (
+                    {status === 'new' && showUser && !isPostClosedByOther && (
                         <div className='p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800'>
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-amber-800 dark:text-amber-300`}
@@ -572,7 +609,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {status === 'accepted' && !canComplete && showUser && (
+                    {status === 'accepted' && !canComplete && showUser && !isPostClosedByOther && (
                         <div className='p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800'>
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}
@@ -647,6 +684,7 @@ const HandshakeCard: React.FC<Props> = ({
 
                     {/* Action Buttons Row */}
                     {status !== 'completed' &&
+                        !isPostClosedByOther &&
                         ((canAccept &&
                             !stage.postIsPast &&
                             userID === handshake.receiverID &&
@@ -728,7 +766,7 @@ const HandshakeCard: React.FC<Props> = ({
                     )}
 
                     {/* Kudos Assignment - Better mobile layout */}
-                    {canComplete && status !== 'completed' && (
+                    {canComplete && status !== 'completed' && !isPostClosedByOther && (
                         <div
                             className={`flex flex-col ${compact ? 'gap-2 p-3' : 'gap-3 p-4'} bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800`}
                         >

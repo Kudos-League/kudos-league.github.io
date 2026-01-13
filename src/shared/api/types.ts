@@ -390,6 +390,8 @@ export const NotificationType = {
     HANDSHAKE_ACCEPTED: 'handshake-accepted',
     HANDSHAKE_COMPLETED: 'handshake-completed',
     HANDSHAKE_CANCELLED: 'handshake-cancelled',
+    POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
+    POST_REOPENED: 'post-reopened',
     EVENT_USER_JOINED: 'event-user-joined'
 } as const;
 
@@ -455,6 +457,16 @@ export type NotificationPayload =
           postID: number;
           handshakeID: number;
           noShowReported?: boolean;
+      }
+    | {
+          type: typeof NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.POST_REOPENED;
+          postID: number;
+          handshakeID: number;
       };
 
 export type NotificationRecord = NotificationPayload & {

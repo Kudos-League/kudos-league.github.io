@@ -140,15 +140,85 @@ export default function SearchPage() {
         return filtered;
     }, [effectiveSearch, allEvents, searchingActive, eventLocation, eventTime]);
 
-    // Filter posts by type
+    // Filter and sort posts
     const filteredPosts = useMemo(() => {
-        if (postType === 'all') return searchResults;
-        return searchResults.filter((post) => {
-            if (postType === 'gifts') return post.type === 'gift';
-            if (postType === 'requests') return post.type === 'request';
-            return true;
+        let filtered = searchResults;
+
+        // Filter by type
+        if (postType !== 'all') {
+            filtered = filtered.filter((post) => {
+                if (postType === 'gifts') return post.type === 'gift';
+                if (postType === 'requests') return post.type === 'request';
+                return true;
+            });
+        }
+
+        // Sort posts
+        const sorted = [...filtered].sort((a, b) => {
+            if (typeOfOrdering.type === 'date') {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return typeOfOrdering.order === 'desc'
+                    ? dateB - dateA
+                    : dateA - dateB;
+            }
+            else if (typeOfOrdering.type === 'kudos') {
+                const kudosA = a.kudos || 0;
+                const kudosB = b.kudos || 0;
+                return typeOfOrdering.order === 'desc'
+                    ? kudosB - kudosA
+                    : kudosA - kudosB;
+            }
+            else if (typeOfOrdering.type === 'distance') {
+                // Distance sorting requires user location
+                if (!user?.location?.latitude || !user?.location?.longitude)
+                    return 0;
+
+                const userLat = user.location.latitude;
+                const userLng = user.location.longitude;
+
+                const distA =
+                    a.location?.latitude && a.location?.longitude
+                        ? getDistance(
+                            userLat,
+                            userLng,
+                            a.location.latitude,
+                            a.location.longitude
+                        )
+                        : Infinity;
+                const distB =
+                    b.location?.latitude && b.location?.longitude
+                        ? getDistance(
+                            userLat,
+                            userLng,
+                            b.location.latitude,
+                            b.location.longitude
+                        )
+                        : Infinity;
+
+                return typeOfOrdering.order === 'asc'
+                    ? distA - distB
+                    : distB - distA;
+            }
+            return 0;
         });
-    }, [searchResults, postType]);
+
+        return sorted;
+    }, [searchResults, postType, typeOfOrdering, user]);
+
+    // Helper function to calculate distance between two coordinates (Haversine formula)
+    function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        const R = 6371; // Radius of the Earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c; // Distance in km
+        return distance;
+    }
 
     // Update URL when search changes
     useEffect(() => {
@@ -375,7 +445,9 @@ export default function SearchPage() {
                                                     onClick={() => {
                                                         if (
                                                             !user?.location
-                                                                ?.name
+                                                                ?.latitude ||
+                                                            !user?.location
+                                                                ?.longitude
                                                         ) {
                                                             setShowLocationWarning(
                                                                 true
