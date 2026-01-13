@@ -147,50 +147,42 @@ export default function PostDetails(props: Props) {
         if (!userId || !handshakes?.length) return handshakes || [];
 
         return [...handshakes].sort((a, b) => {
-            const aIsUser =
-                a.senderID === userId ||
-                a.receiverID === userId ||
-                a.recipientID === userId;
-            const bIsUser =
-                b.senderID === userId ||
-                b.receiverID === userId ||
-                b.recipientID === userId;
+            // Determine if user posted or actively interacted with the handshake
+            const aUserPosted = a.senderID === userId;
+            const bUserPosted = b.senderID === userId;
 
-            // User's handshakes always come first
-            if (aIsUser && !bIsUser) return -1;
-            if (!aIsUser && bIsUser) return 1;
+            const aUserInteracted = (a.receiverID === userId || a.recipientID === userId) &&
+                                   (a.status === 'accepted' || a.status === 'completed');
+            const bUserInteracted = (b.receiverID === userId || b.recipientID === userId) &&
+                                   (b.status === 'accepted' || b.status === 'completed');
 
-            // Within user's handshakes, completed/accepted come first
-            if (aIsUser && bIsUser) {
-                const aIsCompleted = a.status === 'completed' || a.status === 'accepted';
-                const bIsCompleted = b.status === 'completed' || b.status === 'accepted';
+            const aIsPriority = aUserPosted || aUserInteracted;
+            const bIsPriority = bUserPosted || bUserInteracted;
 
-                if (aIsCompleted && !bIsCompleted) return -1;
-                if (!aIsCompleted && bIsCompleted) return 1;
+            // Priority handshakes (user posted or interacted) always come first
+            if (aIsPriority && !bIsPriority) return -1;
+            if (!aIsPriority && bIsPriority) return 1;
 
-                // If both have same status, sort by date
+            // Within priority handshakes, sort by date
+            if (aIsPriority && bIsPriority) {
                 return (
                     new Date(b.createdAt).getTime() -
                     new Date(a.createdAt).getTime()
                 );
             }
 
-            // For non-user handshakes, sort by sender's kudos (descending)
-            if (!aIsUser && !bIsUser) {
-                const aKudos = a.sender?.kudos || 0;
-                const bKudos = b.sender?.kudos || 0;
-                if (aKudos !== bKudos) {
-                    return bKudos - aKudos;
-                }
-
-                // If kudos are equal, sort by date
-                return (
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime()
-                );
+            // For all other handshakes, sort by sender's kudos (descending)
+            const aKudos = a.sender?.kudos || 0;
+            const bKudos = b.sender?.kudos || 0;
+            if (aKudos !== bKudos) {
+                return bKudos - aKudos;
             }
 
-            return 0;
+            // If kudos are equal, sort by date
+            return (
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            );
         });
     };
 
