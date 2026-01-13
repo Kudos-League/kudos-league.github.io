@@ -147,6 +147,13 @@ export default function PostDetails(props: Props) {
         if (!userId || !handshakes?.length) return handshakes || [];
 
         return [...handshakes].sort((a, b) => {
+            // Completed and accepted handshakes always come first
+            const aIsCompleted = a.status === 'completed' || a.status === 'accepted';
+            const bIsCompleted = b.status === 'completed' || b.status === 'accepted';
+
+            if (aIsCompleted && !bIsCompleted) return -1;
+            if (!aIsCompleted && bIsCompleted) return 1;
+
             const aIsUser =
                 a.senderID === userId ||
                 a.receiverID === userId ||
@@ -156,7 +163,7 @@ export default function PostDetails(props: Props) {
                 b.receiverID === userId ||
                 b.recipientID === userId;
 
-            // User's handshakes always come first
+            // User's handshakes always come first (within their status group)
             if (aIsUser && !bIsUser) return -1;
             if (!aIsUser && bIsUser) return 1;
 
@@ -1455,9 +1462,12 @@ export default function PostDetails(props: Props) {
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
                     onHandshakeInteraction={() => {
-                        // Refetch post details to update all handshake cards immediately
+                        // Force immediate refetch to update all handshake cards
                         if (fetchPostDetails && postDetails?.id) {
-                            fetchPostDetails(postDetails.id);
+                            // Small delay to ensure backend has processed the update
+                            setTimeout(() => {
+                                fetchPostDetails(postDetails.id);
+                            }, 100);
                         }
                     }}
                     showPostDetails={false}
