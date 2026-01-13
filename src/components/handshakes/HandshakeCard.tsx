@@ -394,6 +394,7 @@ const HandshakeCard: React.FC<Props> = ({
                         ? `${kudosValue} kudos sent successfully.`
                         : `You helped ${otherUsername}! Waiting for them to complete.`
             });
+            onInteraction?.();
         }
         catch (err) {
             console.error(err);
