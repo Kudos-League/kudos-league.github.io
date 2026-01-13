@@ -1454,6 +1454,12 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
+                    onHandshakeInteraction={() => {
+                        // Refetch post details to update all handshake cards immediately
+                        if (fetchPostDetails && postDetails?.id) {
+                            fetchPostDetails(postDetails.id);
+                        }
+                    }}
                     showPostDetails={false}
                     showSenderOrReceiver={'sender'}
                     showUserKudos={true}

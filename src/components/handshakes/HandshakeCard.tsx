@@ -158,7 +158,7 @@ const HandshakeCard: React.FC<Props> = ({
         return user.username;
     };
 
-    // Check if another handshake on this post has been completed
+    // Check if another handshake on this post has been completed or if items limit reached
     const otherCompletedHandshake = useMemo(() => {
         if (!handshake.post?.handshakes) return null;
         return handshake.post.handshakes.find(
@@ -166,8 +166,21 @@ const HandshakeCard: React.FC<Props> = ({
         );
     }, [handshake.post?.handshakes, handshake.id]);
 
+    // Check if items limit has been reached
+    const itemsLimitReached = useMemo(() => {
+        if (!handshake.post?.handshakes || !handshake.post?.itemsLimit) return false;
+
+        const acceptedOrCompletedCount = handshake.post.handshakes.filter(
+            (h) => h.status === 'accepted' || h.status === 'completed'
+        ).length;
+
+        return acceptedOrCompletedCount >= handshake.post.itemsLimit;
+    }, [handshake.post?.handshakes, handshake.post?.itemsLimit]);
+
     const isPostClosedByOther =
-        otherCompletedHandshake &&
+        (otherCompletedHandshake ||
+            (itemsLimitReached && status !== 'accepted' && status !== 'completed') ||
+            handshake.post?.status === 'closed') &&
         (status === 'new' || status === 'accepted');
 
     useEffect(() => {
