@@ -212,7 +212,9 @@ function NotificationContentWrapper({
         notification.type === NotificationType.HANDSHAKE_CREATED ||
         notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
         notification.type === NotificationType.HANDSHAKE_COMPLETED ||
-        notification.type === NotificationType.HANDSHAKE_CANCELLED;
+        notification.type === NotificationType.HANDSHAKE_CANCELLED ||
+        notification.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+        notification.type === NotificationType.POST_REOPENED;
 
     // If it's a handshake notification and we have a handshake ID but it's still loading,
     // show a brief loading state to prevent "Someone" from flashing
@@ -636,6 +638,22 @@ function describeNotification(
 
         return { title, description };
     }
+    case NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE: {
+        return {
+            title: 'Post closed',
+            description: showingHandshakeCard
+                ? 'Another person completed a handshake on this post. The post is no longer available.'
+                : 'Another person completed a handshake on this post.'
+        };
+    }
+    case NotificationType.POST_REOPENED: {
+        return {
+            title: 'Post reopened',
+            description: showingHandshakeCard
+                ? 'A completed handshake was cancelled. The post is available again!'
+                : 'The post is available again!'
+        };
+    }
     case NotificationType.EVENT_USER_JOINED: {
         const user = 'user' in notification ? notification.user : null;
         const username = getNotificationDisplayName(user, userID, true);
@@ -773,7 +791,9 @@ export default function NotificationsPage() {
                                   NotificationType.HANDSHAKE_ACCEPTED ||
                               item.type ===
                                   NotificationType.HANDSHAKE_COMPLETED ||
-                              item.type === NotificationType.HANDSHAKE_CANCELLED
+                              item.type === NotificationType.HANDSHAKE_CANCELLED ||
+                              item.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                              item.type === NotificationType.POST_REOPENED
                         );
                     }
                     if (filter === 'comments') {
@@ -792,14 +812,16 @@ export default function NotificationsPage() {
                                   NotificationType.HANDSHAKE_ACCEPTED &&
                               item.type !==
                                   NotificationType.HANDSHAKE_COMPLETED &&
-                              item.type !== NotificationType.HANDSHAKE_CANCELLED
+                              item.type !== NotificationType.HANDSHAKE_CANCELLED &&
+                              item.type !== NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE &&
+                              item.type !== NotificationType.POST_REOPENED
                         );
                     }
                     return true;
                 });
 
-        // Group handshake notifications by postID
-        const handshakeGroups = new Map<number, NotificationRecord[]>();
+        // Group handshake notifications by postID + handshakeID
+        const handshakeGroups = new Map<string, NotificationRecord[]>();
         const nonHandshakeItems: NotificationRecord[] = [];
 
         filtered.forEach((item) => {
@@ -807,14 +829,16 @@ export default function NotificationsPage() {
                 item.type === NotificationType.HANDSHAKE_CREATED ||
                 item.type === NotificationType.HANDSHAKE_ACCEPTED ||
                 item.type === NotificationType.HANDSHAKE_COMPLETED ||
-                item.type === NotificationType.HANDSHAKE_CANCELLED;
+                item.type === NotificationType.HANDSHAKE_CANCELLED ||
+                item.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                item.type === NotificationType.POST_REOPENED;
 
-            if (isHandshake && 'postID' in item && item.postID) {
-                const postID = item.postID;
-                if (!handshakeGroups.has(postID)) {
-                    handshakeGroups.set(postID, []);
+            if (isHandshake && 'postID' in item && item.postID && 'handshakeID' in item && item.handshakeID) {
+                const groupKey = `${item.postID}-${item.handshakeID}`;
+                if (!handshakeGroups.has(groupKey)) {
+                    handshakeGroups.set(groupKey, []);
                 }
-                const group = handshakeGroups.get(postID);
+                const group = handshakeGroups.get(groupKey);
                 if (group) {
                     group.push(item);
                 }
@@ -828,7 +852,7 @@ export default function NotificationsPage() {
         const result: NotificationItem[] = [];
 
         // Add grouped handshake notifications
-        handshakeGroups.forEach((notifications, postID) => {
+        handshakeGroups.forEach((notifications, groupKey) => {
             if (notifications.length === 1) {
                 // Single notification, don't group
                 result.push(notifications[0]);
@@ -845,6 +869,9 @@ export default function NotificationsPage() {
                         : 0;
                     return dateB - dateA;
                 });
+
+                // Get postID from the first notification (all should have the same)
+                const postID = ('postID' in sorted[0] && typeof sorted[0].postID === 'number') ? sorted[0].postID : 0;
 
                 // Collect all unique handshake IDs
                 const handshakeIDs = Array.from(
@@ -933,7 +960,9 @@ export default function NotificationsPage() {
                     if (
                         !notif.isActedOn &&
                         (notif.type === NotificationType.HANDSHAKE_COMPLETED ||
-                            notif.type === NotificationType.HANDSHAKE_CANCELLED)
+                            notif.type === NotificationType.HANDSHAKE_CANCELLED ||
+                            notif.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                            notif.type === NotificationType.POST_REOPENED)
                     ) {
                         notificationsToMark.push(notif);
                     }
@@ -944,7 +973,9 @@ export default function NotificationsPage() {
                 if (
                     !item.isActedOn &&
                     (item.type === NotificationType.HANDSHAKE_COMPLETED ||
-                        item.type === NotificationType.HANDSHAKE_CANCELLED)
+                        item.type === NotificationType.HANDSHAKE_CANCELLED ||
+                        item.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                        item.type === NotificationType.POST_REOPENED)
                 ) {
                     notificationsToMark.push(item);
                 }
@@ -1015,7 +1046,9 @@ export default function NotificationsPage() {
                 notification.type === NotificationType.HANDSHAKE_CREATED ||
                 notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
                 notification.type === NotificationType.HANDSHAKE_COMPLETED ||
-                notification.type === NotificationType.HANDSHAKE_CANCELLED
+                notification.type === NotificationType.HANDSHAKE_CANCELLED ||
+                notification.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+                notification.type === NotificationType.POST_REOPENED
             ) {
                 navigate(`/post/${notification.postID}`);
             }
@@ -1163,7 +1196,9 @@ export default function NotificationsPage() {
             notification.type === NotificationType.HANDSHAKE_CREATED ||
             notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
             notification.type === NotificationType.HANDSHAKE_COMPLETED ||
-            notification.type === NotificationType.HANDSHAKE_CANCELLED
+            notification.type === NotificationType.HANDSHAKE_CANCELLED ||
+            notification.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
+            notification.type === NotificationType.POST_REOPENED
         ) {
             const handshakeID =
                 'handshakeID' in notification
