@@ -452,8 +452,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                         ref={scrollContainerRef}
                         className={
                             compact
-                                ? 'leaderboard-scroll max-h-[calc(100vh-380px)] sm:max-h-[calc(100vh-340px)] md:max-h-[calc(100vh-300px)] overflow-y-auto pr-1 mb-2'
-                                : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2 mb-2'
+                                ? 'leaderboard-scroll max-h-[calc(100vh-390px)] sm:max-h-[calc(100vh-350px)] md:max-h-[calc(100vh-300px)] overflow-y-auto pr-1 mb-4'
+                                : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2 mb-4'
                         }
                         style={{ scrollbarGutter: 'stable' }}
                     >
