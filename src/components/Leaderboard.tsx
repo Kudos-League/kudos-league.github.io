@@ -43,6 +43,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const [displayLimit, setDisplayLimit] = useState(20);
     const [nextCursor, setNextCursor] = useState<number | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [searchingForUser, setSearchingForUser] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     // For API calls, we can use either saved or browser location
     const hasLocation = hasSavedLocation || !!browserLocation;
 
-    const loadLeaderboard = async (reset = true) => {
+    const loadLeaderboard = useCallback(async (reset = true) => {
         if (!user) {
             setError('Must be logged in.');
             return;
@@ -116,12 +117,13 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
+    }, [user, useLocal, hasLocation, timeFilter, nextCursor]);
 
     // Effect to trigger load when filters change
     useEffect(() => {
+        setSearchingForUser(false); // Stop searching when filters change
         loadLeaderboard();
-    }, [useLocal, timeFilter]);
+    }, [useLocal, timeFilter, loadLeaderboard]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -188,12 +190,46 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 behavior: 'smooth',
                 block: 'center'
             });
+            setSearchingForUser(false);
         }
         else if (nextCursor && !loadingMore) {
-            // User not in list yet, keep loading more entries
+            // User not in list yet, start/continue loading more entries
+            setSearchingForUser(true);
             loadLeaderboard(false);
         }
+        else if (!nextCursor && !currentUserInList) {
+            // No more data to load and user not found
+            setSearchingForUser(false);
+        }
     }, [leaderboard, user?.id, nextCursor, loadingMore, loadLeaderboard]);
+
+    // Auto-load more users when searching for current user
+    useEffect(() => {
+        if (searchingForUser && !loadingMore && nextCursor) {
+            const currentUserInList = leaderboard.find((entry) => entry.id === user?.id);
+            if (!currentUserInList) {
+                // Continue loading more without scrolling
+                loadLeaderboard(false);
+            } else {
+                // Found the user, wait a bit then scroll to them
+                setTimeout(() => {
+                    setSearchingForUser(false);
+                    // Small delay to ensure modal is hidden before scrolling
+                    setTimeout(() => {
+                        if (currentUserRef.current) {
+                            currentUserRef.current.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                        }
+                    }, 100);
+                }, 200);
+            }
+        } else if (searchingForUser && !nextCursor) {
+            // No more data and user not found
+            setSearchingForUser(false);
+        }
+    }, [searchingForUser, loadingMore, nextCursor, leaderboard, user?.id, loadLeaderboard]);
 
     const LeaderboardContent = (
         <>
@@ -412,13 +448,34 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 <div className={`mx-4 ${compact ? 'mb-2' : 'mb-4'}`}>
                     <button
                         onClick={scrollToCurrentUser}
-                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] ${
+                        disabled={searchingForUser}
+                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed ${
                             compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'
                         }`}
-                        title='Scroll to your position in the leaderboard'
+                        title={searchingForUser ? 'Searching for your position...' : 'Scroll to your position in the leaderboard'}
                     >
                         Find Me
                     </button>
+                </div>
+            )}
+
+            {/* Search Modal Overlay */}
+            {searchingForUser && (
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-800 rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
+                        <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 border-4 border-brand-200 dark:border-brand-800 rounded-full"></div>
+                            <div className="absolute inset-0 border-4 border-transparent border-t-brand-500 dark:border-t-brand-400 rounded-full animate-spin"></div>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-1">
+                                Finding you...
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-zinc-400">
+                                Loading leaderboard entries
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
 
