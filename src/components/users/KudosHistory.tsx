@@ -157,11 +157,11 @@ export default function KudosHistoryList() {
     return (
         <div className='space-y-4'>
             <div className='flex items-center justify-between gap-3 flex-wrap'>
-                <h3 className='text-lg font-semibold'>Kudos history</h3>
-                <label className='text-sm text-gray-600 flex items-center gap-2'>
+                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>Kudos history</h3>
+                <label className='text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2'>
                     <span>Filter:</span>
                     <select
-                        className='border rounded px-2 py-1'
+                        className='border border-gray-200 dark:border-zinc-700 rounded px-3 py-1.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-400 focus:border-transparent'
                         value={source}
                         onChange={(event) =>
                             setSource(
