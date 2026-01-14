@@ -205,7 +205,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             if (!currentUserInList) {
                 // Continue loading more
                 loadLeaderboard(false);
-            } else {
+            }
+            else {
                 // Found the user, scroll to them
                 setSearchingForUser(false);
                 if (currentUserRef.current) {
@@ -215,7 +216,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     });
                 }
             }
-        } else if (searchingForUser && !nextCursor) {
+        }
+        else if (searchingForUser && !nextCursor) {
             // No more data and user not found
             setSearchingForUser(false);
         }
