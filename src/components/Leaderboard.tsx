@@ -49,7 +49,6 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
     const currentUserRef = useRef<HTMLLIElement>(null);
-    const savedScrollPosition = useRef<number>(0);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
@@ -191,58 +190,32 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 behavior: 'smooth',
                 block: 'center'
             });
-            setSearchingForUser(false);
         }
         else if (nextCursor && !loadingMore) {
-            // User not in list yet, start/continue loading more entries
+            // User not in list yet, start loading more entries
             setSearchingForUser(true);
             loadLeaderboard(false);
         }
-        else if (!nextCursor && !currentUserInList) {
-            // No more data to load and user not found
-            setSearchingForUser(false);
-        }
     }, [leaderboard, user?.id, nextCursor, loadingMore, loadLeaderboard]);
-
-    // Save scroll position when starting search
-    useEffect(() => {
-        if (searchingForUser && scrollContainerRef.current) {
-            savedScrollPosition.current = scrollContainerRef.current.scrollTop;
-        }
-    }, [searchingForUser]);
-
-    // Restore scroll position after each load to prevent flickering
-    useEffect(() => {
-        if (searchingForUser && scrollContainerRef.current && !loadingMore) {
-            scrollContainerRef.current.scrollTop = savedScrollPosition.current;
-        }
-    }, [leaderboard, searchingForUser, loadingMore]);
 
     // Auto-load more users when searching for current user
     useEffect(() => {
         if (searchingForUser && !loadingMore && nextCursor) {
             const currentUserInList = leaderboard.find((entry) => entry.id === user?.id);
             if (!currentUserInList) {
-                // Continue loading more without scrolling
+                // Continue loading more
                 loadLeaderboard(false);
+            } else {
+                // Found the user, scroll to them
+                setSearchingForUser(false);
+                if (currentUserRef.current) {
+                    currentUserRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
             }
-            else {
-                // Found the user, wait a bit then scroll to them
-                setTimeout(() => {
-                    setSearchingForUser(false);
-                    // Small delay to ensure modal is hidden before scrolling
-                    setTimeout(() => {
-                        if (currentUserRef.current) {
-                            currentUserRef.current.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-                        }
-                    }, 100);
-                }, 200);
-            }
-        }
-        else if (searchingForUser && !nextCursor) {
+        } else if (searchingForUser && !nextCursor) {
             // No more data and user not found
             setSearchingForUser(false);
         }
@@ -465,11 +438,10 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 <div className={`mx-4 ${compact ? 'mb-2' : 'mb-4'}`}>
                     <button
                         onClick={scrollToCurrentUser}
-                        disabled={searchingForUser}
-                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed ${
+                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] ${
                             compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'
                         }`}
-                        title={searchingForUser ? 'Searching for your position...' : 'Scroll to your position in the leaderboard'}
+                        title='Scroll to your position in the leaderboard'
                     >
                         Find Me
                     </button>
@@ -509,37 +481,16 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             background: rgba(255, 255, 255, 0.3);
                         }
                     `}</style>
-                    <div className="relative">
-                        <div
-                            ref={scrollContainerRef}
-                            className={
-                                compact
-                                    ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1'
-                                    : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'
-                            }
-                            style={{ scrollbarGutter: 'stable' }}
-                        >
-                            {LeaderboardContent}
-                        </div>
-                        {/* Local overlay for searching - positioned relative to scroll container */}
-                        {searchingForUser && (
-                            <div className="absolute inset-0 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="relative w-16 h-16">
-                                        <div className="absolute inset-0 border-4 border-brand-200 dark:border-brand-800 rounded-full"></div>
-                                        <div className="absolute inset-0 border-4 border-transparent border-t-brand-500 dark:border-t-brand-400 rounded-full animate-spin"></div>
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-1">
-                                            Finding you...
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">
-                                            Loading leaderboard entries
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                    <div
+                        ref={scrollContainerRef}
+                        className={
+                            compact
+                                ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1'
+                                : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'
+                        }
+                        style={{ scrollbarGutter: 'stable' }}
+                    >
+                        {LeaderboardContent}
                     </div>
                 </>
             )}
