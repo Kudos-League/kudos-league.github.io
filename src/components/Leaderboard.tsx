@@ -239,9 +239,11 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     });
                 }
             }, 100);
-        } catch (err) {
+        }
+        catch (err) {
             console.error('Error finding user:', err);
-        } finally {
+        }
+        finally {
             setFindingUser(false);
         }
     };
