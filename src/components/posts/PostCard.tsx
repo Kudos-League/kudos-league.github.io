@@ -58,11 +58,19 @@ export default function PostCard(props: Props) {
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
+    const isClosed = status === 'closed';
+
     return (
         <div
-            className='relative border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden h-full flex flex-col'
+            className={`relative border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden h-full flex flex-col ${
+                isClosed ? 'opacity-60' : ''
+            }`}
             onClick={() => navigate(`/post/${id}`)}
         >
+            {/* Grey overlay for closed posts */}
+            {isClosed && (
+                <div className='absolute inset-0 bg-gray-400 dark:bg-gray-600 opacity-20 pointer-events-none rounded-lg z-10' />
+            )}
             {/* Image Carousel - appears first on all sizes, images fill the space */}
             {hasImages && (
                 <div
@@ -137,24 +145,32 @@ export default function PostCard(props: Props) {
                 {body}
             </TextWithLinks>
 
-            {/* HandshakeCard - mobile only */}
-            {viewerHandshake && showHandshakeShortcut && (
+            {/* HandshakeCard or Closed Message - mobile only */}
+            {showHandshakeShortcut && (
                 <div
                     onClick={(e) => e.stopPropagation()}
                     className='block sm:hidden mt-4'
                 >
-                    {!viewerHandshake.cancelledAt && (
-                        <HandshakeCard
-                            handshake={{
-                                ...viewerHandshake,
-                                post: props
-                            }}
-                            userID={user?.id}
-                            showPostDetails={false}
-                            showSenderOrReceiver='sender'
-                            compact={true}
-                            hideCardBorder={true}
-                        />
+                    {isClosed ? (
+                        <div className='relative z-20 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 border-2 border-gray-400 dark:border-gray-500 rounded-lg p-4 text-center'>
+                            <p className='text-lg font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide'>
+                                🔒 This post is closed
+                            </p>
+                        </div>
+                    ) : (
+                        viewerHandshake && !viewerHandshake.cancelledAt && (
+                            <HandshakeCard
+                                handshake={{
+                                    ...viewerHandshake,
+                                    post: props
+                                }}
+                                userID={user?.id}
+                                showPostDetails={false}
+                                showSenderOrReceiver='sender'
+                                compact={true}
+                                hideCardBorder={true}
+                            />
+                        )
                     )}
                 </div>
             )}
