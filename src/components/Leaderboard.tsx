@@ -49,6 +49,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
     const currentUserRef = useRef<HTMLLIElement>(null);
+    const savedScrollPosition = useRef<number>(0);
 
     const getLabel = () =>
         TIME_FILTERS.find((f) => f.value === timeFilter)?.label || 'All Time';
@@ -202,6 +203,20 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             setSearchingForUser(false);
         }
     }, [leaderboard, user?.id, nextCursor, loadingMore, loadLeaderboard]);
+
+    // Save scroll position when starting search
+    useEffect(() => {
+        if (searchingForUser && scrollContainerRef.current) {
+            savedScrollPosition.current = scrollContainerRef.current.scrollTop;
+        }
+    }, [searchingForUser]);
+
+    // Restore scroll position after each load to prevent flickering
+    useEffect(() => {
+        if (searchingForUser && scrollContainerRef.current && !loadingMore) {
+            scrollContainerRef.current.scrollTop = savedScrollPosition.current;
+        }
+    }, [leaderboard, searchingForUser, loadingMore]);
 
     // Auto-load more users when searching for current user
     useEffect(() => {
@@ -461,25 +476,6 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 </div>
             )}
 
-            {/* Search Modal Overlay */}
-            {searchingForUser && (
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
-                        <div className="relative w-16 h-16">
-                            <div className="absolute inset-0 border-4 border-brand-200 dark:border-brand-800 rounded-full"></div>
-                            <div className="absolute inset-0 border-4 border-transparent border-t-brand-500 dark:border-t-brand-400 rounded-full animate-spin"></div>
-                        </div>
-                        <div className="text-center">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-1">
-                                Finding you...
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-zinc-400">
-                                Loading leaderboard entries
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Status */}
             {loading && <p className='text-center text-gray-500'>Loading...</p>}
@@ -513,16 +509,37 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                             background: rgba(255, 255, 255, 0.3);
                         }
                     `}</style>
-                    <div
-                        ref={scrollContainerRef}
-                        className={
-                            compact
-                                ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1'
-                                : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'
-                        }
-                        style={{ scrollbarGutter: 'stable' }}
-                    >
-                        {LeaderboardContent}
+                    <div className="relative">
+                        <div
+                            ref={scrollContainerRef}
+                            className={
+                                compact
+                                    ? 'leaderboard-scroll max-h-[450px] sm:max-h-[600px] overflow-y-auto pr-1'
+                                    : 'leaderboard-scroll max-h-[calc(100vh-16rem)] overflow-y-auto pr-2'
+                            }
+                            style={{ scrollbarGutter: 'stable' }}
+                        >
+                            {LeaderboardContent}
+                        </div>
+                        {/* Local overlay for searching - positioned relative to scroll container */}
+                        {searchingForUser && (
+                            <div className="absolute inset-0 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="relative w-16 h-16">
+                                        <div className="absolute inset-0 border-4 border-brand-200 dark:border-brand-800 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-transparent border-t-brand-500 dark:border-t-brand-400 rounded-full animate-spin"></div>
+                                    </div>
+                                    <div className="text-center">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-1">
+                                            Finding you...
+                                        </h3>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">
+                                            Loading leaderboard entries
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </>
             )}
