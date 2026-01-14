@@ -1408,6 +1408,7 @@ export default function PostDetails(props: Props) {
                                         <span className='animate-spin'>⏳</span>
                                         Accepting...
                                     </>
+
                                 ) : (
                                     <>⭐ Accept Highest Kudos</>
                                 )}
