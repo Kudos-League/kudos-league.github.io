@@ -43,6 +43,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const [displayLimit, setDisplayLimit] = useState(20);
     const [nextCursor, setNextCursor] = useState<number | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [findingUser, setFindingUser] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -178,13 +179,70 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
         return '';
     };
 
-    // Scroll to current user
-    const scrollToCurrentUser = () => {
-        if (currentUserRef.current) {
-            currentUserRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+    // Find and scroll to current user
+    const findMe = async () => {
+        if (!user) return;
+
+        // Check if user is already in the loaded leaderboard
+        const userInLeaderboard = leaderboard.some(entry => entry.id === user.id);
+
+        if (userInLeaderboard) {
+            // User is already loaded, just scroll to them
+            if (currentUserRef.current) {
+                currentUserRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+            return;
+        }
+
+        // User not loaded yet, need to fetch more data
+        setFindingUser(true);
+
+        try {
+            let tempCursor = nextCursor;
+            let tempLeaderboard = [...leaderboard];
+            let userFound = false;
+
+            // Keep fetching until we find the user or run out of data
+            while (tempCursor && !userFound) {
+                // Add a small delay for better UX
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                const response = await apiGet<LeaderboardResponse>('/leaderboard', {
+                    params: {
+                        local: useLocal,
+                        time: timeFilter,
+                        limit: 20,
+                        cursor: tempCursor
+                    }
+                });
+
+                tempLeaderboard = [...tempLeaderboard, ...(response.data || [])];
+                tempCursor = response.nextCursor;
+
+                // Check if user is in this batch
+                userFound = response.data?.some(entry => entry.id === user.id) || false;
+
+                // Update state with new data
+                setLeaderboard(tempLeaderboard);
+                setNextCursor(response.nextCursor);
+            }
+
+            // Scroll to user after a brief delay to ensure DOM is updated
+            setTimeout(() => {
+                if (currentUserRef.current) {
+                    currentUserRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100);
+        } catch (err) {
+            console.error('Error finding user:', err);
+        } finally {
+            setFindingUser(false);
         }
     };
 
@@ -404,13 +462,24 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             {!loading && leaderboard.length > 0 && (
                 <div className={`mx-4 ${compact ? 'mb-2' : 'mb-4'}`}>
                     <button
-                        onClick={scrollToCurrentUser}
-                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] ${
+                        onClick={findMe}
+                        disabled={findingUser}
+                        className={`w-full bg-brand-500 hover:bg-brand-600 dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-lg font-medium transition-colors shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed ${
                             compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm'
                         }`}
                         title='Scroll to your position in the leaderboard'
                     >
-                        Find Me
+                        {findingUser ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Finding...
+                            </span>
+                        ) : (
+                            'Find Me'
+                        )}
                     </button>
                 </div>
             )}
