@@ -210,7 +210,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
             if (!currentUserInList) {
                 // Continue loading more without scrolling
                 loadLeaderboard(false);
-            } else {
+            }
+            else {
                 // Found the user, wait a bit then scroll to them
                 setTimeout(() => {
                     setSearchingForUser(false);
@@ -225,7 +226,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                     }, 100);
                 }, 200);
             }
-        } else if (searchingForUser && !nextCursor) {
+        }
+        else if (searchingForUser && !nextCursor) {
             // No more data and user not found
             setSearchingForUser(false);
         }

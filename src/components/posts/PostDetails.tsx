@@ -1401,7 +1401,7 @@ export default function PostDetails(props: Props) {
                                 onClick={handleAcceptHighestKudos}
                                 disabled={acceptingHighestKudos || isEditing}
                                 variant='success'
-                                className='flex items-center gap-2'
+                                className='flex items-center gap-2 ml-2'
                             >
                                 {acceptingHighestKudos ? (
                                     <>
