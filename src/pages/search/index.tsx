@@ -180,8 +180,8 @@ export default function SearchPage() {
                     : dateA - dateB;
             }
             else if (typeOfOrdering.type === 'kudos') {
-                const kudosA = a.kudos || 0;
-                const kudosB = b.kudos || 0;
+                const kudosA = a.sender?.kudos || 0;
+                const kudosB = b.sender?.kudos || 0;
                 return typeOfOrdering.order === 'desc'
                     ? kudosB - kudosA
                     : kudosA - kudosB;
