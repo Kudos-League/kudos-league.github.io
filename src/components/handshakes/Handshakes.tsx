@@ -14,6 +14,7 @@ interface HandshakesProps {
     showSenderOrReceiver?: 'sender' | 'receiver';
     showUserKudos?: boolean;
     onHandshakeInteraction?: () => void;
+    compact?: boolean;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -26,7 +27,8 @@ const Handshakes: React.FC<HandshakesProps> = ({
     onHandshakeDeleted,
     showSenderOrReceiver,
     showUserKudos = false,
-    onHandshakeInteraction
+    onHandshakeInteraction,
+    compact = false
 }) => {
     // Filter out cancelled handshakes
     const activeHandshakes = handshakes.filter(
@@ -54,6 +56,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     showSenderOrReceiver={showSenderOrReceiver}
                     showUserKudos={showUserKudos}
                     onInteraction={onHandshakeInteraction}
+                    compact={compact}
                 />
             ))}
 

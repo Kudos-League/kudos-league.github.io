@@ -8,7 +8,8 @@ import {
     InformationCircleIcon,
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
-    UserCircleIcon
+    UserCircleIcon,
+    ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -30,6 +31,7 @@ type NavItem = {
 // User menu items for logged-in users
 function useUserMenuItems(isAdmin?: boolean): NavItem[] {
     const items: NavItem[] = [
+        { name: 'My Activity', to: routes.activity, icon: ChartBarIcon },
         { name: 'About', to: routes.about, icon: InformationCircleIcon },
         { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon }
     ];

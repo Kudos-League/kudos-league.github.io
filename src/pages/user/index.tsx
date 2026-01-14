@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { apiGet } from '@/shared/api/apiClient';
 import Profile from '@/components/users/Profile';
 import { useAuth } from '@/contexts/useAuth';
-import { EventDTO, HandshakeDTO, PostDTO, UserDTO } from '@/shared/api/types';
+import { UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {
     const { user: userProfile, isLoggedIn } = useAuth();
@@ -13,9 +13,6 @@ export default function UserProfile() {
     const targetUserID = routeID ? Number(routeID) : userProfile?.id;
 
     const [user, setUser] = useState<UserDTO | null>(null);
-    const [posts, setPosts] = useState<PostDTO[]>([]);
-    const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]);
-    const [events, setEvents] = useState<EventDTO[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -30,63 +27,12 @@ export default function UserProfile() {
             try {
                 if (isViewingOwnProfile && userProfile) {
                     setUser(userProfile);
-                    // setFormState(userProfile);
                 }
                 else {
-                    const [fetchedUser, fetchedPosts, fetchedEvents] =
-                        await Promise.all([
-                            apiGet<UserDTO>(`/users/${targetUserID}`, {
-                                params: { settings: true }
-                            }),
-                            apiGet<PostDTO[]>(`/users/${targetUserID}/posts`),
-                            apiGet<EventDTO[]>(
-                                `/users/${targetUserID}/events`,
-                                {
-                                    params: { filter: 'all' }
-                                }
-                            )
-                        ]);
-
+                    const fetchedUser = await apiGet<UserDTO>(`/users/${targetUserID}`, {
+                        params: { settings: true }
+                    });
                     setUser(fetchedUser);
-                    setPosts(fetchedPosts);
-                    setEvents(fetchedEvents);
-
-                    return;
-                }
-
-                // Only fetch posts/events if not already loaded
-                if (!posts.length) {
-                    const [fetchedPosts, fetchedEvents] = await Promise.all([
-                        apiGet<PostDTO[]>(`/users/${targetUserID}/posts`),
-                        apiGet<EventDTO[]>(`/users/${targetUserID}/events`, {
-                            params: { filter: 'all' }
-                        })
-                    ]);
-                    setPosts(fetchedPosts);
-                    setEvents(fetchedEvents);
-                }
-
-                if (isViewingOwnProfile && !handshakes.length) {
-                    const [sentHandshakes, receivedHandshakes] =
-                        await Promise.all([
-                            apiGet<HandshakeDTO[]>(
-                                `/handshakes/by-sender/${targetUserID}`
-                            ),
-                            apiGet<HandshakeDTO[]>(
-                                `/handshakes/by-receiver/${targetUserID}`
-                            )
-                        ]);
-
-                    // Combine and deduplicate handshakes (by ID)
-                    const allHandshakes = [
-                        ...sentHandshakes,
-                        ...receivedHandshakes
-                    ];
-                    const uniqueHandshakes = Array.from(
-                        new Map(allHandshakes.map((h) => [h.id, h])).values()
-                    );
-
-                    setHandshakes(uniqueHandshakes);
                 }
             }
             catch (e) {
@@ -96,7 +42,7 @@ export default function UserProfile() {
         };
 
         fetchUser();
-    }, [targetUserID]);
+    }, [targetUserID, isViewingOwnProfile, userProfile]);
 
     if (!isLoggedIn) {
         return (
@@ -120,13 +66,7 @@ export default function UserProfile() {
 
     return (
         <div className='max-w-5xl mx-auto px-4 py-8'>
-            <Profile
-                user={user}
-                posts={posts}
-                handshakes={handshakes}
-                events={events}
-                setUser={setUser}
-            />
+            <Profile user={user} setUser={setUser} />
         </div>
     );
 }

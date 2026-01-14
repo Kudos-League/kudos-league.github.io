@@ -1,47 +1,29 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReportUser } from '@/shared/api/mutations/users';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
-import { Clock, MapPin, Users } from 'lucide-react';
 
-import { UserDTO, PostDTO, HandshakeDTO, EventDTO } from '@/shared/api/types';
+import { UserDTO } from '@/shared/api/types';
 
 import { useAuth } from '@/contexts/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
-import Handshakes from '@/components/handshakes/Handshakes';
 import Spinner from '../common/Spinner';
 import UserCard from '@/components/users/UserCard';
 import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
-import PostList from '@/components/posts/PostsContainer';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteManager from './InviteManager';
 
-type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
-type EventFilterType = 'all-events' | 'created-events' | 'participating-events';
-
 type Props = {
     user: UserDTO;
-    posts: PostDTO[];
-    handshakes: HandshakeDTO[];
-    events: EventDTO[];
     setUser?: (user: UserDTO) => void;
 };
 
-const Profile: React.FC<Props> = ({
-    user,
-    posts,
-    handshakes,
-    events,
-    setUser
-}) => {
+const Profile: React.FC<Props> = ({ user, setUser }) => {
     const { user: currentUser, token } = useAuth();
     const navigate = useNavigate();
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const isSelf = currentUser?.id === user.id;
     const showBackButton = true;
@@ -70,15 +52,6 @@ const Profile: React.FC<Props> = ({
     const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>(
         []
     );
-
-    // Define available filters - show handshakes only for own profile
-    const availableFilters: FilterType[] = isSelf
-        ? ['all', 'posts', 'events', 'handshakes', 'kudos']
-        : ['all', 'posts', 'events'];
-
-    const [filter, setFilter] = useState<FilterType>('all');
-    const [eventFilter, setEventFilter] =
-        useState<EventFilterType>('all-events');
 
     // Fetch blocked users details
     React.useEffect(() => {
@@ -115,65 +88,6 @@ const Profile: React.FC<Props> = ({
         fetchBlockedUsers();
     }, [blockedUsers, isSelf]);
 
-    // Sort all arrays chronologically (latest first)
-    const sortedPosts = useMemo(() => {
-        return [...posts].sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA;
-        });
-    }, [posts]);
-
-    const sortedEvents = useMemo(() => {
-        return [...events].sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA;
-        });
-    }, [events]);
-
-    // Separate events into created and participating
-    const createdEvents = useMemo(() => {
-        return sortedEvents.filter((event) => event.creatorID === user.id);
-    }, [sortedEvents, user.id]);
-
-    const participatingEvents = useMemo(() => {
-        return sortedEvents.filter((event) => event.creatorID !== user.id);
-    }, [sortedEvents, user.id]);
-
-    // Filter events based on the selected event filter
-    const filteredEvents = useMemo(() => {
-        if (eventFilter === 'created-events') return createdEvents;
-        if (eventFilter === 'participating-events') return participatingEvents;
-        return sortedEvents; // all-events
-    }, [eventFilter, createdEvents, participatingEvents, sortedEvents]);
-
-    const sortedHandshakes = useMemo(() => {
-        // Status priority: new (pending) > accepted > completed
-        const statusPriority: Record<string, number> = {
-            new: 0,
-            accepted: 1,
-            completed: 2
-        };
-
-        return [...handshakes]
-            .filter((h) => !h.cancelledAt)
-            .sort((a, b) => {
-                // First sort by status priority
-                const priorityA = statusPriority[a.status] ?? 999;
-                const priorityB = statusPriority[b.status] ?? 999;
-
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-
-                // Then sort by date (newest first within same status)
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return dateB - dateA;
-            });
-    }, [handshakes]);
-
     const validateReportFiles = (files?: File[]) => {
         if (!files) return null;
         const MAX_FILE_COUNT = 4;
@@ -206,13 +120,6 @@ const Profile: React.FC<Props> = ({
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
 
-    // Reset event filter when main filter changes
-    useEffect(() => {
-        if (filter !== 'events') {
-            setEventFilter('all-events');
-        }
-    }, [filter]);
-
     const handleStartDM = async () => {
         if (!currentUser?.id || !user?.id) return;
         try {
@@ -228,17 +135,6 @@ const Profile: React.FC<Props> = ({
             console.error('Failed to create or get DM channel', err);
             alert('Failed to start a direct message. Please try again.');
         }
-    };
-
-    const getFilterLabel = (filterType: FilterType): string => {
-        const labels: Record<FilterType, string> = {
-            all: 'All',
-            posts: 'Posts',
-            events: 'Events',
-            handshakes: 'Handshakes',
-            kudos: 'Kudos history'
-        };
-        return labels[filterType];
     };
 
     const handleReactivate = async () => {
@@ -272,359 +168,6 @@ const Profile: React.FC<Props> = ({
         );
     }
 
-    const renderFilteredContent = () => {
-        const showEmptyState =
-            sortedPosts.length === 0 &&
-            sortedEvents.length === 0 &&
-            (!isSelf || sortedHandshakes.length === 0);
-
-        if (filter === 'kudos') {
-            return (
-                <React.Suspense
-                    fallback={<Spinner text='Loading kudos history...' />}
-                >
-                    <KudosHistory />
-                </React.Suspense>
-            );
-        }
-
-        if (filter === 'handshakes') {
-            return (
-                <div className='grid gap-4'>
-                    {sortedHandshakes.length === 0 ? (
-                        <p className='text-center text-gray-500 dark:text-gray-400'>
-                            No handshakes available.
-                        </p>
-                    ) : (
-                        <Handshakes
-                            handshakes={sortedHandshakes}
-                            currentUserId={user.id}
-                            showAll
-                            onShowAll={() => {
-                                console.log('Show all handshakes');
-                            }}
-                            showPostDetails
-                        />
-                    )}
-                </div>
-            );
-        }
-
-        if (filter === 'events') {
-            return (
-                <div className='space-y-4'>
-                    {/* Event sub-filter buttons */}
-                    <div className='flex flex-wrap gap-2 justify-center'>
-                        <Button
-                            onClick={() => setEventFilter('all-events')}
-                            className={[
-                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
-                                eventFilter === 'all-events'
-                                    ? '!bg-blue-500 !text-white !border-blue-500'
-                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
-                            ].join(' ')}
-                        >
-                            All Events ({sortedEvents.length})
-                        </Button>
-                        <Button
-                            onClick={() => setEventFilter('created-events')}
-                            className={[
-                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
-                                eventFilter === 'created-events'
-                                    ? '!bg-blue-500 !text-white !border-blue-500'
-                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
-                            ].join(' ')}
-                        >
-                            Created ({createdEvents.length})
-                        </Button>
-                        <Button
-                            onClick={() =>
-                                setEventFilter('participating-events')
-                            }
-                            className={[
-                                'px-3 py-1.5 rounded-md border transition-colors text-sm',
-                                eventFilter === 'participating-events'
-                                    ? '!bg-blue-500 !text-white !border-blue-500'
-                                    : '!bg-gray-50 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-100 dark:hover:!bg-white/10'
-                            ].join(' ')}
-                        >
-                            Participating ({participatingEvents.length})
-                        </Button>
-                    </div>
-
-                    <ul className='space-y-2 sm:space-y-3 list-none'>
-                        {filteredEvents.length === 0 ? (
-                            <p className='text-center text-gray-500 dark:text-gray-400'>
-                                {eventFilter === 'created-events' &&
-                                    'No created events.'}
-                                {eventFilter === 'participating-events' &&
-                                    'Not participating in any events.'}
-                                {eventFilter === 'all-events' &&
-                                    'No events available.'}
-                            </p>
-                        ) : (
-                            filteredEvents.map((event) => (
-                                <li
-                                    key={event.id}
-                                    onClick={() =>
-                                        navigate(`/event/${event.id}`)
-                                    }
-                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
-                                >
-                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
-                                            {event.title}
-                                        </p>
-                                        {event.location?.global ? (
-                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                🌐 Global
-                                            </span>
-                                        ) : (
-                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                📍 Local
-                                            </span>
-                                        )}
-                                    </div>
-                                    {event.description && (
-                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
-                                            {event.description}
-                                        </p>
-                                    )}
-                                    <div className='space-y-0.5 sm:space-y-1'>
-                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2 mb-2'>
-                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                            <span className='truncate'>
-                                                {format(
-                                                    toZonedTime(
-                                                        new Date(
-                                                            event.startTime
-                                                        ),
-                                                        tz
-                                                    ),
-                                                    'MMM d, yyyy • h:mm a'
-                                                )}{' '}
-                                                –{' '}
-                                                {event.endTime
-                                                    ? format(
-                                                        toZonedTime(
-                                                            new Date(
-                                                                event.endTime
-                                                            ),
-                                                            tz
-                                                        ),
-                                                        'MMM d, yyyy • h:mm a'
-                                                    )
-                                                    : 'Ongoing'}
-                                            </span>
-                                        </p>
-                                        {event.location?.name &&
-                                            !event.location.global && (
-                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.location.name}
-                                            </p>
-                                        )}
-                                        {event.creator && (
-                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
-                                                <UserCard
-                                                    user={event.creator}
-                                                />
-                                            </p>
-                                        )}
-                                        {typeof event.participantCount ===
-                                            'number' &&
-                                            event.participantCount > 0 && (
-                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount}{' '}
-                                                    participant
-                                                {event.participantCount !==
-                                                    1
-                                                    ? 's'
-                                                    : ''}
-                                            </p>
-                                        )}
-                                    </div>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                </div>
-            );
-        }
-
-        if (filter === 'posts') {
-            return <PostList posts={sortedPosts} showHandshakeShortcut />;
-        }
-
-        return (
-            <div className='space-y-8'>
-                {/* Posts Section */}
-                {sortedPosts.length > 0 && (
-                    <div>
-                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Posts ({sortedPosts.length})
-                        </h3>
-                        <PostList
-                            posts={sortedPosts.slice(0, 3)}
-                            showHandshakeShortcut
-                        />
-                        {sortedPosts.length > 3 && (
-                            <div className='mt-4 text-center'>
-                                <Button
-                                    onClick={() => setFilter('posts')}
-                                    variant='secondary'
-                                    className='text-sm'
-                                >
-                                    View all {sortedPosts.length} posts
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Events Section */}
-                {sortedEvents.length > 0 && (
-                    <div>
-                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Events ({sortedEvents.length})
-                            {createdEvents.length > 0 &&
-                                participatingEvents.length > 0 && (
-                                <span className='text-sm font-normal text-gray-600 dark:text-gray-400 ml-2'>
-                                        ({createdEvents.length} created,{' '}
-                                    {participatingEvents.length}{' '}
-                                        participating)
-                                </span>
-                            )}
-                        </h3>
-                        <ul className='space-y-2 sm:space-y-3 list-none'>
-                            {sortedEvents.slice(0, 2).map((event) => (
-                                <li
-                                    key={event.id}
-                                    onClick={() =>
-                                        navigate(`/event/${event.id}`)
-                                    }
-                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
-                                >
-                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
-                                            {event.title}
-                                        </p>
-                                        {event.location?.global ? (
-                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                🌐 Global
-                                            </span>
-                                        ) : (
-                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                📍 Local
-                                            </span>
-                                        )}
-                                    </div>
-                                    {event.description && (
-                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
-                                            {event.description}
-                                        </p>
-                                    )}
-                                    <div className='space-y-0.5 sm:space-y-1'>
-                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
-                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                            <span className='truncate'>
-                                                {format(
-                                                    toZonedTime(
-                                                        new Date(
-                                                            event.startTime
-                                                        ),
-                                                        tz
-                                                    ),
-                                                    'MMM d, yyyy • h:mm a'
-                                                )}{' '}
-                                                –{' '}
-                                                {event.endTime
-                                                    ? format(
-                                                        toZonedTime(
-                                                            new Date(
-                                                                event.endTime
-                                                            ),
-                                                            tz
-                                                        ),
-                                                        'MMM d, yyyy • h:mm a'
-                                                    )
-                                                    : 'Ongoing'}
-                                            </span>
-                                        </p>
-                                        {event.location?.name &&
-                                            !event.location.global && (
-                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.location.name}
-                                            </p>
-                                        )}
-                                        {event.creator && (
-                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <UserCard
-                                                    user={event.creator}
-                                                />
-                                            </p>
-                                        )}
-                                        {typeof event.participantCount ===
-                                            'number' &&
-                                            event.participantCount > 0 && (
-                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount}{' '}
-                                                    participant
-                                                {event.participantCount !==
-                                                    1
-                                                    ? 's'
-                                                    : ''}
-                                            </p>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                        {sortedEvents.length > 2 && (
-                            <div className='mt-4 text-center'>
-                                <Button
-                                    onClick={() => setFilter('events')}
-                                    variant='secondary'
-                                    className='text-sm'
-                                >
-                                    View all {sortedEvents.length} events
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Handshakes Section - Only for own profile */}
-                {isSelf && sortedHandshakes.length > 0 && (
-                    <div>
-                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
-                            Handshakes ({sortedHandshakes.length})
-                        </h3>
-                        <Handshakes
-                            handshakes={sortedHandshakes.slice(0, 2)}
-                            currentUserId={user.id}
-                            showAll={false}
-                            onShowAll={() => setFilter('handshakes')}
-                            showPostDetails
-                        />
-                    </div>
-                )}
-
-                {/* Empty state for 'All' */}
-                {showEmptyState && (
-                    <p className='text-center text-gray-500 dark:text-gray-400'>
-                        No content available.
-                    </p>
-                )}
-            </div>
-        );
-    };
-
-    const KudosHistory = React.lazy(() => import('./KudosHistory'));
-
     return (
         <div className='max-w-5xl mx-auto'>
             {showBackButton && (
@@ -637,7 +180,7 @@ const Profile: React.FC<Props> = ({
                     <span className='font-medium'>Back</span>
                 </button>
             )}
-            <div className='bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg px-4 sm:px-6 lg:px-8 py-8 space-y-8'>
+            <div className='bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg px-4 sm:px-6 lg:px-8 py-8 space-y-6'>
                 <ProfileHeader
                     user={user}
                     userSettings={user.settings}
@@ -650,18 +193,18 @@ const Profile: React.FC<Props> = ({
 
                 {/* Log Past Gift button - available for all users on their own profile */}
                 {/* {isSelf && (
-                    <div className='flex flex-col items-center gap-2'>
-                        <Button
-                            onClick={() => setShowPastGiftModal(true)}
-                            className='!bg-brand-600 !text-white'
-                        >
-                            Log Past Gift
-                        </Button>
-                        <p className='text-sm text-gray-600 dark:text-gray-400'>
-                            Post a good deed that you made previously
-                        </p>
-                    </div>
-                )} */}
+                        <div className='flex flex-col items-center gap-2'>
+                            <Button
+                                onClick={() => setShowPastGiftModal(true)}
+                                className='!bg-brand-600 !text-white'
+                            >
+                                Log Past Gift
+                            </Button>
+                            <p className='text-sm text-gray-600 dark:text-gray-400'>
+                                Post a good deed that you made previously
+                            </p>
+                        </div>
+                    )} */}
 
                 {!isSelf && (
                     <div className='flex justify-center'>
@@ -671,41 +214,41 @@ const Profile: React.FC<Props> = ({
                                 className='!bg-red-600 !text-white'
                                 variant='danger'
                             >
-                                Report
+                                    Report
                             </Button>
                             {currentUser &&
-                                currentUser.id !== user.id &&
-                                ((blockedUsers ?? []).includes(user.id) ? (
-                                    <Button
-                                        onClick={async () => {
-                                            if (blockingLoading) return;
-                                            try {
-                                                await unblock(user.id);
-                                            }
-                                            catch (err) {
-                                                // noop
-                                            }
-                                        }}
-                                        variant='secondary'
-                                    >
-                                        Unblock
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        onClick={async () => {
-                                            if (blockingLoading) return;
-                                            try {
-                                                await block(user.id);
-                                            }
-                                            catch (err) {
-                                                // noop - hook will rollback/refresh
-                                            }
-                                        }}
-                                        className='!bg-red-600 !text-white'
-                                    >
-                                        Block
-                                    </Button>
-                                ))}
+                                    currentUser.id !== user.id &&
+                                    ((blockedUsers ?? []).includes(user.id) ? (
+                                        <Button
+                                            onClick={async () => {
+                                                if (blockingLoading) return;
+                                                try {
+                                                    await unblock(user.id);
+                                                }
+                                                catch (err) {
+                                                    // noop
+                                                }
+                                            }}
+                                            variant='secondary'
+                                        >
+                                            Unblock
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            onClick={async () => {
+                                                if (blockingLoading) return;
+                                                try {
+                                                    await block(user.id);
+                                                }
+                                                catch (err) {
+                                                    // noop - hook will rollback/refresh
+                                                }
+                                            }}
+                                            className='!bg-red-600 !text-white'
+                                        >
+                                            Block
+                                        </Button>
+                                    ))}
                             {currentUser?.admin && (
                                 <>
                                     {!(user as any).banEndDate ? (
@@ -716,7 +259,7 @@ const Profile: React.FC<Props> = ({
                                             className='!bg-red-700 !text-white'
                                             variant='danger'
                                         >
-                                            Ban
+                                                Ban
                                         </Button>
                                     ) : (
                                         <Button
@@ -726,9 +269,9 @@ const Profile: React.FC<Props> = ({
                                                         'Missing auth token'
                                                     );
                                                 const confirmUnban =
-                                                    window.confirm(
-                                                        'Unban this user?'
-                                                    );
+                                                        window.confirm(
+                                                            'Unban this user?'
+                                                        );
                                                 if (!confirmUnban) return;
                                                 try {
                                                     await apiMutate(
@@ -755,14 +298,14 @@ const Profile: React.FC<Props> = ({
                                                     );
                                                     alert(
                                                         err?.message ||
-                                                            'Failed to unban user.'
+                                                                'Failed to unban user.'
                                                     );
                                                 }
                                             }}
                                             className='!bg-green-600 !text-white'
                                             variant='primary'
                                         >
-                                            Unban
+                                                Unban
                                         </Button>
                                     )}
                                 </>
@@ -779,7 +322,7 @@ const Profile: React.FC<Props> = ({
                                 className='px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700'
                                 onClick={handleReactivate}
                             >
-                                Reactivate
+                                    Reactivate
                             </button>
                         </div>
                     </div>
@@ -793,7 +336,7 @@ const Profile: React.FC<Props> = ({
                     <div className='flex justify-center'>
                         <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
                             <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
-                                Profession
+                                    Profession
                             </span>
                             <p className='mt-1 text-gray-700 dark:text-gray-300 text-sm'>
                                 {user.settings.profession}
@@ -813,10 +356,10 @@ const Profile: React.FC<Props> = ({
                         >
                             <div className='flex items-center gap-2'>
                                 <span className='text-red-600 dark:text-red-400 text-lg'>
-                                    🔐
+                                        🔐
                                 </span>
                                 <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
-                                    Blocked Users
+                                        Blocked Users
                                 </span>
                                 {blockedUsersDetails.length > 0 && (
                                     <span className='px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full'>
@@ -847,7 +390,7 @@ const Profile: React.FC<Props> = ({
                                     </div>
                                 ) : blockedUsersDetails.length === 0 ? (
                                     <p className='text-center text-gray-500 dark:text-gray-400 py-4 text-sm'>
-                                        No blocked users
+                                            No blocked users
                                     </p>
                                 ) : (
                                     <div className='space-y-3'>
@@ -884,7 +427,7 @@ const Profile: React.FC<Props> = ({
                                                             blockingLoading
                                                         }
                                                     >
-                                                        Unblock
+                                                            Unblock
                                                     </Button>
                                                 </div>
                                             )
@@ -895,33 +438,6 @@ const Profile: React.FC<Props> = ({
                         )}
                     </div>
                 )}
-
-                {/* Filter Buttons */}
-                <div className='flex flex-wrap gap-3 justify-center'>
-                    {availableFilters.map((filterType) => {
-                        const active = filter === filterType;
-                        return (
-                            <Button
-                                key={filterType}
-                                onClick={() => setFilter(filterType)}
-                                className={[
-                                    'px-4 py-2 rounded-md border transition-colors',
-                                    active
-                                        ? '!bg-blue-600 !text-white !border-blue-600'
-                                        : '!bg-gray-100 dark:!bg-white/5 !text-gray-700 dark:!text-gray-200 !border-gray-200 dark:!border-white/10 hover:!bg-gray-200 dark:hover:!bg-white/10'
-                                ].join(' ')}
-                            >
-                                {getFilterLabel(filterType)}
-                            </Button>
-                        );
-                    })}
-                </div>
-
-                {/* Divider under filters */}
-                <div className='border-t border-gray-200 dark:border-white/10' />
-
-                {/* Filtered Content */}
-                {renderFilteredContent()}
 
                 <ReportPastGiftModal
                     open={showPastGiftModal}

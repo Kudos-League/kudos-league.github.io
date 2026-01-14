@@ -17,6 +17,7 @@ const Post = lazy(() => import('@/pages/post'));
 const EditPost = lazy(() => import('@/pages/post/edit'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
+const Activity = lazy(() => import('@/pages/activity'));
 const EventDetails = lazy(() => import('@/pages/event'));
 const SignIn = lazy(() => import('@/pages/login'));
 const SignUp = lazy(() => import('@/pages/signup'));
@@ -179,6 +180,14 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <NotificationsPage />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.activity}
+                        element={
+                            <RequireAuth>
+                                <Activity />
                             </RequireAuth>
                         }
                     />
