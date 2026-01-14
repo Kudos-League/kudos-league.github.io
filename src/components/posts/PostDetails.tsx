@@ -151,10 +151,12 @@ export default function PostDetails(props: Props) {
             const aUserPosted = a.senderID === userId;
             const bUserPosted = b.senderID === userId;
 
-            const aUserInteracted = (a.receiverID === userId || a.recipientID === userId) &&
-                                   (a.status === 'accepted' || a.status === 'completed');
-            const bUserInteracted = (b.receiverID === userId || b.recipientID === userId) &&
-                                   (b.status === 'accepted' || b.status === 'completed');
+            const aUserInteracted =
+                (a.receiverID === userId || a.recipientID === userId) &&
+                (a.status === 'accepted' || a.status === 'completed');
+            const bUserInteracted =
+                (b.receiverID === userId || b.recipientID === userId) &&
+                (b.status === 'accepted' || b.status === 'completed');
 
             const aIsPriority = aUserPosted || aUserInteracted;
             const bIsPriority = bUserPosted || bUserInteracted;
@@ -1408,7 +1410,6 @@ export default function PostDetails(props: Props) {
                                         <span className='animate-spin'>⏳</span>
                                         Accepting...
                                     </>
-
                                 ) : (
                                     <>⭐ Accept Highest Kudos</>
                                 )}
@@ -1416,9 +1417,15 @@ export default function PostDetails(props: Props) {
                             <div className='relative group'>
                                 <button
                                     type='button'
-                                    onClick={() => setShowKudosTooltip(!showKudosTooltip)}
-                                    onMouseEnter={() => setShowKudosTooltip(true)}
-                                    onMouseLeave={() => setShowKudosTooltip(false)}
+                                    onClick={() =>
+                                        setShowKudosTooltip(!showKudosTooltip)
+                                    }
+                                    onMouseEnter={() =>
+                                        setShowKudosTooltip(true)
+                                    }
+                                    onMouseLeave={() =>
+                                        setShowKudosTooltip(false)
+                                    }
                                     className='text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors'
                                     aria-label='Help information'
                                 >
@@ -1427,7 +1434,10 @@ export default function PostDetails(props: Props) {
                                 {showKudosTooltip && (
                                     <div className='absolute right-0 top-8 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
                                         <div className='absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45'></div>
-                                        Automatically accepts the help request with the highest kudos. If multiple offers have the same kudos, one will be chosen randomly.
+                                        Automatically accepts the help request
+                                        with the highest kudos. If multiple
+                                        offers have the same kudos, one will be
+                                        chosen randomly.
                                     </div>
                                 )}
                             </div>
@@ -1654,7 +1664,8 @@ export default function PostDetails(props: Props) {
                             (postDetails?.handshakes || []).filter(
                                 (h: any) =>
                                     h.status === 'new' &&
-                                    (h.sender?.kudos || 0) === highestKudosHandshakeData.kudos
+                                      (h.sender?.kudos || 0) ===
+                                          highestKudosHandshakeData.kudos
                             ).length > 1
                                 ? 'Note: Multiple offers have the same kudos amount.'
                                 : ''

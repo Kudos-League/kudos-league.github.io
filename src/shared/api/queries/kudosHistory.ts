@@ -49,6 +49,10 @@ export function useKudosHistoryInfinite(
         initialPageParam: undefined as number | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         enabled: !!userID,
-        staleTime: 60_000
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false
     });
 }

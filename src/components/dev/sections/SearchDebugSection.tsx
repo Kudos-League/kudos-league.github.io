@@ -227,9 +227,8 @@ export default function SearchDebugSection() {
                                             Created:
                                         </span>{' '}
                                         {new Date(
-                                            (
-                                                selectedItem.data as PostDTO
-                                            ).createdAt
+                                            (selectedItem.data as PostDTO)
+                                                .createdAt
                                         ).toLocaleString()}
                                     </div>
                                 </div>

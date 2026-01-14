@@ -158,7 +158,8 @@ export default function PostCard(props: Props) {
                             </p>
                         </div>
                     ) : (
-                        viewerHandshake && !viewerHandshake.cancelledAt && (
+                        viewerHandshake &&
+                        !viewerHandshake.cancelledAt && (
                             <HandshakeCard
                                 handshake={{
                                     ...viewerHandshake,

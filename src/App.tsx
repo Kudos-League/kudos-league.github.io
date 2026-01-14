@@ -25,17 +25,15 @@ import Alert from './components/common/Alert';
 import AlertHost from '@/components/common/AlertHost';
 import DevToolsPanel from '@/components/dev/DevToolsPanel';
 
-function ErrorFallback({ error }: { error: string[] }) {
+import { FallbackProps } from 'react-error-boundary';
+
+function ErrorFallback({ error }: FallbackProps) {
     return (
         <Alert
             className='w-full'
             type='danger'
             title='Error loading page'
-            message={
-                Array.isArray(error)
-                    ? error.join('\n')
-                    : (error as any).toString()
-            }
+            message={error.message}
         />
     );
 }

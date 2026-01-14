@@ -214,41 +214,41 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                 className='!bg-red-600 !text-white'
                                 variant='danger'
                             >
-                                    Report
+                                Report
                             </Button>
                             {currentUser &&
-                                    currentUser.id !== user.id &&
-                                    ((blockedUsers ?? []).includes(user.id) ? (
-                                        <Button
-                                            onClick={async () => {
-                                                if (blockingLoading) return;
-                                                try {
-                                                    await unblock(user.id);
-                                                }
-                                                catch (err) {
-                                                    // noop
-                                                }
-                                            }}
-                                            variant='secondary'
-                                        >
-                                            Unblock
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            onClick={async () => {
-                                                if (blockingLoading) return;
-                                                try {
-                                                    await block(user.id);
-                                                }
-                                                catch (err) {
-                                                    // noop - hook will rollback/refresh
-                                                }
-                                            }}
-                                            className='!bg-red-600 !text-white'
-                                        >
-                                            Block
-                                        </Button>
-                                    ))}
+                                currentUser.id !== user.id &&
+                                ((blockedUsers ?? []).includes(user.id) ? (
+                                    <Button
+                                        onClick={async () => {
+                                            if (blockingLoading) return;
+                                            try {
+                                                await unblock(user.id);
+                                            }
+                                            catch (err) {
+                                                // noop
+                                            }
+                                        }}
+                                        variant='secondary'
+                                    >
+                                        Unblock
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={async () => {
+                                            if (blockingLoading) return;
+                                            try {
+                                                await block(user.id);
+                                            }
+                                            catch (err) {
+                                                // noop - hook will rollback/refresh
+                                            }
+                                        }}
+                                        className='!bg-red-600 !text-white'
+                                    >
+                                        Block
+                                    </Button>
+                                ))}
                             {currentUser?.admin && (
                                 <>
                                     {!(user as any).banEndDate ? (
@@ -259,7 +259,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                             className='!bg-red-700 !text-white'
                                             variant='danger'
                                         >
-                                                Ban
+                                            Ban
                                         </Button>
                                     ) : (
                                         <Button
@@ -269,9 +269,9 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                                         'Missing auth token'
                                                     );
                                                 const confirmUnban =
-                                                        window.confirm(
-                                                            'Unban this user?'
-                                                        );
+                                                    window.confirm(
+                                                        'Unban this user?'
+                                                    );
                                                 if (!confirmUnban) return;
                                                 try {
                                                     await apiMutate(
@@ -298,14 +298,14 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                                     );
                                                     alert(
                                                         err?.message ||
-                                                                'Failed to unban user.'
+                                                            'Failed to unban user.'
                                                     );
                                                 }
                                             }}
                                             className='!bg-green-600 !text-white'
                                             variant='primary'
                                         >
-                                                Unban
+                                            Unban
                                         </Button>
                                     )}
                                 </>
@@ -322,7 +322,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                 className='px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700'
                                 onClick={handleReactivate}
                             >
-                                    Reactivate
+                                Reactivate
                             </button>
                         </div>
                     </div>
@@ -336,7 +336,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                     <div className='flex justify-center'>
                         <div className='bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 rounded-lg p-4 max-w-md w-full text-center'>
                             <span className='text-sm font-semibold text-gray-700 dark:text-gray-200'>
-                                    Profession
+                                Profession
                             </span>
                             <p className='mt-1 text-gray-700 dark:text-gray-300 text-sm'>
                                 {user.settings.profession}
@@ -356,10 +356,10 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                         >
                             <div className='flex items-center gap-2'>
                                 <span className='text-red-600 dark:text-red-400 text-lg'>
-                                        🔐
+                                    🔐
                                 </span>
                                 <span className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
-                                        Blocked Users
+                                    Blocked Users
                                 </span>
                                 {blockedUsersDetails.length > 0 && (
                                     <span className='px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full'>
@@ -390,7 +390,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                     </div>
                                 ) : blockedUsersDetails.length === 0 ? (
                                     <p className='text-center text-gray-500 dark:text-gray-400 py-4 text-sm'>
-                                            No blocked users
+                                        No blocked users
                                     </p>
                                 ) : (
                                     <div className='space-y-3'>
@@ -427,7 +427,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                                             blockingLoading
                                                         }
                                                     >
-                                                            Unblock
+                                                        Unblock
                                                     </Button>
                                                 </div>
                                             )

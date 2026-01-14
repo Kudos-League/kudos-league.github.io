@@ -126,7 +126,7 @@ function renderMetadata(item: KudosHistoryDTO) {
     return null;
 }
 
-export default function KudosHistoryList() {
+export default React.memo(function KudosHistoryList() {
     const { user } = useAuth();
     const userID = user?.id;
     const pageSize = 10;
@@ -138,12 +138,11 @@ export default function KudosHistoryList() {
         error,
         fetchNextPage,
         hasNextPage,
-        isFetchingNextPage,
-        isFetching
+        isFetchingNextPage
     } = useKudosHistoryInfinite(userID, source, pageSize as number);
 
-    const loading = isLoading || (isFetching && !data);
-    if (loading) return <Spinner text='Loading kudos history...' />;
+    // Only show loading spinner for initial load, not for background refetches
+    if (isLoading) return <Spinner text='Loading kudos history...' />;
     if (error)
         return <p className='text-red-600'>Error loading kudos history</p>;
 
@@ -157,7 +156,9 @@ export default function KudosHistoryList() {
     return (
         <div className='space-y-4'>
             <div className='flex items-center justify-between gap-3 flex-wrap'>
-                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>Kudos history</h3>
+                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                    Kudos history
+                </h3>
                 <label className='text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2'>
                     <span>Filter:</span>
                     <select
@@ -262,4 +263,4 @@ export default function KudosHistoryList() {
             )}
         </div>
     );
-}
+});

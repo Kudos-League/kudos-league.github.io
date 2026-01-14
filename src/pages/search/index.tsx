@@ -154,7 +154,8 @@ export default function SearchPage() {
         }
 
         // Calculate distance for each post if user location is available
-        const hasUserLocation = user?.location?.latitude && user?.location?.longitude;
+        const hasUserLocation =
+            user?.location?.latitude && user?.location?.longitude;
         const postsWithDistance = hasUserLocation
             ? filtered.map((post) => {
                 if (post.location?.latitude && post.location?.longitude) {
@@ -204,14 +205,21 @@ export default function SearchPage() {
     }, [searchResults, postType, typeOfOrdering, user]);
 
     // Helper function to calculate distance between two coordinates (Haversine formula)
-    function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    function getDistance(
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number
+    ): number {
         const R = 6371; // Radius of the Earth in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
         const a =
             Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            Math.cos((lat1 * Math.PI) / 180) *
+                Math.cos((lat2 * Math.PI) / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const distance = R * c; // Distance in km
         return distance;

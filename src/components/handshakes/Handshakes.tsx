@@ -65,7 +65,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     onClick={onShowAll}
                     className='mt-2 text-sm hover:underline'
                 >
-                    Show all handshakes
+                    Show all help requests
                 </Button>
             )}
         </div>

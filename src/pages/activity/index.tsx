@@ -1,6 +1,16 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Filter, FileText, Handshake, Trophy, Search, ChevronDown, ArrowLeft, ArrowUp, X } from 'lucide-react';
+import {
+    Filter,
+    FileText,
+    Handshake,
+    Trophy,
+    Search,
+    ChevronDown,
+    ArrowLeft,
+    ArrowUp,
+    X
+} from 'lucide-react';
 import { Clock, MapPin, Users, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -15,10 +25,20 @@ import PostList from '@/components/posts/PostsContainer';
 import UserCard from '@/components/users/UserCard';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 
+// Lazy load KudosHistory component outside the main component to prevent re-creation on every render
+const KudosHistory = React.lazy(
+    () => import('@/components/users/KudosHistory')
+);
+
 type FilterType = 'all' | 'posts' | 'events' | 'handshakes' | 'kudos';
 type EventFilterType = 'all-events' | 'created-events' | 'participating-events';
 type PostFilterType = 'all-posts' | 'gifts' | 'requests';
-type HandshakeFilterType = 'all-handshakes' | 'new' | 'accepted' | 'completed' | 'cancelled';
+type HandshakeFilterType =
+    | 'all-handshakes'
+    | 'new'
+    | 'accepted'
+    | 'completed'
+    | 'cancelled';
 
 export default function Activity() {
     const { user, isLoggedIn } = useAuth();
@@ -32,9 +52,11 @@ export default function Activity() {
     const [error, setError] = useState<string | null>(null);
 
     const [filter, setFilter] = useState<FilterType>('all');
-    const [eventFilter, setEventFilter] = useState<EventFilterType>('all-events');
+    const [eventFilter, setEventFilter] =
+        useState<EventFilterType>('all-events');
     const [postFilter, setPostFilter] = useState<PostFilterType>('all-posts');
-    const [handshakeFilter, setHandshakeFilter] = useState<HandshakeFilterType>('all-handshakes');
+    const [handshakeFilter, setHandshakeFilter] =
+        useState<HandshakeFilterType>('all-handshakes');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -47,7 +69,13 @@ export default function Activity() {
     const [handshakesDisplayLimit, setHandshakesDisplayLimit] = useState(10);
     const ITEMS_PER_PAGE = 10;
 
-    const availableFilters: FilterType[] = ['all', 'posts', 'events', 'handshakes', 'kudos'];
+    const availableFilters: FilterType[] = [
+        'all',
+        'posts',
+        'events',
+        'handshakes',
+        'kudos'
+    ];
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -59,7 +87,12 @@ export default function Activity() {
 
             try {
                 setLoading(true);
-                const [fetchedPosts, fetchedEvents, sentHandshakes, receivedHandshakes] = await Promise.all([
+                const [
+                    fetchedPosts,
+                    fetchedEvents,
+                    sentHandshakes,
+                    receivedHandshakes
+                ] = await Promise.all([
                     apiGet<PostDTO[]>(`/users/${user.id}/posts`),
                     apiGet<EventDTO[]>(`/users/${user.id}/events`, {
                         params: { filter: 'all' }
@@ -72,7 +105,10 @@ export default function Activity() {
                 setEvents(fetchedEvents);
 
                 // Combine and deduplicate handshakes (by ID)
-                const allHandshakes = [...sentHandshakes, ...receivedHandshakes];
+                const allHandshakes = [
+                    ...sentHandshakes,
+                    ...receivedHandshakes
+                ];
                 const uniqueHandshakes = Array.from(
                     new Map(allHandshakes.map((h) => [h.id, h])).values()
                 );
@@ -95,18 +131,19 @@ export default function Activity() {
 
         // Apply post type filter
         if (postFilter === 'gifts') {
-            filtered = filtered.filter(p => p.type === 'gift');
+            filtered = filtered.filter((p) => p.type === 'gift');
         }
         else if (postFilter === 'requests') {
-            filtered = filtered.filter(p => p.type === 'request');
+            filtered = filtered.filter((p) => p.type === 'request');
         }
 
         // Apply search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(p =>
-                p.title?.toLowerCase().includes(query) ||
-                p.body?.toLowerCase().includes(query)
+            filtered = filtered.filter(
+                (p) =>
+                    p.title?.toLowerCase().includes(query) ||
+                    p.body?.toLowerCase().includes(query)
             );
         }
 
@@ -123,9 +160,10 @@ export default function Activity() {
         // Apply search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(e =>
-                e.title?.toLowerCase().includes(query) ||
-                e.description?.toLowerCase().includes(query)
+            filtered = filtered.filter(
+                (e) =>
+                    e.title?.toLowerCase().includes(query) ||
+                    e.description?.toLowerCase().includes(query)
             );
         }
 
@@ -157,28 +195,29 @@ export default function Activity() {
 
         // Apply handshake status filter
         if (handshakeFilter === 'new') {
-            filtered = filtered.filter(h => h.status === 'new');
+            filtered = filtered.filter((h) => h.status === 'new');
         }
         else if (handshakeFilter === 'accepted') {
-            filtered = filtered.filter(h => h.status === 'accepted');
+            filtered = filtered.filter((h) => h.status === 'accepted');
         }
         else if (handshakeFilter === 'completed') {
-            filtered = filtered.filter(h => h.status === 'completed');
+            filtered = filtered.filter((h) => h.status === 'completed');
         }
         else if (handshakeFilter === 'cancelled') {
-            filtered = filtered.filter(h => h.cancelledAt);
+            filtered = filtered.filter((h) => h.cancelledAt);
         }
         else {
             // all-handshakes: exclude cancelled by default
-            filtered = filtered.filter(h => !h.cancelledAt);
+            filtered = filtered.filter((h) => !h.cancelledAt);
         }
 
         // Apply search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(h =>
-                h.post?.title?.toLowerCase().includes(query) ||
-                h.post?.body?.toLowerCase().includes(query)
+            filtered = filtered.filter(
+                (h) =>
+                    h.post?.title?.toLowerCase().includes(query) ||
+                    h.post?.body?.toLowerCase().includes(query)
             );
         }
 
@@ -195,7 +234,10 @@ export default function Activity() {
             // 5. Completed (status = 'completed')
             // 6. Cancelled (cancelledAt exists)
 
-            const getPriority = (h: HandshakeDTO, stage: ReturnType<typeof getHandshakeStage>) => {
+            const getPriority = (
+                h: HandshakeDTO,
+                stage: ReturnType<typeof getHandshakeStage>
+            ) => {
                 if (h.cancelledAt) return 6;
                 if (h.status === 'completed') return 5;
                 if (h.status === 'accepted' && !stage.canComplete) return 3; // Waiting for other to complete
@@ -238,10 +280,18 @@ export default function Activity() {
         setIsDropdownOpen(false);
     }, [filter]);
 
+    // Scroll to top when any filter changes
+    useEffect(() => {
+        scrollToTop();
+    }, [filter, eventFilter, postFilter, handshakeFilter]);
+
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setIsDropdownOpen(false);
             }
         };
@@ -254,19 +304,45 @@ export default function Activity() {
 
     // Show scroll to top button when scrolled down
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            // Check both window scroll and main scroll container
-            const mainContainer = document.querySelector('.main-scroll-container');
-            const scrollY = mainContainer?.scrollTop || window.scrollY;
-            setShowScrollTop(scrollY > 300);
-            setHideHelperText(scrollY > 50);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    // Check both window scroll and main scroll container
+                    const mainContainer = document.querySelector(
+                        '.main-scroll-container'
+                    );
+                    const scrollY = mainContainer?.scrollTop || window.scrollY;
+
+                    const shouldShowScrollTop = scrollY > 300;
+                    const shouldHideHelperText = scrollY > 50;
+
+                    // Only update state if values actually changed
+                    setShowScrollTop((prev) =>
+                        prev !== shouldShowScrollTop
+                            ? shouldShowScrollTop
+                            : prev
+                    );
+                    setHideHelperText((prev) =>
+                        prev !== shouldHideHelperText
+                            ? shouldHideHelperText
+                            : prev
+                    );
+
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
         // Listen to scroll on both window and main container
         const mainContainer = document.querySelector('.main-scroll-container');
 
-        window.addEventListener('scroll', handleScroll);
-        mainContainer?.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        mainContainer?.addEventListener('scroll', handleScroll, {
+            passive: true
+        });
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
@@ -298,11 +374,21 @@ export default function Activity() {
 
     const getCurrentSubFilterLabel = (): string => {
         if (filter === 'handshakes') {
-            const newCount = handshakes.filter(h => h.status === 'new' && !h.cancelledAt).length;
-            const acceptedCount = handshakes.filter(h => h.status === 'accepted' && !h.cancelledAt).length;
-            const completedCount = handshakes.filter(h => h.status === 'completed' && !h.cancelledAt).length;
-            const cancelledCount = handshakes.filter(h => h.cancelledAt).length;
-            const totalActiveCount = handshakes.filter(h => !h.cancelledAt).length;
+            const newCount = handshakes.filter(
+                (h) => h.status === 'new' && !h.cancelledAt
+            ).length;
+            const acceptedCount = handshakes.filter(
+                (h) => h.status === 'accepted' && !h.cancelledAt
+            ).length;
+            const completedCount = handshakes.filter(
+                (h) => h.status === 'completed' && !h.cancelledAt
+            ).length;
+            const cancelledCount = handshakes.filter(
+                (h) => h.cancelledAt
+            ).length;
+            const totalActiveCount = handshakes.filter(
+                (h) => !h.cancelledAt
+            ).length;
 
             switch (handshakeFilter) {
             case 'all-handshakes':
@@ -330,8 +416,10 @@ export default function Activity() {
         }
 
         if (filter === 'posts') {
-            const giftsCount = posts.filter(p => p.type === 'gift').length;
-            const requestsCount = posts.filter(p => p.type === 'request').length;
+            const giftsCount = posts.filter((p) => p.type === 'gift').length;
+            const requestsCount = posts.filter(
+                (p) => p.type === 'request'
+            ).length;
 
             switch (postFilter) {
             case 'all-posts':
@@ -406,11 +494,21 @@ export default function Activity() {
     const renderSubFilters = () => {
         // Handshake sub-filters - only show on larger screens (lg and up)
         if (filter === 'handshakes') {
-            const newCount = handshakes.filter(h => h.status === 'new' && !h.cancelledAt).length;
-            const acceptedCount = handshakes.filter(h => h.status === 'accepted' && !h.cancelledAt).length;
-            const completedCount = handshakes.filter(h => h.status === 'completed' && !h.cancelledAt).length;
-            const cancelledCount = handshakes.filter(h => h.cancelledAt).length;
-            const totalActiveCount = handshakes.filter(h => !h.cancelledAt).length;
+            const newCount = handshakes.filter(
+                (h) => h.status === 'new' && !h.cancelledAt
+            ).length;
+            const acceptedCount = handshakes.filter(
+                (h) => h.status === 'accepted' && !h.cancelledAt
+            ).length;
+            const completedCount = handshakes.filter(
+                (h) => h.status === 'completed' && !h.cancelledAt
+            ).length;
+            const cancelledCount = handshakes.filter(
+                (h) => h.cancelledAt
+            ).length;
+            const totalActiveCount = handshakes.filter(
+                (h) => !h.cancelledAt
+            ).length;
 
             return (
                 <div className='hidden lg:flex flex-wrap gap-2 justify-center mt-4'>
@@ -540,8 +638,10 @@ export default function Activity() {
 
         // Posts sub-filters - only show on larger screens (lg and up)
         if (filter === 'posts') {
-            const giftsCount = posts.filter(p => p.type === 'gift').length;
-            const requestsCount = posts.filter(p => p.type === 'request').length;
+            const giftsCount = posts.filter((p) => p.type === 'gift').length;
+            const requestsCount = posts.filter(
+                (p) => p.type === 'request'
+            ).length;
 
             return (
                 <div className='hidden lg:flex flex-wrap gap-2 justify-center mt-4'>
@@ -599,11 +699,21 @@ export default function Activity() {
         // Only show dropdown on smaller screens (below lg breakpoint)
         // Handshake sub-filters dropdown
         if (filter === 'handshakes') {
-            const newCount = handshakes.filter(h => h.status === 'new' && !h.cancelledAt).length;
-            const acceptedCount = handshakes.filter(h => h.status === 'accepted' && !h.cancelledAt).length;
-            const completedCount = handshakes.filter(h => h.status === 'completed' && !h.cancelledAt).length;
-            const cancelledCount = handshakes.filter(h => h.cancelledAt).length;
-            const totalActiveCount = handshakes.filter(h => !h.cancelledAt).length;
+            const newCount = handshakes.filter(
+                (h) => h.status === 'new' && !h.cancelledAt
+            ).length;
+            const acceptedCount = handshakes.filter(
+                (h) => h.status === 'accepted' && !h.cancelledAt
+            ).length;
+            const completedCount = handshakes.filter(
+                (h) => h.status === 'completed' && !h.cancelledAt
+            ).length;
+            const cancelledCount = handshakes.filter(
+                (h) => h.cancelledAt
+            ).length;
+            const totalActiveCount = handshakes.filter(
+                (h) => !h.cancelledAt
+            ).length;
 
             return (
                 <div className='relative lg:hidden' ref={dropdownRef}>
@@ -612,9 +722,13 @@ export default function Activity() {
                         className='flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium whitespace-nowrap'
                     >
                         <Filter className='w-4 h-4' />
-                        <span className='hidden sm:inline'>{getCurrentSubFilterLabel()}</span>
+                        <span className='hidden sm:inline'>
+                            {getCurrentSubFilterLabel()}
+                        </span>
                         <span className='sm:hidden'>Filter</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                        />
                     </button>
                     {isDropdownOpen && (
                         <div className='absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50'>
@@ -622,7 +736,9 @@ export default function Activity() {
                                 <button
                                     onClick={() => {
                                         setHandshakeFilter('all-handshakes');
-                                        setHandshakesDisplayLimit(ITEMS_PER_PAGE);
+                                        setHandshakesDisplayLimit(
+                                            ITEMS_PER_PAGE
+                                        );
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm ${
@@ -636,7 +752,9 @@ export default function Activity() {
                                 <button
                                     onClick={() => {
                                         setHandshakeFilter('new');
-                                        setHandshakesDisplayLimit(ITEMS_PER_PAGE);
+                                        setHandshakesDisplayLimit(
+                                            ITEMS_PER_PAGE
+                                        );
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm ${
@@ -650,7 +768,9 @@ export default function Activity() {
                                 <button
                                     onClick={() => {
                                         setHandshakeFilter('accepted');
-                                        setHandshakesDisplayLimit(ITEMS_PER_PAGE);
+                                        setHandshakesDisplayLimit(
+                                            ITEMS_PER_PAGE
+                                        );
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm ${
@@ -664,7 +784,9 @@ export default function Activity() {
                                 <button
                                     onClick={() => {
                                         setHandshakeFilter('completed');
-                                        setHandshakesDisplayLimit(ITEMS_PER_PAGE);
+                                        setHandshakesDisplayLimit(
+                                            ITEMS_PER_PAGE
+                                        );
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm ${
@@ -678,7 +800,9 @@ export default function Activity() {
                                 <button
                                     onClick={() => {
                                         setHandshakeFilter('cancelled');
-                                        setHandshakesDisplayLimit(ITEMS_PER_PAGE);
+                                        setHandshakesDisplayLimit(
+                                            ITEMS_PER_PAGE
+                                        );
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-2 text-sm ${
@@ -705,9 +829,13 @@ export default function Activity() {
                         className='flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium whitespace-nowrap'
                     >
                         <Filter className='w-4 h-4' />
-                        <span className='hidden sm:inline'>{getCurrentSubFilterLabel()}</span>
+                        <span className='hidden sm:inline'>
+                            {getCurrentSubFilterLabel()}
+                        </span>
                         <span className='sm:hidden'>Filter</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                        />
                     </button>
                     {isDropdownOpen && (
                         <div className='absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50'>
@@ -763,8 +891,10 @@ export default function Activity() {
 
         // Posts sub-filters dropdown
         if (filter === 'posts') {
-            const giftsCount = posts.filter(p => p.type === 'gift').length;
-            const requestsCount = posts.filter(p => p.type === 'request').length;
+            const giftsCount = posts.filter((p) => p.type === 'gift').length;
+            const requestsCount = posts.filter(
+                (p) => p.type === 'request'
+            ).length;
 
             return (
                 <div className='relative lg:hidden' ref={dropdownRef}>
@@ -773,9 +903,13 @@ export default function Activity() {
                         className='flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium whitespace-nowrap'
                     >
                         <Filter className='w-4 h-4' />
-                        <span className='hidden sm:inline'>{getCurrentSubFilterLabel()}</span>
+                        <span className='hidden sm:inline'>
+                            {getCurrentSubFilterLabel()}
+                        </span>
                         <span className='sm:hidden'>Filter</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                        />
                     </button>
                     {isDropdownOpen && (
                         <div className='absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50'>
@@ -840,15 +974,23 @@ export default function Activity() {
 
         if (filter === 'kudos') {
             return (
-                <React.Suspense fallback={<Spinner text='Loading kudos history...' />}>
-                    <KudosHistory />
+                <React.Suspense
+                    fallback={<Spinner text='Loading kudos history...' />}
+                >
+                    <div key='kudos-history-wrapper'>
+                        <KudosHistory />
+                    </div>
                 </React.Suspense>
             );
         }
 
         if (filter === 'handshakes') {
-            const displayedHandshakes = sortedHandshakes.slice(0, handshakesDisplayLimit);
-            const hasMoreHandshakes = sortedHandshakes.length > handshakesDisplayLimit;
+            const displayedHandshakes = sortedHandshakes.slice(
+                0,
+                handshakesDisplayLimit
+            );
+            const hasMoreHandshakes =
+                sortedHandshakes.length > handshakesDisplayLimit;
 
             return (
                 <div className='max-w-3xl mx-auto space-y-4'>
@@ -871,11 +1013,18 @@ export default function Activity() {
                             {hasMoreHandshakes && (
                                 <div className='text-center'>
                                     <Button
-                                        onClick={() => setHandshakesDisplayLimit(prev => prev + ITEMS_PER_PAGE)}
+                                        onClick={() =>
+                                            setHandshakesDisplayLimit(
+                                                (prev) => prev + ITEMS_PER_PAGE
+                                            )
+                                        }
                                         variant='secondary'
                                         className='text-sm'
                                     >
-                                        Load more ({sortedHandshakes.length - handshakesDisplayLimit} remaining)
+                                        Load more (
+                                        {sortedHandshakes.length -
+                                            handshakesDisplayLimit}{' '}
+                                        remaining)
                                     </Button>
                                 </div>
                             )}
@@ -894,15 +1043,20 @@ export default function Activity() {
                     <ul className='space-y-2 sm:space-y-3 list-none'>
                         {filteredEvents.length === 0 ? (
                             <p className='text-center text-gray-500 dark:text-gray-400'>
-                                {eventFilter === 'created-events' && 'No created events.'}
-                                {eventFilter === 'participating-events' && 'Not participating in any events.'}
-                                {eventFilter === 'all-events' && 'No events available.'}
+                                {eventFilter === 'created-events' &&
+                                    'No created events.'}
+                                {eventFilter === 'participating-events' &&
+                                    'Not participating in any events.'}
+                                {eventFilter === 'all-events' &&
+                                    'No events available.'}
                             </p>
                         ) : (
                             displayedEvents.map((event) => (
                                 <li
                                     key={event.id}
-                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    onClick={() =>
+                                        navigate(`/event/${event.id}`)
+                                    }
                                     className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                                 >
                                     <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
@@ -929,19 +1083,30 @@ export default function Activity() {
                                             <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                             <span className='truncate'>
                                                 {format(
-                                                    toZonedTime(new Date(event.startTime), tz),
+                                                    toZonedTime(
+                                                        new Date(
+                                                            event.startTime
+                                                        ),
+                                                        tz
+                                                    ),
                                                     'MMM d, yyyy • h:mm a'
                                                 )}{' '}
                                                 –{' '}
                                                 {event.endTime
                                                     ? format(
-                                                        toZonedTime(new Date(event.endTime), tz),
+                                                        toZonedTime(
+                                                            new Date(
+                                                                event.endTime
+                                                            ),
+                                                            tz
+                                                        ),
                                                         'MMM d, yyyy • h:mm a'
                                                     )
                                                     : 'Ongoing'}
                                             </span>
                                         </p>
-                                        {event.location?.name && !event.location.global && (
+                                        {event.location?.name &&
+                                            !event.location.global && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                                 {event.location.name}
@@ -949,15 +1114,22 @@ export default function Activity() {
                                         )}
                                         {event.creator && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2 pb-2 pt-2'>
-                                                <UserCard user={event.creator} />
+                                                <UserCard
+                                                    user={event.creator}
+                                                />
                                             </p>
                                         )}
-                                        {typeof event.participantCount === 'number' &&
+                                        {typeof event.participantCount ===
+                                            'number' &&
                                             event.participantCount > 0 && (
                                             <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount} participant
-                                                {event.participantCount !== 1 ? 's' : ''}
+                                                {event.participantCount}{' '}
+                                                    participant
+                                                {event.participantCount !==
+                                                    1
+                                                    ? 's'
+                                                    : ''}
                                             </p>
                                         )}
                                     </div>
@@ -968,11 +1140,17 @@ export default function Activity() {
                     {hasMoreEvents && (
                         <div className='text-center'>
                             <Button
-                                onClick={() => setEventsDisplayLimit(prev => prev + ITEMS_PER_PAGE)}
+                                onClick={() =>
+                                    setEventsDisplayLimit(
+                                        (prev) => prev + ITEMS_PER_PAGE
+                                    )
+                                }
                                 variant='secondary'
                                 className='text-sm'
                             >
-                                Load more ({filteredEvents.length - eventsDisplayLimit} remaining)
+                                Load more (
+                                {filteredEvents.length - eventsDisplayLimit}{' '}
+                                remaining)
                             </Button>
                         </div>
                     )}
@@ -990,11 +1168,17 @@ export default function Activity() {
                     {hasMorePosts && (
                         <div className='text-center'>
                             <Button
-                                onClick={() => setPostsDisplayLimit(prev => prev + ITEMS_PER_PAGE)}
+                                onClick={() =>
+                                    setPostsDisplayLimit(
+                                        (prev) => prev + ITEMS_PER_PAGE
+                                    )
+                                }
                                 variant='secondary'
                                 className='text-sm'
                             >
-                                Load more ({sortedPosts.length - postsDisplayLimit} remaining)
+                                Load more (
+                                {sortedPosts.length - postsDisplayLimit}{' '}
+                                remaining)
                             </Button>
                         </div>
                     )}
@@ -1033,10 +1217,12 @@ export default function Activity() {
                     <div>
                         <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100'>
                             Events ({sortedEvents.length})
-                            {createdEvents.length > 0 && participatingEvents.length > 0 && (
+                            {createdEvents.length > 0 &&
+                                participatingEvents.length > 0 && (
                                 <span className='text-sm font-normal text-gray-600 dark:text-gray-400 ml-2'>
-                                    ({createdEvents.length} created, {participatingEvents.length}{' '}
-                                    participating)
+                                        ({createdEvents.length} created,{' '}
+                                    {participatingEvents.length}{' '}
+                                        participating)
                                 </span>
                             )}
                         </h3>
@@ -1044,7 +1230,9 @@ export default function Activity() {
                             {sortedEvents.slice(0, 2).map((event) => (
                                 <li
                                     key={event.id}
-                                    onClick={() => navigate(`/event/${event.id}`)}
+                                    onClick={() =>
+                                        navigate(`/event/${event.id}`)
+                                    }
                                     className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                                 >
                                     <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
@@ -1071,19 +1259,30 @@ export default function Activity() {
                                             <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                             <span className='truncate'>
                                                 {format(
-                                                    toZonedTime(new Date(event.startTime), tz),
+                                                    toZonedTime(
+                                                        new Date(
+                                                            event.startTime
+                                                        ),
+                                                        tz
+                                                    ),
                                                     'MMM d, yyyy • h:mm a'
                                                 )}{' '}
                                                 –{' '}
                                                 {event.endTime
                                                     ? format(
-                                                        toZonedTime(new Date(event.endTime), tz),
+                                                        toZonedTime(
+                                                            new Date(
+                                                                event.endTime
+                                                            ),
+                                                            tz
+                                                        ),
                                                         'MMM d, yyyy • h:mm a'
                                                     )
                                                     : 'Ongoing'}
                                             </span>
                                         </p>
-                                        {event.location?.name && !event.location.global && (
+                                        {event.location?.name &&
+                                            !event.location.global && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                                 {event.location.name}
@@ -1091,15 +1290,22 @@ export default function Activity() {
                                         )}
                                         {event.creator && (
                                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                <UserCard user={event.creator} />
+                                                <UserCard
+                                                    user={event.creator}
+                                                />
                                             </p>
                                         )}
-                                        {typeof event.participantCount === 'number' &&
+                                        {typeof event.participantCount ===
+                                            'number' &&
                                             event.participantCount > 0 && (
                                             <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                                 <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                {event.participantCount} participant
-                                                {event.participantCount !== 1 ? 's' : ''}
+                                                {event.participantCount}{' '}
+                                                    participant
+                                                {event.participantCount !==
+                                                    1
+                                                    ? 's'
+                                                    : ''}
                                             </p>
                                         )}
                                     </div>
@@ -1149,8 +1355,6 @@ export default function Activity() {
         );
     };
 
-    const KudosHistory = React.lazy(() => import('@/components/users/KudosHistory'));
-
     if (!isLoggedIn) {
         return (
             <div className='text-red-600 text-center mt-10'>
@@ -1178,7 +1382,9 @@ export default function Activity() {
                             aria-label='Go back'
                         >
                             <ArrowLeft className='w-4 h-4 text-gray-700 dark:text-gray-300' />
-                            <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>Back</span>
+                            <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                                Back
+                            </span>
                         </button>
                     </div>
 
@@ -1192,7 +1398,9 @@ export default function Activity() {
                                     return (
                                         <button
                                             key={filterType}
-                                            onClick={() => setFilter(filterType)}
+                                            onClick={() =>
+                                                setFilter(filterType)
+                                            }
                                             className={[
                                                 'group',
                                                 'flex flex-1',
@@ -1211,11 +1419,17 @@ export default function Activity() {
                                             ].join(' ')}
                                         >
                                             {renderFilterIcon(filterType) && (
-                                                <span className={[
-                                                    'transition-opacity',
-                                                    isActive ? 'opacity-100' : 'opacity-70'
-                                                ].join(' ')}>
-                                                    {renderFilterIcon(filterType)}
+                                                <span
+                                                    className={[
+                                                        'transition-opacity',
+                                                        isActive
+                                                            ? 'opacity-100'
+                                                            : 'opacity-70'
+                                                    ].join(' ')}
+                                                >
+                                                    {renderFilterIcon(
+                                                        filterType
+                                                    )}
                                                 </span>
                                             )}
                                             <span className='leading-none sm:inline hidden xs:inline'>
@@ -1237,12 +1451,16 @@ export default function Activity() {
                                             type='text'
                                             placeholder={getSearchPlaceholder()}
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
                                             className='w-full pl-10 pr-10 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-400 focus:border-transparent'
                                         />
                                         {searchQuery && (
                                             <button
-                                                onClick={() => setSearchQuery('')}
+                                                onClick={() =>
+                                                    setSearchQuery('')
+                                                }
                                                 className='absolute right-3 top-1/2 transform -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors'
                                                 aria-label='Clear search'
                                             >
@@ -1254,10 +1472,15 @@ export default function Activity() {
                                     {renderDropdownFilters()}
                                 </div>
                                 {filter === 'all' && (
-                                    <p className={`text-xs text-gray-500 dark:text-gray-400 text-center mt-2 transition-all duration-300 ${
-                                        hideHelperText ? 'opacity-0 max-h-0 mt-0' : 'opacity-100 max-h-10'
-                                    }`}>
-                                        Browse your recent posts, events, and handshakes
+                                    <p
+                                        className={`text-xs text-gray-500 dark:text-gray-400 text-center mt-2 transition-all duration-300 ${
+                                            hideHelperText
+                                                ? 'opacity-0 max-h-0 mt-0'
+                                                : 'opacity-100 max-h-10'
+                                        }`}
+                                    >
+                                        Browse your recent posts, events, and
+                                        handshakes
                                     </p>
                                 )}
                             </>

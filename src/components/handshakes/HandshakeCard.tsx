@@ -168,7 +168,8 @@ const HandshakeCard: React.FC<Props> = ({
 
     // Check if items limit has been reached
     const itemsLimitReached = useMemo(() => {
-        if (!handshake.post?.handshakes || !handshake.post?.itemsLimit) return false;
+        if (!handshake.post?.handshakes || !handshake.post?.itemsLimit)
+            return false;
 
         const acceptedOrCompletedCount = handshake.post.handshakes.filter(
             (h) => h.status === 'accepted' || h.status === 'completed'
@@ -179,7 +180,9 @@ const HandshakeCard: React.FC<Props> = ({
 
     const isPostClosedByOther =
         (otherCompletedHandshake ||
-            (itemsLimitReached && status !== 'accepted' && status !== 'completed') ||
+            (itemsLimitReached &&
+                status !== 'accepted' &&
+                status !== 'completed') ||
             handshake.post?.status === 'closed') &&
         (status === 'new' || status === 'accepted');
 
@@ -623,7 +626,10 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {status === 'accepted' && !canComplete && showUser && !isPostClosedByOther && (
+                    {status === 'accepted' &&
+                        !canComplete &&
+                        showUser &&
+                        !isPostClosedByOther && (
                         <div className='p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800'>
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-blue-800 dark:text-blue-300`}
@@ -631,19 +637,20 @@ const HandshakeCard: React.FC<Props> = ({
                                 {userIsItemReceiver ? (
                                     <>
                                         <span className='font-semibold'>
-                                            Exchange accepted!
+                                                Exchange accepted!
                                         </span>{' '}
-                                        Coordinate with {otherUsername} to
-                                        complete the exchange. Once you receive
-                                        help, you can assign kudos below.
+                                            Coordinate with {otherUsername} to
+                                            complete the exchange. Once you
+                                            receive help, you can assign kudos
+                                            below.
                                     </>
                                 ) : (
                                     <>
                                         <span className='font-semibold'>
-                                            Exchange accepted!
+                                                Exchange accepted!
                                         </span>{' '}
                                         {userID === handshake.senderID ||
-                                        userID === handshake.receiverID
+                                            userID === handshake.receiverID
                                             ? `Waiting for ${otherUsername} to confirm they received the help.`
                                             : 'Both parties are coordinating the exchange.'}
                                     </>
@@ -780,7 +787,9 @@ const HandshakeCard: React.FC<Props> = ({
                     )}
 
                     {/* Kudos Assignment - Better mobile layout */}
-                    {canComplete && status !== 'completed' && !isPostClosedByOther && (
+                    {canComplete &&
+                        status !== 'completed' &&
+                        !isPostClosedByOther && (
                         <div
                             className={`flex flex-col ${compact ? 'gap-2 p-3' : 'gap-3 p-4'} bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800`}
                         >
@@ -788,17 +797,17 @@ const HandshakeCard: React.FC<Props> = ({
                                 <label
                                     className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-green-800 dark:text-green-300 block`}
                                 >
-                                    Send Kudos to Complete Exchange
+                                        Send Kudos to Complete Exchange
                                 </label>
                                 <p
                                     className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}
                                 >
-                                    You&apos;ll receive help! Send kudos as a
-                                    thank you to the{' '}
+                                        You&apos;ll receive help! Send kudos as
+                                        a thank you to the{' '}
                                     {handshake.post?.type === 'request'
                                         ? 'giver'
                                         : 'poster'}{' '}
-                                    once you receive it.
+                                        once you receive it.
                                 </p>
                             </div>
                             <div className='flex gap-2'>
@@ -828,7 +837,9 @@ const HandshakeCard: React.FC<Props> = ({
                                             <div
                                                 className={`border-2 border-white border-t-transparent rounded-full animate-spin ${compact ? 'w-3 h-3' : 'w-4 h-4'}`}
                                             ></div>
-                                            {compact ? 'Sending' : 'Sending...'}
+                                            {compact
+                                                ? 'Sending'
+                                                : 'Sending...'}
                                         </span>
                                     ) : compact ? (
                                         'Send'

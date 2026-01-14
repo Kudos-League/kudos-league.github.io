@@ -29,9 +29,12 @@ export default function UserProfile() {
                     setUser(userProfile);
                 }
                 else {
-                    const fetchedUser = await apiGet<UserDTO>(`/users/${targetUserID}`, {
-                        params: { settings: true }
-                    });
+                    const fetchedUser = await apiGet<UserDTO>(
+                        `/users/${targetUserID}`,
+                        {
+                            params: { settings: true }
+                        }
+                    );
                     setUser(fetchedUser);
                 }
             }
