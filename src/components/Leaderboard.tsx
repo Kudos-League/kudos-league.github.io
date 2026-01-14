@@ -43,7 +43,6 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const [displayLimit, setDisplayLimit] = useState(20);
     const [nextCursor, setNextCursor] = useState<number | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [searchingForUser, setSearchingForUser] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -121,9 +120,8 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
 
     // Effect to trigger load when filters change
     useEffect(() => {
-        setSearchingForUser(false); // Stop searching when filters change
         loadLeaderboard();
-    }, [useLocal, timeFilter, loadLeaderboard]);
+    }, [useLocal, timeFilter]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -181,47 +179,14 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     };
 
     // Scroll to current user
-    const scrollToCurrentUser = useCallback(() => {
-        const currentUserInList = leaderboard.find((entry) => entry.id === user?.id);
-
-        if (currentUserInList && currentUserRef.current) {
-            // User is already in the list, scroll to them
+    const scrollToCurrentUser = () => {
+        if (currentUserRef.current) {
             currentUserRef.current.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center'
             });
         }
-        else if (nextCursor && !loadingMore) {
-            // User not in list yet, start loading more entries
-            setSearchingForUser(true);
-            loadLeaderboard(false);
-        }
-    }, [leaderboard, user?.id, nextCursor, loadingMore, loadLeaderboard]);
-
-    // Auto-load more users when searching for current user
-    useEffect(() => {
-        if (searchingForUser && !loadingMore && nextCursor) {
-            const currentUserInList = leaderboard.find((entry) => entry.id === user?.id);
-            if (!currentUserInList) {
-                // Continue loading more
-                loadLeaderboard(false);
-            }
-            else {
-                // Found the user, scroll to them
-                setSearchingForUser(false);
-                if (currentUserRef.current) {
-                    currentUserRef.current.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }
-        }
-        else if (searchingForUser && !nextCursor) {
-            // No more data and user not found
-            setSearchingForUser(false);
-        }
-    }, [searchingForUser, loadingMore, nextCursor, leaderboard, user?.id, loadLeaderboard]);
+    };
 
     const LeaderboardContent = (
         <>
