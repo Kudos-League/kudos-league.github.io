@@ -438,15 +438,15 @@ export default function Activity() {
         if (filter === 'handshakes') {
             switch (handshakeFilter) {
             case 'all-handshakes':
-                return 'Search Handshakes';
+                return 'Search Help Requests';
             case 'new':
-                return 'Search Pending Handshakes';
+                return 'Search Pending Help Requests';
             case 'accepted':
-                return 'Search Accepted Handshakes';
+                return 'Search Accepted Help Requests';
             case 'completed':
-                return 'Search Completed Handshakes';
+                return 'Search Completed Help Requests';
             case 'cancelled':
-                return 'Search Cancelled Handshakes';
+                return 'Search Cancelled Help Requests';
             }
         }
 
