@@ -283,7 +283,7 @@ export default function Feed() {
     } as const;
 
     return (
-        <div className='w-full max-w-7xl mx-auto space-y-2 px-4 sm:px-6'>
+        <div className='w-full max-w-7xl mx-auto space-y-2 px-4 sm:px-6 overflow-x-hidden'>
             {/* Mobile View Toggler */}
             {user && (
                 <div className='lg:hidden flex border-b border-zinc-200 dark:border-zinc-700'>
