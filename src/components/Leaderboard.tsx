@@ -290,6 +290,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                 <UserCard
                                     user={{ ...entry, kudos: entry.totalKudos } as any as UserDTO}
                                     large={!compact}
+                                    compact={compact}
                                     triggerVariant='avatar-name'
                                     subtitle={entry.location?.name || 'Global'}
                                     centered={false}

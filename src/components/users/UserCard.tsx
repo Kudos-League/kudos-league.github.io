@@ -207,7 +207,7 @@ const UserCard: React.FC<Props> = ({
                         : 'min-w-0'
                 }
             >
-                <div className='flex flex-wrap items-center gap-x-0'>
+                <div className={`flex flex-wrap items-center gap-x-0 ${compact ? "max-w-24" : ''}`}>
                     {nameEl}
                     {kudosEl}
                 </div>
