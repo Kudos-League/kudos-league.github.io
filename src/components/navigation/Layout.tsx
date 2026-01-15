@@ -198,7 +198,7 @@ const Layout: React.FC = () => {
                 {/* Mobile Tab Bar - only shown when logged in */}
                 {isLoggedIn && <MobileTabBar />}
 
-                <main className='flex-1 overflow-y-auto main-scroll-container overflow-x-hidden'>
+                <main className='flex-1 overflow-y-auto main-scroll-container'>
                     <Outlet />
                     {/* <div className='lg:hidden h-20' aria-hidden='true' /> */}
                 </main>

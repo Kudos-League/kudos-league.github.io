@@ -104,7 +104,6 @@ function FeedControls({
 
     return (
         <div className='sticky top-0 z-20 pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-white dark:bg-gray-900'>
-            {/* Tab Switching */}
             <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700 mb-3'>
                 {[
                     { key: 'all', label: 'All', Icon: Grid3x3 },
@@ -116,14 +115,17 @@ function FeedControls({
                         <button
                             key={key}
                             onClick={() => setActiveTab(key as PostFilterType)}
-                            className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 -mb-px ${
+                            // 1. Reduced padding (py-1.5) 
+                            // 2. Forced horizontal layout (flex-row) to save vertical space
+                            className={`flex-1 flex flex-row items-center justify-center gap-1.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors border-b-2 -mb-px ${
                                 isActive
                                     ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
                                     : 'border-transparent text-zinc-500 hover:text-brand-600'
                             }`}
                         >
+                            {/* 3. Smaller icon sizes (w-3.5/h-3.5) */}
                             <Icon
-                                className={`w-5 h-5 sm:w-4 sm:h-4 ${isActive ? 'opacity-100' : 'opacity-70'}`}
+                                className={`w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-70'}`}
                             />
                             <span>{label}</span>
                         </button>
