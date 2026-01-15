@@ -281,7 +281,7 @@ export default function Feed() {
     } as const;
 
     return (
-        <div className='w-full max-w-7xl mx-auto space-y-4 px-4 sm:px-6 pt-4'>
+        <div className='w-full max-w-7xl mx-auto space-y-2 px-4 sm:px-6'>
             {/* Mobile View Toggler */}
             {user && (
                 <div className='lg:hidden flex border-b border-zinc-200 dark:border-zinc-700'>
@@ -300,9 +300,9 @@ export default function Feed() {
                 </div>
             )}
 
-            <div className='flex gap-6 items-start'>
+            <div className='flex gap-2 items-start'>
                 {/* Primary Content Column */}
-                <div className='flex-1 space-y-4 min-w-0'>
+                <div className='flex-1 space-y-1 min-w-0'>
                     {/* View: Posts */}
                     {activeView === 'posts' ? (
                         <>
