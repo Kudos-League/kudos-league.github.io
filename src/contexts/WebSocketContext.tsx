@@ -49,15 +49,21 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     const [overlaySnoozed, setOverlaySnoozed] = useState(false);
 
     const pollInterval = useRef<NodeJS.Timeout | null>(null);
+    const pollBackoffMs = useRef<number>(5000); // Start at 5 seconds
     const pendingJoins = useRef<Set<number>>(new Set());
     const activeChannelId = useRef<number | null>(null);
     const joinedUserId = useRef<number | null>(null);
+
+    // Polling constants
+    const POLL_INITIAL_INTERVAL = 5000;   // 5 seconds
+    const POLL_MAX_INTERVAL = 30000;      // 30 seconds max
+    const POLL_BACKOFF_MULTIPLIER = 1.5;  // Increase by 50% each time
 
     const currentUserId = user?.id ?? null;
 
     const clearPolling = useCallback(() => {
         if (pollInterval.current) {
-            clearInterval(pollInterval.current);
+            clearTimeout(pollInterval.current);
             pollInterval.current = null;
         }
     }, []);
@@ -100,6 +106,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             setIsConnecting(false);
             setConnectingText(null);
             clearPolling();
+            pollBackoffMs.current = POLL_INITIAL_INTERVAL; // Reset backoff on reconnect
 
             if (
                 currentUserId != null &&
@@ -231,7 +238,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     const startPolling = useCallback(
         (channelID: number) => {
             clearPolling();
-            pollInterval.current = setInterval(async () => {
+            pollBackoffMs.current = POLL_INITIAL_INTERVAL;
+
+            const poll = async () => {
                 try {
                     const fresh = await apiGet<any>(
                         `/channels/${channelID}/messages`
@@ -243,7 +252,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
                 catch (err) {
                     console.error('[Polling] Failed to fetch messages:', err);
                 }
-            }, 1000);
+
+                // Schedule next poll with exponential backoff
+                pollBackoffMs.current = Math.min(
+                    pollBackoffMs.current * POLL_BACKOFF_MULTIPLIER,
+                    POLL_MAX_INTERVAL
+                );
+                pollInterval.current = setTimeout(poll, pollBackoffMs.current);
+            };
+
+            // Start first poll after initial interval
+            pollInterval.current = setTimeout(poll, pollBackoffMs.current);
         },
         [clearPolling]
     );
