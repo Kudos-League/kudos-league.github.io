@@ -209,6 +209,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             sock.on(Events.MESSAGE_CREATE, handleNewMessage);
             sock.on(Events.KUDOS_UPDATE, handleKudosUpdate);
             (sock as any).__listenersAttached = true;
+
+            // If socket is already connected, call handleConnect to join rooms
+            if (sock.connected) {
+                handleConnect();
+            }
         }
         else if (sock.connected) {
             handleConnect();
