@@ -1394,44 +1394,6 @@ export default function NotificationsPage() {
 
     return (
         <div className='mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8'>
-            {/* New notifications banner */}
-            {hasNewNotifications && (
-                <div className='mb-4'>
-                    <button
-                        onClick={() => {
-                            clearNewNotifications();
-                        }}
-                        className='
-                            w-full
-                            px-4 py-3
-                            bg-brand-600 dark:bg-brand-500
-                            hover:bg-brand-700 dark:hover:bg-brand-600
-                            text-white
-                            font-medium
-                            rounded-lg
-                            shadow-lg
-                            transition-all
-                            hover:shadow-xl
-                            flex items-center justify-center gap-2
-                        '
-                    >
-                        <svg
-                            className='w-5 h-5'
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                        >
-                            <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'
-                            />
-                        </svg>
-                        You have new notifications, click to show them
-                    </button>
-                </div>
-            )}
 
             {/* Filter buttons */}
             <div className='w-full mb-2'>
@@ -1508,7 +1470,6 @@ export default function NotificationsPage() {
                 onClick={async () => {
                     try {
                         // Mark ALL notifications as read on the server
-                        // This will automatically invalidate the query and refetch
                         await acknowledgeAll();
                     }
                     catch (err) {
@@ -1751,23 +1712,6 @@ export default function NotificationsPage() {
                                                     NEW
                                                 </span>
                                             )}
-                                            <button
-                                                type='button'
-                                                onClick={handleMarkAsRead}
-                                                className={`ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition ${
-                                                    !hasUnread
-                                                        ? 'text-zinc-400 dark:text-zinc-500 cursor-default'
-                                                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
-                                                }`}
-                                                disabled={!hasUnread}
-                                            >
-                                                <Check className='w-3 h-3' />
-                                                {!hasUnread
-                                                    ? 'Read'
-                                                    : isGrouped
-                                                        ? 'Mark as read'
-                                                        : 'Mark as read'}
-                                            </button>
                                         </div>
                                     </button>
                                 </li>

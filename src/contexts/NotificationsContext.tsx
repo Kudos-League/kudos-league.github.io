@@ -463,7 +463,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 await dispatch(acknowledgeAllThunk() as any);
                 // Clear the "new notifications" flag
                 setHasNewNotifications(false);
-                // Invalidate notifications history query to update the UI
+                // Invalidate to refetch from server with updated data
                 queryClient.invalidateQueries({
                     queryKey: ['notifications', 'history']
                 });

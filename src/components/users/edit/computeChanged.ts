@@ -63,16 +63,22 @@ export default function computeChanged(
         : [];
     if (!deepEqual(nextTags, baseTags)) changed.tags = nextTags;
 
-    // location (compare by regionID only - the unique identifier)
+    // location (compare by name only)
     const nextLoc = values.location ? { ...values.location } : null;
     if (nextLoc && 'changed' in nextLoc) delete (nextLoc as any).changed;
     const baseLoc = baseline.location ? { ...baseline.location } : null;
     if (baseLoc && 'changed' in baseLoc) delete (baseLoc as any).changed;
 
-    // Compare locations by regionID only (handles type differences and name variations)
-    const nextRegionID = nextLoc?.regionID ?? null;
-    const baseRegionID = baseLoc?.regionID ?? null;
-    if (nextRegionID !== baseRegionID) {
+    const nextName = (nextLoc?.name ?? '').trim();
+    const baseName = (baseLoc?.name ?? '').trim();
+    console.log('[computeChanged] location debug:', {
+        baselineLocation: baseline.location,
+        currentLocation: values.location,
+        baseName,
+        nextName,
+        areEqual: nextName === baseName
+    });
+    if (nextName !== baseName) {
         changed.location = nextLoc;
     }
 

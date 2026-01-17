@@ -87,9 +87,11 @@ const EditProfile: React.FC<Props> = ({
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
     const defaults = React.useMemo(() => {
         // Normalize location to only include expected fields
+        // Use targetUser.location as the source of truth since that's what MapDisplay uses
+        const sourceLocation = targetUser?.location || user.location;
         let normalizedLocation = undefined;
-        if (user.location) {
-            const { latitude, longitude, name, regionID } = user.location;
+        if (sourceLocation) {
+            const { latitude, longitude, name, regionID } = sourceLocation;
             // Only include if we have the core location data
             if (latitude != null && longitude != null) {
                 normalizedLocation = {
@@ -118,6 +120,7 @@ const EditProfile: React.FC<Props> = ({
         user.email,
         user.username,
         user.displayName,
+        JSON.stringify(targetUser?.location),
         JSON.stringify(user.location),
         JSON.stringify(user.tags),
         user.settings?.about,
@@ -169,10 +172,23 @@ const EditProfile: React.FC<Props> = ({
     };
 
     const baselineRef = React.useRef(defaults);
+    // Track the initial location name from MapDisplay (more accurate than defaults)
+    const initialLocationNameRef = React.useRef<string | null>(null);
 
     const effectiveChanges = React.useMemo(() => {
-        return computeChanged(form.getValues(), baselineRef.current);
-    }, [allValues]);
+        // Use the initial location name from MapDisplay if available
+        const baselineWithInitialLocation = initialLocationNameRef.current !== null
+            ? {
+                ...defaults,
+                location: defaults.location
+                    ? { ...defaults.location, name: initialLocationNameRef.current }
+                    : initialLocationNameRef.current
+                        ? { name: initialLocationNameRef.current, latitude: 0, longitude: 0, regionID: null }
+                        : undefined
+            }
+            : defaults;
+        return computeChanged(form.getValues(), baselineWithInitialLocation);
+    }, [allValues, defaults]);
 
     const canSave =
         Object.keys(effectiveChanges).length > 0 &&
@@ -893,11 +909,19 @@ const EditProfile: React.FC<Props> = ({
                                                 };
 
                                                 setLocation(data.coordinates);
+                                                // Only mark as dirty if this is a user change, not initial load
+                                                const isUserChange = data.changed !== false;
+
+                                                // If this is the initial load, store the name for baseline comparison
+                                                if (!isUserChange && initialLocationNameRef.current === null) {
+                                                    initialLocationNameRef.current = locationValue.name;
+                                                }
+
                                                 form.setValue(
                                                     'location',
                                                     locationValue,
                                                     {
-                                                        shouldDirty: true,
+                                                        shouldDirty: isUserChange,
                                                         shouldValidate: true
                                                     }
                                                 );
