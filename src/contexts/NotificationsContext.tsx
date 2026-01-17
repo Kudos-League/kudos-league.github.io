@@ -258,7 +258,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                         user?.username || user?.displayName || 'They';
                     pushAlert({
                         type: 'success',
-                        message: `${username} accepted your help offer!`
+                        message: `${username} accepted your request!`
                     });
                 }
                 else if (
