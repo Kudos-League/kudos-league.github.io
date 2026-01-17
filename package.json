@@ -52,6 +52,7 @@
         "format": "prettier --write . && eslint . --fix",
         "lint": "eslint .",
         "postinstall": "patch-package",
+        "generate:components": "node scripts/generateComponentRegistry.mjs",
         "start": "craco start",
         "build": "craco build && rm -rf build/stats.json",
         "build:dev": "NODE_ENV=production dotenv -e .env.dev -- yarn build",

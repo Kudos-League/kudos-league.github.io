@@ -43,3 +43,18 @@ export function useEvent(eventId: number) {
         enabled: !!eventId
     });
 }
+
+export function useUserEventsQuery(
+    userId: number | undefined,
+    filter: 'all' | 'created' | 'participating' = 'all'
+) {
+    return useQuery<EventDTO[]>({
+        queryKey: ['events', 'user', userId, filter],
+        queryFn: () =>
+            apiGet<EventDTO[]>(`/users/${userId}/events`, {
+                params: { filter }
+            }),
+        enabled: !!userId,
+        staleTime: 60_000
+    });
+}

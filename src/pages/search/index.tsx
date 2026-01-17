@@ -4,7 +4,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
 import { useEvents } from '@/shared/api/queries/events';
-import { X, ArrowLeft, MapPin, Clock, Users, ChevronDown } from 'lucide-react';
+import { X, ArrowLeft, MapPin, Clock, Users, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import UserCard from '@/components/users/UserCard';
@@ -257,251 +257,150 @@ export default function SearchPage() {
                         <span className='font-medium'>Back</span>
                     </button>
                 </div>
-                <div className='relative'>
-                    <input
-                        type='text'
-                        placeholder='Search…'
-                        value={searchText}
-                        onChange={(e) => {
-                            setSearchText(e.target.value);
-                            // Reset forceSearch when user types
-                            if (forceSearch) setForceSearch(false);
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && searchText.trim()) {
-                                // Force immediate search by bypassing minimum length requirement
-                                e.preventDefault();
-                                setForceSearch(true);
-                            }
-                        }}
-                        className='w-full border px-3 py-2 pr-10 rounded dark:bg-zinc-800 dark:border-zinc-700'
-                        autoFocus
-                    />
-                    {searchText && (
+                <div className='flex items-center gap-2'>
+                    <div className='relative flex-1'>
+                        <input
+                            type='text'
+                            placeholder='Search…'
+                            value={searchText}
+                            onChange={(e) => {
+                                setSearchText(e.target.value);
+                                // Reset forceSearch when user types
+                                if (forceSearch) setForceSearch(false);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && searchText.trim()) {
+                                    // Force immediate search by bypassing minimum length requirement
+                                    e.preventDefault();
+                                    setForceSearch(true);
+                                }
+                            }}
+                            className='w-full border px-3 py-2 pr-10 rounded dark:bg-zinc-800 dark:border-zinc-700'
+                            autoFocus
+                        />
+                        {searchText && (
+                            <button
+                                onClick={() => setSearchText('')}
+                                className='absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors'
+                                aria-label='Clear search'
+                            >
+                                <X className='w-4 h-4 text-gray-500 dark:text-gray-400' />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Order by dropdown - moved here */}
+                    <div className='relative shrink-0'>
                         <button
-                            onClick={() => setSearchText('')}
-                            className='absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors'
-                            aria-label='Clear search'
+                            onClick={() => setOrderFilterOpen((v) => !v)}
+                            className='flex items-center gap-2 px-3 h-10 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
                         >
-                            <X className='w-4 h-4 text-gray-500 dark:text-gray-400' />
+                            <span className='hidden xs:inline'>
+                                {typeOfOrdering.type === 'date' && typeOfOrdering.order === 'desc'
+                                    ? 'Newest'
+                                    : typeOfOrdering.type === 'date' && typeOfOrdering.order === 'asc'
+                                        ? 'Oldest'
+                                        : typeOfOrdering.type === 'distance'
+                                            ? 'Closest'
+                                            : 'Most Kudos'}
+                            </span>
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform ${orderFilterOpen ? 'rotate-180' : ''}`}
+                            />
                         </button>
-                    )}
+                        {orderFilterOpen && (
+                            <>
+                                <div
+                                    className='fixed inset-0 z-10'
+                                    onClick={() => setOrderFilterOpen(false)}
+                                />
+                                <div className='absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl z-20 overflow-hidden'>
+                                    {[
+                                        { label: 'Newest', type: 'date', order: 'desc' },
+                                        { label: 'Oldest', type: 'date', order: 'asc' },
+                                        { label: 'Closest', type: 'distance', order: 'asc' },
+                                        { label: 'Most Kudos', type: 'kudos', order: 'desc' }
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.label}
+                                            className='w-full text-left px-4 py-3 text-sm hover:bg-brand-50 dark:hover:bg-brand-900/20'
+                                            onClick={() => {
+                                                if (opt.type === 'distance' && (!user?.location?.latitude || !user?.location?.longitude)) {
+                                                    setShowLocationWarning(true);
+                                                }
+                                                else {
+                                                    setTypeOfOrdering({
+                                                        type: opt.type as OrderType,
+                                                        order: opt.order as 'asc' | 'desc'
+                                                    });
+                                                    setShowLocationWarning(false);
+                                                }
+                                                setOrderFilterOpen(false);
+                                            }}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {searchingActive ? (
                 <div className='space-y-4'>
                     {/* Search Filter Tabs */}
-                    <div className='flex items-center gap-2 border-b border-gray-200 dark:border-zinc-700 pb-2 flex-wrap'>
-                        <button
-                            onClick={() => setSearchFilter('posts')}
-                            className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
-                                searchFilter === 'posts'
-                                    ? 'bg-brand-600 dark:bg-brand-500 text-white font-semibold shadow-sm'
-                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
-                            }`}
-                        >
-                            Posts
-                            <span className='ml-1.5 text-xs opacity-80'>
-                                ({searchResults.length})
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setSearchFilter('users')}
-                            className={`text-sm px-4 py-2 rounded-full transition-all duration-200 ${
-                                searchFilter === 'users'
-                                    ? 'bg-brand-600 dark:bg-brand-500 text-white font-semibold shadow-sm'
-                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
-                            }`}
-                        >
-                            Users
-                            <span className='ml-1.5 text-xs opacity-80'>
-                                ({userSearchResults.length})
-                            </span>
-                        </button>
+                    <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
+                        {[
+                            { key: 'posts', label: 'Posts', count: searchResults.length },
+                            { key: 'users', label: 'Users', count: userSearchResults.length }
+                        ].map(({ key, label, count }) => {
+                            const isActive = searchFilter === key;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setSearchFilter(key as SearchFilterType)}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                                        isActive
+                                            ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                            : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                    }`}
+                                >
+                                    <span>{label}</span>
+                                    <span className='text-xs opacity-70'>({count})</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Post Filters */}
                     {searchFilter === 'posts' && (
                         <div className='space-y-3'>
-                            <div className='flex flex-wrap items-center gap-2'>
-                                <div className='flex flex-wrap gap-2'>
-                                    <Button
-                                        onClick={() => setPostType('all')}
-                                        variant='secondary'
-                                        className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                            postType === 'all'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                        }`}
-                                    >
-                                        All
-                                    </Button>
-                                    <Button
-                                        onClick={() => setPostType('gifts')}
-                                        variant='secondary'
-                                        className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                            postType === 'gifts'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                        }`}
-                                    >
-                                        Gifts
-                                    </Button>
-                                    <Button
-                                        onClick={() => setPostType('requests')}
-                                        variant='secondary'
-                                        className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                            postType === 'requests'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                        }`}
-                                    >
-                                        Requests
-                                    </Button>
-                                </div>
-
-                                <div className='relative md:ml-auto'>
-                                    <button
-                                        onClick={() =>
-                                            setOrderFilterOpen((v) => !v)
-                                        }
-                                        className='flex items-center gap-2 px-4 py-2 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
-                                    >
-                                        Order by:{' '}
-                                        {typeOfOrdering.type === 'date' &&
-                                        typeOfOrdering.order === 'desc'
-                                            ? 'Newest'
-                                            : typeOfOrdering.type === 'date' &&
-                                                typeOfOrdering.order === 'asc'
-                                                ? 'Oldest'
-                                                : typeOfOrdering.type ===
-                                                  'distance'
-                                                    ? 'Closest'
-                                                    : 'Most Kudos'}
-                                        <ChevronDown
-                                            className={`w-4 h-4 transition-transform ${orderFilterOpen ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
-                                    {orderFilterOpen && (
-                                        <>
-                                            <div
-                                                className='fixed inset-0 z-10'
-                                                onClick={() =>
-                                                    setOrderFilterOpen(false)
-                                                }
+                            <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
+                                {[
+                                    { key: 'all', label: 'All', Icon: Grid3x3 },
+                                    { key: 'gifts', label: 'Gifts', Icon: Gift },
+                                    { key: 'requests', label: 'Requests', Icon: HandHelping }
+                                ].map(({ key, label, Icon }) => {
+                                    const isActive = postType === key;
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => setPostType(key as PostFilterType)}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors border-b-2 -mb-px ${
+                                                isActive
+                                                    ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                                    : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                            }`}
+                                        >
+                                            <Icon
+                                                className={`w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-70'}`}
                                             />
-                                            <div className='absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg z-20 overflow-hidden'>
-                                                <button
-                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                        typeOfOrdering.type ===
-                                                            'date' &&
-                                                        typeOfOrdering.order ===
-                                                            'desc'
-                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                            : 'text-zinc-700 dark:text-zinc-300'
-                                                    }`}
-                                                    onClick={() => {
-                                                        setTypeOfOrdering({
-                                                            type: 'date',
-                                                            order: 'desc'
-                                                        });
-                                                        setShowLocationWarning(
-                                                            false
-                                                        );
-                                                        setOrderFilterOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                >
-                                                    Newest
-                                                </button>
-                                                <button
-                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                        typeOfOrdering.type ===
-                                                            'date' &&
-                                                        typeOfOrdering.order ===
-                                                            'asc'
-                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                            : 'text-zinc-700 dark:text-zinc-300'
-                                                    }`}
-                                                    onClick={() => {
-                                                        setTypeOfOrdering({
-                                                            type: 'date',
-                                                            order: 'asc'
-                                                        });
-                                                        setShowLocationWarning(
-                                                            false
-                                                        );
-                                                        setOrderFilterOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                >
-                                                    Oldest
-                                                </button>
-                                                <button
-                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                        typeOfOrdering.type ===
-                                                        'distance'
-                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                            : 'text-zinc-700 dark:text-zinc-300'
-                                                    }`}
-                                                    onClick={() => {
-                                                        if (
-                                                            !user?.location
-                                                                ?.latitude ||
-                                                            !user?.location
-                                                                ?.longitude
-                                                        ) {
-                                                            setShowLocationWarning(
-                                                                true
-                                                            );
-                                                            setOrderFilterOpen(
-                                                                false
-                                                            );
-                                                            return;
-                                                        }
-                                                        setTypeOfOrdering({
-                                                            type: 'distance',
-                                                            order: 'asc'
-                                                        });
-                                                        setShowLocationWarning(
-                                                            false
-                                                        );
-                                                        setOrderFilterOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                >
-                                                    Closest
-                                                </button>
-                                                <button
-                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                                                        typeOfOrdering.type ===
-                                                        'kudos'
-                                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-medium'
-                                                            : 'text-zinc-700 dark:text-zinc-300'
-                                                    }`}
-                                                    onClick={() => {
-                                                        setTypeOfOrdering({
-                                                            type: 'kudos',
-                                                            order: 'desc'
-                                                        });
-                                                        setShowLocationWarning(
-                                                            false
-                                                        );
-                                                        setOrderFilterOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                >
-                                                    Most Kudos
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
+                                            <span>{label}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {showLocationWarning && (

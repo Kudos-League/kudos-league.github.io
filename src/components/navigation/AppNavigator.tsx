@@ -28,6 +28,7 @@ const AdminDashboard = lazy(() => import('@/pages/admin'));
 const FeedbackPage = lazy(() => import('@/pages/feedback'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const SearchPage = lazy(() => import('@/pages/search'));
+const ComponentPreviewPage = lazy(() => import('@/pages/dev/components'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
@@ -57,6 +58,7 @@ function AppNavigator() {
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About />} />
+                    <Route path='/dev/components' element={<ComponentPreviewPage />} />
                     <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />

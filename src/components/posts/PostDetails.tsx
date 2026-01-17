@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ExclamationTriangleIcon,
     ArrowLeftIcon,
@@ -20,7 +20,6 @@ import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useCategories } from '@/shared/api/queries/categories';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
-import { apiMutate } from '@/shared/api/apiClient';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { getImagePath } from '@/shared/api/config';
 import { pushAlert } from '@/components/common/alertBus';
@@ -30,6 +29,7 @@ import {
     useReportPost,
     useCreateHandshake
 } from '@/shared/api/mutations/posts';
+import { useCreateChannel, useAcceptHandshake } from '@/shared/api/mutations/handshakes';
 
 import type {
     ChannelDTO,
@@ -98,6 +98,8 @@ export default function PostDetails(props: Props) {
     const likeMut = useLikePost();
     const reportMut = useReportPost();
     const createHsMut = useCreateHandshake();
+    const createChannelMut = useCreateChannel();
+    const acceptHandshakeMut = useAcceptHandshake();
     const { data: categories = [] } = useCategories();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -139,6 +141,17 @@ export default function PostDetails(props: Props) {
     } | null>(null);
     const [showKudosTooltip, setShowKudosTooltip] = useState(false);
     const navigate = useNavigate();
+
+    // Redirect to home if post not found after loading completes
+    useEffect(() => {
+        if (!loading && !error && !postDetails) {
+            pushAlert({
+                type: 'warning',
+                message: 'Post not found'
+            });
+            navigate('/', { replace: true });
+        }
+    }, [loading, error, postDetails, navigate]);
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -294,7 +307,7 @@ export default function PostDetails(props: Props) {
         if (!user?.id || !postDetails?.senderID) return;
         try {
             // Create or get DM channel with the post owner
-            await apiMutate('/channels', 'post', {
+            await createChannelMut.mutateAsync({
                 name: `DM: User ${user.id} & User ${postDetails.senderID}`,
                 channelType: 'dm',
                 userIDs: [user.id, postDetails.senderID]
@@ -722,11 +735,7 @@ export default function PostDetails(props: Props) {
         setAcceptingHighestKudos(true);
 
         try {
-            await apiMutate(
-                `/handshakes/${highestKudosHandshakeData.handshake.id}`,
-                'patch',
-                { status: 'accepted' }
-            );
+            await acceptHandshakeMut.mutateAsync(highestKudosHandshakeData.handshake.id);
 
             setPostDetails((prev: PostDTO) => {
                 if (!prev) return prev;
@@ -900,11 +909,11 @@ export default function PostDetails(props: Props) {
             {/* Back Button */}
             <button
                 onClick={() => navigate(-1)}
-                className='mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200'
+                className='mb-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
                 aria-label='Go back'
             >
-                <ArrowLeftIcon className='w-5 h-5 stroke-2' />
-                <span className='text-sm font-medium'>Back</span>
+                <ArrowLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
             </button>
 
             {/* Header: User Card and Action Buttons */}
@@ -955,7 +964,7 @@ export default function PostDetails(props: Props) {
                     </Pill>
 
                     {/* Status Badge */}
-                    {postDetails.status === 'closed' ? (
+                    {postDetails.status === 'closed' || postDetails.status == 'offer_posted' ? (
                         <Pill
                             tone='danger'
                             className='uppercase font-semibold text-xs'
@@ -1401,7 +1410,7 @@ export default function PostDetails(props: Props) {
                         <div className='flex items-center gap-2'>
                             <Button
                                 onClick={handleAcceptHighestKudos}
-                                disabled={acceptingHighestKudos || isEditing}
+                                disabled={acceptingHighestKudos || isEditing || postDetails.status === 'closed' || postDetails.status == 'offer_posted'} 
                                 variant='success'
                                 className='flex items-center gap-2 ml-2'
                             >
@@ -1528,11 +1537,12 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user && !isEditing}
+                    showSendMessage={!!user && !isEditing || (postDetails.status !== 'closed' && postDetails.status !== 'offer_posted')}
                     allowDelete={!!user && !isEditing}
                     allowEdit={!!user && !isEditing}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
+                    active={postDetails.status !== 'closed' && postDetails.status !== 'offer_posted' && !isEditing}
                 />
             </div>
 

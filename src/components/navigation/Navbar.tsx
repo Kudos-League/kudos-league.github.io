@@ -74,34 +74,6 @@ function NavItemComponent({
     );
 }
 
-function DesktopNavigation({ items }: { items: NavItem[] }) {
-    return (
-        <nav className='hidden lg:block'>
-            <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
-                {items.map((item) => (
-                    <li key={item.name}>
-                        <NavItemComponent
-                            href={item.to}
-                            className='flex flex-col items-center justify-center px-4 py-2 transition-all duration-150 hover:scale-105'
-                        >
-                            {item.icon && (
-                                <item.icon
-                                    className={clsx(
-                                        'h-5 w-5 mb-1 transition-colors duration-150',
-                                        'text-zinc-500 group-hover:text-brand-600 dark:text-zinc-400 dark:group-hover:text-brand-300'
-                                    )}
-                                />
-                            )}
-                            <span className='text-xs lg:text-sm'>
-                                {item.name}
-                            </span>
-                        </NavItemComponent>
-                    </li>
-                ))}
-            </ul>
-        </nav>
-    );
-}
 
 // function ThemeToggleButton() {
 //     const { theme, toggleTheme } = useTheme();
@@ -268,7 +240,7 @@ export default function Navbar({
 
     return (
         <>
-            <header className='sticky-nav top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-2 lg:py-8 backdrop-blur-md pb-1'>
+            <header className='sticky-nav top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-2 lg:py-8 backdrop-blur-md pb-1 md:py-8'>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
                     <div className='flex-shrink-0 mr-2'>{brand || <></>}</div>
                     <Link

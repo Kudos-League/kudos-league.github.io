@@ -15,7 +15,6 @@ import { Clock, MapPin, Users, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
-import { apiGet } from '@/shared/api/apiClient';
 import { useAuth } from '@/contexts/useAuth';
 import { EventDTO, HandshakeDTO, PostDTO } from '@/shared/api/types';
 import Spinner from '@/components/common/Spinner';
@@ -24,6 +23,9 @@ import Handshakes from '@/components/handshakes/Handshakes';
 import PostList from '@/components/posts/PostsContainer';
 import UserCard from '@/components/users/UserCard';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
+import { useUserPostsQuery } from '@/shared/api/queries/posts';
+import { useUserEventsQuery } from '@/shared/api/queries/events';
+import { useUserHandshakesQuery } from '@/shared/api/queries/handshakes';
 
 // Lazy load KudosHistory component outside the main component to prevent re-creation on every render
 const KudosHistory = React.lazy(
@@ -45,11 +47,31 @@ export default function Activity() {
     const navigate = useNavigate();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const [posts, setPosts] = useState<PostDTO[]>([]);
-    const [handshakes, setHandshakes] = useState<HandshakeDTO[]>([]);
-    const [events, setEvents] = useState<EventDTO[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    // React Query hooks for data fetching with caching
+    const {
+        data: posts = [],
+        isLoading: postsLoading,
+        isError: postsError
+    } = useUserPostsQuery(user?.id);
+
+    const {
+        data: events = [],
+        isLoading: eventsLoading,
+        isError: eventsError
+    } = useUserEventsQuery(user?.id, 'all');
+
+    const {
+        data: handshakes = [],
+        isLoading: handshakesLoading,
+        isError: handshakesError
+    } = useUserHandshakesQuery(user?.id);
+
+    // Derived loading/error state
+    const loading = postsLoading || eventsLoading || handshakesLoading;
+    const error =
+        postsError || eventsError || handshakesError
+            ? 'Failed to load activity.'
+            : null;
 
     const [filter, setFilter] = useState<FilterType>('all');
     const [eventFilter, setEventFilter] =
@@ -76,54 +98,6 @@ export default function Activity() {
         'handshakes',
         'kudos'
     ];
-
-    useEffect(() => {
-        const fetchActivity = async () => {
-            if (!user?.id) {
-                setError('User not logged in.');
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const [
-                    fetchedPosts,
-                    fetchedEvents,
-                    sentHandshakes,
-                    receivedHandshakes
-                ] = await Promise.all([
-                    apiGet<PostDTO[]>(`/users/${user.id}/posts`),
-                    apiGet<EventDTO[]>(`/users/${user.id}/events`, {
-                        params: { filter: 'all' }
-                    }),
-                    apiGet<HandshakeDTO[]>(`/handshakes/by-sender/${user.id}`),
-                    apiGet<HandshakeDTO[]>(`/handshakes/by-receiver/${user.id}`)
-                ]);
-
-                setPosts(fetchedPosts);
-                setEvents(fetchedEvents);
-
-                // Combine and deduplicate handshakes (by ID)
-                const allHandshakes = [
-                    ...sentHandshakes,
-                    ...receivedHandshakes
-                ];
-                const uniqueHandshakes = Array.from(
-                    new Map(allHandshakes.map((h) => [h.id, h])).values()
-                );
-                setHandshakes(uniqueHandshakes);
-                setLoading(false);
-            }
-            catch (e) {
-                console.error(e);
-                setError('Failed to load activity.');
-                setLoading(false);
-            }
-        };
-
-        fetchActivity();
-    }, [user?.id]);
 
     // Sort and filter posts chronologically (latest first)
     const sortedPosts = useMemo(() => {
@@ -1378,11 +1352,11 @@ export default function Activity() {
                     <div className='flex items-center gap-3 px-4 sm:px-6 lg:px-8 py-1'>
                         <button
                             onClick={() => navigate(-1)}
-                            className='flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+                            className='flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
                             aria-label='Go back'
                         >
-                            <ArrowLeft className='w-4 h-4 text-gray-700 dark:text-gray-300' />
-                            <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                            <ArrowLeft className='w-5 h-5' />
+                            <span className='font-medium'>
                                 Back
                             </span>
                         </button>

@@ -27,6 +27,7 @@ interface Props {
     allowEdit?: boolean;
     allowDelete?: boolean;
     eventID?: number;
+    active?: boolean;
 }
 
 // CONSTANT FOR COLLAPSIBLE CONTENT
@@ -83,7 +84,8 @@ const MessageList: React.FC<Props> = ({
     showSendMessage,
     allowEdit = false,
     allowDelete = false,
-    eventID
+    eventID,
+    active = true
 }) => {
     const { user } = useAuth();
     const token = useAppSelector((state) => state.auth.token);
@@ -581,6 +583,7 @@ const MessageList: React.FC<Props> = ({
                                         height: '42px',
                                         overflow: 'hidden'
                                     }}
+                                    disabled={!active}
                                 />
                                 <Button
                                     onMouseDown={(e) => {
@@ -589,7 +592,7 @@ const MessageList: React.FC<Props> = ({
                                             handleSubmitMessage();
                                         }
                                     }}
-                                    disabled={!messageContent.trim()}
+                                    disabled={!messageContent.trim() || !active}
                                     className='w-10 h-10'
                                     shape='circle'
                                 >

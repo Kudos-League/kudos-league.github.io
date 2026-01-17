@@ -116,3 +116,37 @@ export function useDeleteEvent() {
         }
     });
 }
+
+export function useLeaveEvent(eventId: number) {
+    const { token, user } = useAuth();
+    const qc = useQueryClient();
+
+    return useMutation<void, string[], void>({
+        mutationFn: async () => {
+            if (!token) throw ['Not authenticated'];
+            return apiMutate<void, void>(`/events/${eventId}/leave`, 'post');
+        },
+        onMutate: async () => {
+            await qc.cancelQueries({ queryKey: qk.event(eventId) });
+            const prev = qc.getQueryData<EventDTO>(qk.event(eventId));
+
+            if (prev && user) {
+                qc.setQueryData<EventDTO>(qk.event(eventId), {
+                    ...prev,
+                    participants: (prev.participants || []).filter(
+                        (p) => p.id !== user.id
+                    )
+                });
+            }
+
+            return { prev };
+        },
+        onError: (_err, _vars, ctx: { prev?: EventDTO } | undefined) => {
+            if (ctx?.prev) qc.setQueryData(qk.event(eventId), ctx.prev);
+        },
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: qk.event(eventId) });
+            qc.invalidateQueries({ queryKey: ['events'] });
+        }
+    });
+}

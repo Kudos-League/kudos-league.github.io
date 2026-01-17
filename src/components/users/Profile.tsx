@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useReportUser } from '@/shared/api/mutations/users';
+import {
+    useReportUser,
+    useReactivateUserMutation,
+    useBanUserMutation,
+    useUnbanUserMutation
+} from '@/shared/api/mutations/users';
+import { useBlockedUsersQuery } from '@/shared/api/queries/users';
+import { useCreateChannel } from '@/shared/api/mutations/handshakes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 import { UserDTO } from '@/shared/api/types';
@@ -10,7 +17,6 @@ import ProfileHeader from '@/components/users/ProfileHeader';
 import EditProfile from '@/components/users/edit/EditProfile';
 import Spinner from '../common/Spinner';
 import UserCard from '@/components/users/UserCard';
-import { apiMutate, apiGet } from '@/shared/api/apiClient';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
@@ -22,7 +28,7 @@ type Props = {
 };
 
 const Profile: React.FC<Props> = ({ user, setUser }) => {
-    const { user: currentUser, token } = useAuth();
+    const { user: currentUser } = useAuth();
     const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
@@ -49,44 +55,13 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
         block,
         unblock
     } = useBlockedUsers();
-    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>(
-        []
+    const { data: blockedUsersDetails = [], isLoading: blockedUsersLoading } = useBlockedUsersQuery(
+        isSelf ? blockedUsers : undefined
     );
-
-    // Fetch blocked users details
-    React.useEffect(() => {
-        if (!isSelf || !blockedUsers || blockedUsers.length === 0) {
-            setBlockedUsersDetails([]);
-            return;
-        }
-
-        const fetchBlockedUsers = async () => {
-            try {
-                const usersData = await Promise.all(
-                    blockedUsers.map(async (userId) => {
-                        try {
-                            return await apiGet<UserDTO>(`/users/${userId}`);
-                        }
-                        catch (err) {
-                            console.error(
-                                `Failed to fetch user ${userId}`,
-                                err
-                            );
-                            return null;
-                        }
-                    })
-                );
-                setBlockedUsersDetails(
-                    usersData.filter((u): u is UserDTO => u !== null)
-                );
-            }
-            catch (err) {
-                console.error('Failed to fetch blocked users', err);
-            }
-        };
-
-        fetchBlockedUsers();
-    }, [blockedUsers, isSelf]);
+    const createChannelMutation = useCreateChannel();
+    const reactivateMutation = useReactivateUserMutation();
+    const banMutation = useBanUserMutation();
+    const unbanMutation = useUnbanUserMutation();
 
     const validateReportFiles = (files?: File[]) => {
         if (!files) return null;
@@ -123,7 +98,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
     const handleStartDM = async () => {
         if (!currentUser?.id || !user?.id) return;
         try {
-            await apiMutate('/channels', 'post', {
+            await createChannelMutation.mutateAsync({
                 name: `DM: User ${currentUser.id} & User ${user.id}`,
                 channelType: 'dm',
                 userIDs: [currentUser.id, user.id]
@@ -131,7 +106,6 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
             navigate(`/dms/${user.id}`);
         }
         catch (err) {
-            // eslint-disable-next-line brace-style
             console.error('Failed to create or get DM channel', err);
             alert('Failed to start a direct message. Please try again.');
         }
@@ -142,16 +116,11 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
         const confirmReactivate = window.confirm('Reactivate this account?');
         if (!confirmReactivate) return;
         try {
-            if (!token) throw new Error('Missing auth token');
-            const updated = (await apiMutate(
-                `/users/${user.id}/reactivate`,
-                'patch'
-            )) as UserDTO;
+            const updated = await reactivateMutation.mutateAsync({ userId: user.id });
             setUser?.(updated);
             alert('User reactivated.');
         }
         catch (err) {
-            // eslint-disable-next-line brace-style
             console.error('Failed to reactivate user', err);
             alert('Failed to reactivate user.');
         }
@@ -173,7 +142,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
             {showBackButton && (
                 <button
                     onClick={() => navigate(-1)}
-                    className='mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm'
+                    className='mb-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
                     aria-label='Go back'
                 >
                     <ArrowLeftIcon className='w-5 h-5' />
@@ -264,30 +233,18 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                     ) : (
                                         <Button
                                             onClick={async () => {
-                                                if (!token)
-                                                    return alert(
-                                                        'Missing auth token'
-                                                    );
                                                 const confirmUnban =
                                                     window.confirm(
                                                         'Unban this user?'
                                                     );
                                                 if (!confirmUnban) return;
                                                 try {
-                                                    await apiMutate(
-                                                        `/admin/users/${user.id}/unban`,
-                                                        'post'
-                                                    );
+                                                    await unbanMutation.mutateAsync({ userId: user.id });
                                                     if (setUser) {
                                                         setUser({
                                                             ...(user as any),
                                                             banEndDate: null
                                                         } as any);
-                                                    }
-                                                    else {
-                                                        console.warn(
-                                                            'Unbanned user; setUser not provided so local UI may need refresh'
-                                                        );
                                                     }
                                                     alert('User unbanned.');
                                                 }
@@ -384,7 +341,7 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
 
                         {showBlockedUsers && (
                             <div className='border-t border-gray-200 dark:border-white/10 p-4'>
-                                {blockingLoading ? (
+                                {blockingLoading || blockedUsersLoading ? (
                                     <div className='text-center py-4'>
                                         <Spinner text='Loading blocked users...' />
                                     </div>
@@ -618,21 +575,15 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                         );
                                         if (!confirmBan) return;
                                         try {
-                                            const payload: Record<
-                                                string,
-                                                unknown
-                                            > = {};
-                                            if (banIndefinite)
-                                                payload.indefinite = true;
-                                            else if (banEndDate)
-                                                payload.banEndDate = new Date(
-                                                    banEndDate
-                                                ).toISOString();
-                                            await apiMutate(
-                                                `/admin/users/${user.id}/ban`,
-                                                'post',
-                                                payload
-                                            );
+                                            const endDateStr = banIndefinite
+                                                ? undefined
+                                                : banEndDate
+                                                    ? new Date(banEndDate).toISOString()
+                                                    : undefined;
+                                            await banMutation.mutateAsync({
+                                                userId: user.id,
+                                                endDate: endDateStr
+                                            });
                                             const endDate = banIndefinite
                                                 ? new Date(
                                                     Date.now() +
@@ -653,11 +604,6 @@ const Profile: React.FC<Props> = ({ user, setUser }) => {
                                                     ...(user as any),
                                                     banEndDate: endDate
                                                 } as any);
-                                            }
-                                            else {
-                                                console.warn(
-                                                    'User banned; setUser not provided so local UI may need refresh'
-                                                );
                                             }
                                             alert('User banned.');
                                             setShowBanModal(false);

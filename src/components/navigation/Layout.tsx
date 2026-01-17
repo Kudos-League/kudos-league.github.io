@@ -18,71 +18,6 @@ import MobileTabBar from './MobileTabBar';
 import { useAuth } from '@/contexts/useAuth';
 import { useDMs } from '@/contexts/DMsContext';
 
-type FooterLinkProps = {
-    to: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    label: string;
-};
-
-const FooterLink: React.FC<FooterLinkProps> = ({ to, icon: Icon, label }) => (
-    <Link
-        to={to}
-        className='flex flex-col items-center text-gray-600 hover:text-blue-600'
-    >
-        <Icon className='w-6 h-6' />
-        <div className='text-xs'>{label}</div>
-    </Link>
-);
-
-const LayoutFooter: React.FC = () => {
-    const { isLoggedIn, user } = useAuth();
-
-    return (
-        <footer className='border-t border-gray-200 px-4 py-2 text-sm text-gray-700 md:hidden'>
-            <div className='flex justify-around items-center gap-4'>
-                {isLoggedIn ? (
-                    <>
-                        {/* TODO: Rename later to home bc it's where recommended stuff is going to go */}
-                        <FooterLink
-                            to={routes.home}
-                            icon={HomeIcon}
-                            label='Posts'
-                        />
-                        <FooterLink
-                            to={routes.dms}
-                            icon={EnvelopeIcon}
-                            label='DMs'
-                        />
-                        <FooterLink
-                            to={routes.user[user!.id]}
-                            icon={UserCircleIcon}
-                            label='My Profile'
-                        />
-                    </>
-                ) : (
-                    <>
-                        <FooterLink
-                            to={routes.about}
-                            icon={InformationCircleIcon}
-                            label='About'
-                        />
-                        <FooterLink
-                            to={routes.login}
-                            icon={ArrowRightOnRectangleIcon}
-                            label='Login'
-                        />
-                        <FooterLink
-                            to={routes.signUp}
-                            icon={UserPlusIcon}
-                            label='Register'
-                        />
-                    </>
-                )}
-            </div>
-        </footer>
-    );
-};
-
 const Layout: React.FC = () => {
     const { isLoggedIn, user, logout } = useAuth();
     const { isOpen: dmsModalOpen, openDMs, closeDMs } = useDMs();
@@ -200,10 +135,7 @@ const Layout: React.FC = () => {
 
                 <main className='flex-1 overflow-y-auto main-scroll-container'>
                     <Outlet />
-                    {/* <div className='lg:hidden h-20' aria-hidden='true' /> */}
                 </main>
-
-                {/* <LayoutFooter /> */}
             </div>
         </div>
     );

@@ -58,11 +58,23 @@ export default function PostCard(props: Props) {
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
-    const isClosed = status === 'closed';
+    const isClosed = status === 'closed' || status === 'offer_posted';
+    const isOwnPost = user?.id && sender?.id === user.id;
+
+    // Determine background color based on post state
+    const getBgClass = () => {
+        if (isClosed) {
+            return 'bg-gray-100 dark:bg-gray-900';
+        }
+        if (isOwnPost) {
+            return 'bg-blue-50 dark:bg-blue-950/40';
+        }
+        return 'bg-white dark:bg-gray-800';
+    };
 
     return (
         <div
-            className={`relative border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden h-full flex flex-col ${
+            className={`relative border border-gray-200 dark:border-gray-700 rounded-lg p-3 ${getBgClass()} shadow-md hover:shadow-lg transition cursor-pointer w-full max-w-full overflow-hidden h-full flex flex-col ${
                 isClosed ? 'opacity-60' : ''
             }`}
             onClick={() => navigate(`/post/${id}`)}

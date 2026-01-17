@@ -461,6 +461,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             acknowledgeAll: async () => {
                 debug('acknowledgeAll triggered');
                 await dispatch(acknowledgeAllThunk() as any);
+                // Clear the "new notifications" flag
+                setHasNewNotifications(false);
                 // Invalidate notifications history query to update the UI
                 queryClient.invalidateQueries({
                     queryKey: ['notifications', 'history']

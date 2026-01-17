@@ -9,7 +9,7 @@ import Button from '@/components/common/Button';
 import { useCreateEvent } from '@/shared/api/mutations/events';
 import { useAuth } from '@/contexts/useAuth';
 import { pushAlert } from '@/components/common/alertBus';
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -291,9 +291,10 @@ export default function CreateEvent() {
         <div className='max-w-xl mx-auto p-6 space-y-6'>
             <button
                 onClick={() => navigate(-1)}
-                className='flex items-center gap-2 text-gray-700 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-neutral-100 transition-colors mb-2'
+                className='flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
+                aria-label='Go back'
             >
-                <ChevronLeftIcon className='w-5 h-5' />
+                <ArrowLeftIcon className='w-5 h-5' />
                 <span className='font-medium'>Back</span>
             </button>
             <h1 className='text-2xl font-bold text-center'>Create Event</h1>

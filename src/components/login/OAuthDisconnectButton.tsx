@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '@/components/common/Button';
-import { apiMutate } from '@/shared/api/apiClient';
+import { useDisconnectOAuthMutation } from '@/shared/api/mutations/users';
 import { useAuth } from '@/contexts/useAuth';
 
 type Provider = 'discord' | 'google';
@@ -25,13 +25,12 @@ export default function OAuthDisconnectButton({
     onError
 }: Props) {
     const { token, updateUser } = useAuth();
-    const [pending, setPending] = React.useState(false);
+    const disconnectMutation = useDisconnectOAuthMutation();
 
     const handle = async () => {
-        if (!token || pending) return;
+        if (!token || disconnectMutation.isPending) return;
         try {
-            setPending(true);
-            await apiMutate(`/users/connections/${provider}`, 'delete');
+            await disconnectMutation.mutateAsync({ provider });
             if (provider === 'discord')
                 updateUser({ discordID: undefined as any });
             if (provider === 'google')
@@ -43,20 +42,17 @@ export default function OAuthDisconnectButton({
                 e?.response?.data?.message || 'Failed to disconnect provider';
             onError?.(msg);
         }
-        finally {
-            setPending(false);
-        }
     };
 
     return (
         <Button
             onClick={handle}
-            disabled={pending}
+            disabled={disconnectMutation.isPending}
             variant={variant}
             className={className}
             title={title}
         >
-            {children ?? (pending ? 'Disconnecting…' : 'Disconnect')}
+            {children ?? (disconnectMutation.isPending ? 'Disconnecting…' : 'Disconnect')}
         </Button>
     );
 }

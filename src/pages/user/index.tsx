@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 
-import { apiGet } from '@/shared/api/apiClient';
+import { useUserQuery } from '@/shared/api/queries/users';
 import Profile from '@/components/users/Profile';
 import { useAuth } from '@/contexts/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserDTO } from '@/shared/api/types';
 
 export default function UserProfile() {
@@ -11,41 +12,20 @@ export default function UserProfile() {
     const { id: routeID } = useParams<{ id: string }>();
     const isViewingOwnProfile = !routeID || Number(routeID) === userProfile?.id;
     const targetUserID = routeID ? Number(routeID) : userProfile?.id;
+    const qc = useQueryClient();
 
-    const [user, setUser] = useState<UserDTO | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const { data: fetchedUser, isLoading, error } = useUserQuery(
+        isViewingOwnProfile ? undefined : targetUserID,
+        { settings: true, enabled: !isViewingOwnProfile && !!targetUserID }
+    );
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            setError(null);
+    const user = isViewingOwnProfile ? userProfile : fetchedUser;
 
-            if (!targetUserID) {
-                setError('Missing user ID.');
-                return;
-            }
-
-            try {
-                if (isViewingOwnProfile && userProfile) {
-                    setUser(userProfile);
-                }
-                else {
-                    const fetchedUser = await apiGet<UserDTO>(
-                        `/users/${targetUserID}`,
-                        {
-                            params: { settings: true }
-                        }
-                    );
-                    setUser(fetchedUser);
-                }
-            }
-            catch (e) {
-                console.error(e);
-                setError('Failed to load user details.');
-            }
-        };
-
-        fetchUser();
-    }, [targetUserID, isViewingOwnProfile, userProfile]);
+    const setUser = (updated: UserDTO) => {
+        if (!isViewingOwnProfile && targetUserID) {
+            qc.setQueryData(['user', targetUserID], updated);
+        }
+    };
 
     if (!isLoggedIn) {
         return (
@@ -55,16 +35,28 @@ export default function UserProfile() {
         );
     }
 
-    if (!user) {
+    if (isLoading && !isViewingOwnProfile) {
         return (
-            <div className='text-red-600 text-center mt-10'>
+            <div className='text-gray-600 text-center mt-10'>
                 Loading user details...
             </div>
         );
     }
 
     if (error) {
-        return <div className='text-red-600 text-center mt-10'>{error}</div>;
+        return (
+            <div className='text-red-600 text-center mt-10'>
+                Failed to load user details.
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className='text-red-600 text-center mt-10'>
+                User not found.
+            </div>
+        );
     }
 
     return (

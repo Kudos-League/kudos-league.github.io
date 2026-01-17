@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Auth from '@/components/login/Auth';
 import Button from '@/components/common/Button';
 import { Alert, PasswordInput } from '@/components/login/fields';
-import { apiMutate } from '@/shared/api/apiClient';
+import { useResetPasswordMutation } from '@/shared/api/mutations/users';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -16,6 +16,7 @@ export default function ResetPasswordPage() {
     const [error, setError] = useState<string | null>(null);
     const [done, setDone] = useState(false);
     const navigate = useNavigate();
+    const resetPasswordMutation = useResetPasswordMutation();
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,10 +34,7 @@ export default function ResetPasswordPage() {
             return;
         }
         try {
-            await apiMutate('/users/reset-password', 'post', {
-                token,
-                password
-            });
+            await resetPasswordMutation.mutateAsync({ token, password });
             setDone(true);
         }
         catch (err: any) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Auth from '@/components/login/Auth';
 import Button from '@/components/common/Button';
 import { Alert, TextInput } from '@/components/login/fields';
-import { apiMutate } from '@/shared/api/apiClient';
+import { useForgotPasswordMutation } from '@/shared/api/mutations/users';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -11,12 +11,13 @@ export default function ForgotPasswordPage() {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const forgotPasswordMutation = useForgotPasswordMutation();
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         try {
-            await apiMutate('/users/forgot-password', 'post', { email });
+            await forgotPasswordMutation.mutateAsync({ email });
             setSubmitted(true);
         }
         catch (err: any) {

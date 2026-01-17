@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     MapPin,
@@ -19,6 +19,7 @@ import PostsInfinite from '@/components/posts/PostsInfinite';
 import Leaderboard from '@/components/Leaderboard';
 import { useAuth } from '@/contexts/useAuth';
 import { routes } from '@/routes';
+import SearchModal from '@/components/navigation/SearchModal';
 
 // --- Types ---
 type PostFilterType = 'all' | 'gifts' | 'requests';
@@ -94,7 +95,8 @@ function FeedControls({
     setShowLocationWarning: (val: boolean) => void;
     navigate: any;
 }) {
-    const [filterOpen, setFilterOpen] = React.useState(false);
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [searchModalOpen, setSearchModalOpen] = useState(false);
 
     const getSortLabel = () => {
         if (typeOfOrdering.type === 'distance') return 'Closest';
@@ -146,7 +148,8 @@ function FeedControls({
                 )}
 
                 <button
-                    onClick={() => navigate('/search')}
+                    // onClick={() => navigate('/search')}
+                    onClick={() => setSearchModalOpen(true)}
                     className='flex-1 flex items-center gap-2 px-3 h-10 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-400 text-sm text-left'
                 >
                     <MagnifyingGlassIconHeroicons className='h-4 w-4 shrink-0' />
@@ -225,6 +228,10 @@ function FeedControls({
                     )}
                 </div>
             </div>
+            <SearchModal
+                open={searchModalOpen}
+                onClose={() => setSearchModalOpen(false)}
+            />
         </div>
     );
 }
@@ -236,19 +243,20 @@ export default function Feed() {
     const { user } = useAuth();
 
     // State
-    const [activeTab, setActiveTab] = React.useState<PostFilterType>('all');
-    const [activeView, setActiveView] = React.useState<ViewType>('posts');
-    const [typeOfOrdering, setTypeOfOrdering] = React.useState<TypeOfOrdering>({
+    const [activeTab, setActiveTab] = useState<PostFilterType>('all');
+    const [activeView, setActiveView] = useState<ViewType>('posts');
+    const [typeOfOrdering, setTypeOfOrdering] = useState<TypeOfOrdering>({
         type: 'date',
         order: 'desc'
     });
-    const [showLocationWarning, setShowLocationWarning] = React.useState(false);
-    const [showScrollTop, setShowScrollTop] = React.useState(false);
-    const [aboutCTADismissed, setAboutCTADismissed] = React.useState(() => {
+    const [showLocationWarning, setShowLocationWarning] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const [aboutCTADismissed, setAboutCTADismissed] = useState(() => {
         return typeof window !== 'undefined'
             ? localStorage.getItem('aboutCTA-dismissed') === 'true'
             : false;
     });
+    const [searchModalOpen, setSearchModalOpen] = useState(false);
 
     const handleDismissAboutCTA = () => {
         setAboutCTADismissed(true);
@@ -376,6 +384,8 @@ export default function Feed() {
                     <ArrowUp className='w-6 h-6' />
                 </button>
             )}
+
+
         </div>
     );
 }

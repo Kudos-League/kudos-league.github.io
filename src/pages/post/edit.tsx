@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiGet } from '@/shared/api/apiClient';
+import { usePostQuery } from '@/shared/api/queries/posts';
+import { useQueryClient } from '@tanstack/react-query';
 import PostEditForm from '@/components/posts/PostEditForm';
 
 import type { PostDTO } from '@/shared/api/types';
@@ -8,28 +9,19 @@ import type { PostDTO } from '@/shared/api/types';
 const EditPost = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const qc = useQueryClient();
 
-    const [postDetails, setPostDetails] = useState<PostDTO | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: postDetails, isLoading: loading, error: queryError, refetch } = usePostQuery(
+        id ? Number(id) : undefined
+    );
+    const error = queryError ? 'Failed to load post details. Please try again.' : null;
 
-    useEffect(() => {
-        if (id) {
-            fetchPostDetails(Number(id));
-        }
-    }, [id]);
+    const setPostDetails = (updated: PostDTO) => {
+        qc.setQueryData(['post', Number(id)], updated);
+    };
 
-    const fetchPostDetails = async (postID: number) => {
-        try {
-            const data = await apiGet<PostDTO>(`/posts/${postID}`);
-            setPostDetails(data);
-            setLoading(false);
-        }
-        catch (err) {
-            console.error(err);
-            setError('Failed to load post details. Please try again.');
-            setLoading(false);
-        }
+    const fetchPostDetails = async () => {
+        await refetch();
     };
 
     if (loading) {

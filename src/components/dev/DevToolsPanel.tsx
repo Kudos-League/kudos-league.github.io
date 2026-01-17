@@ -7,10 +7,11 @@ import SearchDebugSection from './sections/SearchDebugSection';
 import LogsSection from './sections/LogsSection';
 import AddHandshakeSection from './sections/AddHandshakeSection';
 import AddCommentsSection from './sections/AddCommentsSection';
+import ComponentsDebugSection from './sections/ComponentsDebugSection';
 import LogCollectorService from '@/services/logCollector/LogCollectorService';
 import { initConsoleInterceptor } from '@/services/logCollector/consoleInterceptor';
 
-type TabType = 'test' | 'state' | 'logs';
+type TabType = 'test' | 'state' | 'logs' | 'components';
 type TestSubTab = 'posts' | 'search' | 'add-handshake' | 'comments';
 type LayoutMode = 'bottom' | 'right' | 'fullscreen';
 
@@ -1014,6 +1015,16 @@ export default function DevToolsPanel() {
                     >
                         State
                     </button>
+                    <button
+                        onClick={() => setActiveTab('components')}
+                        className={`px-4 py-2 text-xs font-medium transition-colors flex-shrink-0 ${
+                            activeTab === 'components'
+                                ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-b-2 border-purple-600'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                    >
+                        Components
+                    </button>
                 </div>
             </div>
 
@@ -1089,6 +1100,7 @@ export default function DevToolsPanel() {
                     />
                 )}
                 {activeTab === 'state' && <StateDebugSection user={user} />}
+                {activeTab === 'components' && <ComponentsDebugSection />}
             </div>
         </>
     );

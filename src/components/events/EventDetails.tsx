@@ -373,14 +373,14 @@ export default function EventDetails({ event, setEvent }: Props) {
     return (
         <div className='max-w-3xl mx-auto px-4 py-8 space-y-6'>
             {/* Back Button */}
-            <Button
+            <button
                 onClick={() => navigate(-1)}
-                variant='secondary'
-                className='inline-flex items-center gap-2'
+                className='flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
+                aria-label='Go back'
             >
-                <ArrowLeftIcon className='h-4 w-4' />
-                Back
-            </Button>
+                <ArrowLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
+            </button>
 
             {/* Event Header with Edit Button */}
             <div className='flex items-start justify-between'>

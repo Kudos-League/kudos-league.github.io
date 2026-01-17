@@ -5,6 +5,7 @@ import type { PostDTO } from '@/shared/api/types';
 export const qk = {
     posts: (filters?: { includeTags?: boolean; includeSender?: boolean }) =>
         ['posts', filters] as const,
+    post: (id: number | string) => ['post', id] as const,
     search: (
         query: string,
         filters?: {
@@ -53,6 +54,24 @@ export function useSearchPostsQuery(query: string) {
         enabled: query.length >= 2,
         staleTime: 0,
         gcTime: 60_000
+    });
+}
+
+export function useUserPostsQuery(userId: number | undefined) {
+    return useQuery<PostDTO[]>({
+        queryKey: ['posts', 'user', userId],
+        queryFn: () => apiGet<PostDTO[]>(`/users/${userId}/posts`),
+        enabled: !!userId,
+        staleTime: 60_000
+    });
+}
+
+export function usePostQuery(postId: number | string | undefined) {
+    return useQuery<PostDTO>({
+        queryKey: qk.post(postId!),
+        queryFn: () => apiGet<PostDTO>(`/posts/${postId}`),
+        enabled: postId !== undefined,
+        staleTime: 30_000
     });
 }
 

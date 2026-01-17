@@ -19,7 +19,8 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { apiMutate, apiGet } from '@/shared/api/apiClient';
+import { useDeleteAccountMutation } from '@/shared/api/mutations/users';
+import { useBlockedUsersQuery } from '@/shared/api/queries/users';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
@@ -78,9 +79,8 @@ const EditProfile: React.FC<Props> = ({
     const [locationLabel, setLocationLabel] = useState<string>(
         targetUser?.location?.name || ''
     );
-    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>(
-        []
-    );
+    const deleteAccountMutation = useDeleteAccountMutation();
+    const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
 
     const targetUserID = targetUser?.id;
 
@@ -236,40 +236,6 @@ const EditProfile: React.FC<Props> = ({
         };
     }, []);
 
-    // Fetch blocked users details
-    useEffect(() => {
-        if (!blockedUsers || blockedUsers.length === 0) {
-            setBlockedUsersDetails([]);
-            return;
-        }
-
-        const fetchBlockedUsersDetails = async () => {
-            try {
-                const usersPromises = blockedUsers.map(async (userId) => {
-                    try {
-                        const userData = await apiGet<UserDTO>(
-                            `/users/${userId}`
-                        );
-                        return userData;
-                    }
-                    catch (err) {
-                        console.error(`Failed to fetch user ${userId}:`, err);
-                        return null;
-                    }
-                });
-
-                const users = await Promise.all(usersPromises);
-                setBlockedUsersDetails(
-                    users.filter((u): u is UserDTO => u !== null)
-                );
-            }
-            catch (err) {
-                console.error('Failed to fetch blocked users details:', err);
-            }
-        };
-
-        fetchBlockedUsersDetails();
-    }, [blockedUsers]);
 
     const handleFileSelect = React.useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -590,7 +556,7 @@ const EditProfile: React.FC<Props> = ({
         if (!confirmed) return;
 
         try {
-            await apiMutate<void, void>(`/users/me`, 'delete');
+            await deleteAccountMutation.mutateAsync();
         }
         catch (err) {
             console.error('Failed to deactivate account:', err);
@@ -1134,11 +1100,11 @@ const EditProfile: React.FC<Props> = ({
                         title='Blocked Users'
                         description='Users you have blocked. Unblock them to send messages or view their content.'
                     >
-                        {blockingLoading ? (
+                        {blockingLoading || blockedUsersLoading ? (
                             <div className='flex items-center justify-center py-4'>
                                 <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600'></div>
                             </div>
-                        ) : blockedUsersDetails.length === 0 ? (
+                        ) : !blockedUsersDetails || blockedUsersDetails.length === 0 ? (
                             <p className='text-gray-500 dark:text-gray-400 text-sm'>
                                 No blocked users.
                             </p>
