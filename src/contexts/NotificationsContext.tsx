@@ -143,6 +143,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             if (
                 normalized.type === NotificationType.HANDSHAKE_CREATED ||
                 normalized.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                normalized.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
                 normalized.type === NotificationType.HANDSHAKE_COMPLETED ||
                 normalized.type === NotificationType.HANDSHAKE_CANCELLED ||
                 normalized.type ===
@@ -259,6 +260,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     pushAlert({
                         type: 'success',
                         message: `${username} accepted your request!`
+                    });
+                }
+                else if (
+                    normalized.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED
+                ) {
+                    const user =
+                        'user' in normalized
+                            ? (normalized as any).user
+                            : 'sender' in normalized
+                                ? (normalized as any).sender
+                                : null;
+                    const username =
+                        user?.username || user?.displayName || 'They';
+                    pushAlert({
+                        type: 'warning',
+                        message: `${username} undid their acceptance.`
                     });
                 }
                 else if (

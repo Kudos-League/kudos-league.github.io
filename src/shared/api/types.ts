@@ -388,6 +388,7 @@ export const NotificationType = {
     USER_BANNED: 'user-banned',
     HANDSHAKE_CREATED: 'handshake-created',
     HANDSHAKE_ACCEPTED: 'handshake-accepted',
+    HANDSHAKE_UNDO_ACCEPTED: 'handshake-undo-accepted',
     HANDSHAKE_COMPLETED: 'handshake-completed',
     HANDSHAKE_CANCELLED: 'handshake-cancelled',
     POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
@@ -444,6 +445,11 @@ export type NotificationPayload =
       }
     | {
           type: typeof NotificationType.HANDSHAKE_ACCEPTED;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.HANDSHAKE_UNDO_ACCEPTED;
           postID: number;
           handshakeID: number;
       }
