@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { usePostsInfiniteQuery } from '@/shared/api/queries/posts';
+import { useUsersByIdsQuery } from '@/shared/api/queries/users';
 import PostsContainer from './PostsContainer';
 import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
-import { PostDTO } from '@/shared/api/types';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -19,6 +19,10 @@ export default function PostsInfinite({
     filters: {
         includeSender?: boolean;
         includeTags?: boolean;
+        includeHandshakes?: boolean;
+        includeMessages?: boolean;
+        includeRewardOffers?: boolean;
+        includeDistance?: boolean;
         limit?: number;
         query?: string;
     };
@@ -37,7 +41,10 @@ export default function PostsInfinite({
             ordering.type === 'distance' ? 'location' : ordering.type;
         return {
             ...safeIncomingFilters,
-            includeSender: true,
+            includeSender: safeIncomingFilters.includeSender ?? false,
+            includeHandshakes: safeIncomingFilters.includeHandshakes ?? false,
+            includeMessages: safeIncomingFilters.includeMessages ?? false,
+            includeRewardOffers: safeIncomingFilters.includeRewardOffers ?? false,
             sort,
             order: ordering.order
         };
@@ -57,14 +64,37 @@ export default function PostsInfinite({
         [data]
     );
 
-    // Helper function to check if a post has a completed handshake
-    const hasCompletedHandshake = React.useCallback((post: PostDTO) => {
-        return post.handshakes?.some((h) => h.status === 'completed') ?? false;
-    }, []);
+    const senderIds = React.useMemo(() => {
+        if (queryFilters.includeSender) return [];
+        return Array.from(
+            new Set(
+                flat
+                    .map((p) => p.senderID)
+                    .filter((id): id is number => typeof id === 'number')
+            )
+        );
+    }, [flat, queryFilters.includeSender]);
+
+    const { data: senders } = useUsersByIdsQuery(senderIds, {
+        enabled: !queryFilters.includeSender
+    });
+
+    const senderMap = React.useMemo(() => {
+        return new Map((senders ?? []).map((u) => [u.id, u]));
+    }, [senders]);
+
+    const hydrated = React.useMemo(() => {
+        if (queryFilters.includeSender || senderMap.size === 0) return flat;
+        return flat.map((post) => {
+            if (post.sender) return post;
+            const sender = senderMap.get(post.senderID);
+            return sender ? { ...post, sender } : post;
+        });
+    }, [flat, senderMap, queryFilters.includeSender]);
 
     // Filter by type and hide closed posts unless user is the creator
     const visible = React.useMemo(() => {
-        let filtered = flat;
+        let filtered = hydrated;
 
         // Filter by type
         if (activeTab !== 'all') {
@@ -73,9 +103,10 @@ export default function PostsInfinite({
             );
         }
 
-        // Filter out posts with completed handshakes unless user is the creator
+        // Filter out closed posts unless user is the creator
         filtered = filtered.filter((post) => {
-            const isClosed = hasCompletedHandshake(post);
+            const isClosed =
+                post.status === 'closed' || post.status === 'offer_posted';
             if (!isClosed) return true; // Show open posts
 
             // Only show closed posts if user is the creator
@@ -83,7 +114,7 @@ export default function PostsInfinite({
         });
 
         return filtered;
-    }, [flat, activeTab, hasCompletedHandshake, user?.id]);
+    }, [hydrated, activeTab, user?.id]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 

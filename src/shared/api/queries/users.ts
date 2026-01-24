@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { apiGet } from '@/shared/api/apiClient';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import type { UserDTO, ChannelDTO } from '@/shared/api/types';
 
 export const qkUsers = {
@@ -48,6 +48,28 @@ export function useBlockedUsersQuery(userIds: number[] | undefined) {
         .filter((d): d is UserDTO => d !== undefined);
 
     return { data, isLoading };
+}
+
+export function useUsersByIdsQuery(
+    ids: number[],
+    options?: { enabled?: boolean }
+) {
+    const uniqueIds = Array.from(new Set(ids))
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id))
+        .sort((a, b) => a - b);
+
+    return useQuery<UserDTO[]>({
+        queryKey: ['users', 'batch', uniqueIds],
+        queryFn: () =>
+            apiMutate<UserDTO[], { ids: number[] }>(
+                '/users/batch',
+                'post',
+                { ids: uniqueIds }
+            ),
+        enabled: uniqueIds.length > 0 && options?.enabled !== false,
+        staleTime: 60_000
+    });
 }
 
 export function useSearchUsersQuery(query: string) {

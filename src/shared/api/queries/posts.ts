@@ -78,6 +78,10 @@ export function usePostQuery(postId: number | string | undefined) {
 export function usePostsInfiniteQuery(filters?: {
     includeSender?: boolean;
     includeTags?: boolean;
+    includeHandshakes?: boolean;
+    includeMessages?: boolean;
+    includeRewardOffers?: boolean;
+    includeDistance?: boolean;
     limit?: number;
     query?: string;
     sort?: 'date' | 'tags' | 'location' | 'kudos';

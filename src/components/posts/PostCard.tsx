@@ -32,6 +32,7 @@ export default function PostCard(props: Props) {
         body,
         images,
         sender,
+        senderID,
         status,
         createdAt,
         handshakes,
@@ -103,14 +104,18 @@ export default function PostCard(props: Props) {
             )}
 
             {/* UserCard - always visible but compact on desktop */}
-            {sender && (
+            {sender ? (
                 <div
                     className='mb-2 max-w-fit'
                     onClick={(e) => e.stopPropagation()}
                 >
                     <UserCard user={sender} compact={true} showKudos={false} />
                 </div>
-            )}
+            ) : senderID ? (
+                <div className='mb-2 max-w-fit'>
+                    <div className='h-6 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse' />
+                </div>
+            ) : null}
 
             {/* Title */}
             <div className='flex items-start gap-2 mb-2'>
