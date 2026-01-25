@@ -1,6 +1,6 @@
 'use client';
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import Alert from '@/components/common/Alert';
 import {
     subscribeAlerts,
@@ -12,18 +12,10 @@ export default function AlertHost() {
     const [queue, setQueue] = useState<Array<AlertMsg & { id: number }>>([]);
 
     useEffect(() => {
-        console.log('[AlertHost] Mounting and subscribing to alerts');
         let id = 0;
         const unsubscribeAlerts = subscribeAlerts((msg) => {
-            console.log('[AlertHost] Received alert:', msg);
             const next = { ...msg, id: ++id };
-            setQueue((q) => {
-                console.log(
-                    '[AlertHost] Adding to queue, current queue size:',
-                    q.length
-                );
-                return [...q, next];
-            });
+            setQueue((q) => [...q, next]);
             setTimeout(() => {
                 setQueue((q) => q.filter((i) => i.id !== next.id));
             }, 4000);
@@ -34,13 +26,10 @@ export default function AlertHost() {
         });
 
         return () => {
-            console.log('[AlertHost] Unmounting and unsubscribing');
             unsubscribeAlerts();
             unsubscribeClears();
         };
     }, []);
-
-    console.log('[AlertHost] Rendering, queue length:', queue.length);
 
     if (queue.length === 0) return null;
 

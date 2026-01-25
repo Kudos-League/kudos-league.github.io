@@ -12,14 +12,7 @@ const DEDUPE_WINDOW_MS = 2000;
 export function pushAlert(msg: AlertMsg) {
     const key = `${msg.type}:${msg.message}`;
 
-    console.log('[alertBus] pushAlert called:', {
-        msg,
-        listeners: listeners.size,
-        key
-    });
-
     if (recentAlerts.includes(key)) {
-        console.log('[alertBus] Skipping duplicate alert:', key);
         return;
     }
 
@@ -33,7 +26,6 @@ export function pushAlert(msg: AlertMsg) {
         if (idx !== -1) recentAlerts.splice(idx, 1);
     }, DEDUPE_WINDOW_MS);
 
-    console.log('[alertBus] Notifying listeners:', listeners.size);
     for (const l of Array.from(listeners)) l(msg);
 }
 

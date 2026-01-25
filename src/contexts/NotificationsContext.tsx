@@ -109,27 +109,26 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         };
 
         const handleNotification = async (incoming: NotificationRecord) => {
+            console.log('[NC] === WEBSOCKET NOTIFICATION RECEIVED ===');
+            console.log('[NC] Raw incoming:', JSON.stringify(incoming, null, 2));
+
             const normalized: NotificationRecord = {
                 ...incoming,
                 isRead: incoming.isRead ?? false,
                 isActedOn: incoming.isActedOn ?? false,
                 createdAt: incoming.createdAt ?? new Date().toISOString()
             };
-            debug('received notification', {
-                id: (normalized as any).id,
-                type: normalized.type,
-                postID: 'postID' in normalized ? normalized.postID : undefined,
-                from:
-                    'message' in normalized
-                        ? normalized.message?.author?.id
-                        : undefined,
-                isRead: normalized.isRead,
-                isActedOn: normalized.isActedOn
-            });
+
+            console.log('[NC] Normalized type:', normalized.type);
+            console.log('[NC] Is HANDSHAKE_ACCEPTED?', normalized.type === NotificationType.HANDSHAKE_ACCEPTED);
+
+            if (normalized.type === NotificationType.HANDSHAKE_ACCEPTED) {
+                console.log('[NC] !!! HANDSHAKE_ACCEPTED DETECTED !!!');
+                console.log('[NC] Full normalized payload:', JSON.stringify(normalized, null, 2));
+            }
+
             dispatch(pushAction(normalized));
-            console.log(
-                '[NotificationsContext] Notification dispatched to Redux store'
-            );
+            console.log('[NC] Dispatched to Redux store');
 
             // Set flag to show "new notifications" banner
             setHasNewNotifications(true);
@@ -249,18 +248,23 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 else if (
                     normalized.type === NotificationType.HANDSHAKE_ACCEPTED
                 ) {
+                    console.log('[NC] HANDSHAKE_ACCEPTED handler reached!');
                     const user =
                         'user' in normalized
                             ? (normalized as any).user
                             : 'sender' in normalized
                                 ? (normalized as any).sender
                                 : null;
+                    console.log('[NC] Extracted user:', user);
                     const username =
                         user?.username || user?.displayName || 'They';
+                    console.log('[NC] Username for toast:', username);
+                    console.log('[NC] About to call pushAlert for HANDSHAKE_ACCEPTED');
                     pushAlert({
                         type: 'success',
                         message: `${username} accepted your request!`
                     });
+                    console.log('[NC] pushAlert called for HANDSHAKE_ACCEPTED');
                 }
                 else if (
                     normalized.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED
@@ -318,22 +322,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     const user = 'user' in normalized ? normalized.user : null;
                     const username =
                         user?.username || user?.displayName || 'Someone';
-                    console.log(
-                        '[NotificationsContext] EVENT_USER_JOINED received!',
-                        {
-                            notification: normalized,
-                            username,
-                            eventID:
-                                'eventID' in normalized
-                                    ? normalized.eventID
-                                    : undefined,
-                            userID:
-                                'userID' in normalized
-                                    ? normalized.userID
-                                    : undefined,
-                            hasUser: 'user' in normalized && !!normalized.user
-                        }
-                    );
                     pushAlert({
                         type: 'info',
                         message: `${username} joined your event!`
