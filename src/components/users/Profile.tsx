@@ -11,6 +11,7 @@ import { useCreateChannel } from '@/shared/api/mutations/handshakes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 import { UserDTO } from '@/shared/api/types';
+import { INVITES_ADMIN_ONLY } from '@/shared/constants';
 
 import { useAuth } from '@/contexts/useAuth';
 import ProfileHeader from '@/components/users/ProfileHeader';
@@ -149,7 +150,9 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                 onStartDM={handleStartDM}
             />
 
-            {isSelf && currentUser?.admin && <InviteManager />}
+            {isSelf && (!INVITES_ADMIN_ONLY || currentUser?.admin) && (
+                <InviteManager />
+            )}
 
             {/* Log Past Gift button - available for all users on their own profile */}
             {/* {isSelf && (
