@@ -12,6 +12,9 @@ interface HandshakesProps {
     showPostDetails?: boolean;
     onHandshakeDeleted?: (id: number) => void;
     showSenderOrReceiver?: 'sender' | 'receiver';
+    showUserKudos?: boolean;
+    onHandshakeInteraction?: () => void;
+    compact?: boolean;
 }
 
 const Handshakes: React.FC<HandshakesProps> = ({
@@ -22,14 +25,19 @@ const Handshakes: React.FC<HandshakesProps> = ({
     onHandshakeCreated,
     showPostDetails,
     onHandshakeDeleted,
-    showSenderOrReceiver
+    showSenderOrReceiver,
+    showUserKudos = false,
+    onHandshakeInteraction,
+    compact = false
 }) => {
     // Filter out cancelled handshakes
     const activeHandshakes = handshakes.filter(
-        handshake => handshake.status !== 'cancelled'
+        (handshake) => handshake.status !== 'cancelled'
     );
-    
-    const visibleHandshakes = showAll ? activeHandshakes : activeHandshakes.slice(0, 2);
+
+    const visibleHandshakes = showAll
+        ? activeHandshakes
+        : activeHandshakes.slice(0, 2);
 
     if (!activeHandshakes.length) {
         return <p className='text-sm text-gray-500'>Nothing yet!</p>;
@@ -38,27 +46,18 @@ const Handshakes: React.FC<HandshakesProps> = ({
     return (
         <div className='space-y-4'>
             {visibleHandshakes.map((handshake) => (
-                handshake.post.isRequest ?
-                    // If it's request
-                    (<HandshakeCard
-                        key={handshake.id}
-                        handshake={handshake}
-                        userID={currentUserId}
-                        onHandshakeCreated={onHandshakeCreated}
-                        showPostDetails={showPostDetails}
-                        onDelete={onHandshakeDeleted}
-                        showSenderOrReceiver={showSenderOrReceiver}
-                    />) :
-                    // If it's gift
-                    (<HandshakeCard
-                        key={handshake.id}
-                        handshake={handshake}
-                        userID={currentUserId}
-                        onHandshakeCreated={onHandshakeCreated}
-                        showPostDetails={showPostDetails}
-                        onDelete={onHandshakeDeleted}
-                        showSenderOrReceiver={showSenderOrReceiver}
-                    />)
+                <HandshakeCard
+                    key={handshake.id}
+                    handshake={handshake}
+                    userID={currentUserId}
+                    onHandshakeCreated={onHandshakeCreated}
+                    showPostDetails={showPostDetails}
+                    onDelete={onHandshakeDeleted}
+                    showSenderOrReceiver={showSenderOrReceiver}
+                    showUserKudos={showUserKudos}
+                    onInteraction={onHandshakeInteraction}
+                    compact={compact}
+                />
             ))}
 
             {activeHandshakes.length > 2 && !showAll && (
@@ -66,7 +65,7 @@ const Handshakes: React.FC<HandshakesProps> = ({
                     onClick={onShowAll}
                     className='mt-2 text-sm hover:underline'
                 >
-                    Show all handshakes
+                    Show all help requests
                 </Button>
             )}
         </div>

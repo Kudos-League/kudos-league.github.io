@@ -24,6 +24,9 @@ export type LocationDTO = {
     global?: boolean;
     latitude?: number | null;
     longitude?: number | null;
+    // Fuzzed coordinates for privacy (approximate location display)
+    fuzzedLatitude?: number | null;
+    fuzzedLongitude?: number | null;
 };
 
 export type PostDTO = {
@@ -32,7 +35,6 @@ export type PostDTO = {
     senderID: number;
     title: string;
     body: string;
-    isRequest: boolean;
     isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';
@@ -126,9 +128,8 @@ export interface SendCommentDTO {
 
 export type CreateRewardOfferDTO = {
     postID: number;
-    amount: number;
-    currency: string;
     kudos: number;
+    currency: string;
     receiverID?: number;
     senderID?: number;
 };
@@ -379,6 +380,7 @@ export interface FeedbackDTO {
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
     POST_REPLY: 'post-reply',
+    EVENT_REPLY: 'event-reply',
     POST_AUTO_CLOSE: 'post-auto-close',
     PAST_GIFT: 'past-gift',
     BUG_REPORT: 'bug-report',
@@ -386,8 +388,12 @@ export const NotificationType = {
     USER_BANNED: 'user-banned',
     HANDSHAKE_CREATED: 'handshake-created',
     HANDSHAKE_ACCEPTED: 'handshake-accepted',
+    HANDSHAKE_UNDO_ACCEPTED: 'handshake-undo-accepted',
     HANDSHAKE_COMPLETED: 'handshake-completed',
-    HANDSHAKE_CANCELLED: 'handshake-cancelled'
+    HANDSHAKE_CANCELLED: 'handshake-cancelled',
+    POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
+    POST_REOPENED: 'post-reopened',
+    EVENT_USER_JOINED: 'event-user-joined'
 } as const;
 
 export type NotificationTypeKeys =
@@ -405,17 +411,69 @@ export type PostReplyNotification = {
     message: MessageDTO;
 };
 
+export type EventReplyNotification = {
+    type: typeof NotificationType.EVENT_REPLY;
+    eventID: number;
+    message: MessageDTO;
+};
+
+export type EventUserJoinedNotification = {
+    type: typeof NotificationType.EVENT_USER_JOINED;
+    eventID: number;
+    userID: number;
+    user?: UserDTO;
+};
+
 export type NotificationPayload =
     | DirectMessageNotification
     | PostReplyNotification
-    | { type: typeof NotificationType.POST_AUTO_CLOSE; postID: number; closeAt?: string; closedAt?: string }
+    | EventReplyNotification
+    | EventUserJoinedNotification
+    | {
+          type: typeof NotificationType.POST_AUTO_CLOSE;
+          postID: number;
+          closeAt?: string;
+          closedAt?: string;
+      }
     | { type: typeof NotificationType.PAST_GIFT; postID: number }
     | { type: typeof NotificationType.BUG_REPORT; feedbackID: number }
     | { type: typeof NotificationType.SITE_FEEDBACK; feedbackID: number }
-    | { type: typeof NotificationType.HANDSHAKE_CREATED; postID: number; handshakeID: number }
-    | { type: typeof NotificationType.HANDSHAKE_ACCEPTED; postID: number; handshakeID: number }
-    | { type: typeof NotificationType.HANDSHAKE_COMPLETED; postID: number; handshakeID: number }
-    | { type: typeof NotificationType.HANDSHAKE_CANCELLED; postID: number; handshakeID: number; noShowReported?: boolean };
+    | {
+          type: typeof NotificationType.HANDSHAKE_CREATED;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.HANDSHAKE_ACCEPTED;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.HANDSHAKE_UNDO_ACCEPTED;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.HANDSHAKE_COMPLETED;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.HANDSHAKE_CANCELLED;
+          postID: number;
+          handshakeID: number;
+          noShowReported?: boolean;
+      }
+    | {
+          type: typeof NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE;
+          postID: number;
+          handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.POST_REOPENED;
+          postID: number;
+          handshakeID: number;
+      };
 
 export type NotificationRecord = NotificationPayload & {
     id: number;

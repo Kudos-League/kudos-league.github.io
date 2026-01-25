@@ -10,7 +10,10 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import DMList from './DMList';
 import ChatWindow from './ChatWindow';
 import { usePublicChannels } from '@/shared/api/queries/messages';
-import { useDeleteMessage, useUpdateMessage } from '@/shared/api/mutations/messages';
+import {
+    useDeleteMessage,
+    useUpdateMessage
+} from '@/shared/api/mutations/messages';
 import Button from '@/components/common/Button';
 
 type Props = {
@@ -23,13 +26,18 @@ export default function Chat({ channelType, initialUserId }: Props) {
     const { id: targetUserIDParam } = useParams<{ id: string }>();
     const targetUserID = initialUserId?.toString() ?? targetUserIDParam;
     const { token, user } = useAuth();
-    const { messages, setMessages, joinChannel, leaveChannel, send } = useWebSocketContext();
+    const { messages, setMessages, joinChannel, leaveChannel, send } =
+        useWebSocketContext();
     const { setIsInMobileChat } = useMobileChat();
     const { state: notificationsState, markActed } = useNotifications();
 
     const [channels, setChannels] = useState<ChannelDTO[]>([]);
-    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(null);
-    const [pendingChannel, setPendingChannel] = useState<ChannelDTO | null>(null);
+    const [selectedChannel, setSelectedChannel] = useState<ChannelDTO | null>(
+        null
+    );
+    const [pendingChannel, setPendingChannel] = useState<ChannelDTO | null>(
+        null
+    );
     const [searchQuery] = useState('');
     const [showChatOnMobile, setShowChatOnMobile] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -44,7 +52,8 @@ export default function Chat({ channelType, initialUserId }: Props) {
     const deleteMessageMutation = useDeleteMessage();
     const updateMessageMutation = useUpdateMessage();
 
-    const routeIsDM = location.pathname.includes('/dms') || Boolean(targetUserID);
+    const routeIsDM =
+        location.pathname.includes('/dms') || Boolean(targetUserID);
     const isDMFromProp = channelType === 'dm';
     const resolvedIsDM = channelType ? isDMFromProp : routeIsDM;
 
@@ -59,7 +68,10 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
     useEffect(() => {
         // Only reset when actually switching between DM and Forum modes
-        if (prevResolvedIsDM.current !== null && prevResolvedIsDM.current !== resolvedIsDM) {
+        if (
+            prevResolvedIsDM.current !== null &&
+            prevResolvedIsDM.current !== resolvedIsDM
+        ) {
             setSelectedChannel(null);
             setMessages([]);
             setShowChatOnMobile(false);
@@ -117,15 +129,19 @@ export default function Chat({ channelType, initialUserId }: Props) {
             if (channel.otherUser?.id) {
                 const otherUserId = channel.otherUser.id;
                 const dmNotifications = notificationsState.items.filter(
-                    (n) => n.type === 'direct-message' &&
-                           n.message?.author?.id === otherUserId &&
-                           !n.isActedOn
+                    (n) =>
+                        n.type === 'direct-message' &&
+                        n.message?.author?.id === otherUserId &&
+                        !n.isActedOn
                 );
 
                 // Mark all DM notifications from this user as acted upon
                 dmNotifications.forEach((notification) => {
                     markActed(notification.id).catch((err) => {
-                        console.error('Failed to mark DM notification as acted:', err);
+                        console.error(
+                            'Failed to mark DM notification as acted:',
+                            err
+                        );
                     });
                 });
             }
@@ -160,7 +176,10 @@ export default function Chat({ channelType, initialUserId }: Props) {
                     // Don't set isLoadingMessages to false here - let the messages useEffect handle it
                 }
                 catch (err) {
-                    console.error('Error processing pending channel selection:', err);
+                    console.error(
+                        'Error processing pending channel selection:',
+                        err
+                    );
                     setIsLoadingMessages(false);
                 }
                 finally {
@@ -176,11 +195,15 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
             try {
                 setIsLoadingChannels(true);
-                const res = await apiGet<any>(`/users/${user.id}`, { params: { dmChannels: true } });
+                const res = await apiGet<any>(`/users/${user.id}`, {
+                    params: { dmChannels: true }
+                });
 
                 const formatted = res.dmChannels
                     .map((channel: any) => {
-                        const otherUser = channel.users.find((u: any) => u.id !== user.id);
+                        const otherUser = channel.users.find(
+                            (u: any) => u.id !== user.id
+                        );
                         return otherUser ? { ...channel, otherUser } : null;
                     })
                     .filter(Boolean) as ChannelDTO[];
@@ -188,14 +211,22 @@ export default function Chat({ channelType, initialUserId }: Props) {
                 const channelsWithLastMessage = await Promise.all(
                     formatted.map(async (channel) => {
                         try {
-                            const lastMessage = await apiGet<MessageDTO | null>(`/channels/${channel.id}/latest-message`);
+                            const lastMessage = await apiGet<MessageDTO | null>(
+                                `/channels/${channel.id}/latest-message`
+                            );
                             if (lastMessage) {
-                                return { ...channel, lastMessage } as ChannelDTO;
+                                return {
+                                    ...channel,
+                                    lastMessage
+                                } as ChannelDTO;
                             }
                             return channel;
                         }
                         catch (error) {
-                            console.error(`Error fetching latest message for channel ${channel.id}:`, error);
+                            console.error(
+                                `Error fetching latest message for channel ${channel.id}:`,
+                                error
+                            );
                             return channel;
                         }
                     })
@@ -203,8 +234,20 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
                 // Sort channels by last message timestamp (most recent first)
                 const sortedChannels = channelsWithLastMessage.sort((a, b) => {
-                    const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt || a.lastMessage.updatedAt || 0).getTime() : 0;
-                    const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt || b.lastMessage.updatedAt || 0).getTime() : 0;
+                    const dateA = a.lastMessage
+                        ? new Date(
+                            a.lastMessage.createdAt ||
+                                  a.lastMessage.updatedAt ||
+                                  0
+                        ).getTime()
+                        : 0;
+                    const dateB = b.lastMessage
+                        ? new Date(
+                            b.lastMessage.createdAt ||
+                                  b.lastMessage.updatedAt ||
+                                  0
+                        ).getTime()
+                        : 0;
                     return dateB - dateA; // Most recent first
                 });
 
@@ -212,7 +255,10 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
                 if (targetUserID) {
                     const parsedId = Number(targetUserID);
-                    const matchedChannel = channelsWithLastMessage.find((channel) => channel.users.some((u: any) => u.id === parsedId));
+                    const matchedChannel = channelsWithLastMessage.find(
+                        (channel) =>
+                            channel.users.some((u: any) => u.id === parsedId)
+                    );
 
                     if (matchedChannel) {
                         // Use selectChannel to properly fetch messages and set loading states
@@ -241,7 +287,11 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
     // Turn off loading state when messages are loaded for the selected channel from backend
     useEffect(() => {
-        if (selectedChannel && isLoadingMessages && loadingChannelIdRef.current === selectedChannel.id) {
+        if (
+            selectedChannel &&
+            isLoadingMessages &&
+            loadingChannelIdRef.current === selectedChannel.id
+        ) {
             // Only turn off loading after we're sure the backend has responded
             // This is indicated by the WebSocketContext updating the messages for this channel
             // We use a delay to account for the async fetch completing
@@ -259,8 +309,12 @@ export default function Chat({ channelType, initialUserId }: Props) {
         if (messages.length > 0 && selectedChannel && resolvedIsDM) {
             // Find the actual newest message by timestamp
             const newestMessage = messages.reduce((newest, msg) => {
-                const msgTime = new Date(msg.createdAt || msg.updatedAt || 0).getTime();
-                const newestTime = new Date(newest.createdAt || newest.updatedAt || 0).getTime();
+                const msgTime = new Date(
+                    msg.createdAt || msg.updatedAt || 0
+                ).getTime();
+                const newestTime = new Date(
+                    newest.createdAt || newest.updatedAt || 0
+                ).getTime();
                 return msgTime > newestTime ? msg : newest;
             }, messages[0]);
 
@@ -273,8 +327,20 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
                 // Re-sort channels by last message timestamp (most recent first)
                 return updatedChannels.sort((a, b) => {
-                    const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt || a.lastMessage.updatedAt || 0).getTime() : 0;
-                    const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt || b.lastMessage.updatedAt || 0).getTime() : 0;
+                    const dateA = a.lastMessage
+                        ? new Date(
+                            a.lastMessage.createdAt ||
+                                  a.lastMessage.updatedAt ||
+                                  0
+                        ).getTime()
+                        : 0;
+                    const dateB = b.lastMessage
+                        ? new Date(
+                            b.lastMessage.createdAt ||
+                                  b.lastMessage.updatedAt ||
+                                  0
+                        ).getTime()
+                        : 0;
                     return dateB - dateA; // Most recent first
                 });
             });
@@ -289,17 +355,19 @@ export default function Chat({ channelType, initialUserId }: Props) {
     const sendMessage = async (text?: string, replyToId?: number) => {
         if (!text || !text.trim() || !selectedChannel) return;
         if (selectedChannel.type !== 'dm') {
-            await send({ 
-                channel: selectedChannel, 
+            await send({
+                channel: selectedChannel,
                 content: text,
                 ...(replyToId ? { replyToMessageID: replyToId } : {})
             });
         }
         else {
-            const receiver = selectedChannel.users.find((u: any) => u.id !== user?.id);
+            const receiver = selectedChannel.users.find(
+                (u: any) => u.id !== user?.id
+            );
             if (!receiver) return;
-            await send({ 
-                receiverID: receiver.id, 
+            await send({
+                receiverID: receiver.id,
                 content: text,
                 ...(replyToId ? { replyToMessageID: replyToId } : {})
             });
@@ -308,10 +376,10 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
     const handleEditMessage = async (messageId: number, content: string) => {
         if (!content.trim()) return;
-        
+
         try {
             // Find the original message to preserve data
-            const originalMessage = messages.find(m => m.id === messageId);
+            const originalMessage = messages.find((m) => m.id === messageId);
             if (!originalMessage) return;
 
             // Update via API
@@ -352,7 +420,9 @@ export default function Chat({ channelType, initialUserId }: Props) {
                 deletedAt: new Date().toISOString()
             } as any;
 
-            setMessages((prev) => prev.map((m) => (m.id === messageId ? enriched : m)));
+            setMessages((prev) =>
+                prev.map((m) => (m.id === messageId ? enriched : m))
+            );
         }
         catch (err) {
             console.error('Failed to delete message:', err);
@@ -362,9 +432,14 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
     const isDMView = channelType ? channelType === 'dm' : routeIsDM;
     useEffect(() => {
-        const headerEl: HTMLElement | null = document.querySelector('#app-header') || document.querySelector('header');
+        const headerEl: HTMLElement | null =
+            document.querySelector('#app-header') ||
+            document.querySelector('header');
         if (!headerEl) return;
-        const update = () => setPageHeaderHeight(headerEl ? headerEl.getBoundingClientRect().height : 0);
+        const update = () =>
+            setPageHeaderHeight(
+                headerEl ? headerEl.getBoundingClientRect().height : 0
+            );
         update();
         const ro = new ResizeObserver(() => update());
         ro.observe(headerEl);
@@ -383,11 +458,16 @@ export default function Chat({ channelType, initialUserId }: Props) {
         : showChatOnMobile && resolvedIsDM && window.innerWidth < 768
             ? { boxSizing: 'border-box', height: '100vh', minHeight: '100vh' }
             : pageHeaderHeight > 0
-                ? { boxSizing: 'border-box', height: `calc(100vh - ${pageHeaderHeight}px)` }
+                ? {
+                    boxSizing: 'border-box',
+                    height: `calc(100vh - ${pageHeaderHeight}px)`
+                }
                 : { minHeight: '60vh', boxSizing: 'border-box' };
 
-    const useDynamicViewport = showChatOnMobile && resolvedIsDM && window.innerWidth < 768;
-    const useCalcWithHeader = pageHeaderHeight > 0 && !channelType && !useDynamicViewport;
+    const useDynamicViewport =
+        showChatOnMobile && resolvedIsDM && window.innerWidth < 768;
+    const useCalcWithHeader =
+        pageHeaderHeight > 0 && !channelType && !useDynamicViewport;
 
     return (
         <>
@@ -413,17 +493,23 @@ export default function Chat({ channelType, initialUserId }: Props) {
             <div
                 style={{
                     ...pageContainerStyle,
-                    ...(useCalcWithHeader ? { '--header-height': `${pageHeaderHeight}px` } as any : {})
+                    ...(useCalcWithHeader
+                        ? ({
+                            '--header-height': `${pageHeaderHeight}px`
+                        } as any)
+                        : {})
                 }}
                 className={`flex flex-1 min-h-0 bg-white dark:bg-zinc-900 overflow-hidden ${
-                    useDynamicViewport ? 'chat-container-dvh' :
-                        useCalcWithHeader ? 'chat-container-calc-dvh' : ''
+                    useDynamicViewport
+                        ? 'chat-container-dvh'
+                        : useCalcWithHeader
+                            ? 'chat-container-calc-dvh'
+                            : ''
                 }`}
             >
                 <div className='md:hidden w-full h-full min-h-0 overflow-hidden'>
                     <div className='flex flex-col h-full min-h-0 overflow-hidden'>
-                        <div className='flex items-center justify-between mb-2'>
-                        </div>
+                        <div className='flex items-center justify-between mb-2'></div>
                         {!showChatOnMobile && isDMView ? (
                             <DMList
                                 channels={channels}
@@ -441,7 +527,11 @@ export default function Chat({ channelType, initialUserId }: Props) {
                                     channel={selectedChannel}
                                     messages={messages}
                                     onSend={sendMessage}
-                                    onBack={isDMView ? () => setShowChatOnMobile(false) : undefined}
+                                    onBack={
+                                        isDMView
+                                            ? () => setShowChatOnMobile(false)
+                                            : undefined
+                                    }
                                     isMobile={true}
                                     allowEdit={true}
                                     onEdit={handleEditMessage}
@@ -471,9 +561,12 @@ export default function Chat({ channelType, initialUserId }: Props) {
                             user={user}
                             channel={selectedChannel}
                             messages={messages}
-                            onSend={(text, replyToId) => sendMessage(text, replyToId)}
+                            onSend={(text, replyToId) =>
+                                sendMessage(text, replyToId)
+                            }
                             onBack={() => {
-                                if (selectedChannel) leaveChannel(selectedChannel.id);
+                                if (selectedChannel)
+                                    leaveChannel(selectedChannel.id);
                                 setSelectedChannel(null);
                             }}
                             isMobile={false}

@@ -10,10 +10,20 @@ type Props<T> = {
     serverError?: string | null;
 };
 
-export default function Form<T>({ methods, onSubmit, children, className, serverError }: Props<T>) {
+export default function Form<T>({
+    methods,
+    onSubmit,
+    children,
+    className,
+    serverError
+}: Props<T>) {
     return (
         <FormProvider {...methods}>
-            <form onSubmit={methods.handleSubmit(onSubmit)} className={className} noValidate>
+            <form
+                onSubmit={methods.handleSubmit(onSubmit)}
+                className={className}
+                noValidate
+            >
                 {children}
                 {serverError && (
                     <p className='text-red-600 text-sm mt-2'>{serverError}</p>

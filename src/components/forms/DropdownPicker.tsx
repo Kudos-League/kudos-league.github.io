@@ -69,7 +69,11 @@ export default function DropdownPicker({
     }, [onBlur]);
 
     return (
-        <Menu as='div' className='relative inline-block w-full' ref={containerRef}>
+        <Menu
+            as='div'
+            className='relative inline-block w-full'
+            ref={containerRef}
+        >
             <MenuButton
                 onClick={() => setIsOpen(true)}
                 onBlur={() => onBlur && onBlur()}

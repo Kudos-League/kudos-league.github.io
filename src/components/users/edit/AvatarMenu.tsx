@@ -48,15 +48,18 @@ const AvatarMenu: React.FC<{
                 </div>
 
                 {/* URL input */}
-                <div className='flex gap-2'>
+                <div className='flex gap-2 items-end'>
                     <input
                         ref={urlInputRef}
                         type='text'
                         placeholder='Paste image URL...'
-                        className='flex-1 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                        className='flex-1 min-w-0 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
                         onKeyDown={(e) => e.key === 'Enter' && onURLSubmit()}
                     />
-                    <Button onClick={onURLSubmit} className='text-sm'>
+                    <Button
+                        onClick={onURLSubmit}
+                        className='text-sm whitespace-nowrap flex-shrink-0'
+                    >
                         Apply
                     </Button>
                 </div>

@@ -28,8 +28,6 @@ const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
     other: 'Kudos update'
 };
 
-
-
 function formatCurrencyFromCents(value?: unknown) {
     const cents = typeof value === 'number' ? value : Number(value ?? NaN);
     if (!Number.isFinite(cents)) return undefined;
@@ -105,8 +103,6 @@ function renderMetadata(item: KudosHistoryDTO) {
     }
 
     if (item.source === 'reward-offer') {
-        const kudosFinal = Number(metadata.kudosFinal);
-        const hasFinal = Number.isFinite(kudosFinal);
         const kudosOffered = Number(metadata.kudosOffered);
         const hasOffered = Number.isFinite(kudosOffered);
 
@@ -117,10 +113,10 @@ function renderMetadata(item: KudosHistoryDTO) {
                         Status: {String(metadata.status)}
                     </div>
                 ) : null}
-                {hasFinal ? (
-                    <div className='text-sm'>Final kudos: {kudosFinal}</div>
+                {typeof item.total === 'number' ? (
+                    <div className='text-sm'>Final kudos: {item.total}</div>
                 ) : null}
-                {!hasFinal && hasOffered ? (
+                {typeof item.total !== 'number' && hasOffered ? (
                     <div className='text-sm'>Offered kudos: {kudosOffered}</div>
                 ) : null}
             </>
@@ -130,7 +126,7 @@ function renderMetadata(item: KudosHistoryDTO) {
     return null;
 }
 
-export default function KudosHistoryList() {
+export default React.memo(function KudosHistoryList() {
     const { user } = useAuth();
     const userID = user?.id;
     const pageSize = 10;
@@ -142,12 +138,11 @@ export default function KudosHistoryList() {
         error,
         fetchNextPage,
         hasNextPage,
-        isFetchingNextPage,
-        isFetching
+        isFetchingNextPage
     } = useKudosHistoryInfinite(userID, source, pageSize as number);
 
-    const loading = isLoading || (isFetching && !data);
-    if (loading) return <Spinner text='Loading kudos history...' />;
+    // Only show loading spinner for initial load, not for background refetches
+    if (isLoading) return <Spinner text='Loading kudos history...' />;
     if (error)
         return <p className='text-red-600'>Error loading kudos history</p>;
 
@@ -161,11 +156,13 @@ export default function KudosHistoryList() {
     return (
         <div className='space-y-4'>
             <div className='flex items-center justify-between gap-3 flex-wrap'>
-                <h3 className='text-lg font-semibold'>Kudos history</h3>
-                <label className='text-sm text-gray-600 flex items-center gap-2'>
+                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                    Kudos history
+                </h3>
+                <label className='text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2'>
                     <span>Filter:</span>
                     <select
-                        className='border rounded px-2 py-1'
+                        className='border border-gray-200 dark:border-zinc-700 rounded px-3 py-1.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-400 focus:border-transparent'
                         value={source}
                         onChange={(event) =>
                             setSource(
@@ -219,8 +216,8 @@ export default function KudosHistoryList() {
                                         <span>Updated by:</span>
                                         <UserCard
                                             user={item.actor}
-                                            triggerVariant="name"
-                                            className="text-xs"
+                                            triggerVariant='name'
+                                            className='text-xs'
                                             panelWidth={280}
                                             disableTooltip={false}
                                         />
@@ -266,4 +263,4 @@ export default function KudosHistoryList() {
             )}
         </div>
     );
-}
+});

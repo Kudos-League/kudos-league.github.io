@@ -1,8 +1,12 @@
 'use client';
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import Alert from '@/components/common/Alert';
-import { subscribeAlerts, subscribeAlertClears, type AlertMsg } from './alertBus';
+import {
+    subscribeAlerts,
+    subscribeAlertClears,
+    type AlertMsg
+} from './alertBus';
 
 export default function AlertHost() {
     const [queue, setQueue] = useState<Array<AlertMsg & { id: number }>>([]);

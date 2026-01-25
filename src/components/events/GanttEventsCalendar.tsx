@@ -23,14 +23,26 @@ import {
     endOfDay
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Filter, X, MapPin, Users, Clock, Calendar, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
+import {
+    Filter,
+    X,
+    MapPin,
+    Users,
+    Clock,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Globe,
+    Plus
+} from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
-import { getImagePath } from '@/shared/api/config';
 import Button from '@/components/common/Button';
 import UserCard from '../users/UserCard';
-import { apiGet } from '@/shared/api/apiClient';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import MobileEventListView from './MobileEventListView';
+import { useAuth } from '@/contexts/useAuth';
+import { useJoinEvent } from '@/shared/api/mutations/events';
 
 interface EventDetailsModalProps {
     event: EventDTO | null;
@@ -38,11 +50,18 @@ interface EventDetailsModalProps {
     onViewPeriod: (date: Date, unit: 'day' | 'week' | 'month') => void;
 }
 
-const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, onViewPeriod }) => {
+const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
+    event,
+    onClose,
+    onViewPeriod
+}) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [fullEvent, setFullEvent] = useState<EventDTO | null>(null);
     const [loadingParticipants, setLoadingParticipants] = useState(false);
+    const [joining, setJoining] = useState(false);
+    const joinMutation = useJoinEvent(event?.id || 0);
 
     useEffect(() => {
         const fetchFullEvent = async () => {
@@ -66,16 +85,58 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
         fetchFullEvent();
     }, [event?.id, event]);
 
+    const handleJoin = async () => {
+        if (!user || !event?.id) return;
+        setJoining(true);
+        try {
+            await joinMutation.mutateAsync();
+            setFullEvent((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    participants: [...(prev.participants || []), user]
+                };
+            });
+        }
+        catch (err: any) {
+            console.error('Join failed: ' + err.message);
+        }
+        finally {
+            setJoining(false);
+        }
+    };
+
+    const handleLeave = async () => {
+        if (!user || !event?.id) return;
+        try {
+            await apiMutate(`/events/${event.id}/leave`, 'post');
+            setFullEvent((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    participants: (prev.participants || []).filter(
+                        (p: any) => p.id !== user?.id
+                    )
+                };
+            });
+        }
+        catch (err: any) {
+            console.error('Leave failed: ' + err.message);
+        }
+    };
+
     if (!event) return null;
 
     const displayEvent = fullEvent || event;
 
     const start = toZonedTime(new Date(event.startTime), tz);
     const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
-    
+
     const getDuration = () => {
         if (!end) return 'Ongoing';
-        const hours = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+        const hours = Math.floor(
+            (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+        );
         const days = Math.floor(hours / 24);
         if (days > 0) {
             const remainingHours = hours % 24;
@@ -90,7 +151,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                 <div className='sticky top-0 bg-white dark:bg-zinc-900 border-b dark:border-zinc-700 p-6'>
                     <div className='flex items-start justify-between'>
                         <div className='flex-1'>
-                            <h2 className='text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-2'>{event.title}</h2>
+                            <h2 className='text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-2'>
+                                {event.title}
+                            </h2>
                             <div className='flex flex-wrap gap-2'>
                                 {event.location?.global ? (
                                     <span className='px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded'>
@@ -118,7 +181,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                             <span className='text-lg'>📝</span>
                             Description
                         </h3>
-                        <p className='text-gray-700 dark:text-zinc-300 leading-relaxed'>{event.description}</p>
+                        <p className='text-gray-700 dark:text-zinc-300 leading-relaxed'>
+                            {event.description}
+                        </p>
                     </div>
 
                     <div className='border-t dark:border-zinc-700 pt-4'>
@@ -128,28 +193,44 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                         </h3>
                         <div className='space-y-2 text-sm'>
                             <div className='flex items-start gap-3'>
-                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>Start:</span>
-                                <span className='text-gray-900 dark:text-zinc-100'>{format(start, 'EEEE, MMMM d, yyyy')}</span>
+                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>
+                                    Start:
+                                </span>
+                                <span className='text-gray-900 dark:text-zinc-100'>
+                                    {format(start, 'EEEE, MMMM d, yyyy')}
+                                </span>
                             </div>
                             <div className='flex items-start gap-3'>
                                 <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'></span>
-                                <span className='text-gray-700 dark:text-zinc-300'>{format(start, 'h:mm a')}</span>
+                                <span className='text-gray-700 dark:text-zinc-300'>
+                                    {format(start, 'h:mm a')}
+                                </span>
                             </div>
                             {event.endTime && (
                                 <>
                                     <div className='flex items-start gap-3'>
-                                        <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>End:</span>
-                                        <span className='text-gray-900 dark:text-zinc-100'>{format(end!, 'EEEE, MMMM d, yyyy')}</span>
+                                        <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>
+                                            End:
+                                        </span>
+                                        <span className='text-gray-900 dark:text-zinc-100'>
+                                            {format(end!, 'EEEE, MMMM d, yyyy')}
+                                        </span>
                                     </div>
                                     <div className='flex items-start gap-3'>
                                         <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'></span>
-                                        <span className='text-gray-700 dark:text-zinc-300'>{format(end!, 'h:mm a')}</span>
+                                        <span className='text-gray-700 dark:text-zinc-300'>
+                                            {format(end!, 'h:mm a')}
+                                        </span>
                                     </div>
                                 </>
                             )}
                             <div className='flex items-start gap-3 pt-2 border-t dark:border-zinc-700'>
-                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>Duration:</span>
-                                <span className='text-blue-600 dark:text-blue-400 font-medium'>{getDuration()}</span>
+                                <span className='font-medium text-gray-600 dark:text-zinc-400 w-16'>
+                                    Duration:
+                                </span>
+                                <span className='text-blue-600 dark:text-blue-400 font-medium'>
+                                    {getDuration()}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -185,28 +266,39 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                             </span>
                         </h3>
                         {loadingParticipants ? (
-                            <p className='text-gray-500 dark:text-zinc-400 italic'>Loading participants...</p>
-                        ) : displayEvent.participants && displayEvent.participants.length > 0 ? (
-                            <div className='space-y-2'>
-                                {displayEvent.participants.slice(0, 8).map((p: any) => (
-                                    <div key={p.id} className='flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-lg transition-colors'>
-                                        <img
-                                            src={getImagePath(p.avatar)}
-                                            alt={p.username}
-                                            className='w-10 h-10 rounded-full border-2 border-gray-200 dark:border-zinc-700'
-                                        />
-                                        <span className='font-medium text-gray-900 dark:text-zinc-100'>{p.username}</span>
-                                    </div>
-                                ))}
-                                {displayEvent.participants.length > 8 && (
-                                    <p className='text-sm text-gray-500 dark:text-zinc-400 pl-2 pt-2'>
-                                        +{displayEvent.participants.length - 8} more participant{displayEvent.participants.length - 8 !== 1 ? 's' : ''}
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <p className='text-gray-500 dark:text-zinc-400 italic'>No participants yet</p>
-                        )}
+                            <p className='text-gray-500 dark:text-zinc-400 italic'>
+                                Loading participants...
+                            </p>
+                        ) : displayEvent.participants &&
+                          displayEvent.participants.length > 0 ? (
+                                <div className='space-y-2'>
+                                    {displayEvent.participants
+                                        .slice(0, 8)
+                                        .map((p: any) => (
+                                            <div
+                                                key={p.id}
+                                                className='flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                            >
+                                                <UserCard user={p} large />
+                                            </div>
+                                        ))}
+                                    {displayEvent.participants.length > 8 && (
+                                        <p className='text-sm text-gray-500 dark:text-zinc-400 pl-2 pt-2'>
+                                        +{displayEvent.participants.length - 8}{' '}
+                                        more participant
+                                            {displayEvent.participants.length -
+                                            8 !==
+                                        1
+                                                ? 's'
+                                                : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className='text-gray-500 dark:text-zinc-400 italic'>
+                                No participants yet
+                                </p>
+                            )}
                     </div>
 
                     <div className='flex gap-3 pt-4 border-t dark:border-zinc-700'>
@@ -221,10 +313,37 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({ event, onClose, o
                             <Calendar className='w-4 h-4' />
                             View Day
                         </Button>
-                        <Button onClick={() => navigate(`/event/${event.id}`)} className='flex-1'>
+                        <Button
+                            onClick={() => navigate(`/event/${event.id}`)}
+                            className='flex-1'
+                        >
                             View Full Details
                         </Button>
                     </div>
+
+                    {user && (
+                        <div className='pt-4'>
+                            {!displayEvent.participants?.some(
+                                (p: any) => p.id === user?.id
+                            ) ? (
+                                    <Button
+                                        onClick={handleJoin}
+                                        disabled={joining}
+                                        className='w-full'
+                                    >
+                                        {joining ? 'Joining...' : 'Join Event'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleLeave}
+                                        variant='danger'
+                                        className='w-full'
+                                    >
+                                    Leave Event
+                                    </Button>
+                                )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -239,13 +358,25 @@ export default function GanttEventsCalendar() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year' | 'all'>('week');
+    // Initialize state from localStorage
+    const [timeRange, setTimeRange] = useState<
+        'week' | 'month' | 'year' | 'all'
+    >(() => {
+        const saved = localStorage.getItem('events_timeRange');
+        return (saved as 'week' | 'month' | 'year' | 'all') || 'week';
+    });
     const [filterText, setFilterText] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<EventDTO | null>(null);
     const [viewDate, setViewDate] = useState<Date | null>(null);
-    const [viewPeriodType, setViewPeriodType] = useState<'day' | 'week' | 'month' | 'quarter' | null>(null);
-    const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<EventDTO[] | null>(null);
-    const [locationFilter, setLocationFilter] = useState<'all' | 'local' | 'global'>('local');
+    const [viewPeriodType, setViewPeriodType] = useState<
+        'day' | 'week' | 'month' | 'quarter' | null
+    >(null);
+    const [selectedPeriodEvents, setSelectedPeriodEvents] = useState<
+        EventDTO[] | null
+    >(null);
+    const [locationFilter, setLocationFilter] = useState<
+        'all' | 'local' | 'global'
+    >('all');
     const [periodOffset, setPeriodOffset] = useState(0);
     const [visibleEventCount, setVisibleEventCount] = useState(10);
     const [useCustomRange, setUseCustomRange] = useState(false);
@@ -253,13 +384,25 @@ export default function GanttEventsCalendar() {
     const [customEndDate, setCustomEndDate] = useState('');
     const [useDuration, setUseDuration] = useState(false);
     const [durationValue, setDurationValue] = useState(7);
-    const [durationUnit, setDurationUnit] = useState<'days' | 'weeks' | 'months'>('days');
+    const [durationUnit, setDurationUnit] = useState<
+        'days' | 'weeks' | 'months'
+    >('days');
     const [showPeriodPicker, setShowPeriodPicker] = useState(false);
     const [showingRangeEvents, setShowingRangeEvents] = useState(false);
 
-    const { data: allEvents = [], isLoading, isError } = useEvents({
+    // Persist timeRange to localStorage
+    useEffect(() => {
+        localStorage.setItem('events_timeRange', timeRange);
+    }, [timeRange]);
+
+    const {
+        data: allEvents = [],
+        isLoading,
+        isError
+    } = useEvents({
         filter: 'all',
-        local: locationFilter === 'local'
+        local: locationFilter === 'local',
+        radiusKm: locationFilter === 'local' ? 25 : undefined
     });
 
     const events = useMemo(() => {
@@ -274,7 +417,7 @@ export default function GanttEventsCalendar() {
         if (useCustomRange && customStartDate) {
             const start = startOfDay(new Date(customStartDate));
             let end: Date;
-            
+
             if (useDuration) {
                 switch (durationUnit) {
                 case 'days':
@@ -294,22 +437,26 @@ export default function GanttEventsCalendar() {
             else {
                 end = endOfMonth(start);
             }
-            
+
             return { start, end };
         }
-        
+
         const now = startOfDay(new Date());
         let start: Date, end: Date;
 
         switch (timeRange) {
-        case 'week':
-            start = addWeeks(startOfWeek(now, { weekStartsOn: 0 }), periodOffset);
-            end = endOfWeek(start, { weekStartsOn: 0 });
+        case 'week': {
+            // Week view: always 7 days starting from today (when offset=0)
+            start = addDays(now, periodOffset * 7);
+            end = addDays(start, 7);
             break;
-        case 'month':
-            start = startOfMonth(addMonths(now, periodOffset));
-            end = endOfMonth(addMonths(now, periodOffset));
+        }
+        case 'month': {
+            // Month view: always 31 days starting from today (when offset=0)
+            start = addDays(now, periodOffset * 31);
+            end = addDays(start, 31);
             break;
+        }
         case 'year':
             start = startOfYear(addYears(now, periodOffset));
             end = endOfYear(addYears(now, periodOffset));
@@ -321,17 +468,31 @@ export default function GanttEventsCalendar() {
                 end = endOfMonth(now);
             }
             else {
-                const eventDates = events.map((e) => 
-                    e.endTime ? new Date(e.endTime) : addDays(new Date(e.startTime), 365)
+                const eventDates = events.map((e) =>
+                    e.endTime
+                        ? new Date(e.endTime)
+                        : addDays(new Date(e.startTime), 365)
                 );
-                end = new Date(Math.max(...eventDates.map((d) => d.getTime())));
+                end = new Date(
+                    Math.max(...eventDates.map((d) => d.getTime()))
+                );
                 end = addDays(end, 7);
             }
             break;
         }
 
         return { start, end };
-    }, [timeRange, periodOffset, events, useCustomRange, customStartDate, customEndDate, useDuration, durationValue, durationUnit]);
+    }, [
+        timeRange,
+        periodOffset,
+        events,
+        useCustomRange,
+        customStartDate,
+        customEndDate,
+        useDuration,
+        durationValue,
+        durationUnit
+    ]);
 
     const filteredEvents = useMemo(() => {
         return events.filter((event) => {
@@ -344,16 +505,12 @@ export default function GanttEventsCalendar() {
                 if (!matchesSearch) return false;
             }
 
-            if (locationFilter === 'global') {
-                return event.location?.global === true;
-            }
-            else if (locationFilter === 'local') {
-                return event.location?.global !== true;
-            }
-
+            // Location filtering is now done by the backend based on user's location and radius
+            // When local=true, backend filters by distance (25km)
+            // When local=false, all events are shown regardless of location
             return true;
         });
-    }, [events, filterText, locationFilter]);
+    }, [events, filterText]);
 
     const timeUnit: TimeUnit = useMemo(() => {
         if (containerWidth === 0) return 'days';
@@ -362,9 +519,9 @@ export default function GanttEventsCalendar() {
 
         // Aggressive minimum pixels to ensure events are readable
         // These values ensure we can display at least medium detail level (180px+ per event)
-        const minPixelsPerDay = 120;     // Very comfortable space for daily events
-        const minPixelsPerWeek = 200;    // Enough for medium detail view per week
-        const minPixelsPerMonth = 250;   // Enough for medium detail view per month
+        const minPixelsPerDay = 120; // Very comfortable space for daily events
+        const minPixelsPerWeek = 200; // Enough for medium detail view per week
+        const minPixelsPerMonth = 250; // Enough for medium detail view per month
         const minPixelsPerQuarter = 300; // Enough for medium detail view per quarter
 
         // Try days first
@@ -379,13 +536,15 @@ export default function GanttEventsCalendar() {
         }
 
         // Try months
-        const totalMonths = differenceInMonths(dateRange.end, dateRange.start) + 1;
+        const totalMonths =
+            differenceInMonths(dateRange.end, dateRange.start) + 1;
         if (totalMonths * minPixelsPerMonth <= containerWidth) {
             return 'months';
         }
 
         // Try quarters
-        const totalQuarters = differenceInQuarters(dateRange.end, dateRange.start) + 1;
+        const totalQuarters =
+            differenceInQuarters(dateRange.end, dateRange.start) + 1;
         if (totalQuarters * minPixelsPerQuarter <= containerWidth) {
             return 'quarters';
         }
@@ -395,8 +554,13 @@ export default function GanttEventsCalendar() {
     }, [containerWidth, dateRange]);
 
     const timelineUnits = useMemo(() => {
-        const units: Array<{ date: Date; label: string; sublabel?: string; showMonth?: boolean }> = [];
-        
+        const units: Array<{
+            date: Date;
+            label: string;
+            sublabel?: string;
+            showMonth?: boolean;
+        }> = [];
+
         if (timeUnit === 'days') {
             const totalDays = differenceInDays(dateRange.end, dateRange.start);
             let lastMonth = '';
@@ -405,7 +569,7 @@ export default function GanttEventsCalendar() {
                 const currentMonth = format(day, 'MMM');
                 const showMonth = currentMonth !== lastMonth;
                 lastMonth = currentMonth;
-                
+
                 units.push({
                     date: day,
                     label: format(day, 'd'),
@@ -419,7 +583,7 @@ export default function GanttEventsCalendar() {
             while (current <= dateRange.end) {
                 units.push({
                     date: current,
-                    label: format(current, 'd'),
+                    label: format(current, 'd')
                 });
                 current = addWeeks(current, 1);
             }
@@ -447,13 +611,20 @@ export default function GanttEventsCalendar() {
                 current = addQuarters(current, 1);
             }
         }
-        
+
         return units;
     }, [dateRange, timeUnit]);
 
-    const pixelsPerUnit = containerWidth > 0 && timelineUnits.length > 0
-        ? containerWidth / timelineUnits.length
-        : (timeUnit === 'days' ? 60 : timeUnit === 'weeks' ? 80 : timeUnit === 'months' ? 100 : 120);
+    const pixelsPerUnit =
+        containerWidth > 0 && timelineUnits.length > 0
+            ? containerWidth / timelineUnits.length
+            : timeUnit === 'days'
+                ? 60
+                : timeUnit === 'weeks'
+                    ? 80
+                    : timeUnit === 'months'
+                        ? 100
+                        : 120;
 
     const todayPosition = useMemo(() => {
         const now = startOfDay(new Date());
@@ -463,26 +634,32 @@ export default function GanttEventsCalendar() {
         }
 
         if (timeUnit === 'days') {
-            const dayIndex = timelineUnits.findIndex(u => isSameDay(u.date, now));
+            const dayIndex = timelineUnits.findIndex((u) =>
+                isSameDay(u.date, now)
+            );
             if (dayIndex < 0) return null;
             return dayIndex * pixelsPerUnit;
         }
         else if (timeUnit === 'weeks') {
-            const weekIndex = timelineUnits.findIndex(u => {
+            const weekIndex = timelineUnits.findIndex((u) => {
                 const weekStart = startOfWeek(u.date, { weekStartsOn: 0 });
                 const weekEnd = endOfWeek(u.date, { weekStartsOn: 0 });
                 return now >= weekStart && now <= weekEnd;
             });
             if (weekIndex < 0) return null;
 
-            const weekStart = startOfWeek(timelineUnits[weekIndex].date, { weekStartsOn: 0 });
+            const weekStart = startOfWeek(timelineUnits[weekIndex].date, {
+                weekStartsOn: 0
+            });
             const daysIntoWeek = differenceInDays(now, weekStart);
             const proportionIntoWeek = daysIntoWeek / 7;
 
-            return weekIndex * pixelsPerUnit + proportionIntoWeek * pixelsPerUnit;
+            return (
+                weekIndex * pixelsPerUnit + proportionIntoWeek * pixelsPerUnit
+            );
         }
         else if (timeUnit === 'months') {
-            const monthIndex = timelineUnits.findIndex(u => {
+            const monthIndex = timelineUnits.findIndex((u) => {
                 const monthStart = startOfMonth(u.date);
                 const monthEnd = endOfMonth(u.date);
                 return now >= monthStart && now <= monthEnd;
@@ -495,31 +672,41 @@ export default function GanttEventsCalendar() {
             const daysIntoMonth = differenceInDays(now, monthStart);
             const proportionIntoMonth = daysIntoMonth / daysInMonth;
 
-            return monthIndex * pixelsPerUnit + proportionIntoMonth * pixelsPerUnit;
+            return (
+                monthIndex * pixelsPerUnit + proportionIntoMonth * pixelsPerUnit
+            );
         }
         else {
             // quarters
-            const quarterIndex = timelineUnits.findIndex(u => {
+            const quarterIndex = timelineUnits.findIndex((u) => {
                 const quarterStart = startOfQuarter(u.date);
                 const quarterEnd = endOfQuarter(u.date);
                 return now >= quarterStart && now <= quarterEnd;
             });
             if (quarterIndex < 0) return null;
 
-            const quarterStart = startOfQuarter(timelineUnits[quarterIndex].date);
+            const quarterStart = startOfQuarter(
+                timelineUnits[quarterIndex].date
+            );
             const quarterEnd = endOfQuarter(timelineUnits[quarterIndex].date);
-            const daysInQuarter = differenceInDays(quarterEnd, quarterStart) + 1;
+            const daysInQuarter =
+                differenceInDays(quarterEnd, quarterStart) + 1;
             const daysIntoQuarter = differenceInDays(now, quarterStart);
             const proportionIntoQuarter = daysIntoQuarter / daysInQuarter;
 
-            return quarterIndex * pixelsPerUnit + proportionIntoQuarter * pixelsPerUnit;
+            return (
+                quarterIndex * pixelsPerUnit +
+                proportionIntoQuarter * pixelsPerUnit
+            );
         }
     }, [timelineUnits, pixelsPerUnit, timeUnit, dateRange]);
 
     const calculateEventPosition = (event: EventDTO) => {
         const eventStart = startOfDay(new Date(event.startTime));
         // For eternal events (no end time), extend to the end of visible range
-        const eventEnd = event.endTime ? startOfDay(new Date(event.endTime)) : dateRange.end;
+        const eventEnd = event.endTime
+            ? startOfDay(new Date(event.endTime))
+            : dateRange.end;
         const isEternal = !event.endTime;
 
         // If event is completely outside the visible range, don't render
@@ -528,7 +715,8 @@ export default function GanttEventsCalendar() {
         }
 
         // Clamp event to visible range
-        const visibleStart = eventStart < dateRange.start ? dateRange.start : eventStart;
+        const visibleStart =
+            eventStart < dateRange.start ? dateRange.start : eventStart;
         const visibleEnd = eventEnd > dateRange.end ? dateRange.end : eventEnd;
 
         if (timeUnit === 'days') {
@@ -536,13 +724,24 @@ export default function GanttEventsCalendar() {
             const snappedStart = startOfDay(visibleStart);
             const snappedEnd = endOfDay(visibleEnd);
 
-            const startDayIndex = differenceInDays(snappedStart, dateRange.start);
+            const startDayIndex = differenceInDays(
+                snappedStart,
+                dateRange.start
+            );
             const endDayIndex = differenceInDays(snappedEnd, dateRange.start);
 
             const left = startDayIndex * pixelsPerUnit;
-            const width = Math.max((endDayIndex - startDayIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.8);
+            const width = Math.max(
+                (endDayIndex - startDayIndex + 1) * pixelsPerUnit,
+                pixelsPerUnit * 0.8
+            );
 
-            return { left, width, isCompressed: startDayIndex === endDayIndex && !isEternal, isEternal };
+            return {
+                left,
+                width,
+                isCompressed: startDayIndex === endDayIndex && !isEternal,
+                isEternal
+            };
         }
         else if (timeUnit === 'weeks') {
             // Snap to full weeks
@@ -550,16 +749,30 @@ export default function GanttEventsCalendar() {
             const snappedEnd = endOfWeek(visibleEnd, { weekStartsOn: 0 });
 
             // Timeline starts from the week boundary of dateRange.start
-            const timelineStart = startOfWeek(dateRange.start, { weekStartsOn: 0 });
+            const timelineStart = startOfWeek(dateRange.start, {
+                weekStartsOn: 0
+            });
 
-            const startWeekIndex = Math.floor(differenceInDays(snappedStart, timelineStart) / 7);
-            const endWeekIndex = Math.floor(differenceInDays(snappedEnd, timelineStart) / 7);
+            const startWeekIndex = Math.floor(
+                differenceInDays(snappedStart, timelineStart) / 7
+            );
+            const endWeekIndex = Math.floor(
+                differenceInDays(snappedEnd, timelineStart) / 7
+            );
 
             const left = startWeekIndex * pixelsPerUnit;
-            const width = Math.max((endWeekIndex - startWeekIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.15);
+            const width = Math.max(
+                (endWeekIndex - startWeekIndex + 1) * pixelsPerUnit,
+                pixelsPerUnit * 0.15
+            );
 
             const durationInWeeks = endWeekIndex - startWeekIndex + 1;
-            return { left, width, isCompressed: durationInWeeks <= 1 && !isEternal, isEternal };
+            return {
+                left,
+                width,
+                isCompressed: durationInWeeks <= 1 && !isEternal,
+                isEternal
+            };
         }
         else if (timeUnit === 'months') {
             // Snap to full months
@@ -569,14 +782,25 @@ export default function GanttEventsCalendar() {
             // Timeline starts from the month boundary of dateRange.start
             const timelineStart = startOfMonth(dateRange.start);
 
-            const startMonthIndex = differenceInMonths(snappedStart, timelineStart);
+            const startMonthIndex = differenceInMonths(
+                snappedStart,
+                timelineStart
+            );
             const endMonthIndex = differenceInMonths(snappedEnd, timelineStart);
 
             const left = startMonthIndex * pixelsPerUnit;
-            const width = Math.max((endMonthIndex - startMonthIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.1);
+            const width = Math.max(
+                (endMonthIndex - startMonthIndex + 1) * pixelsPerUnit,
+                pixelsPerUnit * 0.1
+            );
 
             const durationInMonths = endMonthIndex - startMonthIndex + 1;
-            return { left, width, isCompressed: durationInMonths <= 1 && !isEternal, isEternal };
+            return {
+                left,
+                width,
+                isCompressed: durationInMonths <= 1 && !isEternal,
+                isEternal
+            };
         }
         else {
             // Snap to full quarters
@@ -586,19 +810,40 @@ export default function GanttEventsCalendar() {
             // Timeline starts from the quarter boundary of dateRange.start
             const timelineStart = startOfQuarter(dateRange.start);
 
-            const startQuarterIndex = differenceInQuarters(snappedStart, timelineStart);
-            const endQuarterIndex = differenceInQuarters(snappedEnd, timelineStart);
+            const startQuarterIndex = differenceInQuarters(
+                snappedStart,
+                timelineStart
+            );
+            const endQuarterIndex = differenceInQuarters(
+                snappedEnd,
+                timelineStart
+            );
 
             const left = startQuarterIndex * pixelsPerUnit;
-            const width = Math.max((endQuarterIndex - startQuarterIndex + 1) * pixelsPerUnit, pixelsPerUnit * 0.1);
+            const width = Math.max(
+                (endQuarterIndex - startQuarterIndex + 1) * pixelsPerUnit,
+                pixelsPerUnit * 0.1
+            );
 
             const durationInQuarters = endQuarterIndex - startQuarterIndex + 1;
-            return { left, width, isCompressed: durationInQuarters <= 1 && !isEternal, isEternal };
+            return {
+                left,
+                width,
+                isCompressed: durationInQuarters <= 1 && !isEternal,
+                isEternal
+            };
         }
     };
 
     const eventBars = useMemo(() => {
-        const bars: Array<{ event: EventDTO; left: number; width: number; isCompressed: boolean; isEternal: boolean; row: number }> = [];
+        const bars: Array<{
+            event: EventDTO;
+            left: number;
+            width: number;
+            isCompressed: boolean;
+            isEternal: boolean;
+            row: number;
+        }> = [];
         const rowEndPositions: number[] = [];
 
         filteredEvents.forEach((event) => {
@@ -607,7 +852,10 @@ export default function GanttEventsCalendar() {
 
             // Find row where this event fits
             let row = 0;
-            while (row < rowEndPositions.length && rowEndPositions[row] > position.left) {
+            while (
+                row < rowEndPositions.length &&
+                rowEndPositions[row] > position.left
+            ) {
                 row++;
             }
 
@@ -626,7 +874,9 @@ export default function GanttEventsCalendar() {
 
     const handleUnitClick = (date: Date) => {
         const clicked = startOfDay(date);
-        let periodStart: Date, periodEnd: Date, periodType: 'day' | 'week' | 'month' | 'quarter';
+        let periodStart: Date,
+            periodEnd: Date,
+            periodType: 'day' | 'week' | 'month' | 'quarter';
 
         if (timeUnit === 'days') {
             periodStart = startOfDay(clicked);
@@ -649,18 +899,24 @@ export default function GanttEventsCalendar() {
             periodEnd = endOfQuarter(clicked);
             periodType = 'quarter';
         }
-        
-        const eventsInPeriod = filteredEvents.filter((e) => {
-            const start = new Date(e.startTime);
-            const end = e.endTime ? new Date(e.endTime) : null;
-            
-            if (!end) {
-                return start <= periodEnd;
-            }
-            
-            return start <= periodEnd && end >= periodStart;
-        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        
+
+        const eventsInPeriod = filteredEvents
+            .filter((e) => {
+                const start = new Date(e.startTime);
+                const end = e.endTime ? new Date(e.endTime) : null;
+
+                if (!end) {
+                    return start <= periodEnd;
+                }
+
+                return start <= periodEnd && end >= periodStart;
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.startTime).getTime() -
+                    new Date(b.startTime).getTime()
+            );
+
         setSelectedPeriodEvents(eventsInPeriod);
         setViewDate(clicked);
         setViewPeriodType(periodType);
@@ -712,18 +968,24 @@ export default function GanttEventsCalendar() {
             periodStart = startOfQuarter(clicked);
             periodEnd = endOfQuarter(clicked);
         }
-        
-        const eventsInPeriod = filteredEvents.filter((e) => {
-            const start = new Date(e.startTime);
-            const end = e.endTime ? new Date(e.endTime) : null;
-            
-            if (!end) {
-                return start <= periodEnd;
-            }
-            
-            return start <= periodEnd && end >= periodStart;
-        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        
+
+        const eventsInPeriod = filteredEvents
+            .filter((e) => {
+                const start = new Date(e.startTime);
+                const end = e.endTime ? new Date(e.endTime) : null;
+
+                if (!end) {
+                    return start <= periodEnd;
+                }
+
+                return start <= periodEnd && end >= periodStart;
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.startTime).getTime() -
+                    new Date(b.startTime).getTime()
+            );
+
         setSelectedPeriodEvents(eventsInPeriod);
     };
 
@@ -765,56 +1027,84 @@ export default function GanttEventsCalendar() {
             periodStart = startOfQuarter(clicked);
             periodEnd = endOfQuarter(clicked);
         }
-        
-        const eventsInPeriod = filteredEvents.filter((e) => {
-            const start = new Date(e.startTime);
-            const end = e.endTime ? new Date(e.endTime) : null;
-            
-            if (!end) {
-                return start <= periodEnd;
-            }
-            
-            return start <= periodEnd && end >= periodStart;
-        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        
+
+        const eventsInPeriod = filteredEvents
+            .filter((e) => {
+                const start = new Date(e.startTime);
+                const end = e.endTime ? new Date(e.endTime) : null;
+
+                if (!end) {
+                    return start <= periodEnd;
+                }
+
+                return start <= periodEnd && end >= periodStart;
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.startTime).getTime() -
+                    new Date(b.startTime).getTime()
+            );
+
         setSelectedPeriodEvents(eventsInPeriod);
     };
 
     const handleShowRangeEvents = () => {
         const { start, end } = dateRange;
-        
-        const eventsInRange = filteredEvents.filter((e) => {
-            const eventStart = new Date(e.startTime);
-            const eventEnd = e.endTime ? new Date(e.endTime) : null;
-            
-            if (!eventEnd) {
-                return eventStart <= end;
-            }
-            
-            return eventStart <= end && eventEnd >= start;
-        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        
+
+        const eventsInRange = filteredEvents
+            .filter((e) => {
+                const eventStart = new Date(e.startTime);
+                const eventEnd = e.endTime ? new Date(e.endTime) : null;
+
+                if (!eventEnd) {
+                    return eventStart <= end;
+                }
+
+                return eventStart <= end && eventEnd >= start;
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.startTime).getTime() -
+                    new Date(b.startTime).getTime()
+            );
+
         setSelectedPeriodEvents(eventsInRange);
         setViewDate(start);
-        setViewPeriodType(useCustomRange ? 'day' : timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'day');
+        setViewPeriodType(
+            useCustomRange
+                ? 'day'
+                : timeRange === 'week'
+                    ? 'week'
+                    : timeRange === 'month'
+                        ? 'month'
+                        : 'day'
+        );
         setShowingRangeEvents(true);
     };
 
     const handleNavigatePrevious = () => {
-        setPeriodOffset(prev => prev - 1);
+        setPeriodOffset((prev) => prev - 1);
     };
 
     const handleNavigateNext = () => {
-        setPeriodOffset(prev => prev + 1);
+        setPeriodOffset((prev) => prev + 1);
     };
 
     const handleNavigateToday = () => {
         setPeriodOffset(0);
     };
 
-    const handleJumpToPeriod = (periodType: 'this-week' | 'next-week' | 'this-month' | 'next-month' | 'week-number', weekNumber?: number) => {
+    const handleJumpToPeriod = (
+        periodType:
+            | 'this-week'
+            | 'next-week'
+            | 'this-month'
+            | 'next-month'
+            | 'week-number',
+        weekNumber?: number
+    ) => {
         const now = new Date();
-        
+
         if (periodType === 'this-week') {
             const weekStart = startOfWeek(now, { weekStartsOn: 0 });
             const weekEnd = endOfWeek(now, { weekStartsOn: 0 });
@@ -824,8 +1114,12 @@ export default function GanttEventsCalendar() {
             setUseDuration(false);
         }
         else if (periodType === 'next-week') {
-            const nextWeekStart = startOfWeek(addWeeks(now, 1), { weekStartsOn: 0 });
-            const nextWeekEnd = endOfWeek(addWeeks(now, 1), { weekStartsOn: 0 });
+            const nextWeekStart = startOfWeek(addWeeks(now, 1), {
+                weekStartsOn: 0
+            });
+            const nextWeekEnd = endOfWeek(addWeeks(now, 1), {
+                weekStartsOn: 0
+            });
             setUseCustomRange(true);
             setCustomStartDate(format(nextWeekStart, 'yyyy-MM-dd'));
             setCustomEndDate(format(nextWeekEnd, 'yyyy-MM-dd'));
@@ -850,13 +1144,20 @@ export default function GanttEventsCalendar() {
         else if (periodType === 'week-number' && weekNumber) {
             const yearStart = startOfYear(now);
             const targetWeekStart = addWeeks(yearStart, weekNumber - 1);
-            const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
+            const targetWeekEnd = endOfWeek(targetWeekStart, {
+                weekStartsOn: 0
+            });
             setUseCustomRange(true);
-            setCustomStartDate(format(startOfWeek(targetWeekStart, { weekStartsOn: 0 }), 'yyyy-MM-dd'));
+            setCustomStartDate(
+                format(
+                    startOfWeek(targetWeekStart, { weekStartsOn: 0 }),
+                    'yyyy-MM-dd'
+                )
+            );
             setCustomEndDate(format(targetWeekEnd, 'yyyy-MM-dd'));
             setUseDuration(false);
         }
-        
+
         setShowPeriodPicker(false);
     };
 
@@ -873,7 +1174,7 @@ export default function GanttEventsCalendar() {
                 return format(start, 'MMM d, yyyy');
             }
         }
-        
+
         const { start } = dateRange;
         switch (timeRange) {
         case 'week':
@@ -891,7 +1192,7 @@ export default function GanttEventsCalendar() {
 
     const getViewPeriodLabel = () => {
         if (!viewDate) return '';
-        
+
         if (showingRangeEvents) {
             const { start, end } = dateRange;
             if (useCustomRange) {
@@ -899,7 +1200,7 @@ export default function GanttEventsCalendar() {
             }
             return getPeriodLabel();
         }
-        
+
         if (viewPeriodType === 'day') {
             return format(viewDate, 'PPP');
         }
@@ -916,6 +1217,41 @@ export default function GanttEventsCalendar() {
             const quarter = Math.floor(viewDate.getMonth() / 3) + 1;
             const year = format(viewDate, 'yyyy');
             return `Q${quarter} ${year}`;
+        }
+    };
+
+    const getEndDate = () => {
+        if (!viewDate) return new Date();
+
+        if (viewPeriodType === 'day') {
+            return endOfDay(viewDate);
+        }
+        else if (viewPeriodType === 'week') {
+            return endOfWeek(viewDate, { weekStartsOn: 0 });
+        }
+        else if (viewPeriodType === 'month') {
+            return endOfMonth(viewDate);
+        }
+        else {
+            // quarter
+            return endOfQuarter(viewDate);
+        }
+    };
+
+    const getCreateEventDates = () => {
+        if (showingRangeEvents && dateRange) {
+            // For range view, pass the full range
+            return {
+                startDate: dateRange.start.toISOString(),
+                endDate: dateRange.end.toISOString()
+            };
+        }
+        else {
+            // For day view, pass viewDate as both start and end
+            return {
+                startDate: viewDate?.toISOString() || new Date().toISOString(),
+                endDate: getEndDate().toISOString()
+            };
         }
     };
 
@@ -961,48 +1297,92 @@ export default function GanttEventsCalendar() {
                 periodEnd = endOfQuarter(clicked);
             }
 
-            const eventsInPeriod = filteredEvents.filter((e) => {
-                const start = new Date(e.startTime);
-                const end = e.endTime ? new Date(e.endTime) : null;
+            const eventsInPeriod = filteredEvents
+                .filter((e) => {
+                    const start = new Date(e.startTime);
+                    const end = e.endTime ? new Date(e.endTime) : null;
 
-                if (!end) {
-                    return start <= periodEnd;
-                }
+                    if (!end) {
+                        return start <= periodEnd;
+                    }
 
-                return start <= periodEnd && end >= periodStart;
-            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                    return start <= periodEnd && end >= periodStart;
+                })
+                .sort(
+                    (a, b) =>
+                        new Date(a.startTime).getTime() -
+                        new Date(b.startTime).getTime()
+                );
 
             setSelectedPeriodEvents(eventsInPeriod);
         }
         else if (showingRangeEvents) {
             const { start, end } = dateRange;
 
-            const eventsInRange = filteredEvents.filter((e) => {
-                const eventStart = new Date(e.startTime);
-                const eventEnd = e.endTime ? new Date(e.endTime) : null;
+            const eventsInRange = filteredEvents
+                .filter((e) => {
+                    const eventStart = new Date(e.startTime);
+                    const eventEnd = e.endTime ? new Date(e.endTime) : null;
 
-                if (!eventEnd) {
-                    return eventStart <= end;
-                }
+                    if (!eventEnd) {
+                        return eventStart <= end;
+                    }
 
-                return eventStart <= end && eventEnd >= start;
-            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                    return eventStart <= end && eventEnd >= start;
+                })
+                .sort(
+                    (a, b) =>
+                        new Date(a.startTime).getTime() -
+                        new Date(b.startTime).getTime()
+                );
 
             setSelectedPeriodEvents(eventsInRange);
         }
-    }, [filterText, locationFilter, filteredEvents, viewDate, viewPeriodType, showingRangeEvents, dateRange]);
+    }, [
+        filterText,
+        locationFilter,
+        filteredEvents,
+        viewDate,
+        viewPeriodType,
+        showingRangeEvents,
+        dateRange
+    ]);
 
     if (selectedPeriodEvents && viewDate) {
         return (
             <div className='max-w-5xl mx-auto p-3 sm:p-4'>
                 <div className='flex flex-col gap-3 sm:gap-4 mb-4'>
                     <div className='flex flex-col items-start gap-2 sm:gap-3'>
-                        <Button onClick={handleBackToGantt} variant='primary' className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'>
-                            <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
-                            <span className='hidden sm:inline'>Back to Calendar</span>
-                            <span className='sm:hidden'>Back</span>
-                        </Button>
-                        
+                        <div className='flex gap-2 w-full justify-between'>
+                            <Button
+                                onClick={handleBackToGantt}
+                                variant='primary'
+                                className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'
+                            >
+                                <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <span className='hidden sm:inline'>
+                                    Back to Calendar
+                                </span>
+                                <span className='sm:hidden'>Back</span>
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    const dates = getCreateEventDates();
+                                    navigate(
+                                        `/create-event?startDate=${dates.startDate}&endDate=${dates.endDate}`
+                                    );
+                                }}
+                                variant='primary'
+                                className='text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg'
+                            >
+                                <Plus className='w-4 h-4 sm:w-5 sm:h-5' />
+                                <span className='hidden sm:inline'>
+                                    New Event
+                                </span>
+                                <span className='sm:hidden'>New</span>
+                            </Button>
+                        </div>
+
                         {!showingRangeEvents ? (
                             <div className='flex items-center justify-between gap-3 sm:gap-4 w-full'>
                                 <button
@@ -1015,10 +1395,18 @@ export default function GanttEventsCalendar() {
 
                                 <div className='flex-1 text-center'>
                                     <h2 className='text-base sm:text-xl font-semibold text-gray-900 dark:text-zinc-100'>
-                                    Events {viewPeriodType === 'day' ? 'on' : 'during'} {getViewPeriodLabel()}
+                                        Events{' '}
+                                        {viewPeriodType === 'day'
+                                            ? 'on'
+                                            : 'during'}{' '}
+                                        {getViewPeriodLabel()}
                                     </h2>
                                     <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-0.5'>
-                                        {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                        {selectedPeriodEvents.length} event
+                                        {selectedPeriodEvents.length !== 1
+                                            ? 's'
+                                            : ''}{' '}
+                                        found
                                     </p>
                                 </div>
 
@@ -1033,10 +1421,14 @@ export default function GanttEventsCalendar() {
                         ) : (
                             <div className='text-center'>
                                 <h2 className='text-base sm:text-xl font-semibold text-gray-900 dark:text-zinc-100'>
-                                Events during {getViewPeriodLabel()}
+                                    Events during {getViewPeriodLabel()}
                                 </h2>
                                 <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-0.5'>
-                                    {selectedPeriodEvents.length} event{selectedPeriodEvents.length !== 1 ? 's' : ''} found
+                                    {selectedPeriodEvents.length} event
+                                    {selectedPeriodEvents.length !== 1
+                                        ? 's'
+                                        : ''}{' '}
+                                    found
                                 </p>
                             </div>
                         )}
@@ -1083,8 +1475,12 @@ export default function GanttEventsCalendar() {
                     <div className='flex items-center justify-center text-gray-500 dark:text-zinc-400 py-12 bg-gray-50 dark:bg-zinc-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700'>
                         <div className='text-center'>
                             <Calendar className='w-12 h-12 mx-auto mb-2 text-gray-400 dark:text-zinc-500' />
-                            <p className='text-sm sm:text-base font-medium'>No events during this period</p>
-                            <p className='text-xs text-gray-400 dark:text-zinc-500 mt-1'>Try selecting a different time range</p>
+                            <p className='text-sm sm:text-base font-medium'>
+                                No events during this period
+                            </p>
+                            <p className='text-xs text-gray-400 dark:text-zinc-500 mt-1'>
+                                Try selecting a different time range
+                            </p>
                         </div>
                     </div>
                 ) : (
@@ -1096,7 +1492,9 @@ export default function GanttEventsCalendar() {
                                 className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
                             >
                                 <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>{event.title}</p>
+                                    <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
+                                        {event.title}
+                                    </p>
                                     {event.location?.global ? (
                                         <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                             🌐 Global
@@ -1108,19 +1506,37 @@ export default function GanttEventsCalendar() {
                                     )}
                                 </div>
                                 {event.description && (
-                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>{event.description}</p>
+                                    <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
+                                        {event.description}
+                                    </p>
                                 )}
                                 <div className='space-y-0.5 sm:space-y-1'>
                                     <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
                                         <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                                         <span className='truncate'>
-                                            {format(toZonedTime(new Date(event.startTime), tz), 'MMM d, yyyy • h:mm a')} –{' '}
+                                            {format(
+                                                toZonedTime(
+                                                    new Date(event.startTime),
+                                                    tz
+                                                ),
+                                                'MMM d, yyyy • h:mm a'
+                                            )}{' '}
+                                            –{' '}
                                             {event.endTime
-                                                ? format(toZonedTime(new Date(event.endTime), tz), 'MMM d, yyyy • h:mm a')
+                                                ? format(
+                                                    toZonedTime(
+                                                        new Date(
+                                                            event.endTime
+                                                        ),
+                                                        tz
+                                                    ),
+                                                    'MMM d, yyyy • h:mm a'
+                                                )
                                                 : 'Ongoing'}
                                         </span>
                                     </p>
-                                    {event.location?.name && !event.location.global && (
+                                    {event.location?.name &&
+                                        !event.location.global && (
                                         <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
                                             <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                                             {event.location.name}
@@ -1131,10 +1547,16 @@ export default function GanttEventsCalendar() {
                                             <UserCard user={event.creator} />
                                         </p>
                                     )}
-                                    {typeof event.participantCount === 'number' && event.participantCount > 0 && (
+                                    {typeof event.participantCount ===
+                                        'number' &&
+                                        event.participantCount > 0 && (
                                         <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
                                             <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                            {event.participantCount} participant{event.participantCount !== 1 ? 's' : ''}
+                                            {event.participantCount}{' '}
+                                                participant
+                                            {event.participantCount !== 1
+                                                ? 's'
+                                                : ''}
                                         </p>
                                     )}
                                 </div>
@@ -1150,7 +1572,9 @@ export default function GanttEventsCalendar() {
         return (
             <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-base sm:text-lg text-gray-600 dark:text-zinc-400'>Loading events...</div>
+                    <div className='text-base sm:text-lg text-gray-600 dark:text-zinc-400'>
+                        Loading events...
+                    </div>
                 </div>
             </div>
         );
@@ -1160,24 +1584,38 @@ export default function GanttEventsCalendar() {
         return (
             <div className='max-w-full mx-auto p-3 sm:p-4'>
                 <div className='flex items-center justify-center h-64'>
-                    <div className='text-base sm:text-lg text-red-600 dark:text-red-400'>Failed to load events</div>
+                    <div className='text-base sm:text-lg text-red-600 dark:text-red-400'>
+                        Failed to load events
+                    </div>
                 </div>
             </div>
         );
     }
 
     // Handler for mobile view period selection
-    const handleMobilePeriodSelect = (startDate: Date, endDate: Date, periodType: 'day' | 'week' | 'month') => {
-        setSelectedPeriodEvents(filteredEvents.filter((e) => {
-            const eventStart = new Date(e.startTime);
-            const eventEnd = e.endTime ? new Date(e.endTime) : null;
+    const handleMobilePeriodSelect = (
+        startDate: Date,
+        endDate: Date,
+        periodType: 'day' | 'week' | 'month'
+    ) => {
+        setSelectedPeriodEvents(
+            filteredEvents
+                .filter((e) => {
+                    const eventStart = new Date(e.startTime);
+                    const eventEnd = e.endTime ? new Date(e.endTime) : null;
 
-            if (!eventEnd) {
-                return eventStart <= endDate;
-            }
+                    if (!eventEnd) {
+                        return eventStart <= endDate;
+                    }
 
-            return eventStart <= endDate && eventEnd >= startDate;
-        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()));
+                    return eventStart <= endDate && eventEnd >= startDate;
+                })
+                .sort(
+                    (a, b) =>
+                        new Date(a.startTime).getTime() -
+                        new Date(b.startTime).getTime()
+                )
+        );
         setViewDate(startDate);
         setViewPeriodType(periodType);
         setShowingRangeEvents(false);
@@ -1202,9 +1640,12 @@ export default function GanttEventsCalendar() {
                 <div className='mb-3 sm:mb-4'>
                     <div className='flex items-center justify-between mb-4 gap-3'>
                         <div>
-                            <h1 className='text-xl sm:text-2xl font-bold text-gray-900 dark:text-zinc-100'>Events Calendar</h1>
+                            <h1 className='text-xl sm:text-2xl font-bold text-gray-900 dark:text-zinc-100'>
+                                Events Calendar
+                            </h1>
                             <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 mt-1'>
-                            Viewing {timelineUnits.length} {timeUnit} • {filteredEvents.length} events
+                                Viewing {timelineUnits.length} {timeUnit} •{' '}
+                                {filteredEvents.length} events
                             </p>
                         </div>
                         <div className='flex gap-2'>
@@ -1217,7 +1658,7 @@ export default function GanttEventsCalendar() {
                                 }`}
                             >
                                 <MapPin className='w-4 h-4' />
-                            Local
+                                Local
                             </button>
                             <button
                                 onClick={() => setLocationFilter('global')}
@@ -1228,7 +1669,7 @@ export default function GanttEventsCalendar() {
                                 }`}
                             >
                                 <Globe className='w-4 h-4' />
-                            Global
+                                Global
                             </button>
                             <button
                                 onClick={() => setLocationFilter('all')}
@@ -1239,9 +1680,8 @@ export default function GanttEventsCalendar() {
                                 }`}
                             >
                                 <Filter className='w-4 h-4' />
-                            All
+                                All
                             </button>
-
                         </div>
                     </div>
 
@@ -1255,32 +1695,40 @@ export default function GanttEventsCalendar() {
                             className='flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                         />
                         <Button
-                            onClick={() => setShowPeriodPicker(!showPeriodPicker)}
+                            onClick={() =>
+                                setShowPeriodPicker(!showPeriodPicker)
+                            }
                             variant='secondary'
                             className='text-xs sm:text-sm whitespace-nowrap'
                         >
                             <Calendar className='w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2' />
-                            <span className='hidden sm:inline'>Jump to Period</span>
+                            <span className='hidden sm:inline'>
+                                Jump to Period
+                            </span>
                             <span className='sm:hidden'>Period</span>
                             {useCustomRange && (
                                 <span className='ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full'>
-                                Custom
+                                    Custom
                                 </span>
                             )}
                         </Button>
-                        <Button onClick={() => navigate('/create-event')} className='text-sm sm:text-base whitespace-nowrap'>
-                            <span className='hidden sm:inline'>+ Create Event</span>
+                        <Button
+                            onClick={() => navigate('/create-event')}
+                            className='text-sm sm:text-base whitespace-nowrap'
+                        >
+                            <span className='hidden sm:inline'>
+                                + Create Event
+                            </span>
                             <span className='sm:hidden'>+ New</span>
                         </Button>
                     </div>
-
 
                     {showPeriodPicker && (
                         <div className='mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800 space-y-4'>
                             <div className='flex items-center justify-between'>
                                 <h3 className='text-sm sm:text-base font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
                                     <Calendar className='w-4 h-4' />
-                                Jump to Period
+                                    Jump/Select Range
                                 </h3>
                                 <button
                                     onClick={() => setShowPeriodPicker(false)}
@@ -1293,10 +1741,17 @@ export default function GanttEventsCalendar() {
                             {/* Time Range Buttons */}
                             <div>
                                 <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2'>
-                                View Range
+                                    View Range
                                 </label>
                                 <div className='flex gap-2'>
-                                    {(['week', 'month', 'year', 'all'] as const).map((range) => (
+                                    {(
+                                        [
+                                            'week',
+                                            'month',
+                                            'year',
+                                            'all'
+                                        ] as const
+                                    ).map((range) => (
                                         <button
                                             key={range}
                                             onClick={() => {
@@ -1304,12 +1759,18 @@ export default function GanttEventsCalendar() {
                                                 setUseCustomRange(false);
                                             }}
                                             className={`flex-1 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
-                                                timeRange === range && !useCustomRange
+                                                timeRange === range &&
+                                                !useCustomRange
                                                     ? 'bg-blue-600 text-white'
                                                     : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30'
                                             }`}
                                         >
-                                            {range === 'all' ? 'All' : range.charAt(0).toUpperCase() + range.slice(1)}
+                                            {range === 'all'
+                                                ? 'All'
+                                                : range
+                                                    .charAt(0)
+                                                    .toUpperCase() +
+                                                  range.slice(1)}
                                         </button>
                                     ))}
                                 </div>
@@ -1318,32 +1779,40 @@ export default function GanttEventsCalendar() {
                             {/* Quick Jump Buttons */}
                             <div>
                                 <label className='block text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2'>
-                                Quick Jump
+                                    Quick Jump
                                 </label>
                                 <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
                                     <button
-                                        onClick={() => handleJumpToPeriod('this-week')}
+                                        onClick={() =>
+                                            handleJumpToPeriod('this-week')
+                                        }
                                         className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                                     >
-                                    This Week
+                                        This Week
                                     </button>
                                     <button
-                                        onClick={() => handleJumpToPeriod('next-week')}
+                                        onClick={() =>
+                                            handleJumpToPeriod('next-week')
+                                        }
                                         className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                                     >
-                                    Next Week
+                                        Next Week
                                     </button>
                                     <button
-                                        onClick={() => handleJumpToPeriod('this-month')}
+                                        onClick={() =>
+                                            handleJumpToPeriod('this-month')
+                                        }
                                         className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                                     >
-                                    This Month
+                                        This Month
                                     </button>
                                     <button
-                                        onClick={() => handleJumpToPeriod('next-month')}
+                                        onClick={() =>
+                                            handleJumpToPeriod('next-month')
+                                        }
                                         className='px-3 py-2 bg-white dark:bg-zinc-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors'
                                     >
-                                    Next Month
+                                        Next Month
                                     </button>
                                 </div>
                             </div>
@@ -1364,8 +1833,11 @@ export default function GanttEventsCalendar() {
                                         }}
                                         className='w-4 h-4'
                                     />
-                                    <label htmlFor='customRangePicker' className='text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300'>
-                                    Custom Date Range
+                                    <label
+                                        htmlFor='customRangePicker'
+                                        className='text-xs sm:text-sm font-medium text-gray-700 dark:text-zinc-300'
+                                    >
+                                        Custom Date Range
                                     </label>
                                 </div>
 
@@ -1373,12 +1845,16 @@ export default function GanttEventsCalendar() {
                                     <div className='space-y-3 ml-6'>
                                         <div>
                                             <label className='block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1'>
-                                            Start Date
+                                                Start Date
                                             </label>
                                             <input
                                                 type='date'
                                                 value={customStartDate}
-                                                onChange={(e) => setCustomStartDate(e.target.value)}
+                                                onChange={(e) =>
+                                                    setCustomStartDate(
+                                                        e.target.value
+                                                    )
+                                                }
                                                 className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                             />
                                         </div>
@@ -1388,11 +1864,16 @@ export default function GanttEventsCalendar() {
                                                 type='radio'
                                                 id='useEndDatePicker'
                                                 checked={!useDuration}
-                                                onChange={() => setUseDuration(false)}
+                                                onChange={() =>
+                                                    setUseDuration(false)
+                                                }
                                                 className='w-4 h-4'
                                             />
-                                            <label htmlFor='useEndDatePicker' className='text-xs font-medium text-gray-700 dark:text-zinc-300'>
-                                            Specify End Date
+                                            <label
+                                                htmlFor='useEndDatePicker'
+                                                className='text-xs font-medium text-gray-700 dark:text-zinc-300'
+                                            >
+                                                Specify End Date
                                             </label>
                                         </div>
 
@@ -1401,7 +1882,11 @@ export default function GanttEventsCalendar() {
                                                 <input
                                                     type='date'
                                                     value={customEndDate}
-                                                    onChange={(e) => setCustomEndDate(e.target.value)}
+                                                    onChange={(e) =>
+                                                        setCustomEndDate(
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     min={customStartDate}
                                                     className='w-full px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                                 />
@@ -1413,11 +1898,16 @@ export default function GanttEventsCalendar() {
                                                 type='radio'
                                                 id='useDurationPicker'
                                                 checked={useDuration}
-                                                onChange={() => setUseDuration(true)}
+                                                onChange={() =>
+                                                    setUseDuration(true)
+                                                }
                                                 className='w-4 h-4'
                                             />
-                                            <label htmlFor='useDurationPicker' className='text-xs font-medium text-gray-700 dark:text-zinc-300'>
-                                            Specify Duration
+                                            <label
+                                                htmlFor='useDurationPicker'
+                                                className='text-xs font-medium text-gray-700 dark:text-zinc-300'
+                                            >
+                                                Specify Duration
                                             </label>
                                         </div>
 
@@ -1427,17 +1917,36 @@ export default function GanttEventsCalendar() {
                                                     type='number'
                                                     min='1'
                                                     value={durationValue}
-                                                    onChange={(e) => setDurationValue(parseInt(e.target.value) || 1)}
+                                                    onChange={(e) =>
+                                                        setDurationValue(
+                                                            parseInt(
+                                                                e.target.value
+                                                            ) || 1
+                                                        )
+                                                    }
                                                     className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                                 />
                                                 <select
                                                     value={durationUnit}
-                                                    onChange={(e) => setDurationUnit(e.target.value as 'days' | 'weeks' | 'months')}
+                                                    onChange={(e) =>
+                                                        setDurationUnit(
+                                                            e.target.value as
+                                                                | 'days'
+                                                                | 'weeks'
+                                                                | 'months'
+                                                        )
+                                                    }
                                                     className='px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
                                                 >
-                                                    <option value='days'>Days</option>
-                                                    <option value='weeks'>Weeks</option>
-                                                    <option value='months'>Months</option>
+                                                    <option value='days'>
+                                                        Days
+                                                    </option>
+                                                    <option value='weeks'>
+                                                        Weeks
+                                                    </option>
+                                                    <option value='months'>
+                                                        Months
+                                                    </option>
                                                 </select>
                                             </div>
                                         )}
@@ -1446,18 +1955,18 @@ export default function GanttEventsCalendar() {
                             </div>
                         </div>
                     )}
-
                 </div>
 
                 <div className='space-y-2 sm:space-y-3'>
                     {/* Timeline Ruler - Sticky */}
                     <div className='sticky top-0 z-40 bg-white dark:bg-zinc-900 shadow-md rounded-lg border dark:border-zinc-700'>
                         {/* Navigation and Month/Year Header */}
-                        {(timeRange !== 'all' && !useCustomRange) && (
+                        {timeRange !== 'all' && !useCustomRange && (
                             <div className='flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-zinc-800 dark:to-zinc-800/50 p-2 sm:p-3 border-b dark:border-zinc-700'>
                                 <button
                                     onClick={handleNavigatePrevious}
-                                    className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors'
+                                    disabled={periodOffset === 0}
+                                    className='p-1.5 sm:p-2 hover:bg-white dark:hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                                 >
                                     <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-zinc-100' />
                                 </button>
@@ -1474,7 +1983,7 @@ export default function GanttEventsCalendar() {
                                             onClick={handleNavigateToday}
                                             className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors'
                                         >
-                                        Today
+                                            Today
                                         </button>
                                     )}
                                 </div>
@@ -1501,8 +2010,12 @@ export default function GanttEventsCalendar() {
                         )}
 
                         {/* Timeline Units */}
-                        <div ref={containerRef} className='relative bg-white dark:bg-zinc-900'>
-                            {todayPosition !== null && todayPosition <= containerWidth && (
+                        <div
+                            ref={containerRef}
+                            className='relative bg-white dark:bg-zinc-900'
+                        >
+                            {todayPosition !== null &&
+                                todayPosition <= containerWidth && (
                                 <div
                                     className='absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none'
                                     style={{
@@ -1520,25 +2033,43 @@ export default function GanttEventsCalendar() {
 
                                         // Calculate colspan - how many days in this month
                                         let colspan = 1;
-                                        for (let i = index + 1; i < timelineUnits.length; i++) {
-                                            if (timelineUnits[i].showMonth) break;
+                                        for (
+                                            let i = index + 1;
+                                            i < timelineUnits.length;
+                                            i++
+                                        ) {
+                                            if (timelineUnits[i].showMonth)
+                                                break;
                                             colspan++;
                                         }
 
-                                        const availableWidth = pixelsPerUnit * colspan;
+                                        const availableWidth =
+                                            pixelsPerUnit * colspan;
                                         let monthText = '';
 
                                         if (availableWidth > 120) {
-                                            monthText = format(unit.date, 'MMMM yyyy');
+                                            monthText = format(
+                                                unit.date,
+                                                'MMMM yyyy'
+                                            );
                                         }
                                         else if (availableWidth > 60) {
-                                            monthText = format(unit.date, 'MMM yyyy');
+                                            monthText = format(
+                                                unit.date,
+                                                'MMM yyyy'
+                                            );
                                         }
                                         else if (availableWidth > 40) {
-                                            monthText = format(unit.date, 'MMM');
+                                            monthText = format(
+                                                unit.date,
+                                                'MMM'
+                                            );
                                         }
                                         else {
-                                            monthText = format(unit.date, 'MMM').charAt(0);
+                                            monthText = format(
+                                                unit.date,
+                                                'MMM'
+                                            ).charAt(0);
                                         }
 
                                         return (
@@ -1557,37 +2088,60 @@ export default function GanttEventsCalendar() {
                                 </div>
                             )}
 
-                            <div style={{ height: '60px', width: '100%' }} className='relative flex overflow-x-hidden'>
+                            <div
+                                style={{ height: '60px', width: '100%' }}
+                                className='relative flex overflow-x-hidden'
+                            >
                                 {timelineUnits.map((unit, index) => {
                                     const now = startOfDay(new Date());
                                     let isTodayUnit = false;
-                                
+
                                     if (timeUnit === 'days') {
                                         isTodayUnit = isSameDay(unit.date, now);
                                     }
                                     else if (timeUnit === 'weeks') {
-                                        const weekStart = startOfWeek(unit.date, { weekStartsOn: 0 });
-                                        const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
-                                        isTodayUnit = now >= weekStart && now <= weekEnd;
+                                        const weekStart = startOfWeek(
+                                            unit.date,
+                                            { weekStartsOn: 0 }
+                                        );
+                                        const weekEnd = endOfWeek(unit.date, {
+                                            weekStartsOn: 0
+                                        });
+                                        isTodayUnit =
+                                            now >= weekStart && now <= weekEnd;
                                     }
                                     else if (timeUnit === 'months') {
-                                        const monthStart = startOfMonth(unit.date);
+                                        const monthStart = startOfMonth(
+                                            unit.date
+                                        );
                                         const monthEnd = endOfMonth(unit.date);
-                                        isTodayUnit = now >= monthStart && now <= monthEnd;
+                                        isTodayUnit =
+                                            now >= monthStart &&
+                                            now <= monthEnd;
                                     }
                                     else {
                                         // quarters
-                                        const quarterStart = startOfQuarter(unit.date);
-                                        const quarterEnd = endOfQuarter(unit.date);
-                                        isTodayUnit = now >= quarterStart && now <= quarterEnd;
+                                        const quarterStart = startOfQuarter(
+                                            unit.date
+                                        );
+                                        const quarterEnd = endOfQuarter(
+                                            unit.date
+                                        );
+                                        isTodayUnit =
+                                            now >= quarterStart &&
+                                            now <= quarterEnd;
                                     }
-                                
+
                                     return (
                                         <div
                                             key={index}
-                                            onClick={() => handleUnitClick(unit.date)}
+                                            onClick={() =>
+                                                handleUnitClick(unit.date)
+                                            }
                                             className={`border-r dark:border-zinc-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
-                                                isTodayUnit ? 'bg-blue-100 dark:bg-blue-900/30' : ''
+                                                isTodayUnit
+                                                    ? 'bg-blue-100 dark:bg-blue-900/30'
+                                                    : ''
                                             }`}
                                             style={{
                                                 width: `${pixelsPerUnit}px`,
@@ -1599,28 +2153,57 @@ export default function GanttEventsCalendar() {
                                                     <>
                                                         <div
                                                             className={`text-[0.6rem] font-semibold uppercase tracking-wider ${
-                                                                isTodayUnit ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-zinc-400'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-700 dark:text-blue-400'
+                                                                    : 'text-gray-600 dark:text-zinc-400'
                                                             }`}
                                                         >
                                                             {unit.sublabel}
                                                         </div>
                                                         <div
                                                             className={`text-xl sm:text-2xl font-bold leading-none ${
-                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-600 dark:text-blue-400'
+                                                                    : 'text-gray-900 dark:text-zinc-100'
                                                             }`}
                                                         >
                                                             {unit.label}
                                                         </div>
                                                         <div className='text-[0.55rem] text-gray-500 dark:text-zinc-500 leading-tight mt-0.5'>
                                                             {(() => {
-                                                                const weekEnd = endOfWeek(unit.date, { weekStartsOn: 0 });
-                                                                const startMonth = format(unit.date, 'MMM');
-                                                                const endMonth = format(weekEnd, 'MMM');
-                                                            
-                                                                if (pixelsPerUnit < 50) {
-                                                                    return startMonth === endMonth ? startMonth.charAt(0) : `${startMonth.charAt(0)}-${endMonth.charAt(0)}`;
+                                                                const weekEnd =
+                                                                    endOfWeek(
+                                                                        unit.date,
+                                                                        {
+                                                                            weekStartsOn: 0
+                                                                        }
+                                                                    );
+                                                                const startMonth =
+                                                                    format(
+                                                                        unit.date,
+                                                                        'MMM'
+                                                                    );
+                                                                const endMonth =
+                                                                    format(
+                                                                        weekEnd,
+                                                                        'MMM'
+                                                                    );
+
+                                                                if (
+                                                                    pixelsPerUnit <
+                                                                    50
+                                                                ) {
+                                                                    return startMonth ===
+                                                                        endMonth
+                                                                        ? startMonth.charAt(
+                                                                            0
+                                                                        )
+                                                                        : `${startMonth.charAt(0)}-${endMonth.charAt(0)}`;
                                                                 }
-                                                                return startMonth === endMonth ? startMonth : `${startMonth}-${endMonth}`;
+                                                                return startMonth ===
+                                                                    endMonth
+                                                                    ? startMonth
+                                                                    : `${startMonth}-${endMonth}`;
                                                             })()}
                                                         </div>
                                                     </>
@@ -1629,14 +2212,18 @@ export default function GanttEventsCalendar() {
                                                     <>
                                                         <div
                                                             className={`text-[0.65rem] font-medium uppercase ${
-                                                                isTodayUnit ? 'text-blue-700 dark:text-blue-400' : 'text-gray-500 dark:text-zinc-500'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-700 dark:text-blue-400'
+                                                                    : 'text-gray-500 dark:text-zinc-500'
                                                             }`}
                                                         >
                                                             {unit.sublabel}
                                                         </div>
                                                         <div
                                                             className={`text-xl sm:text-2xl font-bold leading-none ${
-                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-600 dark:text-blue-400'
+                                                                    : 'text-gray-900 dark:text-zinc-100'
                                                             }`}
                                                         >
                                                             {unit.label}
@@ -1647,12 +2234,19 @@ export default function GanttEventsCalendar() {
                                                     <>
                                                         <div
                                                             className={`text-lg sm:text-xl font-bold leading-none ${
-                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-600 dark:text-blue-400'
+                                                                    : 'text-gray-900 dark:text-zinc-100'
                                                             }`}
                                                         >
-                                                            {pixelsPerUnit < 60 ? unit.label.charAt(0) : unit.label}
+                                                            {pixelsPerUnit < 60
+                                                                ? unit.label.charAt(
+                                                                    0
+                                                                )
+                                                                : unit.label}
                                                         </div>
-                                                        {pixelsPerUnit >= 60 && (
+                                                        {pixelsPerUnit >=
+                                                            60 && (
                                                             <div className='text-[0.6rem] font-semibold text-gray-600 dark:text-zinc-400 mt-1'>
                                                                 {unit.sublabel}
                                                             </div>
@@ -1663,7 +2257,9 @@ export default function GanttEventsCalendar() {
                                                     <>
                                                         <div
                                                             className={`text-lg sm:text-xl font-bold leading-none ${
-                                                                isTodayUnit ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-zinc-100'
+                                                                isTodayUnit
+                                                                    ? 'text-blue-600 dark:text-blue-400'
+                                                                    : 'text-gray-900 dark:text-zinc-100'
                                                             }`}
                                                         >
                                                             {unit.label}
@@ -1682,18 +2278,40 @@ export default function GanttEventsCalendar() {
 
                         {/* Event Bars - Main Event Display */}
                         {eventBars.length > 0 && (
-                            <div className='relative mt-2 bg-white dark:bg-zinc-900 border-t dark:border-zinc-700' style={{ minHeight: `${Math.max(eventBars.length > 0 ? Math.max(...eventBars.map(b => b.row)) + 1 : 1, 3) * 270}px` }}>
+                            <div
+                                className='relative mt-2 bg-white dark:bg-zinc-900 border-t dark:border-zinc-700'
+                                style={{
+                                    minHeight: `${Math.max(eventBars.length > 0 ? Math.max(...eventBars.map((b) => b.row)) + 1 : 1, 3) * 270}px`
+                                }}
+                            >
                                 {eventBars.map((bar, idx) => {
-                                    const start = toZonedTime(new Date(bar.event.startTime), tz);
-                                    const end = bar.event.endTime ? toZonedTime(new Date(bar.event.endTime), tz) : null;
+                                    const start = toZonedTime(
+                                        new Date(bar.event.startTime),
+                                        tz
+                                    );
+                                    const end = bar.event.endTime
+                                        ? toZonedTime(
+                                            new Date(bar.event.endTime),
+                                            tz
+                                        )
+                                        : null;
 
                                     // Determine detail level based on width
-                                    const detailLevel = bar.width >= 350 ? 'full' : bar.width >= 180 ? 'medium' : bar.width >= 80 ? 'minimal' : 'icon';
+                                    const detailLevel =
+                                        bar.width >= 350
+                                            ? 'full'
+                                            : bar.width >= 180
+                                                ? 'medium'
+                                                : bar.width >= 80
+                                                    ? 'minimal'
+                                                    : 'icon';
 
                                     return (
                                         <div
                                             key={`${bar.event.id}-${idx}`}
-                                            onClick={() => setSelectedEvent(bar.event)}
+                                            onClick={() =>
+                                                setSelectedEvent(bar.event)
+                                            }
                                             className={`absolute cursor-pointer transition-all hover:shadow-md hover:z-10 rounded-lg border overflow-hidden ${
                                                 bar.isEternal
                                                     ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30'
@@ -1707,61 +2325,133 @@ export default function GanttEventsCalendar() {
                                                 top: `${bar.row * 270 + 4}px`,
                                                 height: '258px'
                                             }}
-                                            title={detailLevel === 'icon' ? bar.event.title : undefined}
+                                            title={
+                                                detailLevel === 'icon'
+                                                    ? bar.event.title
+                                                    : undefined
+                                            }
                                         >
                                             {/* Full detail - original event card design */}
                                             {detailLevel === 'full' && (
                                                 <div className='p-3 sm:p-4 h-full flex flex-col'>
                                                     <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
                                                         <div className='flex items-center gap-1.5 flex-1 overflow-hidden'>
-                                                            {bar.isEternal && <span className='text-amber-600 dark:text-amber-400 text-sm flex-shrink-0'>∞</span>}
+                                                            {bar.isEternal && (
+                                                                <span className='text-amber-600 dark:text-amber-400 text-sm flex-shrink-0'>
+                                                                    ∞
+                                                                </span>
+                                                            )}
                                                             <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100 line-clamp-2 flex-1 overflow-hidden'>
-                                                                {bar.event.title}
+                                                                {
+                                                                    bar.event
+                                                                        .title
+                                                                }
                                                             </p>
                                                         </div>
-                                                        {bar.event.location?.global ? (
-                                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
-                                                            🌐 Global
-                                                            </span>
-                                                        ) : (
-                                                            <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
-                                                            📍 Local
-                                                            </span>
-                                                        )}
+                                                        {bar.event.location
+                                                            ?.global ? (
+                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
+                                                                🌐 Global
+                                                                </span>
+                                                            ) : (
+                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2 flex-shrink-0'>
+                                                                📍 Local
+                                                                </span>
+                                                            )}
                                                     </div>
                                                     {bar.event.description && (
                                                         <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-2 line-clamp-2 overflow-hidden'>
-                                                            {bar.event.description}
+                                                            {
+                                                                bar.event
+                                                                    .description
+                                                            }
                                                         </p>
                                                     )}
                                                     <div className='space-y-0.5 sm:space-y-1 mt-auto min-h-0'>
                                                         <p className='text-[0.7rem] sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1 sm:gap-2'>
                                                             <Clock className='w-3 h-3 flex-shrink-0' />
                                                             <span className='truncate'>
-                                                                {format(start, 'MMM d, yyyy • h:mm a')}
-                                                                {end && <span className='hidden sm:inline'> – {format(end, 'MMM d, yyyy • h:mm a')}</span>}
-                                                                {end && <span className='sm:hidden'> – {format(end, 'h:mm a')}</span>}
+                                                                {format(
+                                                                    start,
+                                                                    'MMM d, yyyy • h:mm a'
+                                                                )}
+                                                                {end && (
+                                                                    <span className='hidden sm:inline'>
+                                                                        {' '}
+                                                                        –{' '}
+                                                                        {format(
+                                                                            end,
+                                                                            'MMM d, yyyy • h:mm a'
+                                                                        )}
+                                                                    </span>
+                                                                )}
+                                                                {end && (
+                                                                    <span className='sm:hidden'>
+                                                                        {' '}
+                                                                        –{' '}
+                                                                        {format(
+                                                                            end,
+                                                                            'h:mm a'
+                                                                        )}
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                         </p>
-                                                        {bar.event.location?.name && !bar.event.location.global && (
+                                                        {bar.event.location
+                                                            ?.name &&
+                                                            !bar.event.location
+                                                                .global && (
                                                             <p className='text-[0.7rem] sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1 sm:gap-2'>
                                                                 <MapPin className='w-3 h-3 flex-shrink-0' />
-                                                                <span className='truncate'>{bar.event.location.name}</span>
+                                                                <span className='truncate'>
+                                                                    {
+                                                                        bar
+                                                                            .event
+                                                                            .location
+                                                                            .name
+                                                                    }
+                                                                </span>
                                                             </p>
                                                         )}
-                                                        {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                        {typeof bar.event
+                                                            .participantCount ===
+                                                            'number' &&
+                                                            bar.event
+                                                                .participantCount >
+                                                                0 && (
                                                             <p className='text-[0.7rem] sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2'>
                                                                 <Users className='w-3 h-3 flex-shrink-0' />
-                                                                <span className='sm:hidden'>{bar.event.participantCount}</span>
+                                                                <span className='sm:hidden'>
+                                                                    {
+                                                                        bar
+                                                                            .event
+                                                                            .participantCount
+                                                                    }
+                                                                </span>
                                                                 <span className='hidden sm:inline'>
-                                                                    {bar.event.participantCount} participant{bar.event.participantCount !== 1 ? 's' : ''}
+                                                                    {
+                                                                        bar
+                                                                            .event
+                                                                            .participantCount
+                                                                    }{' '}
+                                                                        participant
+                                                                    {bar
+                                                                        .event
+                                                                        .participantCount !==
+                                                                        1
+                                                                        ? 's'
+                                                                        : ''}
                                                                 </span>
                                                             </p>
                                                         )}
                                                         {bar.event.creator && (
                                                             <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
                                                                 <UserCard
-                                                                    user={bar.event.creator}
+                                                                    user={
+                                                                        bar
+                                                                            .event
+                                                                            .creator
+                                                                    }
                                                                     className='text-xs sm:text-sm'
                                                                 />
                                                             </div>
@@ -1774,39 +2464,85 @@ export default function GanttEventsCalendar() {
                                             {detailLevel === 'medium' && (
                                                 <div className='p-2.5 h-full flex flex-col'>
                                                     <div className='flex items-start gap-1.5 mb-1'>
-                                                        {bar.isEternal && <span className='text-amber-600 dark:text-amber-400 text-xs'>∞</span>}
-                                                        {!bar.isEternal && bar.event.location?.global && <span className='text-xs'>🌐</span>}
-                                                        {!bar.isEternal && !bar.event.location?.global && <span className='text-xs'>📍</span>}
+                                                        {bar.isEternal && (
+                                                            <span className='text-amber-600 dark:text-amber-400 text-xs'>
+                                                                ∞
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-xs'>
+                                                                    🌐
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            !bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-xs'>
+                                                                    📍
+                                                            </span>
+                                                        )}
                                                         <p className='font-bold text-sm text-gray-900 dark:text-zinc-100 line-clamp-2 flex-1 overflow-hidden'>
                                                             {bar.event.title}
                                                         </p>
                                                     </div>
                                                     {bar.event.description && (
                                                         <p className='text-gray-600 dark:text-zinc-400 text-xs mb-1 line-clamp-1 overflow-hidden'>
-                                                            {bar.event.description}
+                                                            {
+                                                                bar.event
+                                                                    .description
+                                                            }
                                                         </p>
                                                     )}
                                                     <div className='space-y-1 mt-auto min-h-0'>
                                                         <p className='text-xs text-gray-700 dark:text-zinc-300 flex items-center gap-1'>
                                                             <Clock className='w-3 h-3 flex-shrink-0' />
-                                                            <span className='truncate'>{format(start, 'MMM d, h:mm a')}</span>
+                                                            <span className='truncate'>
+                                                                {format(
+                                                                    start,
+                                                                    'MMM d, h:mm a'
+                                                                )}
+                                                            </span>
                                                         </p>
-                                                        {bar.event.location?.name && !bar.event.location.global && (
+                                                        {bar.event.location
+                                                            ?.name &&
+                                                            !bar.event.location
+                                                                .global && (
                                                             <p className='text-xs text-gray-600 dark:text-zinc-400 truncate'>
-                                                                {bar.event.location.name}
+                                                                {
+                                                                    bar
+                                                                        .event
+                                                                        .location
+                                                                        .name
+                                                                }
                                                             </p>
                                                         )}
                                                         <div className='flex items-center gap-2'>
-                                                            {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                            {typeof bar.event
+                                                                .participantCount ===
+                                                                'number' &&
+                                                                bar.event
+                                                                    .participantCount >
+                                                                    0 && (
                                                                 <p className='text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1'>
                                                                     <Users className='w-3 h-3 flex-shrink-0' />
-                                                                    {bar.event.participantCount}
+                                                                    {
+                                                                        bar
+                                                                            .event
+                                                                            .participantCount
+                                                                    }
                                                                 </p>
                                                             )}
-                                                            {bar.event.creator && (
+                                                            {bar.event
+                                                                .creator && (
                                                                 <div className='text-xs text-gray-600 dark:text-zinc-400 truncate'>
                                                                     <UserCard
-                                                                        user={bar.event.creator}
+                                                                        user={
+                                                                            bar
+                                                                                .event
+                                                                                .creator
+                                                                        }
                                                                         className='text-xs'
                                                                     />
                                                                 </div>
@@ -1820,10 +2556,31 @@ export default function GanttEventsCalendar() {
                                             {detailLevel === 'minimal' && (
                                                 <div className='px-2 py-1.5 h-full flex flex-col justify-center'>
                                                     <div className='flex items-center gap-1 mb-1'>
-                                                        {bar.isEternal && <span className='text-xs text-amber-600 dark:text-amber-400'>∞</span>}
-                                                        {!bar.isEternal && bar.isCompressed && <span className='text-xs'>📌</span>}
-                                                        {!bar.isEternal && bar.event.location?.global && <span className='text-xs'>🌐</span>}
-                                                        {!bar.isEternal && !bar.event.location?.global && <span className='text-xs'>📍</span>}
+                                                        {bar.isEternal && (
+                                                            <span className='text-xs text-amber-600 dark:text-amber-400'>
+                                                                ∞
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            bar.isCompressed && (
+                                                            <span className='text-xs'>
+                                                                    📌
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-xs'>
+                                                                    🌐
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            !bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-xs'>
+                                                                    📍
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <p className='font-semibold text-xs text-gray-900 dark:text-zinc-100 line-clamp-2 mb-1'>
                                                         {bar.event.title}
@@ -1831,10 +2588,18 @@ export default function GanttEventsCalendar() {
                                                     <p className='text-[0.65rem] text-gray-600 dark:text-zinc-400 truncate'>
                                                         {format(start, 'MMM d')}
                                                     </p>
-                                                    {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                    {typeof bar.event
+                                                        .participantCount ===
+                                                        'number' &&
+                                                        bar.event
+                                                            .participantCount >
+                                                            0 && (
                                                         <p className='text-[0.65rem] text-blue-600 dark:text-blue-400 flex items-center gap-0.5'>
                                                             <Users className='w-2.5 h-2.5' />
-                                                            {bar.event.participantCount}
+                                                            {
+                                                                bar.event
+                                                                    .participantCount
+                                                            }
                                                         </p>
                                                     )}
                                                 </div>
@@ -1844,13 +2609,45 @@ export default function GanttEventsCalendar() {
                                             {detailLevel === 'icon' && (
                                                 <div className='h-full flex items-center justify-center px-1'>
                                                     <div className='flex flex-col items-center gap-0.5'>
-                                                        {bar.isEternal && <span className='text-base text-amber-600 dark:text-amber-400'>∞</span>}
-                                                        {!bar.isEternal && bar.isCompressed && <span className='text-base'>📌</span>}
-                                                        {!bar.isEternal && !bar.isCompressed && bar.event.location?.global && <span className='text-base'>🌐</span>}
-                                                        {!bar.isEternal && !bar.isCompressed && !bar.event.location?.global && <span className='text-base'>📍</span>}
-                                                        {typeof bar.event.participantCount === 'number' && bar.event.participantCount > 0 && (
+                                                        {bar.isEternal && (
+                                                            <span className='text-base text-amber-600 dark:text-amber-400'>
+                                                                ∞
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            bar.isCompressed && (
+                                                            <span className='text-base'>
+                                                                    📌
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            !bar.isCompressed &&
+                                                            bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-base'>
+                                                                    🌐
+                                                            </span>
+                                                        )}
+                                                        {!bar.isEternal &&
+                                                            !bar.isCompressed &&
+                                                            !bar.event.location
+                                                                ?.global && (
+                                                            <span className='text-base'>
+                                                                    📍
+                                                            </span>
+                                                        )}
+                                                        {typeof bar.event
+                                                            .participantCount ===
+                                                            'number' &&
+                                                            bar.event
+                                                                .participantCount >
+                                                                0 && (
                                                             <span className='text-[0.6rem] font-bold text-blue-600 dark:text-blue-400'>
-                                                                {bar.event.participantCount}
+                                                                {
+                                                                    bar
+                                                                        .event
+                                                                        .participantCount
+                                                                }
                                                             </span>
                                                         )}
                                                     </div>
@@ -1868,7 +2665,9 @@ export default function GanttEventsCalendar() {
                                 <div className='flex items-center justify-center text-gray-500 dark:text-zinc-400'>
                                     <div className='text-center'>
                                         <Calendar className='w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-gray-400 dark:text-zinc-500' />
-                                        <p className='text-sm sm:text-base'>No upcoming events to display</p>
+                                        <p className='text-sm sm:text-base'>
+                                            No upcoming events to display
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -1886,31 +2685,45 @@ export default function GanttEventsCalendar() {
                             setShowingRangeEvents(false);
                             const clicked = startOfDay(date);
                             let periodStart: Date, periodEnd: Date;
-                        
+
                             if (unit === 'day') {
                                 periodStart = startOfDay(clicked);
                                 periodEnd = endOfDay(clicked);
                             }
                             else if (unit === 'week') {
-                                periodStart = startOfWeek(clicked, { weekStartsOn: 0 });
-                                periodEnd = endOfWeek(clicked, { weekStartsOn: 0 });
+                                periodStart = startOfWeek(clicked, {
+                                    weekStartsOn: 0
+                                });
+                                periodEnd = endOfWeek(clicked, {
+                                    weekStartsOn: 0
+                                });
                             }
                             else {
                                 periodStart = startOfMonth(clicked);
                                 periodEnd = endOfMonth(clicked);
                             }
-                        
-                            const eventsInPeriod = filteredEvents.filter((e) => {
-                                const start = new Date(e.startTime);
-                                const end = e.endTime ? new Date(e.endTime) : null;
-                            
-                                if (!end) {
-                                    return start <= periodEnd;
-                                }
-                            
-                                return start <= periodEnd && end >= periodStart;
-                            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-                        
+
+                            const eventsInPeriod = filteredEvents
+                                .filter((e) => {
+                                    const start = new Date(e.startTime);
+                                    const end = e.endTime
+                                        ? new Date(e.endTime)
+                                        : null;
+
+                                    if (!end) {
+                                        return start <= periodEnd;
+                                    }
+
+                                    return (
+                                        start <= periodEnd && end >= periodStart
+                                    );
+                                })
+                                .sort(
+                                    (a, b) =>
+                                        new Date(a.startTime).getTime() -
+                                        new Date(b.startTime).getTime()
+                                );
+
                             setSelectedPeriodEvents(eventsInPeriod);
                         }}
                     />

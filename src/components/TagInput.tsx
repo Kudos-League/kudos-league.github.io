@@ -56,8 +56,9 @@ const TagInput: React.FC<TagInputProps> = ({
                 }
 
                 if (requestID === currentRequestRef.current) {
-                    const filtered = tags.filter((tag: Tag) =>
-                        !selectedTags.some((sel) => sel.name === tag.name)
+                    const filtered = tags.filter(
+                        (tag: Tag) =>
+                            !selectedTags.some((sel) => sel.name === tag.name)
                     );
                     setSuggestedTags(filtered);
                 }
@@ -187,21 +188,22 @@ const TagInput: React.FC<TagInputProps> = ({
     return (
         <div className={`w-full space-y-3 ${className ? className : ''}`}>
             <label className='text-sm font-semibold'>Tags</label>
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 w-full'>
                 <input
                     ref={inputRef}
                     type='text'
                     value={currentTagInput}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    className='flex-1 border rounded px-3 py-2'
+                    className='flex-1 min-w-0 border rounded px-3 py-2'
                     placeholder='Enter tag and press Add'
                     autoComplete='off'
                 />
                 <Button
-                    type="button"
+                    type='button'
                     onClick={handleAddTag}
                     disabled={!currentTagInput.trim() || isLoading}
+                    className='flex-shrink-0 bg-brand-600'
                 >
                     Add
                 </Button>
@@ -212,16 +214,16 @@ const TagInput: React.FC<TagInputProps> = ({
             )}
 
             {suggestedTags.length > 0 && !isLoading && (
-                <ul className='border rounded max-h-48 overflow-y-auto bg-white shadow-sm'>
+                <ul className='border dark:border-gray-700 rounded max-h-48 overflow-y-auto bg-white dark:bg-gray-800 shadow-sm'>
                     {suggestedTags.map((tag) => (
                         <li
                             key={tag.id}
-                            className='flex justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0'
+                            className='flex justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 last:border-b-0 text-gray-800 dark:text-gray-200'
                             onClick={() => handleSelectSuggestion(tag)}
                         >
                             <span>{tag.name}</span>
                             {tag.count !== undefined && (
-                                <span className='text-sm text-gray-400'>
+                                <span className='text-sm text-gray-400 dark:text-gray-500'>
                                     ({tag.count})
                                 </span>
                             )}
@@ -235,12 +237,12 @@ const TagInput: React.FC<TagInputProps> = ({
                     {selectedTags.map((tag) => (
                         <span
                             key={tag.id}
-                            className='bg-gray-200 text-sm px-3 py-1 rounded-full flex items-center gap-1'
+                            className='bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm px-3 py-1 rounded-full flex items-center gap-1'
                         >
                             {tag.name}
                             <button
                                 onClick={() => handleRemoveTag(tag.id)}
-                                className='text-gray-500 hover:text-red-500 font-bold ml-1'
+                                className='text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 font-bold ml-1'
                                 type='button'
                                 aria-label={`Remove ${tag.name} tag`}
                             >

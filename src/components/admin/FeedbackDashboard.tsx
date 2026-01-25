@@ -14,16 +14,19 @@ type Props = {
 
 export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
-    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(null);
-
-    const statusOptions: Array<{ value: FeedbackStatus; label: string }> = useMemo(
-        () => [
-            { value: 'new', label: 'New' },
-            { value: 'resolved', label: 'Resolved' },
-            { value: 'archived', label: 'Archived' }
-        ],
-        []
+    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(
+        null
     );
+
+    const statusOptions: Array<{ value: FeedbackStatus; label: string }> =
+        useMemo(
+            () => [
+                { value: 'new', label: 'New' },
+                { value: 'resolved', label: 'Resolved' },
+                { value: 'archived', label: 'Archived' }
+            ],
+            []
+        );
 
     const handleDelete = async (id: number) => {
         try {
@@ -43,9 +46,13 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
 
     const setStatus = async (id: number, status: FeedbackStatus) => {
         try {
-            await apiMutate<void, { status: string }>(`/feedback/${id}`, 'put', {
-                status
-            });
+            await apiMutate<void, { status: string }>(
+                `/feedback/${id}`,
+                'put',
+                {
+                    status
+                }
+            );
             updateLocal(id, { status });
         }
         catch (err) {
@@ -85,12 +92,16 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                     {feedbacks.map((fb) => {
                         const attachments = fb.attachments ?? [];
                         const tags = fb.tags ?? [];
-                        const totalAwarded = (fb.rewardKudos ?? 0) + fb.baseRewardKudos;
+                        const totalAwarded =
+                            (fb.rewardKudos ?? 0) + fb.baseRewardKudos;
                         const statusLabel =
-                            statusOptions.find((option) => option.value === fb.status)?.label ??
-                            fb.status;
+                            statusOptions.find(
+                                (option) => option.value === fb.status
+                            )?.label ?? fb.status;
                         const typeLabel =
-                            fb.type === 'bug-report' ? 'Bug report' : 'Site feedback';
+                            fb.type === 'bug-report'
+                                ? 'Bug report'
+                                : 'Site feedback';
                         const categoryLabel = fb.category.replace(/-/g, ' ');
 
                         return (
@@ -104,21 +115,49 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                     <div>
                                         <div className='flex flex-col gap-1'>
                                             <p className='text-sm light:text-gray-600 dark:text-neutral-300'>
-                                            Submitted by{' '}
+                                                Submitted by{' '}
                                                 <span className='font-medium'>
                                                     <span
                                                         role='button'
                                                         tabIndex={0}
-                                                        onClick={() => fb.user?.id && setAdminReportOpenFor(fb.user.id)}
-                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fb.user?.id && setAdminReportOpenFor(fb.user.id); } }}
+                                                        onClick={() =>
+                                                            fb.user?.id &&
+                                                            setAdminReportOpenFor(
+                                                                fb.user.id
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                e.key ===
+                                                                    'Enter' ||
+                                                                e.key === ' '
+                                                            ) {
+                                                                e.preventDefault();
+                                                                fb.user?.id &&
+                                                                    setAdminReportOpenFor(
+                                                                        fb.user
+                                                                            .id
+                                                                    );
+                                                            }
+                                                        }}
                                                         className='inline-block'
                                                     >
-                                                        <UserCard user={fb.user} onAdminReportOpen={(id) => setAdminReportOpenFor(id)} />
+                                                        <UserCard
+                                                            user={fb.user}
+                                                            onAdminReportOpen={(
+                                                                id
+                                                            ) =>
+                                                                setAdminReportOpenFor(
+                                                                    id
+                                                                )
+                                                            }
+                                                        />
                                                     </span>
                                                 </span>
                                             </p>
                                             <div className='text-xs uppercase tracking-wide text-teal-600 dark:text-teal-400 font-semibold'>
-                                                {typeLabel} • Category: {categoryLabel}
+                                                {typeLabel} • Category:{' '}
+                                                {categoryLabel}
                                             </div>
                                             <h3 className='text-lg font-semibold light:text-gray-900 dark:text-neutral-100'>
                                                 {fb.title}
@@ -135,7 +174,7 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                                         key={tag}
                                                         className='rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
                                                     >
-                                                    #{tag}
+                                                        #{tag}
                                                     </span>
                                                 ))}
                                             </div>
@@ -144,7 +183,8 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                         {attachments.length > 0 && (
                                             <div className='mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3'>
                                                 {attachments.map((url) => {
-                                                    const src = getImagePath(url);
+                                                    const src =
+                                                        getImagePath(url);
                                                     return (
                                                         <a
                                                             key={url}
@@ -172,19 +212,20 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
 
                                         <div className='mt-3 text-sm flex flex-wrap gap-4'>
                                             <span className='light:text-gray-600 dark:text-neutral-300'>
-                                            Status: {statusLabel}
+                                                Status: {statusLabel}
                                             </span>
                                             <span className='light:text-gray-600 dark:text-neutral-300'>
-                                            Base kudos: {fb.baseRewardKudos}
+                                                Base kudos: {fb.baseRewardKudos}
                                             </span>
                                             <span className='light:text-gray-600 dark:text-neutral-300'>
-                                            Additional kudos:{' '}
-                                                {typeof fb.rewardKudos === 'number'
+                                                Additional kudos:{' '}
+                                                {typeof fb.rewardKudos ===
+                                                'number'
                                                     ? fb.rewardKudos
                                                     : '—'}
                                             </span>
                                             <span className='font-medium text-teal-600 dark:text-teal-300'>
-                                            Total awarded: {totalAwarded}
+                                                Total awarded: {totalAwarded}
                                             </span>
                                         </div>
                                     </div>
@@ -194,8 +235,18 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                             {statusOptions.map((option) => (
                                                 <Button
                                                     key={option.value}
-                                                    variant={fb.status === option.value ? 'primary' : 'ghost'}
-                                                    onClick={() => setStatus(fb.id, option.value)}
+                                                    variant={
+                                                        fb.status ===
+                                                        option.value
+                                                            ? 'primary'
+                                                            : 'ghost'
+                                                    }
+                                                    onClick={() =>
+                                                        setStatus(
+                                                            fb.id,
+                                                            option.value
+                                                        )
+                                                    }
                                                 >
                                                     {option.label}
                                                 </Button>
@@ -204,15 +255,19 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                         <div className='inline-flex gap-2'>
                                             <Button
                                                 variant='success'
-                                                onClick={() => setRewardOpenFor(fb.id)}
+                                                onClick={() =>
+                                                    setRewardOpenFor(fb.id)
+                                                }
                                             >
-                                            Add kudos & resolve
+                                                Add kudos & resolve
                                             </Button>
                                             <Button
                                                 variant='danger'
-                                                onClick={() => handleDelete(fb.id)}
+                                                onClick={() =>
+                                                    handleDelete(fb.id)
+                                                }
                                             >
-                                            Delete
+                                                Delete
                                             </Button>
                                         </div>
                                     </div>
@@ -231,7 +286,11 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                     })}
                 </div>
             )}
-            <AdminReportModal open={!!adminReportOpenFor} userID={adminReportOpenFor} onClose={() => setAdminReportOpenFor(null)} />
+            <AdminReportModal
+                open={!!adminReportOpenFor}
+                userID={adminReportOpenFor}
+                onClose={() => setAdminReportOpenFor(null)}
+            />
         </div>
     );
 }

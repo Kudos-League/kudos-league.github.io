@@ -34,7 +34,9 @@ export default function Events({ events }: Props) {
     const [selectedDateEvents, setSelectedDateEvents] = useState<
         EventDTO[] | null
     >(null);
-    const [eventFilter, setEventFilter] = useState<'all' | 'local' | 'global'>('all');
+    const [eventFilter, setEventFilter] = useState<'all' | 'local' | 'global'>(
+        'all'
+    );
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -137,7 +139,9 @@ export default function Events({ events }: Props) {
             event: ({ event }: { event: any }) => (
                 <div className='flex items-center gap-1 truncate'>
                     {event?.resource?.isRecurring && (
-                        <span className='px-1.5 py-0.5 text-[10px] leading-3 font-semibold uppercase tracking-wide text-white bg-blue-600 rounded-sm'>↻</span>
+                        <span className='px-1.5 py-0.5 text-[10px] leading-3 font-semibold uppercase tracking-wide text-white bg-blue-600 rounded-sm'>
+                            ↻
+                        </span>
                     )}
                     <span className='truncate'>{event.title}</span>
                 </div>
@@ -166,8 +170,10 @@ export default function Events({ events }: Props) {
         if (!selectedDateEvents) return null;
 
         if (eventFilter === 'all') return selectedDateEvents;
-        if (eventFilter === 'global') return selectedDateEvents.filter(e => e.isGlobal);
-        if (eventFilter === 'local') return selectedDateEvents.filter(e => !e.isGlobal);
+        if (eventFilter === 'global')
+            return selectedDateEvents.filter((e) => e.isGlobal);
+        if (eventFilter === 'local')
+            return selectedDateEvents.filter((e) => !e.isGlobal);
 
         return selectedDateEvents;
     }, [selectedDateEvents, eventFilter]);
@@ -210,20 +216,41 @@ export default function Events({ events }: Props) {
 
                         <div className='flex gap-2 ml-auto'>
                             <Button
+                                onClick={() =>
+                                    navigate(
+                                        `/create-event?startDate=${viewDate?.toISOString()}&endDate=${viewDate?.toISOString()}`
+                                    )
+                                }
+                            >
+                                + New Event
+                            </Button>
+                            <Button
                                 onClick={() => setEventFilter('all')}
-                                className={eventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                                className={
+                                    eventFilter === 'all'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200'
+                                }
                             >
                                 All
                             </Button>
                             <Button
                                 onClick={() => setEventFilter('local')}
-                                className={eventFilter === 'local' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                                className={
+                                    eventFilter === 'local'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200'
+                                }
                             >
                                 Local
                             </Button>
                             <Button
                                 onClick={() => setEventFilter('global')}
-                                className={eventFilter === 'global' ? 'bg-blue-600 text-white' : 'bg-gray-200'}
+                                className={
+                                    eventFilter === 'global'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200'
+                                }
                             >
                                 Global
                             </Button>
@@ -232,7 +259,8 @@ export default function Events({ events }: Props) {
 
                     {filteredDateEvents && filteredDateEvents.length === 0 ? (
                         <p className='text-gray-500 italic'>
-                            No {eventFilter === 'all' ? '' : eventFilter} events on this date.
+                            No {eventFilter === 'all' ? '' : eventFilter} events
+                            on this date.
                         </p>
                     ) : (
                         <ul className='space-y-3 list-none'>

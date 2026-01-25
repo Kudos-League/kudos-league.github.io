@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getWSSURL } from 'shared/api/config';
+import { wrapSocketWithInterceptor } from '@/services/logCollector/websocketInterceptor';
 
 let socket: Socket | null = null;
 
@@ -23,5 +24,9 @@ export function getSocket(token: string) {
         autoConnect: true
         // forceNew: true,
     });
+
+    // Wrap with dev tools interceptor (only in dev mode)
+    socket = wrapSocketWithInterceptor(socket);
+
     return socket;
 }

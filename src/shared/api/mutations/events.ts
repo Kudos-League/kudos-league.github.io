@@ -1,10 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
-import type { EventDTO, CreateEventDTO, UpdateEventDTO } from '@/shared/api/types';
+import type {
+    EventDTO,
+    CreateEventDTO,
+    UpdateEventDTO
+} from '@/shared/api/types';
 import { qk } from '@/shared/api/queries/events';
 import { useAuth } from '@/contexts/useAuth';
 
-export function useCreateEvent(p0: { onSuccess: () => void; }) {
+export function useCreateEvent(p0: { onSuccess: () => void }) {
     const { token } = useAuth();
     const qc = useQueryClient();
 
@@ -18,8 +22,11 @@ export function useCreateEvent(p0: { onSuccess: () => void; }) {
             );
         },
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: ['events'] });
             qc.setQueryData(qk.event(created.id as number), created);
+            // Refetch after a delay to allow backend to process
+            setTimeout(() => {
+                qc.invalidateQueries({ queryKey: ['events'] });
+            }, 1000);
             p0?.onSuccess?.();
         }
     });
@@ -65,20 +72,27 @@ interface UpdateEventMutationData {
     data: UpdateEventDTO;
 }
 
-
 export const useUpdateEvent = () => {
     const { token } = useAuth();
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: UpdateEventMutationData): Promise<EventDTO> => {
+        mutationFn: async ({
+            id,
+            data
+        }: UpdateEventMutationData): Promise<EventDTO> => {
             if (!token) throw new Error('Authentication required');
-            return apiMutate<EventDTO, UpdateEventDTO>(`/events/${id}`, 'patch', data, { as: 'form' });
+            return apiMutate<EventDTO, UpdateEventDTO>(
+                `/events/${id}`,
+                'patch',
+                data,
+                { as: 'form' }
+            );
         },
         onSuccess: (updatedEvent) => {
             // Update the specific event in the cache
             queryClient.setQueryData(['event', updatedEvent.id], updatedEvent);
-            
+
             // Invalidate events list to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['events'] });
         },
@@ -87,3 +101,52 @@ export const useUpdateEvent = () => {
         }
     });
 };
+
+export function useDeleteEvent() {
+    const { token } = useAuth();
+    const qc = useQueryClient();
+
+    return useMutation<EventDTO, string[], number>({
+        mutationFn: async (eventId) => {
+            if (!token) throw ['Not authenticated'];
+            return apiMutate<EventDTO, void>(`/events/${eventId}`, 'delete');
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['events'] });
+        }
+    });
+}
+
+export function useLeaveEvent(eventId: number) {
+    const { token, user } = useAuth();
+    const qc = useQueryClient();
+
+    return useMutation<void, string[], void>({
+        mutationFn: async () => {
+            if (!token) throw ['Not authenticated'];
+            return apiMutate<void, void>(`/events/${eventId}/leave`, 'post');
+        },
+        onMutate: async () => {
+            await qc.cancelQueries({ queryKey: qk.event(eventId) });
+            const prev = qc.getQueryData<EventDTO>(qk.event(eventId));
+
+            if (prev && user) {
+                qc.setQueryData<EventDTO>(qk.event(eventId), {
+                    ...prev,
+                    participants: (prev.participants || []).filter(
+                        (p) => p.id !== user.id
+                    )
+                });
+            }
+
+            return { prev };
+        },
+        onError: (_err, _vars, ctx: { prev?: EventDTO } | undefined) => {
+            if (ctx?.prev) qc.setQueryData(qk.event(eventId), ctx.prev);
+        },
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: qk.event(eventId) });
+            qc.invalidateQueries({ queryKey: ['events'] });
+        }
+    });
+}

@@ -40,7 +40,7 @@ export default function FilePicker({
                 <Button
                     type='button'
                     onClick={openFilePicker}
-                    className='w-24 h-24 border-2 border-dashed border-gray-400 flex items-center justify-center rounded hover:border-blue-500'
+                    className='w-24 h-24 border-2 border-dashed border-gray-400 flex items-center justify-center rounded hover:border-brand-500'
                 >
                     📷
                 </Button>
@@ -67,7 +67,7 @@ export default function FilePicker({
             <Button
                 type='button'
                 onClick={openFilePicker}
-                className='px-4 py-2 bg-blue-600 text-white rounded'
+                className='px-4 py-2 bg-brand-600 text-white rounded'
             >
                 {placeholder}
             </Button>

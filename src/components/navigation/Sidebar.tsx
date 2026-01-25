@@ -50,7 +50,7 @@ function useDesktopSidebarItems(): NavItem[] {
     return [
         { name: 'Main', to: routes.home, icon: HomeIcon },
         { name: 'Events', to: routes.events, icon: CalendarIcon },
-        { name: 'Groups', to: routes.communities, icon: UserGroupIcon},
+        { name: 'Groups', to: routes.communities, icon: UserGroupIcon }
     ];
 }
 
@@ -60,19 +60,27 @@ function useMobileNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
         const items: NavItem[] = [
             { name: 'Main', to: routes.home, icon: HomeIcon },
             { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'Groups', to: routes.communities, icon: UserGroupIcon},
+            { name: 'Groups', to: routes.communities, icon: UserGroupIcon }
             // { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
             // { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
         ];
         if (isAdmin) {
-            items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
+            items.push({
+                name: 'Admin',
+                to: routes.admin,
+                icon: ShieldCheckIcon
+            });
         }
         return items;
     }
     else {
         return [
             { name: 'About', to: routes.about, icon: InformationCircleIcon },
-            { name: 'Login', to: routes.login, icon: ArrowRightOnRectangleIcon },
+            {
+                name: 'Login',
+                to: routes.login,
+                icon: ArrowRightOnRectangleIcon
+            },
             { name: 'Register', to: routes.signUp, icon: UserPlusIcon }
         ];
     }
@@ -102,7 +110,15 @@ function NavList({
                     <li key={item.name}>
                         <Link
                             to={item.to}
-                            onClick={onClick}
+                            onClick={(e) => {
+                                if (active) {
+                                    e.preventDefault();
+                                    window.location.reload();
+                                }
+                                else {
+                                    onClick?.();
+                                }
+                            }}
                             className={classNames(
                                 active
                                     ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'
@@ -189,7 +205,9 @@ export default function AppSidebar({
                                         onClick={onClose}
                                         className='-m-2.5 p-2.5'
                                     >
-                                        <span className='sr-only'>Close sidebar</span>
+                                        <span className='sr-only'>
+                                            Close sidebar
+                                        </span>
                                         <XMarkIcon
                                             aria-hidden='true'
                                             className='size-6 text-white'
@@ -224,14 +242,21 @@ export default function AppSidebar({
                                 const Icon = item.icon;
                                 // If item is home, only highlight when exactly on home
                                 // For other items, highlight when path starts with item path
-                                const active = item.to === routes.home
-                                    ? location.pathname === routes.home
-                                    : location.pathname.startsWith(item.to);
+                                const active =
+                                    item.to === routes.home
+                                        ? location.pathname === routes.home
+                                        : location.pathname.startsWith(item.to);
 
                                 return (
                                     <Link
                                         key={item.name}
                                         to={item.to}
+                                        onClick={(e) => {
+                                            if (active) {
+                                                e.preventDefault();
+                                                window.location.reload();
+                                            }
+                                        }}
                                         className={classNames(
                                             'flex flex-col items-center justify-center gap-1 p-3 rounded-xl transition-all duration-200 w-16',
                                             active
@@ -240,11 +265,15 @@ export default function AppSidebar({
                                         )}
                                         title={item.name}
                                     >
-                                        <Icon className={classNames(
-                                            'h-6 w-6 transition-transform',
-                                            active && 'scale-110'
-                                        )} />
-                                        <span className='text-xs font-medium'>{item.name}</span>
+                                        <Icon
+                                            className={classNames(
+                                                'h-6 w-6 transition-transform',
+                                                active && 'scale-110'
+                                            )}
+                                        />
+                                        <span className='text-xs font-medium'>
+                                            {item.name}
+                                        </span>
                                     </Link>
                                 );
                             })}

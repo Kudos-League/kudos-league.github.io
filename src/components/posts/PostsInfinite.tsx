@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { usePostsInfiniteQuery } from '@/shared/api/queries/posts';
+import { useUsersByIdsQuery } from '@/shared/api/queries/users';
 import PostsContainer from './PostsContainer';
 import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/useAuth';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -17,19 +19,32 @@ export default function PostsInfinite({
     filters: {
         includeSender?: boolean;
         includeTags?: boolean;
+        includeHandshakes?: boolean;
+        includeMessages?: boolean;
+        includeRewardOffers?: boolean;
+        includeDistance?: boolean;
         limit?: number;
         query?: string;
     };
     activeTab: PostFilterType;
     ordering: Ordering;
 }) {
-    const safeIncomingFilters = React.useMemo(() => ({ ...(filters ?? {}) }), [filters]);
+    const { user } = useAuth();
+
+    const safeIncomingFilters = React.useMemo(
+        () => ({ ...(filters ?? {}) }),
+        [filters]
+    );
 
     const queryFilters = React.useMemo(() => {
-        const sort: 'date' | 'tags' | 'location' | 'kudos' = ordering.type === 'distance' ? 'location' : ordering.type;
+        const sort: 'date' | 'tags' | 'location' | 'kudos' =
+            ordering.type === 'distance' ? 'location' : ordering.type;
         return {
             ...safeIncomingFilters,
-            includeSender: true,
+            includeSender: safeIncomingFilters.includeSender ?? false,
+            includeHandshakes: safeIncomingFilters.includeHandshakes ?? false,
+            includeMessages: safeIncomingFilters.includeMessages ?? false,
+            includeRewardOffers: safeIncomingFilters.includeRewardOffers ?? false,
             sort,
             order: ordering.order
         };
@@ -49,13 +64,57 @@ export default function PostsInfinite({
         [data]
     );
 
-    // Only filter by type, let backend handle sorting
-    const visible = React.useMemo(() => {
-        if (activeTab === 'all') return flat;
-        return flat.filter(
-            (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
+    const senderIds = React.useMemo(() => {
+        if (queryFilters.includeSender) return [];
+        return Array.from(
+            new Set(
+                flat
+                    .map((p) => p.senderID)
+                    .filter((id): id is number => typeof id === 'number')
+            )
         );
-    }, [flat, activeTab]);
+    }, [flat, queryFilters.includeSender]);
+
+    const { data: senders } = useUsersByIdsQuery(senderIds, {
+        enabled: !queryFilters.includeSender
+    });
+
+    const senderMap = React.useMemo(() => {
+        return new Map((senders ?? []).map((u) => [u.id, u]));
+    }, [senders]);
+
+    const hydrated = React.useMemo(() => {
+        if (queryFilters.includeSender || senderMap.size === 0) return flat;
+        return flat.map((post) => {
+            if (post.sender) return post;
+            const sender = senderMap.get(post.senderID);
+            return sender ? { ...post, sender } : post;
+        });
+    }, [flat, senderMap, queryFilters.includeSender]);
+
+    // Filter by type and hide closed posts unless user is the creator
+    const visible = React.useMemo(() => {
+        let filtered = hydrated;
+
+        // Filter by type
+        if (activeTab !== 'all') {
+            filtered = filtered.filter(
+                (p) => p.type === (activeTab === 'gifts' ? 'gift' : 'request')
+            );
+        }
+
+        // Filter out closed posts unless user is the creator
+        filtered = filtered.filter((post) => {
+            const isClosed =
+                post.status === 'closed' || post.status === 'offer_posted';
+            if (!isClosed) return true; // Show open posts
+
+            // Only show closed posts if user is the creator
+            return user?.id === post.senderID;
+        });
+
+        return filtered;
+    }, [hydrated, activeTab, user?.id]);
 
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -66,7 +125,11 @@ export default function PostsInfinite({
         const observer = new IntersectionObserver(
             (entries) => {
                 const first = entries[0];
-                if (first?.isIntersecting && !isFetchingNextPage && hasNextPage) {
+                if (
+                    first?.isIntersecting &&
+                    !isFetchingNextPage &&
+                    hasNextPage
+                ) {
                     fetchNextPage();
                 }
             },
@@ -81,14 +144,20 @@ export default function PostsInfinite({
         return () => observer.disconnect();
     }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-    if (isLoading) return <Spinner />;
+    if (isLoading) return <Spinner size='lg' />;
     if (isError) return <Alert type='danger' message='Failed to load posts.' />;
 
     return (
         <>
             <PostsContainer posts={visible} showHandshakeShortcut />
             <div className='mt-4 flex flex-col items-center'>
-                {isFetchingNextPage && <Spinner text='Loading more...' />}
+                {isFetchingNextPage && (
+                    <Spinner
+                        text='Loading more...'
+                        size='lg'
+                        className='mt-8'
+                    />
+                )}
                 {hasNextPage && !isFetchingNextPage && (
                     <div className='flex flex-col items-center gap-2 py-4'>
                         <ChevronDownIcon
@@ -106,8 +175,8 @@ export default function PostsInfinite({
                     <div
                         ref={sentinelRef}
                         style={{
-                            height: 1,
-                            width: 1
+                            height: 100,
+                            width: '100%'
                         }}
                     />
                 )}

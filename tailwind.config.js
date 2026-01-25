@@ -3,6 +3,9 @@ module.exports = {
     content: ['./src/**/*.{js,jsx,ts,tsx}', './public/index.html'],
     theme: {
         extend: {
+            screens: {
+                xs: '475px'
+            },
             colors: {
                 brand: {
                     50: '#eaecfa',
@@ -14,12 +17,19 @@ module.exports = {
                     600: '#2c37b1',
                     700: '#232c8e',
                     800: '#1a216a',
-                    900: '#111647',
+                    900: '#111647'
                 }
             },
             fontFamily: {
                 // Body text - Inter (clean, modern, highly readable)
-                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                sans: [
+                    'Inter',
+                    '-apple-system',
+                    'BlinkMacSystemFont',
+                    'Segoe UI',
+                    'Roboto',
+                    'sans-serif'
+                ],
 
                 // Headings - Poppins (friendly, geometric, bold)
                 heading: ['Poppins', 'Inter', 'sans-serif'],
@@ -31,7 +41,19 @@ module.exports = {
                 accent: ['Space Grotesk', 'Inter', 'sans-serif'],
 
                 // System fallback (easy to revert)
-                system: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
+                system: [
+                    '-apple-system',
+                    'BlinkMacSystemFont',
+                    'Segoe UI',
+                    'Roboto',
+                    'Oxygen',
+                    'Ubuntu',
+                    'Cantarell',
+                    'Fira Sans',
+                    'Droid Sans',
+                    'Helvetica Neue',
+                    'sans-serif'
+                ]
             }
         }
     },

@@ -15,14 +15,18 @@ const initialState: PostsState = {
 };
 
 export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
-    const response = await apiGet<PostDTO[]>('/posts', { params: { includeSender: true, includeTags: true } });
+    const response = await apiGet<PostDTO[]>('/posts', {
+        params: { includeSender: true, includeTags: true }
+    });
     return response;
 });
 
 export const addNewPost = createAsyncThunk(
     'posts/addNewPost',
     async ({ post }: { post: CreatePostDTO }) => {
-        return apiMutate<PostDTO, CreatePostDTO>('/posts', 'post', post, { as: 'form' });
+        return apiMutate<PostDTO, CreatePostDTO>('/posts', 'post', post, {
+            as: 'form'
+        });
     }
 );
 

@@ -156,11 +156,15 @@ export function useCreateHandshake() {
     const qc = useQueryClient();
     return useMutation<HandshakeDTO, Error, CreateHandshakeDTO>({
         mutationFn: (payload) =>
-            apiMutate<HandshakeDTO, CreateHandshakeDTO>('/handshakes', 'post', payload),
+            apiMutate<HandshakeDTO, CreateHandshakeDTO>(
+                '/handshakes',
+                'post',
+                payload
+            ),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['posts'] });
             qc.invalidateQueries({ queryKey: ['posts', 'infinite'] });
-            pushAlert({ type: 'success', message: 'Handshake created.' });
+            pushAlert({ type: 'success', message: 'Help request created' });
         },
         onError: (err) => {
             pushAlert({ type: 'danger', message: extractErrMessage(err) });
@@ -176,10 +180,13 @@ export function useCreatePost() {
                 as: 'form'
             }),
         onSuccess: (created) => {
-            qc.invalidateQueries({ queryKey: ['posts'] });
             qc.setQueryData<PostDTO[]>(['posts'], (prev) =>
                 prev ? [created, ...prev] : [created]
             );
+            // Refetch after a delay to allow backend to process
+            setTimeout(() => {
+                qc.invalidateQueries({ queryKey: ['posts'] });
+            }, 1000);
             pushAlert({ type: 'success', message: 'Post created.' });
         },
         onError: (err) => {
@@ -190,7 +197,7 @@ export function useCreatePost() {
 
 export function useReportPastGift() {
     const qc = useQueryClient();
-    return useMutation<PostDTO, Error, (CreatePostDTO & { receiverID: number })>({
+    return useMutation<PostDTO, Error, CreatePostDTO & { receiverID: number }>({
         mutationFn: (payload) =>
             apiMutate<PostDTO, any>('/posts/past-gift', 'post', payload, {
                 as: 'form'

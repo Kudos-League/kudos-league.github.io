@@ -31,9 +31,13 @@ export default function OAuthConnectButton({
     };
 
     return (
-        <Button onClick={handle} variant={variant} className={className} title={title}>
+        <Button
+            onClick={handle}
+            variant={variant}
+            className={className}
+            title={title}
+        >
             {children ?? 'Connect'}
         </Button>
     );
 }
-

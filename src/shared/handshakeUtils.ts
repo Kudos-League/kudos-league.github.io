@@ -15,7 +15,10 @@ export type HandshakeStage = {
     otherUserID?: number;
 };
 
-export function getHandshakeStage(handshake: any, currentUserId?: number): HandshakeStage {
+export function getHandshakeStage(
+    handshake: any,
+    currentUserId?: number
+): HandshakeStage {
     const status = handshake?.status || 'new';
 
     const toNumber = (v: any): number | undefined => {
@@ -24,31 +27,52 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         return Number.isNaN(n) ? undefined : n;
     };
 
-    const senderID = toNumber(handshake?.senderID) ?? toNumber(handshake?.sender?.id) ?? toNumber(handshake?.sender?.ID) ?? toNumber(handshake?.sender);
+    const senderID =
+        toNumber(handshake?.senderID) ??
+        toNumber(handshake?.sender?.id) ??
+        toNumber(handshake?.sender?.ID) ??
+        toNumber(handshake?.sender);
     const postSenderID =
-        toNumber(handshake?.post?.senderID) ?? toNumber(handshake?.post?.sender?.id) ?? toNumber(handshake?.post?.sender?.ID) ?? toNumber(handshake?.post?.sender);
+        toNumber(handshake?.post?.senderID) ??
+        toNumber(handshake?.post?.sender?.id) ??
+        toNumber(handshake?.post?.sender?.ID) ??
+        toNumber(handshake?.post?.sender);
     const receiverID =
-        toNumber(handshake?.receiverID) ?? toNumber(handshake?.receiverId) ?? toNumber(handshake?.receiver?.id) ?? toNumber(handshake?.receiver?.ID) ?? toNumber(handshake?.receiver);
+        toNumber(handshake?.receiverID) ??
+        toNumber(handshake?.receiverId) ??
+        toNumber(handshake?.receiver?.id) ??
+        toNumber(handshake?.receiver?.ID) ??
+        toNumber(handshake?.receiver);
 
-    const itemReceiverID = handshake?.post?.type === 'gift' ? senderID : postSenderID;
+    const itemReceiverID =
+        handshake?.post?.type === 'gift' ? senderID : postSenderID;
 
     const gifterID = handshake?.post?.type === 'gift' ? postSenderID : senderID;
 
     const isSender = currentUserId !== undefined && senderID === currentUserId;
-    const isParticipant = currentUserId !== undefined && (
-        (senderID !== undefined && senderID === currentUserId) ||
-        (postSenderID !== undefined && postSenderID === currentUserId) ||
-        (receiverID !== undefined && receiverID === currentUserId)
-    );
+    const isParticipant =
+        currentUserId !== undefined &&
+        ((senderID !== undefined && senderID === currentUserId) ||
+            (postSenderID !== undefined && postSenderID === currentUserId) ||
+            (receiverID !== undefined && receiverID === currentUserId));
 
     const postIsPast = !!handshake?.post?.isPast;
 
     const canAccept = (() => {
-        return !postIsPast && status === 'new' && postSenderID !== undefined && currentUserId !== undefined && handshake?.post?.type &&
-        handshake?.post?.type === 'gift' ? postSenderID === currentUserId : receiverID === currentUserId
+        // Only the post creator (User A) can accept, regardless of gift or request type
+        return (
+            !postIsPast &&
+            status === 'new' &&
+            postSenderID !== undefined &&
+            currentUserId !== undefined &&
+            postSenderID === currentUserId
+        );
     })();
 
-    const userIsItemReceiver = currentUserId !== undefined && itemReceiverID !== undefined && currentUserId === itemReceiverID;
+    const userIsItemReceiver =
+        currentUserId !== undefined &&
+        itemReceiverID !== undefined &&
+        currentUserId === itemReceiverID;
     const canCancel =
         !postIsPast &&
         status !== 'cancelled' &&
@@ -62,25 +86,26 @@ export function getHandshakeStage(handshake: any, currentUserId?: number): Hands
         if (postIsPast) return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
         // The acceptor is always the post creator (User A), regardless of gift or request
-        return status === 'accepted' && postSenderID !== undefined && postSenderID === currentUserId;
+        return (
+            status === 'accepted' &&
+            postSenderID !== undefined &&
+            postSenderID === currentUserId
+        );
     })();
 
     const canComplete = (() => {
         if (status !== 'accepted') return false;
         if (!handshake?.post?.type || currentUserId === undefined) return false;
-        if (handshake.post.type === 'request') {
-            return postSenderID !== undefined && receiverID === currentUserId;
-        }
-        if (handshake.post.type === 'gift') {
-            return receiverID !== undefined && receiverID !== currentUserId;
-        }
-        return false;
+        // Only the item receiver can complete the exchange and give kudos
+        // For requests: post creator receives the item (can complete)
+        // For gifts: sender receives the item (can complete)
+        return currentUserId === itemReceiverID;
     })();
-
 
     let otherUserID: number | undefined;
     if (currentUserId !== undefined) {
-        if (senderID !== undefined && senderID === currentUserId) otherUserID = postSenderID;
+        if (senderID !== undefined && senderID === currentUserId)
+            otherUserID = postSenderID;
         else otherUserID = senderID ?? receiverID;
     }
 

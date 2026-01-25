@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Auth from '@/components/login/Auth';
 import Button from '@/components/common/Button';
 import { Alert, TextInput } from '@/components/login/fields';
-import { apiMutate } from '@/shared/api/apiClient';
+import { useForgotPasswordMutation } from '@/shared/api/mutations/users';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
@@ -11,12 +11,13 @@ export default function ForgotPasswordPage() {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const forgotPasswordMutation = useForgotPasswordMutation();
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         try {
-            await apiMutate('/users/forgot-password', 'post', { email });
+            await forgotPasswordMutation.mutateAsync({ email });
             setSubmitted(true);
         }
         catch (err: any) {
@@ -28,8 +29,8 @@ export default function ForgotPasswordPage() {
         return (
             <Auth title='Check your email'>
                 <div className='space-y-4'>
-                    <p className='text-sm text-gray-600 dark:text-gray-300'>
-                        If an account exists for {email}, you’ll receive an
+                    <p className='text-sm text-gray-200 dark:text-gray-300'>
+                        If an account exists for {email}, you&apos;ll receive an
                         email with a link to reset your password.
                     </p>
                     <Button

@@ -5,7 +5,8 @@ import React from 'react';
 
 export const qk = {
     channels: ['channels'] as const,
-    channelMessages: (channelId: number) => ['channel', channelId, 'messages'] as const
+    channelMessages: (channelId: number) =>
+        ['channel', channelId, 'messages'] as const
 };
 
 export function usePublicChannels() {
@@ -17,7 +18,9 @@ export function usePublicChannels() {
 
 export function useChannelMessages(channelId?: number) {
     return useQuery<MessageDTO[] | null>({
-        queryKey: channelId ? qk.channelMessages(channelId) : ['channel', 'none', 'messages'],
+        queryKey: channelId
+            ? qk.channelMessages(channelId)
+            : ['channel', 'none', 'messages'],
         queryFn: () => apiGet<MessageDTO[]>(`/channels/${channelId}/messages`),
         enabled: !!channelId
     });
@@ -50,13 +53,12 @@ export function useLatestChannelMessage(channelId?: number) {
 
         // 2. The latest message is now the last element in the sorted array
         return sortedMessages[sortedMessages.length - 1] ?? null;
-
     }, [query.data]); // Recalculate only when the message data changes
 
     return {
         latestMessage: latestMessage, // Use the safely calculated latest message
         isLoading: query.isLoading,
         isFetched: query.isFetched,
-        isError: query.isError,
+        isError: query.isError
     };
 }

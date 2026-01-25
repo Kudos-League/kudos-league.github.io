@@ -38,9 +38,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
     const form = useForm<FormValues>({
         mode: 'onBlur',
-        defaultValues: { 
-            tags: [], 
-            categoryID: null, 
+        defaultValues: {
+            tags: [],
+            categoryID: null,
             type: 'gift',
             itemsLimit: 1
         }
@@ -64,8 +64,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [location, setLocation] = React.useState<LocationDTO | null>(null);
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
-    const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-    const [toastType, setToastType] = React.useState<'success' | 'error'>('success');
     const [placeholder, setPlaceholder] = React.useState<string>('1');
 
     React.useEffect(() => {
@@ -80,12 +78,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         const loc = routerLocation.state as LocationDTO | null;
         if (loc) setLocation(loc);
     }, [routerLocation.state]);
-
-    React.useEffect(() => {
-        if (!toastMessage) return;
-        const t = setTimeout(() => setToastMessage(null), 3000);
-        return () => clearTimeout(t);
-    }, [toastMessage]);
 
     const handleTagsChange = React.useCallback(
         (tags: { id: string; name: string }[]) => {
@@ -158,7 +150,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             body: String(data.body || '').trim(),
             type: postType as 'gift' | 'request',
             itemsLimit: Number(data.itemsLimit),
-            tags: data.tags.map(tag => String(tag).trim()),
+            tags: data.tags.map((tag) => String(tag).trim()),
             categoryID: Number(data.categoryID),
             files: selectedImages,
             location
@@ -179,8 +171,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             setSelectedImages([]);
             setLocation(null);
             setPostType('gift');
-            setToastType('success');
-            setToastMessage(`${postType === 'gift' ? 'Gift' : 'Request'} post created successfully!`);
 
             // Navigate after a short delay to allow toast to be visible
             setTimeout(() => {
@@ -191,24 +181,36 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             form.clearErrors();
 
             const first = Array.isArray(errs) ? errs[0] : null;
-            const errorMessage = first || errs?.message || 'Failed to create post.';
+            const errorMessage =
+                first || errs?.message || 'Failed to create post.';
 
             if (
                 first?.includes('413') ||
                 errorMessage.toLowerCase().includes('too large')
             ) {
-                setServerError('Files are too large. Please reduce file size or number of files.');
+                setServerError(
+                    'Files are too large. Please reduce file size or number of files.'
+                );
             }
             else if (errorMessage.toLowerCase().includes('expected string')) {
-                setServerError('Please enter valid text for title and description.');
+                setServerError(
+                    'Please enter valid text for title and description.'
+                );
             }
-            else if (errorMessage.toLowerCase().includes('invalid characters')) {
-                setServerError('Title or description contains invalid characters. Please remove < and > symbols.');
+            else if (
+                errorMessage.toLowerCase().includes('invalid characters')
+            ) {
+                setServerError(
+                    'Title or description contains invalid characters. Please remove < and > symbols.'
+                );
             }
             else if (errorMessage.toLowerCase().includes('title')) {
                 setServerError(`Title error: ${errorMessage}`);
             }
-            else if (errorMessage.toLowerCase().includes('body') || errorMessage.toLowerCase().includes('description')) {
+            else if (
+                errorMessage.toLowerCase().includes('body') ||
+                errorMessage.toLowerCase().includes('description')
+            ) {
                 setServerError(`Description error: ${errorMessage}`);
             }
             else {
@@ -218,15 +220,22 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     };
 
     return (
-        <Form methods={form} onSubmit={onSubmit} className='max-w-3xl mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh' serverError={serverError}>
+        <Form
+            methods={form}
+            onSubmit={onSubmit}
+            className='max-w-3xl mx-2 sm:mx-auto p-6 space-y-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow min-height-dvh mt-4 mb-4'
+            serverError={serverError}
+        >
             <div className='flex gap-3'>
                 <Button
+                    type='button'
                     variant={postType === 'gift' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('gift')}
                 >
                     Give stuff
                 </Button>
                 <Button
+                    type='button'
                     variant={postType === 'request' ? 'primary' : 'secondary'}
                     onClick={() => setPostType('request')}
                 >
@@ -242,8 +251,14 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     valueTransformer={(v) => String(v || '')}
                     registerOptions={{
                         required: 'Title is required',
-                        minLength: { value: 3, message: 'Title must be at least 3 characters' },
-                        maxLength: { value: 60, message: 'Title cannot exceed 60 characters' },
+                        minLength: {
+                            value: 3,
+                            message: 'Title must be at least 3 characters'
+                        },
+                        maxLength: {
+                            value: 60,
+                            message: 'Title cannot exceed 60 characters'
+                        },
                         validate: (value) => {
                             if (!value || typeof value !== 'string') {
                                 return 'Please enter a valid title';
@@ -259,7 +274,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     }}
                 />
             </FormField>
-            
+
             <FormField name='body' label='Description *'>
                 <Input
                     name='body'
@@ -285,7 +300,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
-            <FormField name='itemsLimit' label='Number of Items *' helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}?`}>
+            <FormField
+                name='itemsLimit'
+                label='Number of Items *'
+                helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}? 0 for unlimited. 1 in case of doubt or not applicable.`}
+            >
                 <Input
                     name='itemsLimit'
                     label=''
@@ -295,23 +314,31 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     valueTransformer={(v) => (v === '' ? '' : Number(v))}
                     onValueChange={(val) => {
                         if (val !== '') {
-                            Number(val) < 1
-                                ? form.setValue('itemsLimit', 1)
+                            Number(val) < 0
+                                ? form.setValue('itemsLimit', 0)
                                 : form.setValue('itemsLimit', Number(val));
-                        } 
+                        }
                         else {
                             setPlaceholder('');
                         }
                     }}
                     registerOptions={{
                         required: 'Quantity is required',
-                        min: { value: 1, message: 'Quantity must be at least 1' },
-                        max: { value: 999, message: 'Quantity cannot exceed 999' },
+                        min: {
+                            value: 1,
+                            message: 'Quantity must be at least 1'
+                        },
+                        max: {
+                            value: 999,
+                            message: 'Quantity cannot exceed 999'
+                        },
                         validate: (v: any) => {
                             const num = Number(v);
-                            if (!num || num < 1) return 'Quantity must be at least 1';
+                            if (!num || num < 1)
+                                return 'Quantity must be at least 1';
                             if (num > 999) return 'Quantity cannot exceed 999';
-                            if (!Number.isInteger(num)) return 'Quantity must be a whole number';
+                            if (!Number.isInteger(num))
+                                return 'Quantity must be a whole number';
                             return true;
                         }
                     }}
@@ -327,31 +354,44 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     control={form.control}
                     name='categoryID'
                     rules={{
-                        required: 'Category is required - please select one from the dropdown',
+                        required:
+                            'Category is required - please select one from the dropdown',
                         // Validation now checks for a truthy value (any ID > 0)
-                        validate: (v) => (v !== null) || 'Please select a category from the dropdown.'
+                        validate: (v) =>
+                            v !== null ||
+                            'Please select a category from the dropdown.'
                     }}
                     render={({ field }) => (
                         <DropdownPicker
-                            options={(uniqueCategories as CategoryDTO[]).map((c) => ({
-                                label: c.name,
-                                value: String(c.id)
-                            }))}
+                            options={(uniqueCategories as CategoryDTO[]).map(
+                                (c) => ({
+                                    label: c.name,
+                                    value: String(c.id)
+                                })
+                            )}
                             // Cast null to empty string for components that expect string/''
-                            value={field.value !== null ? String(field.value) : ''} 
+                            value={
+                                field.value !== null ? String(field.value) : ''
+                            }
                             onChange={(val) => {
                                 // If val is '', pass null to the form state
-                                const parsed = val ? parseInt(val) : null; 
+                                const parsed = val ? parseInt(val) : null;
                                 field.onChange(parsed);
+                                // Clear the error immediately after selection
+                                if (parsed !== null) {
+                                    form.clearErrors('categoryID');
+                                }
                             }}
                             onBlur={field.onBlur}
-                            placeholder={catsLoading ? 'Loading…' : '⚠️ Select a category (required)'}
+                            placeholder={
+                                catsLoading ? 'Loading…' : ' Select a category'
+                            }
                         />
                     )}
                 />
             </FormField>
 
-            <div>
+            <div className='w-full overflow-hidden'>
                 <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
                     Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
                 </label>
@@ -360,11 +400,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     accept='image/*'
                     multiple
                     onChange={handleImageUpload}
-                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}
                 />
                 {selectedImages.length > 0 && (
-                    <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+                    <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pr-2'>
                         {selectedImages.map((file, index) => (
                             <div key={index} className='relative group'>
                                 <img
@@ -413,16 +453,19 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 name: data.name
                             });
                     }}
-                    shouldSavedLocationButton={true}
+                    shouldSavedLocationButton
+                    exactLocation
                 />
             </div>
 
             {/* Collect all form errors */}
             {(() => {
                 const formErrors = Object.values(form.formState.errors)
-                    .map(error => error?.message)
+                    .map((error) => error?.message)
                     .filter(Boolean) as string[];
-                const allErrors = serverError ? [serverError, ...formErrors] : formErrors;
+                const allErrors = serverError
+                    ? [serverError, ...formErrors]
+                    : formErrors;
 
                 return allErrors.length > 0 ? (
                     <div className='space-y-2'>
@@ -447,20 +490,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             >
                 {createPost.isPending ? 'Creating...' : 'Create'}
             </Button>
-
-            {/* Toast Notification */}
-            {toastMessage && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-                    <Alert
-                        type={toastType === 'success' ? 'success' : 'danger'}
-                        title={toastType === 'success' ? 'Success' : 'Error'}
-                        message={toastMessage}
-                        show={!!toastMessage}
-                        onClose={() => setToastMessage(null)}
-                        closable={true}
-                    />
-                </div>
-            )}
         </Form>
     );
 }

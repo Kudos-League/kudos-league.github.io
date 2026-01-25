@@ -9,7 +9,7 @@ import {
     ArrowRightOnRectangleIcon,
     ShieldCheckIcon,
     UserCircleIcon,
-    MagnifyingGlassIcon
+    ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -31,8 +31,9 @@ type NavItem = {
 // User menu items for logged-in users
 function useUserMenuItems(isAdmin?: boolean): NavItem[] {
     const items: NavItem[] = [
+        { name: 'My Activity', to: routes.activity, icon: ChartBarIcon },
         { name: 'About', to: routes.about, icon: InformationCircleIcon },
-        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
+        { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon }
     ];
     if (isAdmin) {
         items.push({ name: 'Admin', to: routes.admin, icon: ShieldCheckIcon });
@@ -68,40 +69,10 @@ function NavItemComponent({
                 )}
             >
                 {children}
-
             </Link>
         </li>
     );
 }
-
-
-function DesktopNavigation({ items }: { items: NavItem[] }) {
-    return (
-        <nav className='hidden lg:block'>
-            <ul className='flex rounded-full bg-white/90 px-3 py-2 text-sm font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10'>
-                {items.map((item) => (
-                    <li key={item.name}>
-                        <NavItemComponent
-                            href={item.to}
-                            className='flex flex-col items-center justify-center px-4 py-2 transition-all duration-150 hover:scale-105'
-                        >
-                            {item.icon && (
-                                <item.icon
-                                    className={clsx(
-                                        'h-5 w-5 mb-1 transition-colors duration-150',
-                                        'text-zinc-500 group-hover:text-brand-600 dark:text-zinc-400 dark:group-hover:text-brand-300'
-                                    )}
-                                />
-                            )}
-                            <span className='text-xs lg:text-sm'>{item.name}</span>
-                        </NavItemComponent>
-                    </li>
-                ))}
-            </ul>
-        </nav>
-    );
-}
-
 
 
 // function ThemeToggleButton() {
@@ -145,7 +116,13 @@ function DesktopNavigation({ items }: { items: NavItem[] }) {
 //     );
 // }
 
-function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: NavItem[] }) {
+function UserMenu({
+    onLogout,
+    menuItems
+}: {
+    onLogout: () => void;
+    menuItems: NavItem[];
+}) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const profileHref = user ? routes.user[user.id] : routes.login;
@@ -153,7 +130,10 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(event.target as Node)
+            ) {
                 setOpen(false);
             }
         }
@@ -177,8 +157,7 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
                 <Avatar
                     avatar={getImagePath(user?.avatar)}
                     username={user?.username}
-                    size={40}
-                    className='sm:!w-11 sm:!h-11 lg:!w-12 lg:!h-12'
+                    size={46}
                 />
             </button>
             {open && (
@@ -203,7 +182,9 @@ function UserMenu({ onLogout, menuItems }: { onLogout: () => void; menuItems: Na
                                 onClick={() => setOpen(false)}
                                 className='flex items-center gap-3 px-4 py-3 text-base font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
                             >
-                                {Icon && <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />}
+                                {Icon && (
+                                    <Icon className='h-5 w-5 text-zinc-500 dark:text-zinc-400' />
+                                )}
                                 <span>{item.name}</span>
                             </Link>
                         );
@@ -244,7 +225,10 @@ export default function Navbar({
     onOpenSearch
 }: NavbarProps) {
     const navigate = useNavigate();
-    const userMenuItems = useMemo(() => useUserMenuItems(user?.admin), [user?.admin]);
+    const userMenuItems = useMemo(
+        () => useUserMenuItems(user?.admin),
+        [user?.admin]
+    );
     const { state: notificationsState } = useNotifications();
 
     // Count unread DM notifications
@@ -256,17 +240,26 @@ export default function Navbar({
 
     return (
         <>
-            <header className='sticky top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-4 lg:py-8 backdrop-blur-md'>
+            <header className='sticky-nav top-0 z-50 flex justify-between items-center gap-1 sm:gap-2 bg-transparent px-2 sm:px-4 py-2 lg:py-8 backdrop-blur-md pb-1 md:py-8'>
                 <div className='flex items-center gap-1 sm:gap-2 flex-shrink-0 min-w-0 pl-2 sm:pl-4'>
-                    <div className='flex-shrink-0'>
-                        {brand || <></>}
-                    </div>
+                    <div className='flex-shrink-0 mr-2'>{brand || <></>}</div>
+                    <Link
+                        to={routes.donate}
+                        className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
+                        aria-label='Donate'
+                    >
+                        <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
+                        <span>Donate</span>
+                    </Link>
                 </div>
 
                 <div className='flex flex-1 items-center min-w-0 px-2'>
                     {isLoggedIn && (
-                        <div className='hidden lg:flex w-full justify-center'>
-                            <SearchBar className='w-full max-w-3xl' />
+                        <div className='flex w-full justify-center'>
+                            <SearchBar
+                                className='w-full max-w-3xl'
+                                onOpenSearchModal={onOpenSearch}
+                            />
                         </div>
                     )}
                 </div>
@@ -276,14 +269,6 @@ export default function Navbar({
 
                     {isLoggedIn ? (
                         <>
-                            <Link
-                                to={routes.donate}
-                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
-                                aria-label='Donate'
-                            >
-                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span className='hidden sm:inline'>Donate</span>
-                            </Link>
                             {/* Create button - Desktop only */}
                             <Link
                                 to={routes.createPost}
@@ -292,14 +277,7 @@ export default function Navbar({
                             >
                                 Create
                             </Link>
-                            {/* Mobile Search Button */}
-                            <button
-                                onClick={onOpenSearch}
-                                className='lg:hidden flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm hover:bg-white dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 mr-2'
-                                aria-label='Search'
-                            >
-                                <MagnifyingGlassIcon className='h-5 w-5 sm:h-6 sm:w-6' />
-                            </button>
+                            {/* Mobile Search Button - Hidden since SearchBar is always visible */}
                             {/* DMs button - Desktop only */}
                             <button
                                 onClick={onOpenDMs}
@@ -321,20 +299,14 @@ export default function Navbar({
                                 <NotificationsBell />
                             </div>
                             <div className='flex-shrink-0 pr-2 sm:pr-4'>
-                                <UserMenu onLogout={onLogout} menuItems={userMenuItems} />
+                                <UserMenu
+                                    onLogout={onLogout}
+                                    menuItems={userMenuItems}
+                                />
                             </div>
                         </>
                     ) : (
                         <div className='flex items-center gap-1 sm:gap-1.5 flex-shrink-0'>
-                            <Link
-                                to={routes.donate}
-                                className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap flex items-center gap-1'
-                                aria-label='Donate'
-                            >
-                                <HeartIcon className='h-4 w-4 text-red-600 sm:h-5 sm:w-5' />
-                                <span className='hidden sm:inline'>Donate</span>
-                            </Link>
-
                             <Link
                                 to={routes.login}
                                 className='rounded-full bg-white/90 px-2 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm lg:px-4 lg:py-2 font-medium text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-900/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 whitespace-nowrap'

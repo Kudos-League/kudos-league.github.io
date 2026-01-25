@@ -1,13 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { endOfDay, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { PencilSquareIcon, ArrowLeftIcon } from '@heroicons/react/24/solid';
+import {
+    PencilSquareIcon,
+    ArrowLeftIcon,
+    TrashIcon
+} from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { EventDTO, LocationDTO, MessageDTO, UserDTO } from '@/shared/api/types';
-import { useJoinEvent } from '@/shared/api/mutations/events';
+import { useJoinEvent, useDeleteEvent } from '@/shared/api/mutations/events';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
@@ -41,6 +46,19 @@ function EditEventButton({ onClick }: { onClick: () => void }) {
     );
 }
 
+function DeleteEventButton({ onClick }: { onClick: () => void }) {
+    return (
+        <Button
+            onClick={onClick}
+            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
+            variant='danger'
+        >
+            <TrashIcon className='h-4 w-4 shrink-0' aria-hidden='true' />
+            Delete Event
+        </Button>
+    );
+}
+
 export default function EventDetails({ event, setEvent }: Props) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
@@ -59,17 +77,34 @@ export default function EventDetails({ event, setEvent }: Props) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [eventCreator, setEventCreator] = useState<UserDTO | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const eventStartDate = useMemo(() => new Date(event.startTime), [event.startTime]);
-    const eventEndDate = useMemo(() => (event.endTime ? new Date(event.endTime) : null), [event.endTime]);
-    const eventAutoEndTime = useMemo(() => endOfDay(eventStartDate), [eventStartDate]);
+    const eventStartDate = useMemo(
+        () => new Date(event.startTime),
+        [event.startTime]
+    );
+    const eventEndDate = useMemo(
+        () => (event.endTime ? new Date(event.endTime) : null),
+        [event.endTime]
+    );
+    const eventAutoEndTime = useMemo(
+        () => endOfDay(eventStartDate),
+        [eventStartDate]
+    );
     const eventUsesAutoEnd = useMemo(() => {
         if (!eventEndDate) return true;
-        return Math.abs(eventEndDate.getTime() - eventAutoEndTime.getTime()) < 60000;
+        return (
+            Math.abs(eventEndDate.getTime() - eventAutoEndTime.getTime()) <
+            60000
+        );
     }, [eventEndDate, eventAutoEndTime]);
 
-    const autoEditEndTime = useMemo(() => endOfDay(editData.startTime), [editData.startTime]);
+    const autoEditEndTime = useMemo(
+        () => endOfDay(editData.startTime),
+        [editData.startTime]
+    );
 
     const handleMessageCreated = (message: MessageDTO) => {
         setEvent((prev) => {
@@ -85,7 +120,9 @@ export default function EventDetails({ event, setEvent }: Props) {
         setEvent((prev) => {
             if (!prev) return prev;
             const messages = (prev.messages || []).map((msg) =>
-                msg.id === updatedMessage.id ? { ...msg, ...updatedMessage } : msg
+                msg.id === updatedMessage.id
+                    ? { ...msg, ...updatedMessage }
+                    : msg
             );
             return {
                 ...prev,
@@ -116,26 +153,28 @@ export default function EventDetails({ event, setEvent }: Props) {
     useEffect(() => {
         const fetchSender = async () => {
             try {
-                const sender = await apiGet<UserDTO>(`/users/${event.creatorID}`);
+                const sender = await apiGet<UserDTO>(
+                    `/users/${event.creatorID}`
+                );
                 setEventCreator(sender);
             }
             catch (err) {
                 console.error('Error loading user info', err);
-                setError('Couldn\'t get user info. User might\'ve been deleted.');
+                setError("Couldn't get user info. User might've been deleted.");
             }
         };
         fetchSender();
     }, [event]);
 
     // Check if current user is the event creator
-    const isEventCreator = user?.id && (
-        (event as any).creatorID === user.id || 
-        (event as any).userId === user.id || 
-        (event as any).authorId === user.id ||
-        (event as any).ownerId === user.id ||
-        (event as any).createdBy === user.id ||
-        eventCreator?.id === user.id
-    );
+    const isEventCreator =
+        user?.id &&
+        ((event as any).creatorID === user.id ||
+            (event as any).userId === user.id ||
+            (event as any).authorId === user.id ||
+            (event as any).ownerId === user.id ||
+            (event as any).createdBy === user.id ||
+            eventCreator?.id === user.id);
 
     const dateValidation = useMemo(() => {
         const errors: string[] = [];
@@ -160,14 +199,23 @@ export default function EventDetails({ event, setEvent }: Props) {
             }
         }
         else {
-            warnings.push(`No custom end time selected — event will end on ${format(autoEditEndTime, 'PPP p')}`);
+            warnings.push(
+                `No custom end time selected — event will end on ${format(autoEditEndTime, 'PPP p')}`
+            );
         }
 
         const isValid = errors.length === 0;
-        const canSubmit = isValid && editData.title.trim() && editData.description.trim();
+        const canSubmit =
+            isValid && editData.title.trim() && editData.description.trim();
 
         return { errors, warnings, isValid, canSubmit };
-    }, [editData.startTime, editData.endTime, editData.title, editData.description, autoEditEndTime]);
+    }, [
+        editData.startTime,
+        editData.endTime,
+        editData.title,
+        editData.description,
+        autoEditEndTime
+    ]);
 
     const handleStartEdit = () => {
         const existingEnd = eventEndDate ? new Date(eventEndDate) : null;
@@ -198,7 +246,11 @@ export default function EventDetails({ event, setEvent }: Props) {
             };
 
             if (editData.global) {
-                updateData.location = { regionID: null, name: null, global: true } as unknown as LocationDTO;
+                updateData.location = {
+                    regionID: null,
+                    name: null,
+                    global: true
+                } as unknown as LocationDTO;
             }
             else {
                 if (editData.location) {
@@ -213,12 +265,20 @@ export default function EventDetails({ event, setEvent }: Props) {
                 }
             }
 
-            const updatedEvent = await apiMutate<EventDTO, any>(`/events/${event.id}`, 'put', updateData, { as: 'json' });
+            const updatedEvent = await apiMutate<EventDTO, any>(
+                `/events/${event.id}`,
+                'put',
+                updateData,
+                { as: 'json' }
+            );
 
             const serverEvent = updatedEvent as EventDTO;
             setEvent(serverEvent);
             try {
-                queryClient.setQueryData(['event', serverEvent.id], serverEvent);
+                queryClient.setQueryData(
+                    ['event', serverEvent.id],
+                    serverEvent
+                );
                 queryClient.invalidateQueries({ queryKey: ['events'] });
             }
             catch (e) {
@@ -249,6 +309,7 @@ export default function EventDetails({ event, setEvent }: Props) {
     };
 
     const joinMutation = useJoinEvent(event.id);
+    const deleteMutation = useDeleteEvent();
 
     const handleJoin = async () => {
         if (!user || !event.id) return;
@@ -267,6 +328,31 @@ export default function EventDetails({ event, setEvent }: Props) {
             setJoining(false);
         }
     };
+
+    const handleDeleteEvent = async () => {
+        if (!event.id) return;
+        setDeleting(true);
+        setError(null);
+        try {
+            await deleteMutation.mutateAsync(event.id);
+            navigate(-1);
+        }
+        catch (err: any) {
+            console.error('Delete failed:', err);
+            setError(err?.message || 'Failed to delete event');
+            setDeleting(false);
+        }
+    };
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (showDeleteConfirm) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showDeleteConfirm]);
 
     const handleLeave = async () => {
         if (!user || !event.id) return;
@@ -287,14 +373,14 @@ export default function EventDetails({ event, setEvent }: Props) {
     return (
         <div className='max-w-3xl mx-auto px-4 py-8 space-y-6'>
             {/* Back Button */}
-            <Button
+            <button
                 onClick={() => navigate(-1)}
-                variant='secondary'
-                className='inline-flex items-center gap-2'
+                className='flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
+                aria-label='Go back'
             >
-                <ArrowLeftIcon className='h-4 w-4' />
-                Back
-            </Button>
+                <ArrowLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
+            </button>
 
             {/* Event Header with Edit Button */}
             <div className='flex items-start justify-between'>
@@ -303,28 +389,83 @@ export default function EventDetails({ event, setEvent }: Props) {
                         <input
                             type='text'
                             value={editData.title}
-                            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                            onChange={(e) =>
+                                setEditData({
+                                    ...editData,
+                                    title: e.target.value
+                                })
+                            }
                             className='text-2xl font-bold w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
                             placeholder='Event title'
                         />
                     ) : (
-                        <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>{event.title}</h1>
+                        <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+                            {event.title}
+                        </h1>
                     )}
                 </div>
 
                 {isEventCreator && !isEditing && (
-                    <EditEventButton onClick={handleStartEdit} />
+                    <div className='flex items-center gap-2'>
+                        <EditEventButton onClick={handleStartEdit} />
+                        <DeleteEventButton
+                            onClick={() => setShowDeleteConfirm(true)}
+                        />
+                    </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm &&
+                createPortal(
+                    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+                        <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full p-6'>
+                            <h2 className='text-lg font-bold text-gray-900 dark:text-gray-100 mb-4'>
+                                Delete Event
+                            </h2>
+                            <p className='text-gray-700 dark:text-gray-300 mb-6'>
+                                Are you sure you want to delete this event? This
+                                action cannot be undone.
+                            </p>
+                            <div className='flex gap-3'>
+                                <Button
+                                    onClick={handleDeleteEvent}
+                                    disabled={deleting}
+                                    variant='danger'
+                                    className='flex-1'
+                                >
+                                    {deleting ? 'Deleting...' : 'Delete'}
+                                </Button>
+                                <Button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    disabled={deleting}
+                                    variant='secondary'
+                                    className='flex-1'
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
 
             {/* Event Description */}
             {isEditing ? (
                 <div className='space-y-4'>
                     <textarea
                         value={editData.description}
-                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                        onChange={(e) =>
+                            setEditData({
+                                ...editData,
+                                description: e.target.value
+                            })
+                        }
                         className='w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
-                        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                        style={{
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y'
+                        }}
                         rows={4}
                         placeholder='Event description'
                     />
@@ -332,24 +473,43 @@ export default function EventDetails({ event, setEvent }: Props) {
                     {/* Edit Date/Time */}
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <div>
-                            <label className='block font-semibold mb-1'>Start Time</label>
+                            <label className='block font-semibold mb-1'>
+                                Start Time
+                            </label>
                             <UniversalDatePicker
                                 date={editData.startTime}
-                                onChange={(date) => setEditData({ ...editData, startTime: date })}
+                                onChange={(date) =>
+                                    setEditData({
+                                        ...editData,
+                                        startTime: date
+                                    })
+                                }
                                 label=''
                             />
                         </div>
                         <div>
-                            <label className='block font-semibold mb-1'>End Time (Optional)</label>
+                            <label className='block font-semibold mb-1'>
+                                End Time (Optional)
+                            </label>
                             {editData.endTime ? (
                                 <div className='space-y-2'>
                                     <UniversalDatePicker
                                         date={editData.endTime}
-                                        onChange={(date) => setEditData({ ...editData, endTime: date })}
+                                        onChange={(date) =>
+                                            setEditData({
+                                                ...editData,
+                                                endTime: date
+                                            })
+                                        }
                                         label=''
                                     />
                                     <Button
-                                        onClick={() => setEditData({ ...editData, endTime: null })}
+                                        onClick={() =>
+                                            setEditData({
+                                                ...editData,
+                                                endTime: null
+                                            })
+                                        }
                                         variant='secondary'
                                         className='text-sm'
                                     >
@@ -359,16 +519,23 @@ export default function EventDetails({ event, setEvent }: Props) {
                             ) : (
                                 <div className='space-y-2'>
                                     <Button
-                                        onClick={() => setEditData({ 
-                                            ...editData, 
-                                            endTime: new Date(editData.startTime.getTime() + 2 * 60 * 60 * 1000)
-                                        })}
+                                        onClick={() =>
+                                            setEditData({
+                                                ...editData,
+                                                endTime: new Date(
+                                                    editData.startTime.getTime() +
+                                                        2 * 60 * 60 * 1000
+                                                )
+                                            })
+                                        }
                                         variant='secondary'
                                     >
-                                    Add End Time
+                                        Add End Time
                                     </Button>
                                     <div className='text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded p-2'>
-                                        Without a custom end time, this event will end on {format(autoEditEndTime, 'PPP p')}.
+                                        Without a custom end time, this event
+                                        will end on{' '}
+                                        {format(autoEditEndTime, 'PPP p')}.
                                     </div>
                                 </div>
                             )}
@@ -377,11 +544,18 @@ export default function EventDetails({ event, setEvent }: Props) {
 
                     {/* Global/Local Toggle */}
                     <div className='flex items-center gap-3'>
-                        <label className='font-semibold'>Is Global Event?</label>
+                        <label className='font-semibold'>
+                            Is Global Event?
+                        </label>
                         <input
                             type='checkbox'
                             checked={editData.global}
-                            onChange={() => setEditData({ ...editData, global: !editData.global })}
+                            onChange={() =>
+                                setEditData({
+                                    ...editData,
+                                    global: !editData.global
+                                })
+                            }
                             className='w-4 h-4'
                         />
                         <span className='text-sm text-gray-600'>
@@ -392,9 +566,12 @@ export default function EventDetails({ event, setEvent }: Props) {
                     {/* Location (if not global) */}
                     {!editData.global && (
                         <div>
-                            <label className='block font-semibold mb-2'>Event Location</label>
+                            <label className='block font-semibold mb-2'>
+                                Event Location
+                            </label>
                             <MapDisplay
-                                edit={true}
+                                edit
+                                exactLocation
                                 regionID={editData.location?.regionID}
                                 width='100%'
                                 height={300}
@@ -405,8 +582,10 @@ export default function EventDetails({ event, setEvent }: Props) {
                                             location: {
                                                 regionID: data.placeID,
                                                 name: data.name,
-                                                latitude: data.coordinates.latitude,
-                                                longitude: data.coordinates.longitude
+                                                latitude:
+                                                    data.coordinates.latitude,
+                                                longitude:
+                                                    data.coordinates.longitude
                                             } as LocationDTO
                                         });
                                     }
@@ -417,10 +596,14 @@ export default function EventDetails({ event, setEvent }: Props) {
                     )}
 
                     {/* Validation Messages */}
-                    {(dateValidation.errors.length > 0 || dateValidation.warnings.length > 0) && (
+                    {(dateValidation.errors.length > 0 ||
+                        dateValidation.warnings.length > 0) && (
                         <div className='space-y-2'>
                             {dateValidation.errors.map((error, i) => (
-                                <div key={`error-${i}`} className='bg-red-50 border border-red-200 rounded p-3'>
+                                <div
+                                    key={`error-${i}`}
+                                    className='bg-red-50 border border-red-200 rounded p-3'
+                                >
                                     <p className='text-red-700 text-sm font-medium flex items-center'>
                                         <span className='mr-2'>❌</span>
                                         {error}
@@ -428,7 +611,10 @@ export default function EventDetails({ event, setEvent }: Props) {
                                 </div>
                             ))}
                             {dateValidation.warnings.map((warning, i) => (
-                                <div key={`warning-${i}`} className='bg-yellow-50 border border-yellow-200 rounded p-3'>
+                                <div
+                                    key={`warning-${i}`}
+                                    className='bg-yellow-50 border border-yellow-200 rounded p-3'
+                                >
                                     <p className='text-yellow-700 text-sm font-medium flex items-center'>
                                         <span className='mr-2'>⚠️</span>
                                         {warning}
@@ -447,7 +633,7 @@ export default function EventDetails({ event, setEvent }: Props) {
 
                     {/* Save/Cancel Buttons */}
                     <div className='flex gap-3 pt-4'>
-                        <Button 
+                        <Button
                             onClick={handleSaveEdit}
                             disabled={!dateValidation.canSubmit || saving}
                             variant='success'
@@ -463,11 +649,20 @@ export default function EventDetails({ event, setEvent }: Props) {
                 <>
                     <p className='text-gray-700'>{event.description}</p>
                     <p className='text-sm text-gray-500 italic'>
-                        {format(toZonedTime(new Date(event.startTime), tz), 'PPP p')}
+                        {format(
+                            toZonedTime(new Date(event.startTime), tz),
+                            'PPP p'
+                        )}
                         {' – '}
                         {eventUsesAutoEnd
                             ? `Auto end on ${format(toZonedTime(eventAutoEndTime, tz), 'PPP p')}`
-                            : format(toZonedTime(new Date(event.endTime as any), tz), 'PPP p')}
+                            : format(
+                                toZonedTime(
+                                    new Date(event.endTime as any),
+                                    tz
+                                ),
+                                'PPP p'
+                            )}
                     </p>
                 </>
             )}
@@ -475,7 +670,9 @@ export default function EventDetails({ event, setEvent }: Props) {
             {/* Event Creator */}
             {!isEditing && (
                 <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700'>
-                    <h3 className='text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2'>Organized by</h3>
+                    <h3 className='text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2'>
+                        Organized by
+                    </h3>
                     <UserCard user={eventCreator} large />
                 </div>
             )}
@@ -487,6 +684,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                         regionID={event.location.regionID}
                         height={200}
                         edit={false}
+                        exactLocation
                     />
                 </div>
             )}
@@ -535,7 +733,9 @@ export default function EventDetails({ event, setEvent }: Props) {
                         )}
                     </div>
 
-                    {!event.participants?.some((p: any) => p.id === user?.id) && (
+                    {!event.participants?.some(
+                        (p: any) => p.id === user?.id
+                    ) && (
                         <Button
                             onClick={handleJoin}
                             disabled={joining}

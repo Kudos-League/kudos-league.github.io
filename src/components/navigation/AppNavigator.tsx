@@ -14,8 +14,10 @@ import Communities from '../communities/Communities';
 const Home = lazy(() => import('@/pages/home'));
 const Result = lazy(() => import('@/pages/donate/result'));
 const Post = lazy(() => import('@/pages/post'));
+const EditPost = lazy(() => import('@/pages/post/edit'));
 const CreatePost = lazy(() => import('@/pages/create-post'));
 const Profile = lazy(() => import('@/pages/user'));
+const Activity = lazy(() => import('@/pages/activity'));
 const EventDetails = lazy(() => import('@/pages/event'));
 const SignIn = lazy(() => import('@/pages/login'));
 const SignUp = lazy(() => import('@/pages/signup'));
@@ -26,6 +28,7 @@ const AdminDashboard = lazy(() => import('@/pages/admin'));
 const FeedbackPage = lazy(() => import('@/pages/feedback'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const SearchPage = lazy(() => import('@/pages/search'));
+const ComponentPreviewPage = lazy(() => import('@/pages/dev/components'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
@@ -41,7 +44,7 @@ const HomeOrAbout = () => {
     const { loading } = useAuth();
 
     // Show spinner while loading auth state
-    if (loading) return <Spinner text='Loading...' />;
+    if (loading) return <Spinner text='Loading...' variant='fullscreen' />;
 
     // Show home feed for all users (logged in or not)
     return <Home />;
@@ -49,10 +52,13 @@ const HomeOrAbout = () => {
 
 function AppNavigator() {
     return (
-        <Suspense fallback={<Spinner text='Loading app...' />}>
+        <Suspense
+            fallback={<Spinner text='Loading app...' variant='fullscreen' />}
+        >
             <Routes>
                 <Route path='' element={<Layout />}>
-                    <Route path={routes.about} element={<About/>} />
+                    <Route path={routes.about} element={<About />} />
+                    <Route path='/dev/components' element={<ComponentPreviewPage />} />
                     <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />
@@ -70,6 +76,15 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <Post />
+                            </RequireAuth>
+                        }
+                    />
+
+                    <Route
+                        path='/post/:id/edit'
+                        element={
+                            <RequireAuth>
+                                <EditPost />
                             </RequireAuth>
                         }
                     />
@@ -167,6 +182,14 @@ function AppNavigator() {
                         element={
                             <RequireAuth>
                                 <NotificationsPage />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path={routes.activity}
+                        element={
+                            <RequireAuth>
+                                <Activity />
                             </RequireAuth>
                         }
                     />

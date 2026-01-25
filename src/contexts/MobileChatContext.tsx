@@ -5,13 +5,19 @@ interface MobileChatContextType {
     setIsInMobileChat: (value: boolean) => void;
 }
 
-const MobileChatContext = createContext<MobileChatContextType | undefined>(undefined);
+const MobileChatContext = createContext<MobileChatContextType | undefined>(
+    undefined
+);
 
-export const MobileChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const MobileChatProvider: React.FC<{ children: ReactNode }> = ({
+    children
+}) => {
     const [isInMobileChat, setIsInMobileChat] = useState(false);
 
     return (
-        <MobileChatContext.Provider value={{ isInMobileChat, setIsInMobileChat }}>
+        <MobileChatContext.Provider
+            value={{ isInMobileChat, setIsInMobileChat }}
+        >
             {children}
         </MobileChatContext.Provider>
     );
@@ -20,7 +26,9 @@ export const MobileChatProvider: React.FC<{ children: ReactNode }> = ({ children
 export const useMobileChat = () => {
     const context = useContext(MobileChatContext);
     if (context === undefined) {
-        throw new Error('useMobileChat must be used within a MobileChatProvider');
+        throw new Error(
+            'useMobileChat must be used within a MobileChatProvider'
+        );
     }
     return context;
 };

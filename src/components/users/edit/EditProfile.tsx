@@ -19,12 +19,14 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { apiMutate, apiGet } from '@/shared/api/apiClient';
+import { useDeleteAccountMutation } from '@/shared/api/mutations/users';
+import { useBlockedUsersQuery } from '@/shared/api/queries/users';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
 import { useAuth } from '@/contexts/useAuth';
 import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import UserCard from '@/components/users/UserCard';
 
 const bustCache = (u: string) =>
@@ -44,12 +46,22 @@ const EditProfile: React.FC<Props> = ({
 }) => {
     const auth = useAuth();
     const { user, updateUser: updateUserCache } = auth;
+    const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const wasInvited = !!targetUser.invitedByUserID;
-    const isAdminEditingOther = !!auth.user?.admin && auth.user.id !== targetUser.id;
+    const isAdminEditingOther =
+        !!auth.user?.admin && auth.user.id !== targetUser.id;
     const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
 
-    const { setLocation, location: browserLocation, errorMsg: locationError } = useLocation();
-    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
+    const {
+        setLocation,
+        location: browserLocation,
+        errorMsg: locationError
+    } = useLocation();
+    const {
+        blockedUsers,
+        unblock,
+        loading: blockingLoading
+    } = useBlockedUsers();
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showImageOptions, setShowImageOptions] = useState(false);
@@ -67,49 +79,55 @@ const EditProfile: React.FC<Props> = ({
     const [locationLabel, setLocationLabel] = useState<string>(
         targetUser?.location?.name || ''
     );
-    const [blockedUsersDetails, setBlockedUsersDetails] = useState<UserDTO[]>([]);
+    const deleteAccountMutation = useDeleteAccountMutation();
+    const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
 
     const targetUserID = targetUser?.id;
 
     const updateUserMutation = useUpdateUser(targetUserID?.toString() ?? 'me');
-    const defaults = React.useMemo(
-        () => {
-            // Normalize location to only include expected fields
-            let normalizedLocation = undefined;
-            if (user.location) {
-                const { latitude, longitude, name, regionID } = user.location;
-                // Only include if we have the core location data
-                if (latitude != null && longitude != null) {
-                    normalizedLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
-                }
+    const defaults = React.useMemo(() => {
+        // Normalize location to only include expected fields
+        // Use targetUser.location as the source of truth since that's what MapDisplay uses
+        const sourceLocation = targetUser?.location || user.location;
+        let normalizedLocation = undefined;
+        if (sourceLocation) {
+            const { latitude, longitude, name, regionID } = sourceLocation;
+            // Only include if we have the core location data
+            if (latitude != null && longitude != null) {
+                normalizedLocation = {
+                    latitude,
+                    longitude,
+                    name: name || '',
+                    regionID: regionID || null
+                };
             }
+        }
 
-            return {
-                email: user.email,
-                username: user.username,
-                displayName: user.displayName,
-                avatar: [],
-                location: normalizedLocation,
-                tags: user.tags.map((t) => t.name) || [],
-                about: user.settings?.about || '',
-                profession: user.settings?.profession || '',
-                avatarURL: '',
-                admin: targetUser?.admin ?? false,
-                kudos: targetUser?.kudos ?? 0
-            };
-        },
-        [
-            user.email,
-            user.username,
-            user.displayName,
-            JSON.stringify(user.location),
-            JSON.stringify(user.tags),
-            user.settings?.about,
-            user.settings?.profession,
-            targetUser?.admin,
-            targetUser?.kudos
-        ]
-    );
+        return {
+            email: user.email,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: [],
+            location: normalizedLocation,
+            tags: user.tags.map((t) => t.name) || [],
+            about: user.settings?.about || '',
+            profession: user.settings?.profession || '',
+            avatarURL: '',
+            admin: targetUser?.admin ?? false,
+            kudos: targetUser?.kudos ?? 0
+        };
+    }, [
+        user.email,
+        user.username,
+        user.displayName,
+        JSON.stringify(targetUser?.location),
+        JSON.stringify(user.location),
+        JSON.stringify(user.tags),
+        user.settings?.about,
+        user.settings?.profession,
+        targetUser?.admin,
+        targetUser?.kudos
+    ]);
     const form = useForm<ProfileFormValues>({
         mode: 'onChange',
         reValidateMode: 'onChange',
@@ -127,7 +145,12 @@ const EditProfile: React.FC<Props> = ({
         if (u.location) {
             const { latitude, longitude, name, regionID } = u.location;
             if (latitude != null && longitude != null) {
-                normalizedLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
+                normalizedLocation = {
+                    latitude,
+                    longitude,
+                    name: name || '',
+                    regionID: regionID || null
+                };
             }
         }
 
@@ -149,10 +172,23 @@ const EditProfile: React.FC<Props> = ({
     };
 
     const baselineRef = React.useRef(defaults);
+    // Track the initial location name from MapDisplay (more accurate than defaults)
+    const initialLocationNameRef = React.useRef<string | null>(null);
 
     const effectiveChanges = React.useMemo(() => {
-        return computeChanged(form.getValues(), baselineRef.current);
-    }, [allValues]);
+        // Use the initial location name from MapDisplay if available
+        const baselineWithInitialLocation = initialLocationNameRef.current !== null
+            ? {
+                ...defaults,
+                location: defaults.location
+                    ? { ...defaults.location, name: initialLocationNameRef.current }
+                    : initialLocationNameRef.current
+                        ? { name: initialLocationNameRef.current, latitude: 0, longitude: 0, regionID: null }
+                        : undefined
+            }
+            : defaults;
+        return computeChanged(form.getValues(), baselineWithInitialLocation);
+    }, [allValues, defaults]);
 
     const canSave =
         Object.keys(effectiveChanges).length > 0 &&
@@ -216,36 +252,6 @@ const EditProfile: React.FC<Props> = ({
         };
     }, []);
 
-    // Fetch blocked users details
-    useEffect(() => {
-        if (!blockedUsers || blockedUsers.length === 0) {
-            setBlockedUsersDetails([]);
-            return;
-        }
-
-        const fetchBlockedUsersDetails = async () => {
-            try {
-                const usersPromises = blockedUsers.map(async (userId) => {
-                    try {
-                        const userData = await apiGet<UserDTO>(`/users/${userId}`);
-                        return userData;
-                    }
-                    catch (err) {
-                        console.error(`Failed to fetch user ${userId}:`, err);
-                        return null;
-                    }
-                });
-
-                const users = await Promise.all(usersPromises);
-                setBlockedUsersDetails(users.filter((u): u is UserDTO => u !== null));
-            }
-            catch (err) {
-                console.error('Failed to fetch blocked users details:', err);
-            }
-        };
-
-        fetchBlockedUsersDetails();
-    }, [blockedUsers]);
 
     const handleFileSelect = React.useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,27 +314,35 @@ const EditProfile: React.FC<Props> = ({
                     },
                     (error) => {
                         setToastType('error');
-                        setToastMessage('Location access denied. Please enable location permissions in your browser.');
+                        setToastMessage(
+                            'Location access denied. Please enable location permissions in your browser.'
+                        );
                     }
                 );
                 return; // Wait for the location to be set
-            } 
+            }
             catch (err) {
                 setToastType('error');
-                setToastMessage('Unable to access location. Please check your browser settings.');
+                setToastMessage(
+                    'Unable to access location. Please check your browser settings.'
+                );
                 return;
             }
         }
 
         if (locationError) {
             setToastType('error');
-            setToastMessage('Unable to get your location. Please enable location services in your browser.');
+            setToastMessage(
+                'Unable to get your location. Please enable location services in your browser.'
+            );
             return;
         }
 
         if (!browserLocation) {
             setToastType('error');
-            setToastMessage('Waiting for browser location... Please allow location access when prompted.');
+            setToastMessage(
+                'Waiting for browser location... Please allow location access when prompted.'
+            );
             return;
         }
 
@@ -366,7 +380,9 @@ const EditProfile: React.FC<Props> = ({
         catch (err) {
             console.error('Failed to set current location:', err);
             setToastType('error');
-            setToastMessage('Failed to set current location. Please try again.');
+            setToastMessage(
+                'Failed to set current location. Please try again.'
+            );
         }
     }, [browserLocation, locationError, form, setLocation]);
 
@@ -447,13 +463,20 @@ const EditProfile: React.FC<Props> = ({
                 (payload as any).tags = (payload as any).tags || [];
             }
             console.log('Submitting payload:', payload); // DEBUG: See what's being sent
-        
+
             const updatedUser = await updateUserMutation.mutateAsync(payload);
-        
+
             console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
             if (updatedUser?.id && updatedUser.id === auth.user?.id) {
-                updateUserCache(updatedUser);
+                // Apply cache busting to avatar URL so the navbar shows the updated image
+                const userToCache = {
+                    ...updatedUser,
+                    avatar: updatedUser.avatar
+                        ? bustCache(updatedUser.avatar)
+                        : null
+                };
+                updateUserCache(userToCache);
             }
 
             if (updatedUser?.id && setTargetUser) {
@@ -475,9 +498,15 @@ const EditProfile: React.FC<Props> = ({
             // Normalize location for baseline
             let baselineLocation = undefined;
             if (updatedUser.location) {
-                const { latitude, longitude, name, regionID } = updatedUser.location;
+                const { latitude, longitude, name, regionID } =
+                    updatedUser.location;
                 if (latitude != null && longitude != null) {
-                    baselineLocation = { latitude, longitude, name: name || '', regionID: regionID || null };
+                    baselineLocation = {
+                        latitude,
+                        longitude,
+                        name: name || '',
+                        regionID: regionID || null
+                    };
                 }
             }
 
@@ -492,7 +521,8 @@ const EditProfile: React.FC<Props> = ({
                 profession: updatedUser.settings?.profession || '',
                 avatarURL: '',
                 admin: updatedUser.admin ?? false,
-                kudos: (updatedUser as any).kudos ?? (defaults as any).kudos ?? 0
+                kudos:
+                    (updatedUser as any).kudos ?? (defaults as any).kudos ?? 0
             } as any;
 
             setToastType('success');
@@ -542,7 +572,7 @@ const EditProfile: React.FC<Props> = ({
         if (!confirmed) return;
 
         try {
-            await apiMutate<void, void>(`/users/me`, 'delete');
+            await deleteAccountMutation.mutateAsync();
         }
         catch (err) {
             console.error('Failed to deactivate account:', err);
@@ -576,7 +606,7 @@ const EditProfile: React.FC<Props> = ({
                     animation: slide-up 0.3s ease-out;
                 }
             `}</style>
-            
+
             <div className='w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden'>
                 {/* Header */}
                 <div className='border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4'>
@@ -587,8 +617,18 @@ const EditProfile: React.FC<Props> = ({
                                 className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex-shrink-0'
                                 aria-label='Close settings'
                             >
-                                <svg className='w-6 h-6' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                                <svg
+                                    className='w-6 h-6'
+                                    fill='none'
+                                    viewBox='0 0 24 24'
+                                    stroke='currentColor'
+                                >
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M6 18L18 6M6 6l12 12'
+                                    />
                                 </svg>
                             </button>
                             <h1 className='text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white truncate'>
@@ -612,10 +652,12 @@ const EditProfile: React.FC<Props> = ({
                             <div className='relative w-full sm:w-auto'>
                                 <Button
                                     variant='secondary'
-                                    onClick={() => setShowImageOptions((v) => !v)}
-                                    className="w-full sm:w-auto"
+                                    onClick={() =>
+                                        setShowImageOptions((v) => !v)
+                                    }
+                                    className='w-full sm:w-auto'
                                 >
-                Change avatar
+                                    Change avatar
                                 </Button>
                                 <AvatarMenu
                                     open={showImageOptions}
@@ -644,45 +686,69 @@ const EditProfile: React.FC<Props> = ({
                                         type='checkbox'
                                         checked={!!form.watch('admin')}
                                         onChange={(e) =>
-                                            form.setValue('admin', e.target.checked, {
-                                                shouldDirty: true,
-                                                shouldValidate: true
-                                            })
+                                            form.setValue(
+                                                'admin',
+                                                e.target.checked,
+                                                {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true
+                                                }
+                                            )
                                         }
                                     />
-                                    <span className='text-sm text-gray-700 dark:text-gray-200'>Grant this user admin access</span>
+                                    <span className='text-sm text-gray-700 dark:text-gray-200'>
+                                        Grant this user admin access
+                                    </span>
                                 </label>
                             </FormField>
                         )}
 
                         {auth.user?.admin && (
-                            <FormField label='Kudos' help={"Set the user's kudos balance (admin only)"}>
+                            <FormField
+                                label='Kudos'
+                                help={
+                                    "Set the user's kudos balance (admin only)"
+                                }
+                            >
                                 <label className='inline-flex items-center gap-2'>
                                     <input
                                         type='number'
                                         min={0}
-                                        value={String(form.watch('kudos') ?? '')}
+                                        value={String(
+                                            form.watch('kudos') ?? ''
+                                        )}
                                         onChange={(e) => {
-                                            const v = e.target.value === '' ? undefined : Number(e.target.value);
-                                            form.setValue('kudos', v, { shouldDirty: true, shouldValidate: true });
+                                            const v =
+                                                e.target.value === ''
+                                                    ? undefined
+                                                    : Number(e.target.value);
+                                            form.setValue('kudos', v, {
+                                                shouldDirty: true,
+                                                shouldValidate: true
+                                            });
                                         }}
                                         className='border rounded px-2 py-1'
                                         data-testid='kudos-input'
                                     />
-                                    <span className='text-sm text-gray-700 dark:text-gray-200'>Adjust kudos for this user</span>
+                                    <span className='text-sm text-gray-700 dark:text-gray-200'>
+                                        Adjust kudos for this user
+                                    </span>
                                 </label>
                             </FormField>
                         )}
 
                         <FormField label='Email'>
-                            <div className="w-full overflow-hidden">
+                            <div className='w-full overflow-hidden'>
                                 <Input
                                     disabled={wasInvited}
                                     name='email'
                                     form={form}
                                     label=''
-                                    placeholder={targetUser.email || 'Enter email address'}
-                                    className="w-full"
+                                    placeholder={
+                                        targetUser.email ||
+                                        'Enter email address'
+                                    }
+                                    className='w-full'
                                 />
                             </div>
                             {wasInvited && (
@@ -693,33 +759,36 @@ const EditProfile: React.FC<Props> = ({
                         </FormField>
 
                         <FormField label='Username'>
-                            <div className="w-full overflow-hidden">
+                            <div className='w-full overflow-hidden'>
                                 <Input
                                     name='username'
                                     form={form}
                                     label=''
                                     placeholder={user.username}
                                     disabled={!canEditProfile}
-                                    className="w-full"
+                                    className='w-full'
                                 />
                             </div>
                         </FormField>
 
                         <FormField label='Display Name'>
-                            <div className="w-full overflow-hidden">
+                            <div className='w-full overflow-hidden'>
                                 <Input
                                     name='displayName'
                                     form={form}
                                     label=''
                                     placeholder={user.displayName}
                                     disabled={!canEditProfile}
-                                    className="w-full"
+                                    className='w-full'
                                 />
                             </div>
                         </FormField>
 
-                        <FormField label='Profession' help='Share your current profession or role.'>
-                            <div className="w-full overflow-hidden">
+                        <FormField
+                            label='Profession'
+                            help='Share your current profession or role.'
+                        >
+                            <div className='w-full overflow-hidden'>
                                 <Input
                                     data-testid='profession'
                                     name='profession'
@@ -727,7 +796,7 @@ const EditProfile: React.FC<Props> = ({
                                     label=''
                                     placeholder='e.g., Software Engineer'
                                     disabled={!canEditProfile}
-                                    className="w-full"
+                                    className='w-full'
                                 />
                             </div>
                         </FormField>
@@ -736,7 +805,7 @@ const EditProfile: React.FC<Props> = ({
                             label='Description'
                             help='This will appear on your public profile.'
                         >
-                            <div className="w-full overflow-hidden">
+                            <div className='w-full overflow-hidden'>
                                 <Input
                                     data-testid='about'
                                     name='about'
@@ -745,7 +814,7 @@ const EditProfile: React.FC<Props> = ({
                                     placeholder='Write a short bio...'
                                     multiline
                                     disabled={!canEditProfile}
-                                    className="w-full"
+                                    className='w-full'
                                 />
                             </div>
                         </FormField>
@@ -753,12 +822,15 @@ const EditProfile: React.FC<Props> = ({
                         {/* Fix for TagInput */}
                         {canEditProfile && (
                             <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
-                                <div className="w-full overflow-hidden">
+                                <div className='w-full overflow-hidden'>
                                     <TagInput
                                         initialTags={tags}
                                         onTagsChange={(nextTags) => {
-                                            const next = nextTags.map((t) => t.name);
-                                            const prev = form.getValues('tags') || [];
+                                            const next = nextTags.map(
+                                                (t) => t.name
+                                            );
+                                            const prev =
+                                                form.getValues('tags') || [];
                                             if (
                                                 JSON.stringify(next) !==
                                                 JSON.stringify(prev)
@@ -769,7 +841,7 @@ const EditProfile: React.FC<Props> = ({
                                                 });
                                             }
                                         }}
-                                        className="w-full"
+                                        className='w-full'
                                     />
                                 </div>
                             </FormField>
@@ -797,7 +869,7 @@ const EditProfile: React.FC<Props> = ({
                                     </div>
                                 )}
 
-                                <div className="w-full overflow-hidden">
+                                <div className='w-full overflow-hidden'>
                                     <MapDisplay
                                         regionID={targetUser.location?.regionID}
                                         width='100%'
@@ -806,34 +878,59 @@ const EditProfile: React.FC<Props> = ({
                                         exactLocation
                                         shouldGetYourLocation
                                         inlineBanner={false}
-                                        onLabelChange={(label) => setLocationLabel(label)}
+                                        onLabelChange={(label) =>
+                                            setLocationLabel(label)
+                                        }
                                         onLocationChange={(data) => {
                                             if (!data) {
                                                 setLocation(null);
-                                                form.setValue('location', null as any, {
-                                                    shouldDirty: true,
-                                                    shouldValidate: true
-                                                });
+                                                form.setValue(
+                                                    'location',
+                                                    null as any,
+                                                    {
+                                                        shouldDirty: true,
+                                                        shouldValidate: true
+                                                    }
+                                                );
                                             }
                                             else {
                                                 const locationValue = {
-                                                    latitude: data.coordinates.latitude,
-                                                    longitude: data.coordinates.longitude,
-                                                    name: data.name || data.businessName || '',
+                                                    latitude:
+                                                        data.coordinates
+                                                            .latitude,
+                                                    longitude:
+                                                        data.coordinates
+                                                            .longitude,
+                                                    name:
+                                                        data.name ||
+                                                        data.businessName ||
+                                                        '',
                                                     regionID: data.placeID
                                                 };
 
                                                 setLocation(data.coordinates);
-                                                form.setValue('location', locationValue, {
-                                                    shouldDirty: true,
-                                                    shouldValidate: true
-                                                });
+                                                // Only mark as dirty if this is a user change, not initial load
+                                                const isUserChange = data.changed !== false;
+
+                                                // If this is the initial load, store the name for baseline comparison
+                                                if (!isUserChange && initialLocationNameRef.current === null) {
+                                                    initialLocationNameRef.current = locationValue.name;
+                                                }
+
+                                                form.setValue(
+                                                    'location',
+                                                    locationValue,
+                                                    {
+                                                        shouldDirty: isUserChange,
+                                                        shouldValidate: true
+                                                    }
+                                                );
                                             }
                                         }}
                                     />
                                 </div>
                             </FormField>
-                        )}                        
+                        )}
 
                         {/* IMPROVED: More visible ActionsBar */}
                         <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-4 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 pb-4 z-10 -mx-4 sm:-mx-6'>
@@ -860,16 +957,22 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Discord</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.discordID ? 'Connected' : 'Not connected'}
+                                        {user.discordID
+                                            ? 'Connected'
+                                            : 'Not connected'}
                                     </div>
                                 </div>
                                 {user.discordID ? (
                                     <OAuthDisconnectButton
                                         provider='discord'
                                         onSuccess={() => {
-                                            updateUserCache({ discordID: undefined as any });
+                                            updateUserCache({
+                                                discordID: undefined as any
+                                            });
                                             setToastType('success');
-                                            setToastMessage('Discord disconnected');
+                                            setToastMessage(
+                                                'Discord disconnected'
+                                            );
                                         }}
                                         onError={(m) => {
                                             setToastType('error');
@@ -887,16 +990,22 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Google</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.googleID ? 'Connected' : 'Not connected'}
+                                        {user.googleID
+                                            ? 'Connected'
+                                            : 'Not connected'}
                                     </div>
                                 </div>
                                 {user.googleID ? (
                                     <OAuthDisconnectButton
                                         provider='google'
                                         onSuccess={() => {
-                                            updateUserCache({ googleID: undefined as any });
+                                            updateUserCache({
+                                                googleID: undefined as any
+                                            });
                                             setToastType('success');
-                                            setToastMessage('Google disconnected');
+                                            setToastMessage(
+                                                'Google disconnected'
+                                            );
                                         }}
                                         onError={(m) => {
                                             setToastType('error');
@@ -909,6 +1018,51 @@ const EditProfile: React.FC<Props> = ({
                                     </OAuthConnectButton>
                                 )}
                             </div>
+                        </div>
+                    </SettingsSection>
+                )}
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Accessibility'
+                        description='Customize your experience for better readability.'
+                    >
+                        <div className='flex items-center justify-between'>
+                            <div className='flex-1'>
+                                <label
+                                    htmlFor='dyslexic-font-toggle'
+                                    className='text-sm font-medium text-gray-700 dark:text-gray-200'
+                                >
+                                    OpenDyslexic Font
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Use a font designed to increase readability
+                                    for readers with dyslexia
+                                </p>
+                            </div>
+                            <button
+                                id='dyslexic-font-toggle'
+                                role='switch'
+                                aria-checked={useDyslexicFont}
+                                onClick={() =>
+                                    setUseDyslexicFont(!useDyslexicFont)
+                                }
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                                    useDyslexicFont
+                                        ? 'bg-blue-600'
+                                        : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        useDyslexicFont
+                                            ? 'translate-x-5'
+                                            : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
                         </div>
                     </SettingsSection>
                 )}
@@ -944,7 +1098,7 @@ const EditProfile: React.FC<Props> = ({
                                         }))
                                     }
                                     className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
-                                />                            
+                                />
                             </FormField>
                             <FormField label='Confirm password'>
                                 <input
@@ -970,11 +1124,11 @@ const EditProfile: React.FC<Props> = ({
                         title='Blocked Users'
                         description='Users you have blocked. Unblock them to send messages or view their content.'
                     >
-                        {blockingLoading ? (
+                        {blockingLoading || blockedUsersLoading ? (
                             <div className='flex items-center justify-center py-4'>
                                 <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600'></div>
                             </div>
-                        ) : blockedUsersDetails.length === 0 ? (
+                        ) : !blockedUsersDetails || blockedUsersDetails.length === 0 ? (
                             <p className='text-gray-500 dark:text-gray-400 text-sm'>
                                 No blocked users.
                             </p>
@@ -991,12 +1145,18 @@ const EditProfile: React.FC<Props> = ({
                                         <Button
                                             onClick={async () => {
                                                 try {
-                                                    await unblock(blockedUser.id);
-                                                    setToastMessage(`Unblocked ${blockedUser.username}`);
+                                                    await unblock(
+                                                        blockedUser.id
+                                                    );
+                                                    setToastMessage(
+                                                        `Unblocked ${blockedUser.username}`
+                                                    );
                                                     setToastType('success');
                                                 }
                                                 catch (err) {
-                                                    setToastMessage('Failed to unblock user');
+                                                    setToastMessage(
+                                                        'Failed to unblock user'
+                                                    );
                                                     setToastType('error');
                                                 }
                                             }}
@@ -1031,7 +1191,9 @@ const EditProfile: React.FC<Props> = ({
                                     className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                                 />
                             </FormField>
-                            <Button type='submit'>Log out other sessions</Button>
+                            <Button type='submit'>
+                                Log out other sessions
+                            </Button>
                         </form>
                     </SettingsSection>
                 )}
@@ -1063,8 +1225,18 @@ const EditProfile: React.FC<Props> = ({
                                 {/* Left side - Change indicator */}
                                 <div className='flex items-center gap-3 text-white'>
                                     <div className='hidden sm:flex items-center justify-center w-10 h-10 bg-white/20 rounded-full flex-shrink-0'>
-                                        <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z' />
+                                        <svg
+                                            className='w-5 h-5'
+                                            fill='none'
+                                            viewBox='0 0 24 24'
+                                            stroke='currentColor'
+                                        >
+                                            <path
+                                                strokeLinecap='round'
+                                                strokeLinejoin='round'
+                                                strokeWidth={2}
+                                                d='M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z'
+                                            />
                                         </svg>
                                     </div>
                                     <div>
@@ -1072,7 +1244,16 @@ const EditProfile: React.FC<Props> = ({
                                             Unsaved Changes
                                         </div>
                                         <div className='text-xs sm:text-sm text-indigo-100'>
-                                            You have {Object.keys(effectiveChanges).length} unsaved {Object.keys(effectiveChanges).length === 1 ? 'change' : 'changes'}
+                                            You have{' '}
+                                            {
+                                                Object.keys(effectiveChanges)
+                                                    .length
+                                            }{' '}
+                                            unsaved{' '}
+                                            {Object.keys(effectiveChanges)
+                                                .length === 1
+                                                ? 'change'
+                                                : 'changes'}
                                         </div>
                                     </div>
                                 </div>
@@ -1094,16 +1275,43 @@ const EditProfile: React.FC<Props> = ({
                                     >
                                         {updateUserMutation.isPending ? (
                                             <>
-                                                <svg className='animate-spin h-4 w-4' fill='none' viewBox='0 0 24 24'>
-                                                    <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
-                                                    <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+                                                <svg
+                                                    className='animate-spin h-4 w-4'
+                                                    fill='none'
+                                                    viewBox='0 0 24 24'
+                                                >
+                                                    <circle
+                                                        className='opacity-25'
+                                                        cx='12'
+                                                        cy='12'
+                                                        r='10'
+                                                        stroke='currentColor'
+                                                        strokeWidth='4'
+                                                    ></circle>
+                                                    <path
+                                                        className='opacity-75'
+                                                        fill='currentColor'
+                                                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                                                    ></path>
                                                 </svg>
-                                                <span className='hidden sm:inline'>Saving...</span>
+                                                <span className='hidden sm:inline'>
+                                                    Saving...
+                                                </span>
                                             </>
                                         ) : (
                                             <>
-                                                <svg className='w-4 h-4 sm:w-5 sm:h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                                <svg
+                                                    className='w-4 h-4 sm:w-5 sm:h-5'
+                                                    fill='none'
+                                                    viewBox='0 0 24 24'
+                                                    stroke='currentColor'
+                                                >
+                                                    <path
+                                                        strokeLinecap='round'
+                                                        strokeLinejoin='round'
+                                                        strokeWidth={2}
+                                                        d='M5 13l4 4L19 7'
+                                                    />
                                                 </svg>
                                                 <span>Save Changes</span>
                                             </>

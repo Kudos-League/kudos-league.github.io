@@ -111,7 +111,9 @@ export default function EventsCarousel() {
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [locationFilter, setLocationFilter] = useState(false);
-    const [timeFilter] = useState<'all' | 'today' | 'next7d' | 'nextmonth'>('all');
+    const [timeFilter] = useState<'all' | 'today' | 'next7d' | 'nextmonth'>(
+        'all'
+    );
     const [showLocationModal, setShowLocationModal] = useState(false);
 
     // const TIME_FILTERS = [
@@ -125,7 +127,9 @@ export default function EventsCarousel() {
     const serverFilters = useMemo(
         () => ({
             filter: 'all' as const,
-            ...(canQueryLocal && user?.location?.name ? { location: user.location.name } : {})
+            ...(canQueryLocal && user?.location?.name
+                ? { location: user.location.name }
+                : {})
         }),
         [canQueryLocal, user?.location?.name]
     );
@@ -137,12 +141,18 @@ export default function EventsCarousel() {
             const now = dayjs();
 
             return events.filter((e) => {
-                const end = dayjs(e.endTime ?? dayjs(e.startTime).add(20, 'years'));
+                const end = dayjs(
+                    e.endTime ?? dayjs(e.startTime).add(20, 'years')
+                );
                 if (end.isBefore(now)) return false;
                 else return true;
             });
         };
-    }, [{/*timeFilter*/}]);
+    }, [
+        {
+            /*timeFilter*/
+        }
+    ]);
 
     const {
         data: events = [],
@@ -182,9 +192,14 @@ export default function EventsCarousel() {
                             ? 'bg-green-600 text-white hover:bg-green-700'
                             : 'bg-gray-300 hover:bg-gray-400'
                     } ${
-                        !user?.location?.name ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        !user?.location?.name
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                    }`}
                 >
-                    {locationFilter ? 'Show non local events' : 'Just show local events'}
+                    {locationFilter
+                        ? 'Show non local events'
+                        : 'Just show local events'}
                 </Button>
 
                 {/* <div className='relative'>

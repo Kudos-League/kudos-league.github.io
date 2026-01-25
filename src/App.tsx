@@ -23,18 +23,17 @@ import queryClient from './shared/api/client';
 import Spinner from './components/common/Spinner';
 import Alert from './components/common/Alert';
 import AlertHost from '@/components/common/AlertHost';
+import DevToolsPanel from '@/components/dev/DevToolsPanel';
 
-function ErrorFallback({ error }: { error: string[] }) {
+import { FallbackProps } from 'react-error-boundary';
+
+function ErrorFallback({ error }: FallbackProps) {
     return (
         <Alert
             className='w-full'
             type='danger'
             title='Error loading page'
-            message={
-                Array.isArray(error)
-                    ? error.join('\n')
-                    : (error as any).toString()
-            }
+            message={error.message}
         />
     );
 }
@@ -57,8 +56,8 @@ export default function App() {
                                                 <WebSocketProvider>
                                                     <BlockedUsersProvider>
                                                         <AppCore />
-                                                        <AlertHost />
                                                         <ConnectingOverlay />
+                                                        <DevToolsPanel />
                                                     </BlockedUsersProvider>
                                                 </WebSocketProvider>
                                             </DMsProvider>
@@ -77,13 +76,14 @@ export default function App() {
 
 function AppCore() {
     const { loading } = useAuth();
-    if (loading) return <Spinner text='Logging in...' />;
+    if (loading) return <Spinner text='Logging in...' variant='fullscreen' />;
 
     return (
         <BrowserRouter>
             <AppNavigator />
+            <AlertHost />
         </BrowserRouter>
     );
 }
 
-// noop 
+// noop

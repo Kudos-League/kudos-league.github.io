@@ -22,12 +22,13 @@ export default function EventCard({ event, isRecurring = false }: Props) {
     const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
 
     // Get creator ID from various possible field names
-    const creatorId = (event as any).userId || 
-                     (event as any).creatorId || 
-                     (event as any).creatorID ||
-                     (event as any).authorId || 
-                     (event as any).ownerId ||
-                     (event as any).createdBy;
+    const creatorId =
+        (event as any).userId ||
+        (event as any).creatorId ||
+        (event as any).creatorID ||
+        (event as any).authorId ||
+        (event as any).ownerId ||
+        (event as any).createdBy;
 
     useEffect(() => {
         const fetchCreator = async () => {
@@ -35,7 +36,9 @@ export default function EventCard({ event, isRecurring = false }: Props) {
 
             setLoadingCreator(true);
             try {
-                const fetchedUser = await apiGet<UserDTO>(`/users/${creatorId}`);
+                const fetchedUser = await apiGet<UserDTO>(
+                    `/users/${creatorId}`
+                );
                 setCreator(fetchedUser);
             }
             catch (error) {
@@ -109,7 +112,9 @@ export default function EventCard({ event, isRecurring = false }: Props) {
             {creatorId && (
                 <div className='mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 flex items-center justify-center gap-2'>
                     {loadingCreator ? (
-                        <p className='text-xs text-gray-400 italic'>Loading creator...</p>
+                        <p className='text-xs text-gray-400 italic'>
+                            Loading creator...
+                        </p>
                     ) : creator ? (
                         <>
                             {creator.avatar && (
@@ -120,7 +125,10 @@ export default function EventCard({ event, isRecurring = false }: Props) {
                                 />
                             )}
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Created by <span className='font-semibold'>{creator.username}</span>
+                                Created by{' '}
+                                <span className='font-semibold'>
+                                    {creator.username}
+                                </span>
                             </p>
                         </>
                     ) : null}

@@ -31,7 +31,9 @@ export default function DonationAmountPicker({ onAmountChange }: Props) {
         form.setValue('customDonationAmount', value, { shouldValidate: true });
         const cents = numeric * 100;
         onAmountChange(cents);
-        form.setValue('donationAmount', String(cents), { shouldValidate: true });
+        form.setValue('donationAmount', String(cents), {
+            shouldValidate: true
+        });
     };
 
     return (
@@ -53,7 +55,10 @@ export default function DonationAmountPicker({ onAmountChange }: Props) {
                     }}
                 />
             </FormField>
-            <FormField name='customDonationAmount' label='Or Enter Custom Amount:'>
+            <FormField
+                name='customDonationAmount'
+                label='Or Enter Custom Amount:'
+            >
                 <Input
                     name='customDonationAmount'
                     label=''
@@ -65,7 +70,10 @@ export default function DonationAmountPicker({ onAmountChange }: Props) {
                         validate: (v: string) => {
                             if (!v) return true;
                             const ok = /^\d+$/.test(v);
-                            return ok || 'Enter a valid dollar amount (numbers only)';
+                            return (
+                                ok ||
+                                'Enter a valid dollar amount (numbers only)'
+                            );
                         }
                     }}
                     htmlInputType='number'

@@ -14,7 +14,9 @@ type Props = {
 export default function Dashboard({ reports, setReports }: Props) {
     useAuth();
     const [rewardOpenFor, setRewardOpenFor] = useState<number | null>(null);
-    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(null);
+    const [adminReportOpenFor, setAdminReportOpenFor] = useState<number | null>(
+        null
+    );
 
     const handleDeleteReport = async (reportID: number) => {
         try {
@@ -81,28 +83,52 @@ export default function Dashboard({ reports, setReports }: Props) {
 
                 {reports.length === 0 ? (
                     <p className='light:text-gray-600 dark:text-neutral-400'>
-                    No reports found.
+                        No reports found.
                     </p>
                 ) : (
                     <div className='space-y-4'>
                         {reports.map((report) => (
                             <ReportCard key={report.id} report={report}>
-                                <Button onClick={() => handleUpdateStatus(report.id, 'ignored')}>Ignore</Button>
-                                <Button variant='success' onClick={() => setRewardOpenFor(report.id)}>Resolve</Button>
-                                <Button variant='danger' onClick={() => handleDeleteReport(report.id)}>Delete</Button>
+                                <Button
+                                    onClick={() =>
+                                        handleUpdateStatus(report.id, 'ignored')
+                                    }
+                                >
+                                    Ignore
+                                </Button>
+                                <Button
+                                    variant='success'
+                                    onClick={() => setRewardOpenFor(report.id)}
+                                >
+                                    Resolve
+                                </Button>
+                                <Button
+                                    variant='danger'
+                                    onClick={() =>
+                                        handleDeleteReport(report.id)
+                                    }
+                                >
+                                    Delete
+                                </Button>
                                 <RewardKudosModal
                                     open={rewardOpenFor === report.id}
                                     reportId={report.id}
                                     current={report.rewardKudos ?? null}
                                     onClose={() => setRewardOpenFor(null)}
-                                    onSave={(k) => handleResolveWithReward(report.id, k)}
+                                    onSave={(k) =>
+                                        handleResolveWithReward(report.id, k)
+                                    }
                                 />
                             </ReportCard>
                         ))}
                     </div>
                 )}
             </div>
-            <AdminReportModal open={!!adminReportOpenFor} userID={adminReportOpenFor} onClose={() => setAdminReportOpenFor(null)} />
+            <AdminReportModal
+                open={!!adminReportOpenFor}
+                userID={adminReportOpenFor}
+                onClose={() => setAdminReportOpenFor(null)}
+            />
         </>
     );
 }

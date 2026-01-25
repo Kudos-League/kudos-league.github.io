@@ -37,9 +37,10 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     if (!inviteToken) {
         return (
             <Auth title='Invite Required'>
-                <div className='space-y-4 text-sm text-gray-600 dark:text-gray-300'>
+                <div className='space-y-4 text-sm text-gray-200 dark:text-gray-300'>
                     <p>
-                        Kudos is currently invite-only. Ask an existing member to share an invite link with you to create an account.
+                        Kudos is currently invite-only. Ask an existing member
+                        to share an invite link with you to create an account.
                     </p>
                     <p>
                         Already have an account?{' '}
@@ -52,7 +53,12 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         );
     }
 
-    const onSubmit = async (values: SignUpFormValues & { password?: string; confirmPassword?: string }) => {
+    const onSubmit = async (
+        values: SignUpFormValues & {
+            password?: string;
+            confirmPassword?: string;
+        }
+    ) => {
         const { username, email, password, confirmPassword } = values as any;
 
         if (password !== confirmPassword) {
@@ -61,14 +67,22 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         }
 
         if (!inviteToken) {
-            setError('Invite token missing. Please open the invite link again.');
+            setError(
+                'Invite token missing. Please open the invite link again.'
+            );
             return;
         }
 
         setError(null);
         try {
             setIsVerifying(true);
-            const result = await registerUser(username, email, password, inviteToken, emailToken || undefined);
+            const result = await registerUser(
+                username,
+                email,
+                password,
+                inviteToken,
+                emailToken || undefined
+            );
             setIsVerifying(false);
 
             if (typeof result === 'string') {
@@ -88,8 +102,18 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
     return (
         <Auth title='Create your account'>
-            <Form methods={form} onSubmit={onSubmit} className='space-y-6' serverError={errorMessage}>
-                <input type='hidden' name='inviteToken' value={inviteToken} readOnly />
+            <Form
+                methods={form}
+                onSubmit={onSubmit}
+                className='space-y-6'
+                serverError={errorMessage}
+            >
+                <input
+                    type='hidden'
+                    name='inviteToken'
+                    value={inviteToken}
+                    readOnly
+                />
                 <div>
                     <div className='col-span-2'>
                         <FormField name='username'>
@@ -98,7 +122,14 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                                 label=''
                                 placeholder='Username'
                                 form={form}
-                                registerOptions={{ required: 'Username is required', minLength: { value: 3, message: 'Username must be at least 3 characters' } }}
+                                registerOptions={{
+                                    required: 'Username is required',
+                                    minLength: {
+                                        value: 3,
+                                        message:
+                                            'Username must be at least 3 characters'
+                                    }
+                                }}
                             />
                         </FormField>
                     </div>
@@ -108,7 +139,13 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             label=''
                             placeholder='Email'
                             form={form}
-                            registerOptions={{ required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } }}
+                            registerOptions={{
+                                required: 'Email is required',
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: 'Enter a valid email'
+                                }
+                            }}
                             htmlInputType='email'
                         />
                     </FormField>
@@ -118,7 +155,14 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             label=''
                             placeholder='Password'
                             form={form}
-                            registerOptions={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
+                            registerOptions={{
+                                required: 'Password is required',
+                                minLength: {
+                                    value: 6,
+                                    message:
+                                        'Password must be at least 6 characters'
+                                }
+                            }}
                             htmlInputType='password'
                         />
                     </FormField>
@@ -128,7 +172,9 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             label=''
                             placeholder='Confirm Password'
                             form={form}
-                            registerOptions={{ required: 'Please confirm your password' }}
+                            registerOptions={{
+                                required: 'Please confirm your password'
+                            }}
                             htmlInputType='password'
                         />
                     </FormField>
@@ -138,12 +184,12 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     {isVerifying ? 'Loading...' : 'Sign Up'}
                 </Button>
 
-                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                <p className='text-center text-sm/6 text-gray-200 dark:text-gray-300'>
                     or sign up with
                 </p>
                 <OAuthGroup inviteToken={inviteToken} emailToken={emailToken} />
 
-                <p className='text-center text-sm/6 text-gray-500 dark:text-gray-400'>
+                <p className='text-center text-sm/6 text-gray-200 dark:text-gray-300'>
                     Already have an account?{' '}
                     <TinyHelpLink onClick={() => navigate('/login')}>
                         Log In

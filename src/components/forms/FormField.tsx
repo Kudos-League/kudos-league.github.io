@@ -10,26 +10,44 @@ type Props = {
     noMargin?: boolean;
 };
 
-export default function FormField({ name, label, helper, children, className, noMargin = false }: Props) {
+export default function FormField({
+    name,
+    label,
+    helper,
+    children,
+    className,
+    noMargin = false
+}: Props) {
     const { formState } = useFormContext();
     const error = (formState.errors as any)[name];
-    const errorMessage = error?.message ?? (error?.type === 'required' ? 'This field is required' : undefined);
+    const errorMessage =
+        error?.message ??
+        (error?.type === 'required' ? 'This field is required' : undefined);
 
-    const containerClasses = [className, noMargin ? null : 'mb-3'].filter(Boolean).join(' ') || undefined;
+    const containerClasses =
+        [className, noMargin ? null : 'mb-3'].filter(Boolean).join(' ') ||
+        undefined;
 
     return (
         <div className={containerClasses}>
             {label && (
-                <label htmlFor={name} className='block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-200'>
+                <label
+                    htmlFor={name}
+                    className='block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-200'
+                >
                     {label}
                 </label>
             )}
             {children}
             {helper && !error && (
-                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>{helper}</p>
+                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    {helper}
+                </p>
             )}
             {error && (
-                <p className='text-sm mt-1 text-red-600 dark:text-red-400'>{errorMessage}</p>
+                <p className='text-sm mt-1 text-red-600 dark:text-red-400'>
+                    {errorMessage}
+                </p>
             )}
         </div>
     );

@@ -7,7 +7,6 @@ import { routes } from '@/routes';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { useCachedHandshake, useCachedUser } from '@/contexts/DataCacheContext';
-import { useDMs } from '@/contexts/DMsContext';
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -24,7 +23,9 @@ function HandshakeNotificationPreview({
 
     // Determine other user ID
     const otherUserID = handshake
-        ? (handshake.senderID === userID ? handshake.receiverID : handshake.senderID)
+        ? handshake.senderID === userID
+            ? handshake.receiverID
+            : handshake.senderID
         : undefined;
 
     const { user: otherUser } = useCachedUser(otherUserID);
@@ -48,23 +49,42 @@ function HandshakeNotificationPreview({
     const postTitle = handshake.post?.title || 'Post';
     const postType = handshake.post?.type || 'request';
 
+    // Determine user's help action context
+    const userHelpAction: 'receiving' | 'giving' | null =
+        userID === handshake.receiverID
+            ? postType === 'request'
+                ? 'receiving'
+                : 'giving'
+            : userID === handshake.senderID
+                ? postType === 'request'
+                    ? 'giving'
+                    : 'receiving'
+                : null;
+
     let statusMessage = '';
     let statusColor = 'text-zinc-700 dark:text-zinc-300';
 
     if (notificationType === 'handshake-created') {
-        statusMessage = postType === 'request' ? 'wants to help with' : 'wants to request';
+        statusMessage =
+            postType === 'request' ? 'wants to help with' : 'wants to request';
         statusColor = 'text-blue-700 dark:text-blue-300';
     }
     else if (notificationType === 'handshake-accepted') {
-        statusMessage = 'accepted your handshake on';
+        statusMessage = 'accepted your help offer on';
         statusColor = 'text-green-700 dark:text-green-300';
     }
     else if (notificationType === 'handshake-completed') {
-        statusMessage = 'completed handshake on';
+        statusMessage =
+            userHelpAction === 'receiving'
+                ? 'received help on'
+                : 'completed helping on';
         statusColor = 'text-emerald-700 dark:text-emerald-300';
     }
     else if (notificationType === 'handshake-cancelled') {
-        statusMessage = 'cancelled handshake on';
+        statusMessage =
+            userHelpAction === 'receiving'
+                ? 'stopped receiving help on'
+                : 'stopped helping on';
         statusColor = 'text-red-700 dark:text-red-300';
     }
 
@@ -90,17 +110,17 @@ function HandshakeNotificationPreview({
                                 }}
                             >
                                 {otherUser.displayName || otherUser.username}
-                            </span>
-                            {' '}
+                            </span>{' '}
                             <span className={statusColor}>{statusMessage}</span>
                         </div>
-                        <div
-                            className='text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline truncate'
-                        >
+                        <div className='text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline truncate'>
                             &quot;{postTitle}&quot;
                         </div>
                         <div className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-                            Status: <span className='font-semibold capitalize'>{handshake.status}</span>
+                            Status:{' '}
+                            <span className='font-semibold capitalize'>
+                                {handshake.status}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -114,43 +134,61 @@ export default function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { openDMs } = useDMs();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const hasLoggedMount = useRef(false);
     if (!hasLoggedMount.current) {
         hasLoggedMount.current = true;
     }
     const debug = useMemo(
-        () => (...args: unknown[]) => console.debug('[NotificationsBell]', ...args),
+        () =>
+            (...args: unknown[]) =>
+                console.debug('[NotificationsBell]', ...args),
         []
     );
     const { items, unread, loaded } = state;
 
-    // Sort notifications by timestamp (most recent first)
+    // Calculate unread count excluding direct messages
+    const unreadCountWithoutDMs = useMemo(() => {
+        return items.filter(
+            (item) => item.type !== 'direct-message' && !item.isRead
+        ).length;
+    }, [items]);
+
+    // Sort notifications by timestamp (most recent first), excluding direct messages
     const sortedItems = useMemo(() => {
-        return [...items].sort((a, b) => {
+        // Filter out direct messages - they should only appear in the messages section
+        const itemsWithoutDMs = items.filter(
+            (item) => item.type !== 'direct-message'
+        );
+
+        return [...itemsWithoutDMs].sort((a, b) => {
             // Try different possible timestamp field names
             const getTimestamp = (n: any) => {
-                const timestamp = n.createdAt || n.timestamp || n.created || n.date || n.updatedAt;
+                const timestamp =
+                    n.createdAt ||
+                    n.timestamp ||
+                    n.created ||
+                    n.date ||
+                    n.updatedAt;
                 return timestamp ? new Date(timestamp).getTime() : 0;
             };
-            
+
             const timeA = getTimestamp(a);
             const timeB = getTimestamp(b);
-            
+
             // If no timestamps, sort by ID (higher ID = more recent)
             if (!timeA && !timeB) {
                 return (b.id || 0) - (a.id || 0);
             }
-            
+
             return timeB - timeA; // Descending order (newest first)
         });
     }, [items]);
 
     const displayNotifications = useMemo(() => {
-        const unreadItems = sortedItems.filter(n => !n.isRead);
-        const readItems = sortedItems.filter(n => n.isRead);
-        
+        const unreadItems = sortedItems.filter((n) => !n.isRead);
+        const readItems = sortedItems.filter((n) => n.isRead);
+
         if (unreadItems.length >= 10) {
             // Show all unread notifications if 10 or more
             return unreadItems;
@@ -167,16 +205,20 @@ export default function NotificationsBell() {
         }
     }, [sortedItems]);
 
-    // Check if there are any recent notifications (within last week)
+    // Check if there are any recent notifications (within last week) or any unread notifications
     const hasRecentNotifications = useMemo(() => {
         if (items.length === 0) return false;
-        
+
+        // If there are any unread notifications, consider them as "recent" regardless of timestamp
+        const hasUnread = sortedItems.some((n) => !n.isRead);
+        if (hasUnread) return true;
+
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        
-        return sortedItems.some(n => {
-            const timestamp = n.createdAt ||
-                            (n as any).created || (n as any).date
+
+        return sortedItems.some((n) => {
+            const timestamp =
+                n.createdAt || (n as any).created || (n as any).date;
             if (!timestamp) return false;
             return new Date(timestamp) > oneWeekAgo;
         });
@@ -185,15 +227,17 @@ export default function NotificationsBell() {
     // Format relative time (e.g., "2m ago", "1h ago")
     const formatTimeAgo = (notification: NotificationRecord) => {
         // Try different possible timestamp field names
-        const timestamp = notification.createdAt || 
-                         (notification as any).created || (notification as any).date
-        
+        const timestamp =
+            notification.createdAt ||
+            (notification as any).created ||
+            (notification as any).date;
+
         if (!timestamp) return '';
-        
+
         const now = new Date();
         const then = new Date(timestamp);
         const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
-        
+
         if (seconds < 60) return 'Just now';
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes}m ago`;
@@ -206,7 +250,10 @@ export default function NotificationsBell() {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setOpen(false);
             }
         };
@@ -228,7 +275,7 @@ export default function NotificationsBell() {
         else {
             document.body.style.overflow = '';
         }
-        
+
         return () => {
             document.body.style.overflow = '';
         };
@@ -245,18 +292,10 @@ export default function NotificationsBell() {
         });
     }, [debug, items, loaded, unread]);
 
-    useEffect(() => {
-        if (!open || unread === 0) return;
-        debug('auto acknowledging new notifications while open', { unread });
-        acknowledgeAll().catch((err) => {
-            console.error('Failed to acknowledge notifications while open', err);
-        });
-    }, [acknowledgeAll, debug, open, unread]);
-
     const go = (n: NotificationRecord) => {
         // Extract postID from various possible locations
-        const postID = ('postID' in n ? n.postID : null) 
-            || (n as any)?.post?.id;
+        const postID =
+            ('postID' in n ? n.postID : null) || (n as any)?.post?.id;
 
         debug('navigating from notification', {
             type: n.type,
@@ -272,18 +311,7 @@ export default function NotificationsBell() {
             });
         }
 
-        if (n.type === 'direct-message') {
-            const authorId = n.message?.author?.id;
-            // On desktop (lg screens), open the DMs modal instead of navigating
-            const isDesktop = window.innerWidth >= 1024; // lg breakpoint
-            if (isDesktop && authorId) {
-                openDMs(authorId);
-            }
-            else {
-                navigate(`/dms/${authorId ?? ''}`);
-            }
-        }
-        else if (n.type === 'post-reply') {
+        if (n.type === 'post-reply') {
             if (postID) {
                 navigate(`/post/${postID}`);
             }
@@ -296,7 +324,10 @@ export default function NotificationsBell() {
                 navigate(`/post/${postID}`);
             }
             else {
-                console.error('No postID found for post-auto-close notification', n);
+                console.error(
+                    'No postID found for post-auto-close notification',
+                    n
+                );
             }
         }
         else if (n.type === 'past-gift') {
@@ -310,13 +341,29 @@ export default function NotificationsBell() {
         else if (n.type === 'bug-report' || n.type === 'site-feedback') {
             navigate(routes.admin);
         }
-        else if (n.type === 'handshake-created' || n.type === 'handshake-accepted' ||
-                 n.type === 'handshake-completed' || n.type === 'handshake-cancelled') {
+        else if (
+            n.type === 'handshake-created' ||
+            n.type === 'handshake-accepted' ||
+            n.type === 'handshake-completed' ||
+            n.type === 'handshake-cancelled'
+        ) {
             if (postID) {
                 navigate(`/post/${postID}`);
             }
             else {
                 console.error('No postID found for handshake notification', n);
+            }
+        }
+        else if (n.type === 'event-user-joined') {
+            const eventID = 'eventID' in n ? n.eventID : null;
+            if (eventID) {
+                navigate(`/event/${eventID}`);
+            }
+            else {
+                console.error(
+                    'No eventID found for event-user-joined notification',
+                    n
+                );
             }
         }
         setOpen(false);
@@ -328,34 +375,27 @@ export default function NotificationsBell() {
                 <button
                     type='button'
                     aria-label='Notifications'
-                    onClick={() =>
-                        setOpen((prev) => {
-                            const next = !prev;
-                            debug('toggle dropdown', { from: prev, to: next, unread });
-                            if (!prev && next && unread > 0) {
-                                debug('acknowledging notifications on open', { pending: unread });
-                                acknowledgeAll().catch((err) => {
-                                    console.error('Failed to acknowledge notifications', err);
-                                });
-                            }
-                            return next;
-                        })
-                    }
+                    onClick={() => setOpen((prev) => !prev)}
                     className='relative flex h-9 w-9 sm:h-10 sm:w-10 lg:h-12 lg:w-12 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-lg ring-1 shadow-zinc-800/5 ring-zinc-900/5 backdrop-blur-sm hover:ring-zinc-800/10 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20'
                 >
-                    <BellIcon className='h-5 w-5 sm:h-6 sm:w-6 lg:h-6 lg:w-6' aria-hidden='true' />
-                    {state.unread > 0 && (
+                    <BellIcon
+                        className='h-5 w-5 sm:h-6 sm:w-6 lg:h-6 lg:w-6'
+                        aria-hidden='true'
+                    />
+                    {unreadCountWithoutDMs > 0 && (
                         <span
                             className='absolute -top-1 -right-1 sm:-top-2 sm:-right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white shadow-sm'
-                            aria-label={`${state.unread} unread notifications`}
+                            aria-label={`${unreadCountWithoutDMs} unread notifications`}
                         >
-                            {state.unread > 9 ? '9+' : state.unread}
+                            {unreadCountWithoutDMs > 9
+                                ? '9+'
+                                : unreadCountWithoutDMs}
                         </span>
                     )}
                 </button>
 
                 {open && (
-                    <div 
+                    <div
                         className='
                             fixed md:absolute 
                             inset-x-0 md:inset-x-auto
@@ -405,30 +445,18 @@ export default function NotificationsBell() {
                                         `}
                                         onClick={() => go(n)}
                                     >
-                                        {!n.isRead && (
-                                            <span className='absolute right-4 md:right-3 top-4 md:top-3 text-[10px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300'>
-                                                New
-                                            </span>
-                                        )}
-                                        {n.type === 'direct-message' ? (
+                                        {n.type === 'post-reply' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                                                     <div className='text-sm md:text-sm font-medium pr-12'>
-                                                        New DM from <UserCard user={n.message?.author} triggerVariant='name' />
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    {n.message?.content}
-                                                </div>
-                                            </div>
-                                        ) : n.type === 'post-reply' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium pr-12'>
-                                                        <UserCard user={n.message?.author} triggerVariant='name' /> replied to your post
+                                                        <UserCard
+                                                            user={
+                                                                n.message
+                                                                    ?.author
+                                                            }
+                                                            triggerVariant='name'
+                                                        />{' '}
+                                                        replied to your post
                                                     </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
@@ -441,7 +469,9 @@ export default function NotificationsBell() {
                                         ) : n.type === 'past-gift' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>Past gift logged</div>
+                                                    <div className='text-sm md:text-sm font-medium'>
+                                                        Past gift logged
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
@@ -453,113 +483,210 @@ export default function NotificationsBell() {
                                         ) : n.type === 'bug-report' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>New bug report</div>
+                                                    <div className='text-sm md:text-sm font-medium'>
+                                                        New bug report
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    Feedback #{'feedbackID' in n ? n.feedbackID : ''}
+                                                    Feedback #
+                                                    {'feedbackID' in n
+                                                        ? n.feedbackID
+                                                        : ''}
                                                 </div>
                                             </div>
                                         ) : n.type === 'site-feedback' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>New site feedback</div>
+                                                    <div className='text-sm md:text-sm font-medium'>
+                                                        New site feedback
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
                                                 <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    Feedback #{'feedbackID' in n ? n.feedbackID : ''}
+                                                    Feedback #
+                                                    {'feedbackID' in n
+                                                        ? n.feedbackID
+                                                        : ''}
                                                 </div>
                                             </div>
                                         ) : n.type === 'handshake-created' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-blue-700 dark:text-blue-300'>New handshake request</div>
+                                                    <div className='text-sm md:text-sm font-medium text-blue-700 dark:text-blue-300'>
+                                                        New handshake request
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
-                                                {'handshakeID' in n && n.handshakeID ? (
-                                                    <HandshakeNotificationPreview
-                                                        handshakeID={n.handshakeID}
-                                                        userID={user?.id}
-                                                        notificationType={n.type}
-                                                    />
-                                                ) : (
-                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                        Someone wants to handshake on your post
-                                                    </div>
-                                                )}
+                                                {'handshakeID' in n &&
+                                                n.handshakeID ? (
+                                                        <HandshakeNotificationPreview
+                                                            handshakeID={
+                                                                n.handshakeID
+                                                            }
+                                                            userID={user?.id}
+                                                            notificationType={
+                                                                n.type
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                        Someone wants to
+                                                        handshake on your post
+                                                        </div>
+                                                    )}
                                             </div>
                                         ) : n.type === 'handshake-accepted' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-green-700 dark:text-green-300'>Handshake accepted</div>
+                                                    <div className='text-sm md:text-sm font-medium text-green-700 dark:text-green-300'>
+                                                        Handshake accepted
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
-                                                {'handshakeID' in n && n.handshakeID ? (
-                                                    <HandshakeNotificationPreview
-                                                        handshakeID={n.handshakeID}
-                                                        userID={user?.id}
-                                                        notificationType={n.type}
-                                                    />
-                                                ) : (
-                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                        Your handshake request was accepted!
-                                                    </div>
-                                                )}
+                                                {'handshakeID' in n &&
+                                                n.handshakeID ? (
+                                                        <HandshakeNotificationPreview
+                                                            handshakeID={
+                                                                n.handshakeID
+                                                            }
+                                                            userID={user?.id}
+                                                            notificationType={
+                                                                n.type
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                        Your handshake request
+                                                        was accepted!
+                                                        </div>
+                                                    )}
                                             </div>
                                         ) : n.type === 'handshake-completed' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>Handshake completed</div>
+                                                    <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>
+                                                        Handshake completed
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
-                                                {'handshakeID' in n && n.handshakeID ? (
-                                                    <HandshakeNotificationPreview
-                                                        handshakeID={n.handshakeID}
-                                                        userID={user?.id}
-                                                        notificationType={n.type}
-                                                    />
-                                                ) : (
-                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                        The transaction has been completed
-                                                    </div>
-                                                )}
+                                                {'handshakeID' in n &&
+                                                n.handshakeID ? (
+                                                        <HandshakeNotificationPreview
+                                                            handshakeID={
+                                                                n.handshakeID
+                                                            }
+                                                            userID={user?.id}
+                                                            notificationType={
+                                                                n.type
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                        The transaction has been
+                                                        completed
+                                                        </div>
+                                                    )}
                                             </div>
                                         ) : n.type === 'handshake-cancelled' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-red-700 dark:text-red-300'>Handshake cancelled</div>
+                                                    <div className='text-sm md:text-sm font-medium text-red-700 dark:text-red-300'>
+                                                        Handshake cancelled
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>
                                                 </div>
-                                                {'handshakeID' in n && n.handshakeID ? (
-                                                    <HandshakeNotificationPreview
-                                                        handshakeID={n.handshakeID}
-                                                        userID={user?.id}
-                                                        notificationType={n.type}
-                                                    />
-                                                ) : (
-                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                        {'noShowReported' in n && n.noShowReported
-                                                            ? 'Cancelled due to no-show'
-                                                            : 'The handshake was cancelled'}
+                                                {'handshakeID' in n &&
+                                                n.handshakeID ? (
+                                                        <HandshakeNotificationPreview
+                                                            handshakeID={
+                                                                n.handshakeID
+                                                            }
+                                                            userID={user?.id}
+                                                            notificationType={
+                                                                n.type
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                            {'noShowReported' in
+                                                            n &&
+                                                        n.noShowReported
+                                                                ? 'Cancelled due to no-show'
+                                                                : 'The handshake was cancelled'}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        ) : n.type === 'event-user-joined' ? (
+                                            <div>
+                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                                                    <div className='text-sm md:text-sm font-medium text-brand-700 dark:text-brand-300'>
+                                                        Someone joined your
+                                                        event
                                                     </div>
-                                                )}
+                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                        {formatTimeAgo(n)}
+                                                    </div>
+                                                </div>
+                                                {(() => {
+                                                    const hasUser =
+                                                        'user' in n && n.user;
+                                                    console.log(
+                                                        '[NotificationsBell] EVENT_USER_JOINED:',
+                                                        {
+                                                            notification: n,
+                                                            hasUser,
+                                                            user:
+                                                                'user' in n
+                                                                    ? n.user
+                                                                    : undefined,
+                                                            userID:
+                                                                'userID' in n
+                                                                    ? n.userID
+                                                                    : undefined
+                                                        }
+                                                    );
+                                                    return hasUser ? (
+                                                        <div
+                                                            className='mb-1'
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
+                                                        >
+                                                            <UserCard
+                                                                user={n.user}
+                                                                triggerVariant='avatar-name'
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                                                            Someone joined your
+                                                            event
+                                                        </div>
+                                                    );
+                                                })()}
+                                                <div className='text-xs text-zinc-500 dark:text-zinc-400 italic'>
+                                                    Click to view event
+                                                </div>
                                             </div>
                                         ) : (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>Post auto-close</div>
+                                                    <div className='text-sm md:text-sm font-medium'>
+                                                        Post auto-close
+                                                    </div>
                                                     <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                         {formatTimeAgo(n)}
                                                     </div>

@@ -1,32 +1,43 @@
-import React, { useState } from 'react';
-import { HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/solid';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import {
+    ExclamationTriangleIcon,
+    ArrowLeftIcon,
+    QuestionMarkCircleIcon
+} from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 import MapDisplay from '@/components/Map';
 import MessageList from '@/components/posts/MessageList';
 // import ChatModal from '@/components/messages/ChatModal';
 import ImageCarousel from '@/components/Carousel';
+import ImageModalCarousel from '@/components/ImageModalCarousel';
 import Handshakes from '@/components/handshakes/Handshakes';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
+import DropdownPicker from '@/components/forms/DropdownPicker';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import { useCategories } from '@/shared/api/queries/categories';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
-import { apiMutate } from '@/shared/api/apiClient';
+import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
+import { getImagePath } from '@/shared/api/config';
+import { pushAlert } from '@/components/common/alertBus';
 import {
     useUpdatePost,
     useLikePost,
     useReportPost,
     useCreateHandshake
 } from '@/shared/api/mutations/posts';
+import { useCreateChannel, useAcceptHandshake } from '@/shared/api/mutations/handshakes';
 
 import type {
     ChannelDTO,
     CreateHandshakeDTO,
     PostDTO,
     LocationDTO,
-    UpdatePostDTO
+    UpdatePostDTO,
+    CategoryDTO
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
@@ -45,11 +56,19 @@ interface Props {
     fetchPostDetails?: (id: number) => void;
 }
 
-function EditPostButton({ onClick }: { onClick: () => void }) {
+function EditPostButton({
+    onClick,
+    disabled
+}: {
+    onClick: () => void;
+    disabled?: boolean;
+}) {
     return (
         <Button
             onClick={onClick}
-            className='inline-flex items-center gap-1 text-sm font-semibold shadow'
+            className='inline-flex items-center gap-1 text-sm font-semibold'
+            variant='secondary'
+            disabled={disabled}
         >
             <PencilSquareIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
             Edit
@@ -69,34 +88,70 @@ export default function PostDetails(props: Props) {
     } = props;
 
     const { user, token } = useAuth();
-    const { blockedUsers, unblock, loading: blockingLoading } = useBlockedUsers();
+    const {
+        blockedUsers,
+        unblock,
+        loading: blockingLoading
+    } = useBlockedUsers();
 
     const updatePostMut = useUpdatePost();
     const likeMut = useLikePost();
     const reportMut = useReportPost();
     const createHsMut = useCreateHandshake();
+    const createChannelMut = useCreateChannel();
+    const acceptHandshakeMut = useAcceptHandshake();
+    const { data: categories = [] } = useCategories();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({
         title: '',
         body: '',
         tags: [] as string[],
+        type: 'gift' as 'gift' | 'request',
+        categoryID: null as number | null,
         location: null as LocationDTO | null,
         itemsLimit: '' as string
     });
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedImage] = useState<string | null>(null);
+    const [editImages, setEditImages] = useState<File[]>([]);
+    const [editImageError, setEditImageError] = useState<string | null>(null);
+    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(
+        new Set()
+    );
+    const [imageModalVisible, setImageModalVisible] = useState(false);
+    const [imageModalIndex, setImageModalIndex] = useState(0);
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [showAllHandshakes, setShowAllHandshakes] = useState(false);
     const [creatingHandshake, setCreatingHandshake] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(null);
+    const [pendingRecipientID, setPendingRecipientID] = useState<number | null>(
+        null
+    );
     const [selectedChannel] = useState<ChannelDTO | null>(null);
     const [handshakeSuccessModal, setHandshakeSuccessModal] = useState(false);
-    const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] = useState(false);
+    const [isHandshakeAlreadyCreated, setIsHandshakeAlreadyCreated] =
+        useState(false);
     const [acceptingHighestKudos, setAcceptingHighestKudos] = useState(false);
+    const [acceptHighestKudosModal, setAcceptHighestKudosModal] =
+        useState(false);
+    const [highestKudosHandshakeData, setHighestKudosHandshakeData] = useState<{
+        handshake: any;
+        username: string;
+        kudos: number;
+    } | null>(null);
+    const [showKudosTooltip, setShowKudosTooltip] = useState(false);
     const navigate = useNavigate();
+
+    // Redirect to home if post not found after loading completes
+    useEffect(() => {
+        if (!loading && !error && !postDetails) {
+            pushAlert({
+                type: 'warning',
+                message: 'Post not found'
+            });
+            navigate('/', { replace: true });
+        }
+    }, [loading, error, postDetails, navigate]);
 
     const sortHandshakesWithUserFirst = (
         handshakes: any[],
@@ -105,18 +160,40 @@ export default function PostDetails(props: Props) {
         if (!userId || !handshakes?.length) return handshakes || [];
 
         return [...handshakes].sort((a, b) => {
-            const aIsUser =
-                a.senderID === userId ||
-                a.receiverID === userId ||
-                a.recipientID === userId;
-            const bIsUser =
-                b.senderID === userId ||
-                b.receiverID === userId ||
-                b.recipientID === userId;
+            // Determine if user posted or actively interacted with the handshake
+            const aUserPosted = a.senderID === userId;
+            const bUserPosted = b.senderID === userId;
 
-            if (aIsUser && !bIsUser) return -1;
-            if (!aIsUser && bIsUser) return 1;
+            const aUserInteracted =
+                (a.receiverID === userId || a.recipientID === userId) &&
+                (a.status === 'accepted' || a.status === 'completed');
+            const bUserInteracted =
+                (b.receiverID === userId || b.recipientID === userId) &&
+                (b.status === 'accepted' || b.status === 'completed');
 
+            const aIsPriority = aUserPosted || aUserInteracted;
+            const bIsPriority = bUserPosted || bUserInteracted;
+
+            // Priority handshakes (user posted or interacted) always come first
+            if (aIsPriority && !bIsPriority) return -1;
+            if (!aIsPriority && bIsPriority) return 1;
+
+            // Within priority handshakes, sort by date
+            if (aIsPriority && bIsPriority) {
+                return (
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                );
+            }
+
+            // For all other handshakes, sort by sender's kudos (descending)
+            const aKudos = a.sender?.kudos || 0;
+            const bKudos = b.sender?.kudos || 0;
+            if (aKudos !== bKudos) {
+                return bKudos - aKudos;
+            }
+
+            // If kudos are equal, sort by date
             return (
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
@@ -202,7 +279,10 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
@@ -213,18 +293,35 @@ export default function PostDetails(props: Props) {
         }
         catch (error) {
             console.error('Error creating handshake:', error);
-            alert('Failed to create handshake. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to create handshake. Please try again.'
+            });
         }
         finally {
             setCreatingHandshake(false);
         }
     };
 
-    const handleOpenChatFromSuccess = () => {
-        //navigator navigate to chat
-        navigate(`/dms/${postDetails?.senderID}`);
-        // setHandshakeSuccessModal(false);
-        // setIsChatOpen(true);
+    const handleOpenChatFromSuccess = async () => {
+        if (!user?.id || !postDetails?.senderID) return;
+        try {
+            // Create or get DM channel with the post owner
+            await createChannelMut.mutateAsync({
+                name: `DM: User ${user.id} & User ${postDetails.senderID}`,
+                channelType: 'dm',
+                userIDs: [user.id, postDetails.senderID]
+            });
+            // Navigate to the specific chat
+            navigate(`/dms/${postDetails.senderID}`);
+        }
+        catch (err) {
+            console.error('Failed to create or get DM channel', err);
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to start a direct message. Please try again.'
+            });
+        }
     };
 
     const handleCloseChatModal = (open: boolean) => {
@@ -280,13 +377,18 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
+            pushAlert({
+                type: 'success',
+                message:
+                    'Handshake created successfully! You can now coordinate the details with the post owner.'
+            });
             setIsChatOpen(false);
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
@@ -344,13 +446,18 @@ export default function PostDetails(props: Props) {
                 if (!prevDetails) return prevDetails as any;
                 return {
                     ...prevDetails,
-                    handshakes: [...(prevDetails.handshakes || []), newHandshake]
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
                 } as PostDTO;
             });
 
-            alert(
-                'Handshake created successfully! You can now coordinate the details with the post owner.'
-            );
+            pushAlert({
+                type: 'success',
+                message:
+                    'Handshake created successfully! You can now coordinate the details with the post owner.'
+            });
             setPendingRecipientID(null);
             fetchPostDetails?.(postDetails.id);
         }
@@ -404,7 +511,9 @@ export default function PostDetails(props: Props) {
             if (!prev) return prev as any;
             return {
                 ...prev,
-                handshakes: (prev.handshakes || []).filter((h: { id: number }) => h.id !== id)
+                handshakes: (prev.handshakes || []).filter(
+                    (h: { id: number }) => h.id !== id
+                )
             } as PostDTO;
         });
     };
@@ -412,7 +521,10 @@ export default function PostDetails(props: Props) {
     const handleReport = async () => {
         if (!postDetails) return;
         if (!reportReason.trim()) {
-            alert('Please enter a reason for reporting.');
+            pushAlert({
+                type: 'warning',
+                message: 'Please enter a reason for reporting.'
+            });
             return;
         }
 
@@ -421,7 +533,10 @@ export default function PostDetails(props: Props) {
                 id: postDetails.id,
                 reason: reportReason.trim()
             });
-            alert('Post reported successfully.');
+            pushAlert({
+                type: 'success',
+                message: 'Post reported successfully.'
+            });
             setReportModalVisible(false);
             setReportReason('');
         }
@@ -447,176 +562,296 @@ export default function PostDetails(props: Props) {
         }
     };
 
+    const validateFiles = (files?: File[]) => {
+        if (!files) return null;
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
+        return null;
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+        const updated = [...editImages, ...Array.from(files)];
+        const fileError = validateFiles(updated);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+        setEditImages(updated);
+        setEditImageError(null);
+        e.target.value = '';
+    };
+
+    const removeEditImage = (idx: number) => {
+        setEditImages((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const removeExistingImage = (idx: number) => {
+        setDeletedImageIndices((prev) => {
+            const next = new Set(prev);
+            next.add(idx);
+            return next;
+        });
+    };
+
+    const createImagePreview = (f: File) => URL.createObjectURL(f);
+
     const handleStartEdit = () => {
         if (!postDetails) return;
+
+        const isMobile = window.innerWidth < 768; // md breakpoint
+
+        if (isMobile) {
+            navigate(`/post/${postDetails.id}/edit`);
+            return;
+        }
 
         setEditData({
             title: postDetails.title,
             body: postDetails.body,
             tags: postDetails.tags?.map((tag) => tag.name) || [],
+            type: postDetails.type as 'gift' | 'request',
+            categoryID: postDetails.category?.id || null,
             location: postDetails.location || null,
             itemsLimit:
-                typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0
+                typeof postDetails.itemsLimit === 'number' &&
+                postDetails.itemsLimit > 0
                     ? String(postDetails.itemsLimit)
                     : ''
         });
+        setEditImages([]);
+        setEditImageError(null);
+        setDeletedImageIndices(new Set());
         setIsEditing(true);
     };
 
     const handleSaveEdit = async () => {
         if (!postDetails) return;
 
+        const fileError = validateFiles(editImages);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+
         try {
-            const updateData: Partial<UpdatePostDTO> = {
+            const updateData: any = {
                 title: editData.title,
                 body: editData.body,
-                tags: editData.tags
+                tags: editData.tags,
+                type: editData.type,
+                categoryID: editData.categoryID
             };
 
-            if (
-                editData.location &&
-                editData.location !== postDetails.location
-            ) {
+            // Handle location changes (including deletion)
+            if (editData.location !== postDetails.location) {
                 updateData.location = editData.location;
             }
 
             const limitStr = (editData.itemsLimit || '').trim();
             if (limitStr === '') updateData.itemsLimit = null;
-            else if (/^\d+$/.test(limitStr)) updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
+            else if (/^\d+$/.test(limitStr))
+                updateData.itemsLimit = Math.max(1, parseInt(limitStr, 10));
+
+            if (editImages.length > 0) {
+                updateData.files = editImages;
+            }
+
+            // Always send remaining images (with deleted ones filtered out)
+            const remainingImages =
+                postDetails.images?.filter(
+                    (_, idx) => !deletedImageIndices.has(idx)
+                ) || [];
+            updateData.images = remainingImages;
 
             const updated = await updatePostMut.mutateAsync({
                 id: postDetails.id,
                 data: updateData
             });
             setPostDetails({ ...postDetails, ...updated });
+            setEditImages([]);
+            setEditImageError(null);
+            setDeletedImageIndices(new Set());
             setIsEditing(false);
         }
         catch (err) {
             console.error('Failed to save changes', err);
+            setEditImageError(
+                err instanceof Error ? err.message : 'Failed to save changes'
+            );
         }
     };
 
-    const handleAcceptHighestKudos = async () => {
+    const handleAcceptHighestKudos = () => {
         if (!postDetails || !user) return;
-        
+
         const pendingHandshakes = (postDetails.handshakes || []).filter(
             (h: any) => h.status === 'new'
         );
 
         if (pendingHandshakes.length === 0) {
-            alert('No pending handshakes to accept.');
+            pushAlert({
+                type: 'warning',
+                message: 'No pending handshakes to accept.'
+            });
             return;
         }
 
-        const highestKudosHandshake = pendingHandshakes.reduce((highest, current) => {
-            const currentSender = current.sender || { kudos: 0 };
-            const highestSender = highest.sender || { kudos: 0 };
-            return (currentSender.kudos || 0) > (highestSender.kudos || 0) ? current : highest;
-        });
+        const highestKudosHandshake = pendingHandshakes.reduce(
+            (highest, current) => {
+                const currentSender = current.sender || { kudos: 0 };
+                const highestSender = highest.sender || { kudos: 0 };
+                return (currentSender.kudos || 0) > (highestSender.kudos || 0)
+                    ? current
+                    : highest;
+            }
+        );
 
         if (!highestKudosHandshake) {
-            alert('Could not find handshake to accept.');
+            pushAlert({
+                type: 'danger',
+                message: 'Could not find handshake to accept.'
+            });
             return;
         }
 
-        const confirmMessage = `Accept handshake from ${highestKudosHandshake.sender?.username || 'user'} (${highestKudosHandshake.sender?.kudos || 0} Kudos)?`;
-        if (!confirm(confirmMessage)) return;
+        // Show confirmation modal
+        setHighestKudosHandshakeData({
+            handshake: highestKudosHandshake,
+            username: highestKudosHandshake.sender?.username || 'user',
+            kudos: highestKudosHandshake.sender?.kudos || 0
+        });
+        setAcceptHighestKudosModal(true);
+    };
+
+    const confirmAcceptHighestKudos = async () => {
+        if (!highestKudosHandshakeData || !postDetails) return;
 
         setAcceptingHighestKudos(true);
 
         try {
-            await apiMutate(`/handshakes/${highestKudosHandshake.id}`, 'patch', { status: 'accepted' });
-            
+            await acceptHandshakeMut.mutateAsync(highestKudosHandshakeData.handshake.id);
+
             setPostDetails((prev: PostDTO) => {
                 if (!prev) return prev;
                 return {
                     ...prev,
                     handshakes: (prev.handshakes || []).map((h: any) =>
-                        h.id === highestKudosHandshake.id
+                        h.id === highestKudosHandshakeData.handshake.id
                             ? { ...h, status: 'accepted' }
                             : h
                     )
                 };
             });
 
-            alert(`Successfully accepted handshake from ${highestKudosHandshake.sender?.username || 'user'}!`);
-            
+            pushAlert({
+                type: 'success',
+                message: `Successfully accepted handshake from ${highestKudosHandshakeData.username}!`
+            });
+
             if (fetchPostDetails) {
                 fetchPostDetails(postDetails.id);
             }
         }
         catch (err) {
             console.error('Failed to accept handshake:', err);
-            alert('Failed to accept handshake. Please try again.');
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to accept handshake. Please try again.'
+            });
         }
         finally {
             setAcceptingHighestKudos(false);
+            setAcceptHighestKudosModal(false);
+            setHighestKudosHandshakeData(null);
         }
     };
-
-    const canSeeExactLocation = (() => {
-        if (!postDetails || !user?.id) return false;
-        const isPostOwner = user.id === postDetails.sender?.id;
-        if (isPostOwner) return true;
-
-        const handshakes = postDetails.handshakes || [];
-        return handshakes.some((h: any) => {
-            const status = h?.status;
-            if (status !== 'accepted' && status !== 'completed') return false;
-            const senderID =
-                typeof h?.senderID === 'number'
-                    ? h.senderID
-                    : Number(h?.senderID);
-            return senderID === user.id;
-        });
-    })();
 
     if (loading) {
         return <div className='text-center mt-20 text-lg'>Loading post...</div>;
     }
 
     if (error) {
-        const isBlockedUser = postDetails?.sender?.id && 
+        const isBlockedUser =
+            postDetails?.sender?.id &&
             (blockedUsers ?? []).includes(postDetails.sender.id);
-        
+
         if (isBlockedUser && postDetails?.sender) {
             return (
                 <div className='text-center mt-20 max-w-md mx-auto px-4'>
                     <div className='bg-gray-100 dark:bg-gray-800 rounded-lg p-6 border border-gray-300 dark:border-gray-700'>
                         <div className='mb-4'>
                             <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center'>
-                                <svg className='w-8 h-8 text-red-600 dark:text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' />
+                                <svg
+                                    className='w-8 h-8 text-red-600 dark:text-red-400'
+                                    fill='none'
+                                    viewBox='0 0 24 24'
+                                    stroke='currentColor'
+                                >
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+                                    />
                                 </svg>
                             </div>
                             <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
                                 Post from Blocked User
                             </h3>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                This post is from <span className='font-semibold'>{postDetails.sender.displayName || postDetails.sender.username}</span>, 
-                                whom you have blocked. You cannot view their content.
+                                This post is from{' '}
+                                <span className='font-semibold'>
+                                    {postDetails.sender.displayName ||
+                                        postDetails.sender.username}
+                                </span>
+                                , whom you have blocked. You cannot view their
+                                content.
                             </p>
                         </div>
-                        
+
                         <div className='flex flex-col gap-2'>
                             <Button
                                 onClick={async () => {
-                                    if (blockingLoading || !postDetails.sender?.id) return;
+                                    if (
+                                        blockingLoading ||
+                                        !postDetails.sender?.id
+                                    )
+                                        return;
                                     try {
                                         await unblock(postDetails.sender.id);
-                                        if (fetchPostDetails && postDetails?.id) {
-                                            setTimeout(() => fetchPostDetails(postDetails.id), 300);
+                                        if (
+                                            fetchPostDetails &&
+                                            postDetails?.id
+                                        ) {
+                                            setTimeout(
+                                                () =>
+                                                    fetchPostDetails(
+                                                        postDetails.id
+                                                    ),
+                                                300
+                                            );
                                         }
                                     }
                                     catch (err) {
-                                        console.error('Failed to unblock user:', err);
+                                        console.error(
+                                            'Failed to unblock user:',
+                                            err
+                                        );
                                     }
                                 }}
                                 disabled={blockingLoading}
                                 variant='primary'
                                 className='w-full justify-center'
                             >
-                                {blockingLoading ? 'Unblocking...' : 'Unblock User'}
+                                {blockingLoading
+                                    ? 'Unblocking...'
+                                    : 'Unblock User'}
                             </Button>
                             <Button
                                 onClick={() => window.history.back()}
@@ -630,7 +865,7 @@ export default function PostDetails(props: Props) {
                 </div>
             );
         }
-        
+
         return (
             <div className='text-center mt-20 text-red-500'>
                 <p>{error}</p>
@@ -652,22 +887,54 @@ export default function PostDetails(props: Props) {
     const hasPendingHandshakes = (postDetails.handshakes || []).some(
         (h: any) => h.status === 'new'
     );
-    const showAcceptHighestKudosButton = isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
-    
+    const showAcceptHighestKudosButton =
+        isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
+
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
-            {/* Header: User Card + Action Buttons */}
-            <div className='flex items-start justify-between mb-4 gap-4'>
-                <UserCard user={postDetails.sender} large />
+            {/* Overlay when editing */}
+            {isEditing && (
+                <div
+                    className='fixed inset-0 z-50 bg-black/50 cursor-pointer'
+                    onClick={() => {
+                        setIsEditing(false);
+                        setEditImages([]);
+                        setEditImageError(null);
+                        setDeletedImageIndices(new Set());
+                    }}
+                    style={{ pointerEvents: 'auto' }}
+                />
+            )}
 
-                {user?.id === postDetails.sender?.id && (
-                    <div className='flex gap-2 shrink-0'>
-                        <EditPostButton onClick={handleStartEdit} />
+            {/* Back Button */}
+            <button
+                onClick={() => navigate(-1)}
+                className='mb-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors'
+                aria-label='Go back'
+            >
+                <ArrowLeftIcon className='w-5 h-5' />
+                <span className='font-medium'>Back</span>
+            </button>
+
+            {/* Header: User Card and Action Buttons */}
+            <div className='flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3 sm:gap-4'>
+                <div className='flex-1 min-w-0'>
+                    <UserCard user={postDetails.sender} large />
+                </div>
+
+                {/* Post Owner Actions */}
+                {isPostOwner && (
+                    <div className='flex flex-row gap-2 flex-shrink-0'>
+                        <EditPostButton
+                            onClick={handleStartEdit}
+                            disabled={isEditing}
+                        />
                         {postDetails.status !== 'closed' && (
                             <Button
                                 onClick={handleClosePost}
-                                className='inline-flex items-center gap-1 text-sm font-semibold'
+                                className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
                                 variant='danger'
+                                disabled={isEditing}
                             >
                                 Close Post
                             </Button>
@@ -677,88 +944,166 @@ export default function PostDetails(props: Props) {
             </div>
 
             {/* Title */}
-            <div className='mb-3'>
-                <h1 className='text-3xl font-bold text-gray-900 dark:text-gray-100'>
+            <div className='mb-4'>
+                <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 break-words'>
                     {postDetails.title}
                 </h1>
             </div>
 
-            {/* Primary Metadata: Type, Status, Category */}
-            <div className='flex flex-wrap items-center gap-2 mb-3'>
-                <Pill
-                    tone={postDetails.type === 'request' ? 'info' : 'success'}
-                    className='uppercase font-semibold'
-                >
-                    {postDetails.type}
-                </Pill>
+            {/* Metadata Card - Redesigned with Mobile Optimization */}
+            <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 mb-4 shadow-sm'>
+                <div className='flex flex-wrap gap-2 sm:gap-3 items-center'>
+                    {/* Type Badge */}
+                    <Pill
+                        tone={
+                            postDetails.type === 'request' ? 'info' : 'success'
+                        }
+                        className='uppercase font-semibold text-xs'
+                    >
+                        {postDetails.type}
+                    </Pill>
 
-                {postDetails.status === 'closed' ? (
-                    <Pill tone='danger' className='uppercase font-semibold'>CLOSED</Pill>
-                ) : (
-                    <Pill tone='neutral' className='uppercase'>{postDetails.status}</Pill>
-                )}
+                    {/* Status Badge */}
+                    {postDetails.status === 'closed' || postDetails.status == 'offer_posted' ? (
+                        <Pill
+                            tone='danger'
+                            className='uppercase font-semibold text-xs'
+                        >
+                            CLOSED
+                        </Pill>
+                    ) : (
+                        <Pill tone='neutral' className='uppercase text-xs'>
+                            {postDetails.status}
+                        </Pill>
+                    )}
 
-                {postDetails.category?.name && (
-                    <span className='text-sm text-gray-600 dark:text-gray-400 ml-1'>
-                        in <span className='font-medium'>{postDetails.category.name}</span>
-                    </span>
-                )}
-            </div>
+                    {/* Category */}
+                    {postDetails.category?.name && (
+                        <div className='flex items-center gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2.5 sm:px-3 py-1 rounded-full'>
+                            <span className='font-medium'>
+                                {postDetails.category.name}
+                            </span>
+                        </div>
+                    )}
 
-            {/* Secondary Metadata: Items + Tags */}
-            <div className='flex flex-wrap items-center gap-2 mb-4'>
-                {typeof postDetails.itemsLimit === 'number' && postDetails.itemsLimit > 0 && (
-                    <span className='text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded'>
-                        {postDetails.itemsLimit} {postDetails.itemsLimit === 1 ? 'item' : 'items'} max
-                    </span>
-                )}
+                    {/* Items Limit */}
+                    {typeof postDetails.itemsLimit === 'number' &&
+                        postDetails.itemsLimit > 0 && (
+                        <div className='flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 sm:px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800'>
+                            <span className='font-medium'>
+                                {postDetails.itemsLimit}{' '}
+                                {postDetails.itemsLimit === 1
+                                    ? 'item'
+                                    : 'items'}{' '}
+                                    max
+                            </span>
+                        </div>
+                    )}
 
-                {postDetails.tags?.map((tag, i) => (
-                    <Pill key={i} name={tag.name} />
-                ))}
-            </div>
-
-            {/* Icon Actions: Like, Dislike, Report */}
-            <div className='flex gap-2 items-center mb-4'>
-                <button
-                    onClick={handleLike}
-                    disabled={liked === true}
-                    title='Like'
-                    className={`p-2 rounded-full transition ${
-                        liked === true
-                            ? 'bg-blue-500 text-white cursor-default'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600'
-                    }`}
-                >
-                    <HandThumbUpIcon className='w-5 h-5' />
-                </button>
-
-                <button
-                    onClick={handleDislike}
-                    disabled={liked === false}
-                    title='Dislike'
-                    className={`p-2 rounded-full transition ${
-                        liked === false
-                            ? 'bg-red-500 text-white cursor-default'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600'
-                    }`}
-                >
-                    <HandThumbDownIcon className='w-5 h-5' />
-                </button>
-
-                <button
-                    onClick={() => setReportModalVisible(true)}
-                    title='Report'
-                    className='p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
-                >
-                    <ExclamationTriangleIcon className='w-5 h-5' />
-                </button>
+                    {/* Tags - Full width on mobile for better readability */}
+                    {postDetails.tags && postDetails.tags.length > 0 && (
+                        <>
+                            {/* Visual break on mobile */}
+                            <div className='w-full sm:hidden'></div>
+                            <div className='flex flex-wrap items-center gap-1.5 sm:gap-2'>
+                                {postDetails.tags.map((tag, i) => (
+                                    <Pill key={i} name={tag.name} />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Body / Description - Enhanced Edit Form */}
             {isEditing ? (
-                <div className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg mb-6 space-y-4 text-gray-900 dark:text-gray-100'>
-                    <h3 className='text-lg font-semibold'>Edit Post</h3>
+                <div
+                    className='bg-white dark:bg-gray-800 p-6 border dark:border-gray-700 rounded-lg space-y-4 text-gray-900 dark:text-gray-100 z-50 fixed top-20 left-4 right-4 max-w-4xl mx-auto w-[calc(100%-2rem)] max-h-[calc(100vh-8rem)] overflow-y-auto'
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            setEditImages([]);
+                            setEditImageError(null);
+                            setDeletedImageIndices(new Set());
+                        }}
+                        className='absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors'
+                        aria-label='Close edit form'
+                        title='Close'
+                    >
+                        <svg
+                            className='w-5 h-5 text-gray-500 dark:text-gray-400'
+                            fill='none'
+                            viewBox='0 0 24 24'
+                            stroke='currentColor'
+                        >
+                            <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M6 18L18 6M6 6l12 12'
+                            />
+                        </svg>
+                    </button>
+                    <h3 className='text-lg font-semibold pr-8'>Edit Post</h3>
+
+                    <div className='flex gap-3'>
+                        <Button
+                            variant={
+                                editData.type === 'gift'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
+                            onClick={() =>
+                                setEditData({
+                                    ...editData,
+                                    type: 'gift'
+                                })
+                            }
+                        >
+                            Give stuff
+                        </Button>
+                        <Button
+                            variant={
+                                editData.type === 'request'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
+                            onClick={() =>
+                                setEditData({
+                                    ...editData,
+                                    type: 'request'
+                                })
+                            }
+                        >
+                            Request stuff
+                        </Button>
+                    </div>
+
+                    <div>
+                        <label className='block text-sm font-medium mb-1'>
+                            Category
+                        </label>
+                        <DropdownPicker
+                            options={categories.map((c: CategoryDTO) => ({
+                                label: c.name,
+                                value: String(c.id)
+                            }))}
+                            value={
+                                editData.categoryID !== null
+                                    ? String(editData.categoryID)
+                                    : ''
+                            }
+                            onChange={(val) => {
+                                const parsed = val ? parseInt(val) : null;
+                                setEditData({
+                                    ...editData,
+                                    categoryID: parsed
+                                });
+                            }}
+                        />
+                    </div>
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
@@ -783,7 +1128,10 @@ export default function PostDetails(props: Props) {
                         </label>
                         <textarea
                             className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             rows={4}
                             value={editData.body}
                             onChange={(e) =>
@@ -808,19 +1156,42 @@ export default function PostDetails(props: Props) {
                             Location
                         </label>
 
+                        {editData.location && (
+                            <div className='mb-2 flex items-center justify-between gap-2'>
+                                <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                    {editData.location.name || 'Location set'}
+                                </div>
+                                <Button
+                                    type='button'
+                                    variant='ghost'
+                                    onClick={() =>
+                                        setEditData({
+                                            ...editData,
+                                            location: null
+                                        })
+                                    }
+                                    className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                >
+                                    ✕ Remove
+                                </Button>
+                            </div>
+                        )}
+
                         <MapDisplay
+                            key={editData.location?.regionID || 'no-location'}
                             edit
                             regionID={editData.location?.regionID}
                             height={300}
-                            exactLocation={user?.id === postDetails.sender?.id}
+                            exactLocation={isPostOwner}
                             onLocationChange={handleLocationChange}
-                            shouldSavedLocationButton={true}
+                            shouldSavedLocationButton
                         />
                     </div>
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
-                            Number of items (leave blank for unlimited)
+                            Number of items if applicable (leave blank for
+                            unlimited, 1 in case of doubt or non applicable)
                         </label>
                         <input
                             className='w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -831,13 +1202,116 @@ export default function PostDetails(props: Props) {
                             onChange={(e) =>
                                 setEditData({
                                     ...editData,
-                                    itemsLimit: e.target.value.replace(/[^0-9]/g, '')
+                                    itemsLimit: e.target.value.replace(
+                                        /[^0-9]/g,
+                                        ''
+                                    )
                                 })
                             }
                         />
                         <p className='text-xs text-gray-500 mt-1'>
-                            Limits how many accepted/completed handshakes the post can have.
+                            Limits how many accepted/completed handshakes the
+                            post can have.
                         </p>
+                    </div>
+
+                    <div className='w-full overflow-hidden box-border'>
+                        <label className='block text-sm font-semibold mb-2'>
+                            Images (
+                            {(postDetails.images?.length || 0) -
+                                deletedImageIndices.size +
+                                editImages.length}
+                            /{MAX_FILE_COUNT})
+                        </label>
+                        {editImageError && (
+                            <p className='text-sm text-red-600 dark:text-red-400 mb-2'>
+                                {editImageError}
+                            </p>
+                        )}
+                        <input
+                            type='file'
+                            accept='image/*'
+                            multiple
+                            onChange={handleImageUpload}
+                            className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
+                            disabled={
+                                (postDetails.images?.length || 0) -
+                                    deletedImageIndices.size +
+                                    editImages.length >=
+                                MAX_FILE_COUNT
+                            }
+                        />
+                        {((postDetails.images &&
+                            postDetails.images.length > 0) ||
+                            editImages.length > 0) && (
+                            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
+                                {/* Existing images from the post */}
+                                {postDetails.images?.map((url, index) => {
+                                    if (deletedImageIndices.has(index))
+                                        return null;
+                                    const imagePath = getImagePath(url);
+                                    if (!imagePath) return null;
+                                    return (
+                                        <div
+                                            key={`existing-${index}`}
+                                            className='relative group'
+                                        >
+                                            <img
+                                                src={imagePath}
+                                                alt={`Image ${index + 1}`}
+                                                className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                            />
+                                            <Button
+                                                type='button'
+                                                shape='circle'
+                                                variant='danger'
+                                                onClick={() =>
+                                                    removeExistingImage(index)
+                                                }
+                                                className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                                title='Remove image'
+                                            >
+                                                ×
+                                            </Button>
+                                            <div className='absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded'>
+                                                Current
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {/* New images being added */}
+                                {editImages.map((file, index) => (
+                                    <div
+                                        key={`new-${index}`}
+                                        className='relative group'
+                                    >
+                                        <img
+                                            src={createImagePreview(file)}
+                                            alt={`Preview ${index + 1}`}
+                                            className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                        />
+                                        <Button
+                                            type='button'
+                                            shape='circle'
+                                            variant='danger'
+                                            onClick={() =>
+                                                removeEditImage(index)
+                                            }
+                                            className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                            title='Remove image'
+                                        >
+                                            ×
+                                        </Button>
+                                        <div className='absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded'>
+                                            New
+                                        </div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                                            {file.name}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className='flex gap-3 pt-4'>
@@ -846,7 +1320,12 @@ export default function PostDetails(props: Props) {
                         </Button>
                         <Button
                             variant='secondary'
-                            onClick={() => setIsEditing(false)}
+                            onClick={() => {
+                                setIsEditing(false);
+                                setEditImages([]);
+                                setEditImageError(null);
+                                setDeletedImageIndices(new Set());
+                            }}
                         >
                             Cancel
                         </Button>
@@ -855,7 +1334,16 @@ export default function PostDetails(props: Props) {
             ) : (
                 <>
                     {/* Images */}
-                    <ImageCarousel images={postDetails.images || []} />
+                    <div className='mb-6'>
+                        <ImageCarousel
+                            images={postDetails.images || []}
+                            variant='postDetails'
+                            onImageClick={(index) => {
+                                setImageModalVisible(true);
+                                setImageModalIndex(index);
+                            }}
+                        />
+                    </div>
 
                     {/* Body / Description */}
                     <div className='bg-gray-100 dark:bg-gray-800 rounded p-4 mb-6'>
@@ -869,16 +1357,41 @@ export default function PostDetails(props: Props) {
                             </p>
                         )}
                     </div>
+
+                    {/* User Interaction Actions (Report) */}
+                    {!isPostOwner && (
+                        <div className='flex gap-2 items-center mb-6'>
+                            <button
+                                onClick={() => setReportModalVisible(true)}
+                                title='Report'
+                                className='px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition flex items-center gap-2'
+                            >
+                                <ExclamationTriangleIcon className='w-5 h-5' />
+                                <span>Report</span>
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
 
             {/* Map */}
-            {postDetails.location?.regionID && (
+            {(postDetails.location?.regionID ||
+                (postDetails.location?.latitude &&
+                    postDetails.location?.longitude)) && (
                 <div className='mb-6 flex justify-center'>
                     <MapDisplay
                         edit={false}
-                        regionID={postDetails.location.regionID}
-                        exactLocation={canSeeExactLocation}
+                        exactLocation={isPostOwner}
+                        regionID={postDetails.location?.regionID}
+                        coordinates={
+                            postDetails.location?.latitude &&
+                            postDetails.location?.longitude
+                                ? {
+                                    latitude: postDetails.location.latitude,
+                                    longitude: postDetails.location.longitude
+                                }
+                                : undefined
+                        }
                         onLocationChange={handleLocationChange}
                         width={500}
                         height={300}
@@ -890,29 +1403,54 @@ export default function PostDetails(props: Props) {
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
-                        {postDetails.type === 'request'
-                            ? 'Offered By'
-                            : 'Requested By'}
+                        {postDetails.type === 'request' ? 'Offers' : 'Requests'}
                     </h2>
-                    
+
                     {showAcceptHighestKudosButton && (
-                        <Button
-                            onClick={handleAcceptHighestKudos}
-                            disabled={acceptingHighestKudos}
-                            variant='success'
-                            className='flex items-center gap-2'
-                        >
-                            {acceptingHighestKudos ? (
-                                <>
-                                    <span className='animate-spin'>⏳</span>
-                                    Accepting...
-                                </>
-                            ) : (
-                                <>
-                                    ⭐ Accept Highest Kudos
-                                </>
-                            )}
-                        </Button>
+                        <div className='flex items-center gap-2'>
+                            <Button
+                                onClick={handleAcceptHighestKudos}
+                                disabled={acceptingHighestKudos || isEditing || postDetails.status === 'closed' || postDetails.status == 'offer_posted'} 
+                                variant='success'
+                                className='flex items-center gap-2 ml-2'
+                            >
+                                {acceptingHighestKudos ? (
+                                    <>
+                                        <span className='animate-spin'>⏳</span>
+                                        Accepting...
+                                    </>
+                                ) : (
+                                    <>⭐ Accept Highest Kudos</>
+                                )}
+                            </Button>
+                            <div className='relative group'>
+                                <button
+                                    type='button'
+                                    onClick={() =>
+                                        setShowKudosTooltip(!showKudosTooltip)
+                                    }
+                                    onMouseEnter={() =>
+                                        setShowKudosTooltip(true)
+                                    }
+                                    onMouseLeave={() =>
+                                        setShowKudosTooltip(false)
+                                    }
+                                    className='text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors'
+                                    aria-label='Help information'
+                                >
+                                    <QuestionMarkCircleIcon className='w-5 h-5' />
+                                </button>
+                                {showKudosTooltip && (
+                                    <div className='absolute right-0 top-8 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                        <div className='absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45'></div>
+                                        Automatically accepts the help request
+                                        with the highest kudos. If multiple
+                                        offers have the same kudos, one will be
+                                        chosen randomly.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -921,7 +1459,10 @@ export default function PostDetails(props: Props) {
                         (postDetails.handshakes || []).map((h) => ({
                             ...h,
                             post: postDetails,
-                            _stage: getHandshakeStage({ ...h, post: postDetails }, user?.id)
+                            _stage: getHandshakeStage(
+                                { ...h, post: postDetails },
+                                user?.id
+                            )
                         })) || [],
                         user?.id
                     )}
@@ -942,39 +1483,45 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     onHandshakeDeleted={handleHandshakeDeleted}
+                    onHandshakeInteraction={() => {
+                        // Force immediate refetch to update all handshake cards
+                        if (fetchPostDetails && postDetails?.id) {
+                            // Small delay to ensure backend has processed the update
+                            setTimeout(() => {
+                                fetchPostDetails(postDetails.id);
+                            }, 100);
+                        }
+                    }}
                     showPostDetails={false}
                     showSenderOrReceiver={'sender'}
+                    showUserKudos={true}
                 />
-
 
                 {postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
-                    !postDetails.handshakes?.some((h: any) => 
-                        h.senderID === user?.id && h.status !== 'cancelled'
-                    ) &&
-                    (
-                        <div className='mt-4 flex justify-center'>
-                            <Button
-                                onClick={handleSubmitHandshake}
-                                disabled={creatingHandshake}
-                            >
-                                {creatingHandshake
-                                    ? 'Creating...'
-                                    : postDetails.type === 'gift'
-                                        ? 'Request This'
-                                        : 'Gift This'}
-                            </Button>
-                        </div>
-                    )
-                }
-
+                    !postDetails.handshakes?.some(
+                        (h: any) =>
+                            h.senderID === user?.id && h.status !== 'cancelled'
+                    ) && (
+                    <div className='mt-4 flex justify-center'>
+                        <Button
+                            onClick={handleSubmitHandshake}
+                            disabled={creatingHandshake || isEditing}
+                        >
+                            {creatingHandshake
+                                ? 'Creating...'
+                                : postDetails.type === 'gift'
+                                    ? 'Request This'
+                                    : 'Gift This'}
+                        </Button>
+                    </div>
+                )}
             </div>
-
 
             {/* Comments */}
             <div className='p-4 mb-6'>
                 <MessageList
-                    title='Comments'
+                    title=''
                     messages={postDetails.messages || []}
                     callback={(response) =>
                         setPostDetails((prev: PostDTO) =>
@@ -990,11 +1537,12 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user}
-                    allowDelete={!!user}
-                    allowEdit={!!user}
+                    showSendMessage={!!user && !isEditing || (postDetails.status !== 'closed' && postDetails.status !== 'offer_posted')}
+                    allowDelete={!!user && !isEditing}
+                    allowEdit={!!user && !isEditing}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
+                    active={postDetails.status !== 'closed' && postDetails.status !== 'offer_posted' && !isEditing}
                 />
             </div>
 
@@ -1021,7 +1569,10 @@ export default function PostDetails(props: Props) {
                         </p>
                         <textarea
                             className='w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 overflow-y-auto'
-                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y'
+                            }}
                             rows={4}
                             placeholder='Enter reason...'
                             value={reportReason}
@@ -1048,17 +1599,32 @@ export default function PostDetails(props: Props) {
                     <div className='bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl text-gray-900 dark:text-gray-100'>
                         <div className='text-center mb-4'>
                             <div className='mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4'>
-                                <svg className='h-8 w-8 text-green-600 dark:text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                <svg
+                                    className='h-8 w-8 text-green-600 dark:text-green-400'
+                                    fill='none'
+                                    viewBox='0 0 24 24'
+                                    stroke='currentColor'
+                                >
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M5 13l4 4L19 7'
+                                    />
                                 </svg>
                             </div>
-                            <h2 className='text-2xl font-bold mb-3'>Handshake Created!</h2>
+                            <h2 className='text-2xl font-bold mb-3'>
+                                Help request/offer Created!
+                            </h2>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                Your handshake has been successfully created. The post owner has been notified.
+                                Your help request/offer has been successfully
+                                created. The post owner has been notified.
                             </p>
                             <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
                                 <p className='text-xs text-blue-800 dark:text-blue-200'>
-                                    💡 You can message the post owner now to coordinate details, or do it later from your handshakes page.
+                                    💡 You can message the post owner now to
+                                    coordinate details, or do it later from your
+                                    handshakes page.
                                 </p>
                             </div>
                         </div>
@@ -1082,24 +1648,44 @@ export default function PostDetails(props: Props) {
                 </div>
             )}
 
-            {/* Image Modal */}
-            {modalVisible && selectedImage && (
-                <div className='fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center'>
-                    <div className='relative'>
-                        <img
-                            src={selectedImage}
-                            alt='Preview'
-                            className='max-w-full max-h-[90vh] rounded shadow-lg'
-                        />
-                        <Button
-                            onClick={() => setModalVisible(false)}
-                            className='absolute top-2 right-2 text-white bg-black bg-opacity-50 px-3 py-1 rounded hover:bg-opacity-75'
-                        >
-                            Close
-                        </Button>
-                    </div>
-                </div>
+            {/* Image Modal Carousel */}
+            {imageModalVisible &&
+                postDetails.images &&
+                postDetails.images.length > 0 && (
+                <ImageModalCarousel
+                    images={postDetails.images}
+                    initialIndex={imageModalIndex}
+                    onClose={() => setImageModalVisible(false)}
+                />
             )}
+
+            {/* Accept Highest Kudos Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={acceptHighestKudosModal}
+                onClose={() => {
+                    setAcceptHighestKudosModal(false);
+                    setHighestKudosHandshakeData(null);
+                }}
+                onConfirm={confirmAcceptHighestKudos}
+                title='Accept Highest Kudos'
+                message={
+                    highestKudosHandshakeData
+                        ? `You're about to accept the help request from ${highestKudosHandshakeData.username} (${highestKudosHandshakeData.kudos} Kudos), which has the highest kudos among pending offers. ${
+                            (postDetails?.handshakes || []).filter(
+                                (h: any) =>
+                                    h.status === 'new' &&
+                                      (h.sender?.kudos || 0) ===
+                                          highestKudosHandshakeData.kudos
+                            ).length > 1
+                                ? 'Note: Multiple offers have the same kudos amount.'
+                                : ''
+                        }`
+                        : ''
+                }
+                confirmText='Accept'
+                cancelText='Cancel'
+                variant='info'
+            />
         </div>
     );
 }

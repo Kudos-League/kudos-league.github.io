@@ -12,7 +12,12 @@ export const qk = {
 };
 
 type Filters =
-    | { filter?: 'all' | 'ongoing' | 'upcoming' | 'past'; location?: string; local?: boolean; radiusKm?: number }
+    | {
+          filter?: 'all' | 'ongoing' | 'upcoming' | 'past';
+          location?: string;
+          local?: boolean;
+          radiusKm?: number;
+      }
     | undefined;
 
 type EventsKey = ReturnType<typeof qk.events>;
@@ -36,5 +41,20 @@ export function useEvent(eventId: number) {
         queryKey: qk.event(eventId),
         queryFn: () => apiGet<EventDTO>(`/events/${eventId}`),
         enabled: !!eventId
+    });
+}
+
+export function useUserEventsQuery(
+    userId: number | undefined,
+    filter: 'all' | 'created' | 'participating' = 'all'
+) {
+    return useQuery<EventDTO[]>({
+        queryKey: ['events', 'user', userId, filter],
+        queryFn: () =>
+            apiGet<EventDTO[]>(`/users/${userId}/events`, {
+                params: { filter }
+            }),
+        enabled: !!userId,
+        staleTime: 60_000
     });
 }

@@ -14,7 +14,13 @@ type Props = {
     isDMView: boolean;
 };
 
-export default function ChannelDrawer({ open, onClose, channels, onSelect, isDMView }: Props) {
+export default function ChannelDrawer({
+    open,
+    onClose,
+    channels,
+    onSelect,
+    isDMView
+}: Props) {
     const { user } = useAuth();
     return (
         <Drawer open={open} onClose={onClose} maxWidth='max-w-md'>
@@ -32,7 +38,10 @@ export default function ChannelDrawer({ open, onClose, channels, onSelect, isDMV
                             >
                                 <span className='absolute -inset-2.5' />
                                 <span className='sr-only'>Close panel</span>
-                                <XMarkIcon aria-hidden='true' className='size-6' />
+                                <XMarkIcon
+                                    aria-hidden='true'
+                                    className='size-6'
+                                />
                             </button>
                         </div>
                     </div>
@@ -43,7 +52,11 @@ export default function ChannelDrawer({ open, onClose, channels, onSelect, isDMV
                         {channels.map((c) => {
                             const otherUser =
                                 (c as any).otherUser ||
-                                (c.users ? c.users.find((u: any) => u.id !== user?.id) : null) ||
+                                (c.users
+                                    ? c.users.find(
+                                        (u: any) => u.id !== user?.id
+                                    )
+                                    : null) ||
                                 (c.users ? c.users[0] : null);
 
                             return (
@@ -63,9 +76,13 @@ export default function ChannelDrawer({ open, onClose, channels, onSelect, isDMV
                                             )}
                                         </div>
                                         {isDMView ? (
-                                            <div className='text-xs text-zinc-500 dark:text-zinc-400'>@{otherUser?.username}</div>
+                                            <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                                @{otherUser?.username}
+                                            </div>
                                         ) : (
-                                            <div className='text-xs text-zinc-500 dark:text-zinc-400'>Public channel</div>
+                                            <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                                Public channel
+                                            </div>
                                         )}
                                     </button>
                                 </li>
