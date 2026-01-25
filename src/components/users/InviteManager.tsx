@@ -228,7 +228,7 @@ export default function InviteManager() {
             {success && (
                 <Alert tone='success'>
                     <div className='space-y-1'>
-                        <p className='font-medium'>Invite ready to share!</p>
+                        <p className='font-medium'>An invite has been sent with the following link: </p>
                         {success.inviteUrl ? (
                             <p className='break-all text-xs'>
                                 {success.inviteUrl}
