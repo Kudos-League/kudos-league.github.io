@@ -3,22 +3,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useSearchEventsQuery } from '@/shared/api/queries/events';
-import { X, ArrowLeft, MapPin, Clock, Users, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { X, ArrowLeft, MapPin, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
 import UserCard from '@/components/users/UserCard';
-import EventCard from '@/components/events/EventCard';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/contexts/useAuth';
 
-type SearchFilterType = 'posts' | 'users' | 'events';
+type SearchFilterType = 'posts' | 'users';
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
-type EventLocationType = 'all' | 'local' | 'global';
-type EventTimeType = 'all' | 'today' | 'week' | 'month';
 
 export default function SearchPage() {
     const navigate = useNavigate();
@@ -42,12 +36,6 @@ export default function SearchPage() {
     const [orderFilterOpen, setOrderFilterOpen] = React.useState(false);
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
 
-    // Event filters
-    const [eventLocation, setEventLocation] =
-        React.useState<EventLocationType>('all');
-    const [eventTime, setEventTime] = React.useState<EventTimeType>('all');
-    const [timeDropdownOpen, setTimeDropdownOpen] = React.useState(false);
-
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
     // Use immediate search when forceSearch is true, otherwise use debounced
@@ -64,77 +52,6 @@ export default function SearchPage() {
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(effectiveSearch);
-
-    const eventsQuery = useSearchEventsQuery(effectiveSearch);
-    const allEventResults = eventsQuery.data?.pages.flat() ?? [];
-
-    // Apply client-side location and time filters on the API results
-    const eventSearchResults = useMemo(() => {
-        if (!searchingActive) return [];
-        let filtered = allEventResults;
-
-        // Apply location filter
-        if (eventLocation === 'local') {
-            filtered = filtered.filter((event) => !event.isGlobal);
-        }
-        else if (eventLocation === 'global') {
-            filtered = filtered.filter((event) => event.isGlobal);
-        }
-
-        // Apply time filter
-        if (eventTime !== 'all') {
-            const now = new Date();
-            const today = new Date(now);
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            const weekStart = new Date(today);
-            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 7);
-
-            const monthStart = new Date(
-                today.getFullYear(),
-                today.getMonth(),
-                1
-            );
-            const monthEnd = new Date(
-                today.getFullYear(),
-                today.getMonth() + 1,
-                1
-            );
-
-            filtered = filtered.filter((event) => {
-                const startTime = new Date(event.startTime);
-                const endTime = event.endTime ? new Date(event.endTime) : null;
-
-                if (eventTime === 'today') {
-                    return (
-                        (startTime >= today && startTime < tomorrow) ||
-                        (endTime && endTime >= today && startTime < tomorrow)
-                    );
-                }
-                else if (eventTime === 'week') {
-                    return (
-                        (startTime >= weekStart && startTime < weekEnd) ||
-                        (endTime && endTime >= weekStart && startTime < weekEnd)
-                    );
-                }
-                else if (eventTime === 'month') {
-                    return (
-                        (startTime >= monthStart && startTime < monthEnd) ||
-                        (endTime &&
-                            endTime >= monthStart &&
-                            startTime < monthEnd)
-                    );
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }, [allEventResults, searchingActive, eventLocation, eventTime]);
 
     // Filter and sort posts
     const filteredPosts = useMemo(() => {
@@ -425,125 +342,6 @@ export default function SearchPage() {
                         </div>
                     )}
 
-                    {/* Event Filters */}
-                    {searchFilter === 'events' && (
-                        <div className='flex flex-wrap items-center gap-2'>
-                            <div className='flex flex-wrap gap-2'>
-                                <Button
-                                    onClick={() => setEventLocation('all')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'all'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    All Locations
-                                </Button>
-                                <Button
-                                    onClick={() => setEventLocation('local')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'local'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    Local
-                                </Button>
-                                <Button
-                                    onClick={() => setEventLocation('global')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'global'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    Global
-                                </Button>
-                            </div>
-
-                            <div className='ml-auto relative'>
-                                <button
-                                    onClick={() =>
-                                        setTimeDropdownOpen(!timeDropdownOpen)
-                                    }
-                                    className='text-base sm:text-sm px-4 py-3 sm:py-2 border-2 rounded-lg font-medium transition-all duration-200 border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:border-gray-400 focus:outline-none focus:border-blue-500 min-w-[140px] text-left flex items-center justify-between'
-                                >
-                                    <span>
-                                        {eventTime === 'all' && 'All Time'}
-                                        {eventTime === 'today' && 'Today'}
-                                        {eventTime === 'week' && 'This Week'}
-                                        {eventTime === 'month' && 'This Month'}
-                                    </span>
-                                    <svg
-                                        className='w-4 h-4 ml-2'
-                                        fill='none'
-                                        stroke='currentColor'
-                                        viewBox='0 0 24 24'
-                                    >
-                                        <path
-                                            strokeLinecap='round'
-                                            strokeLinejoin='round'
-                                            strokeWidth={2}
-                                            d='M19 9l-7 7-7-7'
-                                        />
-                                    </svg>
-                                </button>
-                                {timeDropdownOpen && (
-                                    <>
-                                        <div
-                                            className='fixed inset-0 z-10'
-                                            onClick={() =>
-                                                setTimeDropdownOpen(false)
-                                            }
-                                        />
-                                        <div className='absolute right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-zinc-800 border-2 border-gray-300 dark:border-zinc-700 rounded-lg shadow-xl z-20'>
-                                            {[
-                                                {
-                                                    value: 'all',
-                                                    label: 'All Time'
-                                                },
-                                                {
-                                                    value: 'today',
-                                                    label: 'Today'
-                                                },
-                                                {
-                                                    value: 'week',
-                                                    label: 'This Week'
-                                                },
-                                                {
-                                                    value: 'month',
-                                                    label: 'This Month'
-                                                }
-                                            ].map((option) => (
-                                                <button
-                                                    key={option.value}
-                                                    onClick={() => {
-                                                        setEventTime(
-                                                            option.value as EventTimeType
-                                                        );
-                                                        setTimeDropdownOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                    className={`w-full text-left px-4 py-4 text-lg sm:text-base font-medium transition-colors ${
-                                                        eventTime ===
-                                                        option.value
-                                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700'
-                                                    } first:rounded-t-lg last:rounded-b-lg`}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Search Results */}
                     <div className='space-y-6'>
@@ -614,143 +412,6 @@ export default function SearchPage() {
                             </>
                         )}
 
-                        {/* Event Results */}
-                        {searchFilter === 'events' && (
-                            <>
-                                {eventsQuery.isLoading ? (
-                                    <div className='text-center py-8 text-gray-500 dark:text-zinc-400'>
-                                        Searching events...
-                                    </div>
-                                ) : eventSearchResults.length > 0 ? (
-                                    <>
-                                        <ul className='space-y-2 sm:space-y-3 mb-8'>
-                                            {eventSearchResults.map((event) => {
-                                                const tz =
-                                                Intl.DateTimeFormat().resolvedOptions()
-                                                    .timeZone;
-                                                return (
-                                                    <li
-                                                        key={event.id}
-                                                        onClick={() =>
-                                                            navigate(
-                                                                `/event/${event.id}`
-                                                            )
-                                                        }
-                                                        className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
-                                                    >
-                                                        <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                                            <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
-                                                                {event.title}
-                                                            </p>
-                                                            {event.location
-                                                                ?.global ? (
-                                                                    <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                                🌐 Global
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                                📍 Local
-                                                                    </span>
-                                                                )}
-                                                        </div>
-                                                        {event.description && (
-                                                            <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
-                                                                {event.description}
-                                                            </p>
-                                                        )}
-                                                        <div className='space-y-0.5 sm:space-y-1'>
-                                                            <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
-                                                                <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                <span className='truncate'>
-                                                                    {format(
-                                                                        toZonedTime(
-                                                                            new Date(
-                                                                                event.startTime
-                                                                            ),
-                                                                            tz
-                                                                        ),
-                                                                        'MMM d, yyyy • h:mm a'
-                                                                    )}{' '}
-                                                                –{' '}
-                                                                    {event.endTime
-                                                                        ? format(
-                                                                            toZonedTime(
-                                                                                new Date(
-                                                                                    event.endTime
-                                                                                ),
-                                                                                tz
-                                                                            ),
-                                                                            'MMM d, yyyy • h:mm a'
-                                                                        )
-                                                                        : 'Ongoing'}
-                                                                </span>
-                                                            </p>
-                                                            {event.location?.name &&
-                                                            !event.location
-                                                                .global && (
-                                                                <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                    <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                    {
-                                                                        event
-                                                                            .location
-                                                                            .name
-                                                                    }
-                                                                </p>
-                                                            )}
-                                                            {event.creator && (
-                                                                <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                    <UserCard
-                                                                        user={
-                                                                            event.creator
-                                                                        }
-                                                                        subtitle={event.creator.displayName ? undefined : `@${event.creator.username || 'user'}`}
-                                                                        showKudos={
-                                                                            true
-                                                                        }
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            {typeof event.participantCount ===
-                                                            'number' &&
-                                                            event.participantCount >
-                                                                0 && (
-                                                                <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                    <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                    {
-                                                                        event.participantCount
-                                                                    }{' '}
-                                                                    participant
-                                                                    {event.participantCount !==
-                                                                    1
-                                                                        ? 's'
-                                                                        : ''}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                        {eventsQuery.hasNextPage && (
-                                            <div className='flex justify-center mt-4'>
-                                                <Button
-                                                    onClick={() => eventsQuery.fetchNextPage()}
-                                                    disabled={eventsQuery.isFetchingNextPage}
-                                                    variant='secondary'
-                                                >
-                                                    {eventsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
-                                        No events found for &quot;{searchText}
-                                        &quot;
-                                    </div>
-                                )}
-                            </>
-                        )}
                     </div>
                 </div>
             ) : (

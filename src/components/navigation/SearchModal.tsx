@@ -14,7 +14,6 @@ import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 
 interface SearchModalProps {
@@ -35,11 +34,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
     const searching = postsQuery.isFetching;
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(debouncedSearch);
-    const eventsQuery = useSearchEventsQuery(debouncedSearch);
-    const eventSearchResults = eventsQuery.data?.pages.flat() ?? [];
-    const searchingEvents = eventsQuery.isLoading;
 
-    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0;
+    const hasResults = userSearchResults.length > 0 || searchResults.length > 0;
 
     // Reset search when modal closes, and focus input when modal opens
     useEffect(() => {
@@ -68,15 +64,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
         onClose();
     };
 
-    // Format date for events
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    };
 
     return (
         <Dialog open={open} onClose={onClose} className='relative z-50'>
@@ -112,7 +99,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder='Search users, posts, events…'
+                                    placeholder='Search users, posts…'
                                     value={searchText}
                                     onChange={(e) =>
                                         setSearchText(e.target.value)
@@ -152,7 +139,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     <MagnifyingGlassIcon className='h-12 w-12 mx-auto mb-3 opacity-50' />
                                     <p>Start typing to search</p>
                                 </div>
-                            ) : searching || searchingUsers || searchingEvents ? (
+                            ) : searching || searchingUsers ? (
                                 <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                     Searching...
                                 </div>
@@ -252,46 +239,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                             </div>
                                                         </Link>
                                                     ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Event Results */}
-                                    {eventSearchResults.length > 0 && (
-                                        <div>
-                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
-                                                Events
-                                            </h3>
-                                            <div className='space-y-2'>
-                                                {eventSearchResults.slice(0, 3).map((event) => (
-                                                    <Link
-                                                        key={event.id}
-                                                        to={`/event/${event.id}`}
-                                                        onClick={handleResultClick}
-                                                        className='block p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                                    >
-                                                        <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                            {event.title}
-                                                        </p>
-                                                        <div className='flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap'>
-                                                            {event.location?.name && (
-                                                                <span className='truncate'>📍 {event.location.name}</span>
-                                                            )}
-                                                            {event.startTime && (
-                                                                <>
-                                                                    {event.location?.name && <span>•</span>}
-                                                                    <span>{formatDate(event.startTime)}</span>
-                                                                </>
-                                                            )}
-                                                            {event.endTime && (
-                                                                <>
-                                                                    <span>→</span>
-                                                                    <span>{formatDate(event.endTime)}</span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                ))}
                                             </div>
                                         </div>
                                     )}
