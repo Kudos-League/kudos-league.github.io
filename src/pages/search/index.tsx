@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useEvents } from '@/shared/api/queries/events';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { X, ArrowLeft, MapPin, Clock, Users, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -58,24 +58,20 @@ export default function SearchPage() {
         effectiveSearch.length >= 2 ||
         (forceSearch && effectiveSearch.length >= 1);
 
-    const { data: searchResults = [], isFetching: searching } =
-        useSearchPostsQuery(effectiveSearch);
+    const postsQuery = useSearchPostsQuery(effectiveSearch);
+    const searchResults = postsQuery.data?.pages.flat() ?? [];
+    const searching = postsQuery.isLoading;
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(effectiveSearch);
 
-    const { data: allEvents = [] } = useEvents();
+    const eventsQuery = useSearchEventsQuery(effectiveSearch);
+    const allEventResults = eventsQuery.data?.pages.flat() ?? [];
 
-    // Filter events client-side based on search text
+    // Apply client-side location and time filters on the API results
     const eventSearchResults = useMemo(() => {
         if (!searchingActive) return [];
-        const searchLower = effectiveSearch.toLowerCase();
-        let filtered = allEvents.filter(
-            (event) =>
-                event.title.toLowerCase().includes(searchLower) ||
-                event.description.toLowerCase().includes(searchLower) ||
-                event.location?.name?.toLowerCase().includes(searchLower)
-        );
+        let filtered = allEventResults;
 
         // Apply location filter
         if (eventLocation === 'local') {
@@ -138,7 +134,7 @@ export default function SearchPage() {
         }
 
         return filtered;
-    }, [effectiveSearch, allEvents, searchingActive, eventLocation, eventTime]);
+    }, [allEventResults, searchingActive, eventLocation, eventTime]);
 
     // Filter and sort posts
     const filteredPosts = useMemo(() => {
@@ -354,7 +350,7 @@ export default function SearchPage() {
                     <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                         {[
                             { key: 'posts', label: 'Posts', count: searchResults.length },
-                            { key: 'users', label: 'Users', count: userSearchResults.length }
+                            { key: 'users', label: 'Users', count: userSearchResults.length },
                         ].map(({ key, label, count }) => {
                             const isActive = searchFilter === key;
                             return (
@@ -592,10 +588,23 @@ export default function SearchPage() {
                                         Searching posts...
                                     </div>
                                 ) : filteredPosts.length > 0 ? (
-                                    <PostsInfinite.StaticList
-                                        posts={filteredPosts}
-                                        loading={false}
-                                    />
+                                    <>
+                                        <PostsInfinite.StaticList
+                                            posts={filteredPosts}
+                                            loading={false}
+                                        />
+                                        {postsQuery.hasNextPage && (
+                                            <div className='flex justify-center mt-4'>
+                                                <Button
+                                                    onClick={() => postsQuery.fetchNextPage()}
+                                                    disabled={postsQuery.isFetchingNextPage}
+                                                    variant='secondary'
+                                                >
+                                                    {postsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                         No posts found for &quot;{searchText}
@@ -608,115 +617,132 @@ export default function SearchPage() {
                         {/* Event Results */}
                         {searchFilter === 'events' && (
                             <>
-                                {eventSearchResults.length > 0 ? (
-                                    <ul className='space-y-2 sm:space-y-3 mb-8'>
-                                        {eventSearchResults.map((event) => {
-                                            const tz =
+                                {eventsQuery.isLoading ? (
+                                    <div className='text-center py-8 text-gray-500 dark:text-zinc-400'>
+                                        Searching events...
+                                    </div>
+                                ) : eventSearchResults.length > 0 ? (
+                                    <>
+                                        <ul className='space-y-2 sm:space-y-3 mb-8'>
+                                            {eventSearchResults.map((event) => {
+                                                const tz =
                                                 Intl.DateTimeFormat().resolvedOptions()
                                                     .timeZone;
-                                            return (
-                                                <li
-                                                    key={event.id}
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/event/${event.id}`
-                                                        )
-                                                    }
-                                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
-                                                >
-                                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
-                                                            {event.title}
-                                                        </p>
-                                                        {event.location
-                                                            ?.global ? (
-                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                return (
+                                                    <li
+                                                        key={event.id}
+                                                        onClick={() =>
+                                                            navigate(
+                                                                `/event/${event.id}`
+                                                            )
+                                                        }
+                                                        className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                                    >
+                                                        <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
+                                                            <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
+                                                                {event.title}
+                                                            </p>
+                                                            {event.location
+                                                                ?.global ? (
+                                                                    <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                                                 🌐 Global
-                                                                </span>
-                                                            ) : (
-                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
                                                                 📍 Local
-                                                                </span>
-                                                            )}
-                                                    </div>
-                                                    {event.description && (
-                                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
-                                                            {event.description}
-                                                        </p>
-                                                    )}
-                                                    <div className='space-y-0.5 sm:space-y-1'>
-                                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
-                                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                            <span className='truncate'>
-                                                                {format(
-                                                                    toZonedTime(
-                                                                        new Date(
-                                                                            event.startTime
-                                                                        ),
-                                                                        tz
-                                                                    ),
-                                                                    'MMM d, yyyy • h:mm a'
-                                                                )}{' '}
-                                                                –{' '}
-                                                                {event.endTime
-                                                                    ? format(
+                                                                    </span>
+                                                                )}
+                                                        </div>
+                                                        {event.description && (
+                                                            <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
+                                                                {event.description}
+                                                            </p>
+                                                        )}
+                                                        <div className='space-y-0.5 sm:space-y-1'>
+                                                            <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
+                                                                <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                                <span className='truncate'>
+                                                                    {format(
                                                                         toZonedTime(
                                                                             new Date(
-                                                                                event.endTime
+                                                                                event.startTime
                                                                             ),
                                                                             tz
                                                                         ),
                                                                         'MMM d, yyyy • h:mm a'
-                                                                    )
-                                                                    : 'Ongoing'}
-                                                            </span>
-                                                        </p>
-                                                        {event.location?.name &&
+                                                                    )}{' '}
+                                                                –{' '}
+                                                                    {event.endTime
+                                                                        ? format(
+                                                                            toZonedTime(
+                                                                                new Date(
+                                                                                    event.endTime
+                                                                                ),
+                                                                                tz
+                                                                            ),
+                                                                            'MMM d, yyyy • h:mm a'
+                                                                        )
+                                                                        : 'Ongoing'}
+                                                                </span>
+                                                            </p>
+                                                            {event.location?.name &&
                                                             !event.location
                                                                 .global && (
-                                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                {
-                                                                    event
-                                                                        .location
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                        )}
-                                                        {event.creator && (
-                                                            <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <UserCard
-                                                                    user={
-                                                                        event.creator
+                                                                <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                                    <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                                    {
+                                                                        event
+                                                                            .location
+                                                                            .name
                                                                     }
-                                                                    subtitle={`@${event.creator.username || 'user'}`}
-                                                                    showKudos={
-                                                                        true
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        {typeof event.participantCount ===
+                                                                </p>
+                                                            )}
+                                                            {event.creator && (
+                                                                <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
+                                                                    <UserCard
+                                                                        user={
+                                                                            event.creator
+                                                                        }
+                                                                        subtitle={event.creator.displayName ? undefined : `@${event.creator.username || 'user'}`}
+                                                                        showKudos={
+                                                                            true
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            {typeof event.participantCount ===
                                                             'number' &&
                                                             event.participantCount >
                                                                 0 && (
-                                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                {
-                                                                    event.participantCount
-                                                                }{' '}
+                                                                <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
+                                                                    <Users className='w-3 h-3 sm:w-4 sm:h-4' />
+                                                                    {
+                                                                        event.participantCount
+                                                                    }{' '}
                                                                     participant
-                                                                {event.participantCount !==
+                                                                    {event.participantCount !==
                                                                     1
-                                                                    ? 's'
-                                                                    : ''}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                                                        ? 's'
+                                                                        : ''}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                        {eventsQuery.hasNextPage && (
+                                            <div className='flex justify-center mt-4'>
+                                                <Button
+                                                    onClick={() => eventsQuery.fetchNextPage()}
+                                                    disabled={eventsQuery.isFetchingNextPage}
+                                                    variant='secondary'
+                                                >
+                                                    {eventsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                         No events found for &quot;{searchText}

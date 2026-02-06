@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useEvents } from '@/shared/api/queries/events';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 
 interface SearchBarProps {
@@ -28,25 +28,20 @@ export default function SearchBar({
 
     const searchingActive = debouncedSearch.length >= 2;
 
-    const { data: searchResults = [], isFetching: searching } =
+    const { data: searchResultsData, isFetching: searching } =
         useSearchPostsQuery(debouncedSearch);
+    
+    const searchResults = React.useMemo(() => {
+        if (!searchResultsData) return [];
+        if (Array.isArray(searchResultsData)) return searchResultsData;
+        return searchResultsData.pages?.flat() ?? [];
+    }, [searchResultsData]);
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(debouncedSearch);
 
-    const { data: allEvents = [] } = useEvents();
-
-    // Filter events client-side based on search text
-    const eventSearchResults = React.useMemo(() => {
-        if (!searchingActive) return [];
-        const searchLower = debouncedSearch.toLowerCase();
-        return allEvents.filter(
-            (event) =>
-                event.title.toLowerCase().includes(searchLower) ||
-                event.description.toLowerCase().includes(searchLower) ||
-                event.location?.name?.toLowerCase().includes(searchLower)
-        );
-    }, [debouncedSearch, allEvents, searchingActive]);
+    const eventsQuery = useSearchEventsQuery(debouncedSearch);
+    const eventSearchResults = eventsQuery.data?.pages.flat() ?? [];
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -82,7 +77,8 @@ export default function SearchBar({
         searchingActive,
         userSearchResults.length,
         searchResults.length,
-        eventSearchResults.length
+        eventSearchResults.length,
+        searchResultsData
     ]);
 
     const handleResultClick = () => {

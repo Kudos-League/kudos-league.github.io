@@ -117,6 +117,21 @@ export function useDeleteEvent() {
     });
 }
 
+export function useInviteToEvent(eventId: number) {
+    const { token } = useAuth();
+
+    return useMutation<{ success: boolean }, string[], { userId: number }>({
+        mutationFn: async ({ userId }) => {
+            if (!token) throw ['Not authenticated'];
+            return apiMutate<{ success: boolean }, { userId: number }>(
+                `/events/${eventId}/invite`,
+                'post',
+                { userId }
+            );
+        }
+    });
+}
+
 export function useLeaveEvent(eventId: number) {
     const { token, user } = useAuth();
     const qc = useQueryClient();

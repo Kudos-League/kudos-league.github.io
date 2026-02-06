@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     MapPin,
     X,
@@ -17,6 +18,7 @@ import { MagnifyingGlassIcon as MagnifyingGlassIconHeroicons } from '@heroicons/
 import Button from '@/components/common/Button';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import Leaderboard from '@/components/Leaderboard';
+import PullToRefresh from '@/components/common/PullToRefresh';
 import { useAuth } from '@/contexts/useAuth';
 import { routes } from '@/routes';
 import SearchModal from '@/components/navigation/SearchModal';
@@ -283,6 +285,12 @@ export default function Feed() {
             ?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const queryClient = useQueryClient();
+    const handleRefresh = useCallback(
+        () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
+        [queryClient]
+    );
+
     const apiParams = {
         includeSender: true,
         includeTags: true,
@@ -291,7 +299,7 @@ export default function Feed() {
     } as const;
 
     return (
-        <div className='w-full max-w-7xl mx-auto space-y-2 px-4 sm:px-6 overflow-x-hidden'>
+        <PullToRefresh onRefresh={handleRefresh} className='w-full max-w-7xl mx-auto space-y-2 px-4 sm:px-6 overflow-x-hidden'>
             {/* Mobile View Toggler */}
             {user && (
                 <div className='lg:hidden flex border-b border-zinc-200 dark:border-zinc-700'>
@@ -386,6 +394,6 @@ export default function Feed() {
             )}
 
 
-        </div>
+        </PullToRefresh>
     );
 }

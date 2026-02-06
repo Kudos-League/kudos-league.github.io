@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect, useMemo } from 'react';
+import React, { Fragment, useState, useEffect } from 'react';
 import {
     Dialog,
     DialogPanel,
@@ -14,7 +14,7 @@ import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-// import { useEvents } from '@/shared/api/queries/events';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
 
 interface SearchModalProps {
@@ -30,24 +30,16 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
     const searchingActive = debouncedSearch.length >= 2;
 
-    const { data: searchResults = [], isFetching: searching } =
-        useSearchPostsQuery(debouncedSearch);
+    const postsQuery = useSearchPostsQuery(debouncedSearch);
+    const searchResults = postsQuery.data?.pages.flat() ?? [];
+    const searching = postsQuery.isFetching;
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(debouncedSearch);
-    // const { data: allEvents = [] } = useEvents();
+    const eventsQuery = useSearchEventsQuery(debouncedSearch);
+    const eventSearchResults = eventsQuery.data?.pages.flat() ?? [];
+    const searchingEvents = eventsQuery.isLoading;
 
-    // Filter events client-side based on search text
-    // const eventSearchResults = useMemo(() => {
-    //     if (!searchingActive) return [];
-    //     const searchLower = debouncedSearch.toLowerCase();
-    //     return allEvents.filter(event =>
-    //         event.title.toLowerCase().includes(searchLower) ||
-    //         event.description.toLowerCase().includes(searchLower) ||
-    //         event.location?.name?.toLowerCase().includes(searchLower)
-    //     );
-    // }, [debouncedSearch, allEvents, searchingActive]);
-
-    const hasResults = userSearchResults.length > 0 || searchResults.length > 0; // || eventSearchResults.length > 0;
+    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 || eventSearchResults.length > 0;
 
     // Reset search when modal closes, and focus input when modal opens
     useEffect(() => {
@@ -120,7 +112,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder='Search users, posts…'
+                                    placeholder='Search users, posts, events…'
                                     value={searchText}
                                     onChange={(e) =>
                                         setSearchText(e.target.value)
@@ -160,7 +152,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     <MagnifyingGlassIcon className='h-12 w-12 mx-auto mb-3 opacity-50' />
                                     <p>Start typing to search</p>
                                 </div>
-                            ) : searching || searchingUsers ? (
+                            ) : searching || searchingUsers || searchingEvents ? (
                                 <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                     Searching...
                                 </div>
@@ -202,14 +194,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                                     {user.displayName ||
                                                                         user.username}
                                                                 </p>
-                                                                {user.displayName && (
-                                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
-                                                                        @
-                                                                        {
-                                                                            user.username
-                                                                        }
-                                                                    </p>
-                                                                )}
                                                             </div>
                                                         </Link>
                                                     ))}
@@ -273,7 +257,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     )}
 
                                     {/* Event Results */}
-                                    {/* {eventSearchResults.length > 0 && (
+                                    {eventSearchResults.length > 0 && (
                                         <div>
                                             <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
                                                 Events
@@ -310,7 +294,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                 ))}
                                             </div>
                                         </div>
-                                    )} */}
+                                    )}
                                 </div>
                             )}
                         </div>

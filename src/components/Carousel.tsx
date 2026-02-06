@@ -146,7 +146,7 @@ const ImageCarousel: React.FC<Props> = ({
                         <img
                             src={getImagePath(src)}
                             alt={`Slide ${i + 1}`}
-                            className={imgClass}
+                            className={`${imgClass}${onImageClick ? ' cursor-zoom-in' : ''}`}
                             onError={() => onImgError(orig)}
                             onClick={() => onImageClick?.(orig)}
                             loading={i === 0 ? 'eager' : 'lazy'}

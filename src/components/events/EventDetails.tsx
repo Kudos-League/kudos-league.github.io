@@ -6,14 +6,20 @@ import { toZonedTime } from 'date-fns-tz';
 import {
     PencilSquareIcon,
     ArrowLeftIcon,
-    TrashIcon
+    TrashIcon,
+    ShareIcon,
+    ClipboardDocumentCheckIcon,
+    UserPlusIcon
 } from '@heroicons/react/24/solid';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { EventDTO, LocationDTO, MessageDTO, UserDTO } from '@/shared/api/types';
-import { useJoinEvent, useDeleteEvent } from '@/shared/api/mutations/events';
+import { useJoinEvent, useDeleteEvent, useInviteToEvent } from '@/shared/api/mutations/events';
+import { useSearchUsersQuery } from '@/shared/api/queries/users';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
+import { pushAlert } from '@/components/common/alertBus';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MapDisplay from '@/components/Map';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
@@ -79,6 +85,23 @@ export default function EventDetails({ event, setEvent }: Props) {
     const [eventCreator, setEventCreator] = useState<UserDTO | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
+
+    const handleShareEvent = async () => {
+        const url = `${window.location.origin}/event/${event.id}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: event.title, url });
+                return;
+            }
+            catch {
+                // Fallback to clipboard
+            }
+        }
+        await navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+    };
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const eventStartDate = useMemo(
@@ -310,6 +333,23 @@ export default function EventDetails({ event, setEvent }: Props) {
 
     const joinMutation = useJoinEvent(event.id);
     const deleteMutation = useDeleteEvent();
+    const inviteMutation = useInviteToEvent(event.id);
+    const [inviteSearchText, setInviteSearchText] = useState('');
+    const [showInviteSearch, setShowInviteSearch] = useState(false);
+    const debouncedInviteSearch = useDebouncedValue(inviteSearchText, 300);
+    const { data: inviteUserResults = [] } = useSearchUsersQuery(debouncedInviteSearch);
+
+    const handleInviteUser = async (userId: number) => {
+        try {
+            await inviteMutation.mutateAsync({ userId });
+            pushAlert({ type: 'success', message: 'Invite sent!' });
+            setShowInviteSearch(false);
+            setInviteSearchText('');
+        }
+        catch {
+            pushAlert({ type: 'danger', message: 'Failed to send invite.' });
+        }
+    };
 
     const handleJoin = async () => {
         if (!user || !event.id) return;
@@ -405,14 +445,71 @@ export default function EventDetails({ event, setEvent }: Props) {
                     )}
                 </div>
 
-                {isEventCreator && !isEditing && (
-                    <div className='flex items-center gap-2'>
-                        <EditEventButton onClick={handleStartEdit} />
-                        <DeleteEventButton
-                            onClick={() => setShowDeleteConfirm(true)}
-                        />
-                    </div>
-                )}
+                <div className='flex items-center gap-2'>
+                    {/* Share Button */}
+                    {!isEditing && (
+                        <button
+                            onClick={handleShareEvent}
+                            title={linkCopied ? 'Link copied!' : 'Share event'}
+                            className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition'
+                        >
+                            {linkCopied ? (
+                                <ClipboardDocumentCheckIcon className='w-4 h-4 text-green-500' />
+                            ) : (
+                                <ShareIcon className='w-4 h-4' />
+                            )}
+                            <span className='hidden sm:inline'>{linkCopied ? 'Copied!' : 'Share'}</span>
+                        </button>
+                    )}
+
+                    {isEventCreator && !isEditing && (
+                        <>
+                            <div className='relative'>
+                                <button
+                                    onClick={() => setShowInviteSearch(!showInviteSearch)}
+                                    title='Invite user'
+                                    className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition'
+                                >
+                                    <UserPlusIcon className='w-4 h-4' />
+                                    <span className='hidden sm:inline'>Invite</span>
+                                </button>
+                                {showInviteSearch && (
+                                    <div className='absolute right-0 top-full mt-2 w-72 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg z-30'>
+                                        <input
+                                            type='text'
+                                            placeholder='Search users...'
+                                            value={inviteSearchText}
+                                            onChange={(e) => setInviteSearchText(e.target.value)}
+                                            className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                            autoFocus
+                                        />
+                                        {inviteUserResults.length > 0 && (
+                                            <ul className='max-h-48 overflow-y-auto space-y-1'>
+                                                {inviteUserResults.slice(0, 5).map((u) => (
+                                                    <li key={u.id}>
+                                                        <button
+                                                            onClick={() => handleInviteUser(u.id)}
+                                                            className='w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2'
+                                                        >
+                                                            <UserCard user={u} disableTooltip />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        {debouncedInviteSearch.length >= 2 && inviteUserResults.length === 0 && (
+                                            <p className='text-sm text-gray-500 dark:text-gray-400 text-center py-2'>No users found</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <EditEventButton onClick={handleStartEdit} />
+                            <DeleteEventButton
+                                onClick={() => setShowDeleteConfirm(true)}
+                            />
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -667,6 +764,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </>
             )}
 
+
             {/* Event Creator */}
             {!isEditing && (
                 <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700'>
@@ -703,6 +801,23 @@ export default function EventDetails({ event, setEvent }: Props) {
                 />
             </div>
 
+            {/* Unauthenticated user banner */}
+            {!user && !isEditing && (
+                <div className='bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 text-center'>
+                    <p className='text-sm text-brand-800 dark:text-brand-200 font-medium'>
+                        Register or ask for an invite to interact with this event
+                    </p>
+                    <div className='flex justify-center gap-3 mt-2'>
+                        <Button onClick={() => navigate('/login')} variant='primary' className='text-sm'>
+                            Log In
+                        </Button>
+                        <Button onClick={() => navigate('/signup')} variant='secondary' className='text-sm'>
+                            Register
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Participants (only show when not editing) */}
             {!isEditing && (
                 <>
@@ -733,7 +848,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                         )}
                     </div>
 
-                    {!event.participants?.some(
+                    {user && !event.participants?.some(
                         (p: any) => p.id === user?.id
                     ) && (
                         <Button
