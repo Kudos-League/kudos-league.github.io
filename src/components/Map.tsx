@@ -122,7 +122,7 @@ const circleOptions = {
     strokeWeight: 2,
     strokeColor: '#2563eb',
     fillColor: '#3b82f6',
-    fillOpacity: 0.12,
+    fillOpacity: 0,
     clickable: false,
     draggable: false,
     editable: false,
@@ -212,7 +212,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     onLocationChange,
     onLabelChange,
     shouldGetYourLocation = false,
-    approximateRadiusMeters = 3200,
+    approximateRadiusMeters = 300,
     shouldSavedLocationButton = false
 }) => {
     const { location: userLocation } = useUserLocation();
