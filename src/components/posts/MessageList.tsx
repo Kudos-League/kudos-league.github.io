@@ -10,6 +10,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
+import RichEmbeds from '../common/RichEmbeds';
 import {
     ArrowUturnLeftIcon,
     PencilIcon,
@@ -493,6 +494,10 @@ const MessageList: React.FC<Props> = ({
                                 <div className='absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none' />
                             )}
                         </div>
+
+                        {!msg.deletedAt && (
+                            <RichEmbeds text={msg.content} className='mt-2' />
+                        )}
 
                         {requiresCollapseHeuristic && (
                             <button

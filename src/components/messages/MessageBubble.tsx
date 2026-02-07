@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import TextWithLinks from '../common/TextWithLinks';
+import RichEmbeds from '../common/RichEmbeds';
 import UserCard from '../users/UserCard';
 import {
     ArrowUturnLeftIcon,
@@ -379,6 +380,12 @@ const MessageBubble: React.FC<Props> = ({
                         </>
                     )}
                 </div>
+
+                {!message.deletedAt && !isEditing && (
+                    <div className={`mt-2 ${isOwn ? 'mr-1' : 'ml-1'}`}>
+                        <RichEmbeds text={message.content} />
+                    </div>
+                )}
 
                 {/* Action buttons - positioned absolutely at bottom for other users' messages */}
                 {!isOwn && !isEditing && (

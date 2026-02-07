@@ -10,6 +10,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
+import RichEmbeds from '../common/RichEmbeds';
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 
 interface Props {
@@ -395,9 +396,14 @@ const MessageList: React.FC<Props> = ({
                         </p>
                     </div>
                 ) : (
-                    <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
-                        {msg.content}
-                    </TextWithLinks>
+                    <>
+                        <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                            {msg.content}
+                        </TextWithLinks>
+                        {!msg.deletedAt && (
+                            <RichEmbeds text={msg.content} className='mt-2' />
+                        )}
+                    </>
                 )}
             </div>
         );
