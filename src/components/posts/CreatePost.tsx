@@ -32,7 +32,7 @@ type FormValues = {
 type Props = { setShowLoginForm: (show: boolean) => void };
 
 export default function CreatePost({ setShowLoginForm }: Props) {
-    const { isLoggedIn, user } = useAuth();
+    const { isLoggedIn } = useAuth();
     const navigate = useNavigate();
     const routerLocation = useLocation();
 
@@ -89,15 +89,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         [form]
     );
 
-    const handleUseProfileLocation = () => {
-        if (user?.location) {
-            setLocation({
-                regionID: user.location.regionID || null,
-                name: user.location.name || null
-            });
-        }
-    };
-
     const validateFiles = (files?: File[]) => {
         if (!files) return null;
         if (files.length > MAX_FILE_COUNT)
@@ -151,7 +142,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             type: postType as 'gift' | 'request',
             itemsLimit: Number(data.itemsLimit),
             tags: data.tags.map((tag) => String(tag).trim()),
-            categoryID: Number(data.categoryID),
+            categoryID: data.categoryID ? Number(data.categoryID) : null,
             files: selectedImages,
             location
         } as CreatePostDTO;
@@ -164,7 +155,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 title: '',
                 body: '',
                 tags: [],
-                categoryID: 0,
+                categoryID: null,
                 type: 'gift',
                 itemsLimit: 1
             });
@@ -347,20 +338,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
             <FormField
                 name='categoryID'
-                label='Category * (REQUIRED)'
-                helper='⚠️ You must select a category before creating your post'
+                label='Category'
+                helper='Optional - select a category to help others find your post'
             >
                 <Controller
                     control={form.control}
                     name='categoryID'
-                    rules={{
-                        required:
-                            'Category is required - please select one from the dropdown',
-                        // Validation now checks for a truthy value (any ID > 0)
-                        validate: (v) =>
-                            v !== null ||
-                            'Please select a category from the dropdown.'
-                    }}
                     render={({ field }) => (
                         <DropdownPicker
                             options={(uniqueCategories as CategoryDTO[]).map(
@@ -377,10 +360,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                                 // If val is '', pass null to the form state
                                 const parsed = val ? parseInt(val) : null;
                                 field.onChange(parsed);
-                                // Clear the error immediately after selection
-                                if (parsed !== null) {
-                                    form.clearErrors('categoryID');
-                                }
                             }}
                             onBlur={field.onBlur}
                             placeholder={

@@ -7,10 +7,10 @@ import {
     PencilSquareIcon,
     ArrowLeftIcon,
     TrashIcon,
-    ShareIcon,
     ClipboardDocumentCheckIcon,
     UserPlusIcon
 } from '@heroicons/react/24/solid';
+import { ArrowUturnRightIcon } from '@heroicons/react/24/outline';
 
 import { useAuth } from '@/contexts/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -446,8 +446,8 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </div>
 
                 <div className='flex items-center gap-2'>
-                    {/* Share Button */}
-                    {!isEditing && (
+                    {/* Share Button (logged-in users only) */}
+                    {!isEditing && user && (
                         <button
                             onClick={handleShareEvent}
                             title={linkCopied ? 'Link copied!' : 'Share event'}
@@ -456,7 +456,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                             {linkCopied ? (
                                 <ClipboardDocumentCheckIcon className='w-4 h-4 text-green-500' />
                             ) : (
-                                <ShareIcon className='w-4 h-4' />
+                                <ArrowUturnRightIcon className='w-4 h-4' />
                             )}
                             <span className='hidden sm:inline'>{linkCopied ? 'Copied!' : 'Share'}</span>
                         </button>

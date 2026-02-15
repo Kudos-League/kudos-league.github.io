@@ -7,10 +7,8 @@ import {
     ArrowUturnLeftIcon,
     TrashIcon,
     PencilIcon,
-    XMarkIcon,
     ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
-import Button from '../common/Button';
 
 interface Props {
     message: MessageDTO;
@@ -23,17 +21,8 @@ interface Props {
     onEdit?: (m: MessageDTO) => void;
     canEdit?: boolean;
     isEditing?: boolean;
-    editContent?: string;
-    onEditChange?: (content: string) => void;
-    onEditSave?: (messageId: number) => void;
-    onEditCancel?: () => void;
     showSenderName?: boolean;
 }
-
-// Helper to get display name (prioritize displayName, fallback to name or username)
-const getDisplayName = (user: any) => {
-    return user?.displayName || user?.name || user?.username || 'Unknown';
-};
 
 const parseDate = (date: string | Date | null | undefined): Date | null => {
     if (!date) return null;
@@ -73,10 +62,6 @@ const MessageBubble: React.FC<Props> = ({
     onEdit,
     canEdit = false,
     isEditing = false,
-    editContent = '',
-    onEditChange,
-    onEditSave,
-    onEditCancel,
     showSenderName = false
 }) => {
     const [showActions, setShowActions] = useState(false);
@@ -176,22 +161,6 @@ const MessageBubble: React.FC<Props> = ({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Cancel button when editing */}
-                {isOwn && isEditing && (
-                    <div className='absolute -left-14 bottom-0 opacity-100 transition-opacity flex gap-1 bg-amber-50/95 dark:bg-amber-900/30 rounded px-1.5 py-1 shadow-lg border border-amber-400 dark:border-amber-500 z-10 backdrop-blur-sm'>
-                        <button
-                            type='button'
-                            title='Cancel edit (Esc)'
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEditCancel?.();
-                            }}
-                            className='p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-800/30'
-                        >
-                            <XMarkIcon className='w-4 h-4 text-amber-600 dark:text-amber-400' />
-                        </button>
-                    </div>
-                )}
 
                 {/* Action buttons - positioned absolutely at bottom for own messages */}
                 {isOwn && !isEditing && (
@@ -340,10 +309,6 @@ const MessageBubble: React.FC<Props> = ({
                         isOwn
                             ? 'bg-brand-600 dark:bg-brand-400 text-white'
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
-                    } ${
-                        isEditing
-                            ? 'ring-2 ring-amber-400 dark:ring-amber-500'
-                            : ''
                     }`}
                 >
                     {message.deletedAt ? (
@@ -352,11 +317,6 @@ const MessageBubble: React.FC<Props> = ({
                         </div>
                     ) : (
                         <>
-                            {isEditing && (
-                                <div className='text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1'>
-                                    Editing this message...
-                                </div>
-                            )}
                             {isMessageEdited(
                                 message.createdAt,
                                 message.updatedAt

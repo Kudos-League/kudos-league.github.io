@@ -10,7 +10,11 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
+<<<<<<< Updated upstream
 import RichEmbeds from '../common/RichEmbeds';
+import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+=======
+>>>>>>> Stashed changes
 
 interface Props {
     messages: MessageDTO[];

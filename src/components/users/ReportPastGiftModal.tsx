@@ -13,7 +13,7 @@ import FormField from '@/components/forms/FormField';
 type FormValues = {
     title: string;
     body: string;
-    categoryID: number;
+    categoryID: number | null;
     tags: string[];
     files?: File[];
 };
@@ -28,7 +28,7 @@ export default function ReportPastGiftModal({
     receiverID: number;
 }) {
     const form = useForm<FormValues>({
-        defaultValues: { tags: [], categoryID: 0, title: '', body: '' }
+        defaultValues: { tags: [], categoryID: null, title: '', body: '' }
     });
     const { data: categories = [], isLoading: catsLoading } = useCategories();
     const mutate = useReportPastGift();
@@ -38,7 +38,7 @@ export default function ReportPastGiftModal({
     // Reset form when modal opens
     React.useEffect(() => {
         if (open) {
-            form.reset({ tags: [], categoryID: 0, title: '', body: '' });
+            form.reset({ tags: [], categoryID: null, title: '', body: '' });
             setSelectedImages([]);
         }
     }, [open, form]);
@@ -53,7 +53,7 @@ export default function ReportPastGiftModal({
             files: selectedImages,
             receiverID
         } as any);
-        form.reset({ tags: [], categoryID: 0, title: '', body: '' });
+        form.reset({ tags: [], categoryID: null, title: '', body: '' });
         setSelectedImages([]);
         onClose();
     };
@@ -74,14 +74,10 @@ export default function ReportPastGiftModal({
                     registerOptions={{ required: true }}
                     multiline
                 />
-                <FormField name='categoryID' label='Category'>
+                <FormField name='categoryID' label='Category (optional)'>
                     <Controller
                         control={form.control}
                         name='categoryID'
-                        rules={{
-                            validate: (v) =>
-                                (v && v !== 0) || 'Please select a category.'
-                        }}
                         render={({ field }) => (
                             <DropdownPicker
                                 options={(categories as any[]).map((c) => ({
@@ -90,7 +86,7 @@ export default function ReportPastGiftModal({
                                 }))}
                                 value={String(field.value || '')}
                                 onChange={(val) =>
-                                    field.onChange(val ? parseInt(val) : 0)
+                                    field.onChange(val ? parseInt(val) : null)
                                 }
                                 onBlur={field.onBlur}
                                 placeholder={

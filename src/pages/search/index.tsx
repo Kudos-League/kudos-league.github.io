@@ -3,13 +3,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { X, ArrowLeft, MapPin, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
 import UserCard from '@/components/users/UserCard';
+import EventCard from '@/components/events/EventCard';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/contexts/useAuth';
 
-type SearchFilterType = 'posts' | 'users';
+type SearchFilterType = 'all' | 'posts' | 'users' | 'events';
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
@@ -19,7 +21,7 @@ export default function SearchPage() {
     const [searchParams] = useSearchParams();
     const queryParam = searchParams.get('q') || '';
     const filterParam = (searchParams.get('filter') ||
-        'posts') as SearchFilterType;
+        'all') as SearchFilterType;
     const { user } = useAuth();
 
     const [searchText, setSearchText] = React.useState(queryParam);
@@ -52,6 +54,10 @@ export default function SearchPage() {
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(effectiveSearch);
+
+    const eventsQuery = useSearchEventsQuery(effectiveSearch);
+    const eventResults = eventsQuery.data?.pages.flat() ?? [];
+    const searchingEvents = eventsQuery.isFetching;
 
     // Filter and sort posts
     const filteredPosts = useMemo(() => {
@@ -143,7 +149,7 @@ export default function SearchPage() {
         if (searchText) {
             const params = new URLSearchParams();
             params.set('q', searchText);
-            if (searchFilter !== 'posts') {
+            if (searchFilter !== 'all') {
                 params.set('filter', searchFilter);
             }
             navigate(`/search?${params.toString()}`, { replace: true });
@@ -156,6 +162,8 @@ export default function SearchPage() {
         includeImages: true,
         limit: 10
     } as const;
+
+    const totalCount = searchResults.length + userSearchResults.length + eventResults.length;
 
     return (
         <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4 mb-2'>
@@ -266,8 +274,10 @@ export default function SearchPage() {
                     {/* Search Filter Tabs */}
                     <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                         {[
-                            { key: 'posts', label: 'Posts', count: searchResults.length },
+                            { key: 'all', label: 'All', count: totalCount },
                             { key: 'users', label: 'Users', count: userSearchResults.length },
+                            { key: 'posts', label: 'Posts', count: searchResults.length },
+                            { key: 'events', label: 'Events', count: eventResults.length },
                         ].map(({ key, label, count }) => {
                             const isActive = searchFilter === key;
                             return (
@@ -288,7 +298,7 @@ export default function SearchPage() {
                     </div>
 
                     {/* Post Filters */}
-                    {searchFilter === 'posts' && (
+                    {(searchFilter === 'posts' || searchFilter === 'all') && (
                         <div className='space-y-3'>
                             <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                                 {[
@@ -345,6 +355,113 @@ export default function SearchPage() {
 
                     {/* Search Results */}
                     <div className='space-y-6'>
+                        {/* All Results */}
+                        {searchFilter === 'all' && (
+                            <>
+                                {/* Users Section */}
+                                {searchingUsers ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching users...
+                                    </div>
+                                ) : userSearchResults.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Users
+                                            </h3>
+                                            {userSearchResults.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('users')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({userSearchResults.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className='space-y-3 w-full'>
+                                            {userSearchResults.slice(0, 5).map((user) => (
+                                                <div
+                                                    key={user.id}
+                                                    className='bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-3 hover:shadow-md transition-shadow cursor-pointer'
+                                                    onClick={() =>
+                                                        navigate(`/user/${user.id}`)
+                                                    }
+                                                >
+                                                    <UserCard
+                                                        user={user}
+                                                        disableTooltip={true}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Posts Section */}
+                                {searching ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching posts...
+                                    </div>
+                                ) : filteredPosts.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Posts
+                                            </h3>
+                                            {filteredPosts.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('posts')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({filteredPosts.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <PostsInfinite.StaticList
+                                            posts={filteredPosts.slice(0, 5)}
+                                            loading={false}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Events Section */}
+                                {searchingEvents ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching events...
+                                    </div>
+                                ) : eventResults.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Events
+                                            </h3>
+                                            {eventResults.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('events')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({eventResults.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <ul className='space-y-3 w-full'>
+                                            {eventResults.slice(0, 5).map((event) => (
+                                                <EventCard key={event.id} event={event} />
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* No results at all */}
+                                {!searching && !searchingUsers && !searchingEvents &&
+                                    filteredPosts.length === 0 && userSearchResults.length === 0 && eventResults.length === 0 && (
+                                    <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
+                                        No results found for &quot;{searchText}&quot;
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                         {/* User Results */}
                         {searchFilter === 'users' && (
                             <>
@@ -407,6 +524,40 @@ export default function SearchPage() {
                                     <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                         No posts found for &quot;{searchText}
                                         &quot;
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Event Results */}
+                        {searchFilter === 'events' && (
+                            <>
+                                {searchingEvents ? (
+                                    <div className='text-center py-8 text-gray-500 dark:text-zinc-400'>
+                                        Searching events...
+                                    </div>
+                                ) : eventResults.length > 0 ? (
+                                    <>
+                                        <ul className='space-y-3 w-full'>
+                                            {eventResults.map((event) => (
+                                                <EventCard key={event.id} event={event} />
+                                            ))}
+                                        </ul>
+                                        {eventsQuery.hasNextPage && (
+                                            <div className='flex justify-center mt-4'>
+                                                <Button
+                                                    onClick={() => eventsQuery.fetchNextPage()}
+                                                    disabled={eventsQuery.isFetchingNextPage}
+                                                    variant='secondary'
+                                                >
+                                                    {eventsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
+                                        No events found for &quot;{searchText}&quot;
                                     </div>
                                 )}
                             </>

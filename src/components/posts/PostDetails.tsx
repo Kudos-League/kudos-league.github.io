@@ -3,7 +3,7 @@ import {
     ExclamationTriangleIcon,
     ArrowLeftIcon,
     QuestionMarkCircleIcon,
-    ShareIcon,
+    ArrowUturnRightIcon,
     ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
@@ -23,7 +23,7 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useCategories } from '@/shared/api/queries/categories';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { getImagePath } from '@/shared/api/config';
+import { getImagePath, getEndpointUrl } from '@/shared/api/config';
 import { pushAlert } from '@/components/common/alertBus';
 import {
     useUpdatePost,
@@ -146,7 +146,8 @@ export default function PostDetails(props: Props) {
     const navigate = useNavigate();
 
     const handleSharePost = async () => {
-        const url = `${window.location.origin}/post/${postDetails?.id}`;
+        const backendUrl = getEndpointUrl();
+        const url = `${backendUrl}/posts/${postDetails?.id}/share`;
         if (navigator.share) {
             try {
                 await navigator.share({ title: postDetails?.title, url });
@@ -942,19 +943,21 @@ export default function PostDetails(props: Props) {
                 </div>
 
                 <div className='flex flex-row gap-2 flex-shrink-0'>
-                    {/* Share Button */}
-                    <button
-                        onClick={handleSharePost}
-                        title={linkCopied ? 'Link copied!' : 'Share post'}
-                        className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition'
-                    >
-                        {linkCopied ? (
-                            <ClipboardDocumentCheckIcon className='w-5 h-5 text-green-500' />
-                        ) : (
-                            <ShareIcon className='w-5 h-5' />
-                        )}
-                        <span className='hidden sm:inline'>{linkCopied ? 'Copied!' : 'Share'}</span>
-                    </button>
+                    {/* Share Button (logged-in users only) */}
+                    {user && (
+                        <button
+                            onClick={handleSharePost}
+                            title={linkCopied ? 'Link copied!' : 'Share post'}
+                            className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition'
+                        >
+                            {linkCopied ? (
+                                <ClipboardDocumentCheckIcon className='w-5 h-5 text-green-500' />
+                            ) : (
+                                <ArrowUturnRightIcon className='w-5 h-5' />
+                            )}
+                            <span className='hidden sm:inline'>{linkCopied ? 'Copied!' : 'Share'}</span>
+                        </button>
+                    )}
 
                     {/* Report Button (non-owners) */}
                     {!isPostOwner && user && (

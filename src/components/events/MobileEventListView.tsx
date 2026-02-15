@@ -19,7 +19,8 @@ import {
     Globe,
     Filter,
     Search,
-    Plus
+    Plus,
+    ArrowRight
 } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 
@@ -253,16 +254,6 @@ export default function MobileEventListView({
             <div className='mb-4'>
                 {/* Search Input */}
                 <div className='flex gap-2 mb-3'>
-                    <div className='relative flex-1'>
-                        <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
-                        <input
-                            type='text'
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            placeholder='Search events...'
-                            className='w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent'
-                        />
-                    </div>
                     <button
                         onClick={() => navigate('/create-event')}
                         className='flex items-center justify-center px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors font-medium text-sm whitespace-nowrap'
@@ -270,6 +261,39 @@ export default function MobileEventListView({
                         <Plus className='w-4 h-4 mr-1' />
                         New
                     </button>
+                    <div className='relative flex-1 flex gap-2'>
+                        <div className='relative flex-1'>
+                            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
+                            <input
+                                type='text'
+                                value={filterText}
+                                onChange={(e) => setFilterText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && filterText.trim()) {
+                                        e.currentTarget.blur();
+                                    }
+                                }}
+                                placeholder='Search events...'
+                                className='w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent'
+                            />
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (filterText.trim()) {
+                                    (document.activeElement as HTMLElement)?.blur();
+                                }
+                            }}
+                            disabled={!filterText.trim()}
+                            className={`px-3 py-2.5 rounded-lg transition-colors flex items-center justify-center ${
+                                filterText.trim()
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                                    : 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
+                            }`}
+                            aria-label='Search events'
+                        >
+                            <ArrowRight className='w-4 h-4' />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Combined Filters - Single Row with Separator */}
@@ -361,10 +385,17 @@ export default function MobileEventListView({
                     </div>
                 </div>
 
-                {/* Current Period Label */}
+                {/* Current Period Label and Event Count */}
                 <div className='text-center mb-3'>
                     <p className='text-sm text-gray-600 dark:text-zinc-400'>
                         {getViewLabel()}
+                    </p>
+                    <p className='text-xs text-gray-500 dark:text-zinc-500 mt-1'>
+                        {periods.reduce((sum, p) => sum + p.eventCount, 0) === 0 ? (
+                            'No events found for this date'
+                        ) : (
+                            `Showing ${periods.reduce((sum, p) => sum + p.eventCount, 0)} event${periods.reduce((sum, p) => sum + p.eventCount, 0) !== 1 ? 's' : ''}`
+                        )}
                     </p>
                 </div>
 
@@ -396,7 +427,7 @@ export default function MobileEventListView({
 
             {/* Period List */}
             <div className='space-y-2'>
-                {periods.map((period, index) => (
+                {periods.filter(period => period.eventCount > 0).map((period, index) => (
                     <div
                         key={index}
                         onClick={() =>

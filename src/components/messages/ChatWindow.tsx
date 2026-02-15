@@ -322,10 +322,6 @@ const ChatWindow: React.FC<Props> = ({
                                         allowEdit ? handleEditStart : undefined
                                     }
                                     editingMessageId={editingMessageId}
-                                    editContent={editContent}
-                                    onEditChange={setEditContent}
-                                    onEditSave={handleEditSave}
-                                    onEditCancel={handleEditCancel}
                                     canEdit={canEdit}
                                 />
                             </SlideInOnScroll>

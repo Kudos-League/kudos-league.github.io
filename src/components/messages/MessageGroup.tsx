@@ -15,10 +15,6 @@ interface MessageGroupProps {
     onEdit?: (m: MessageDTO) => void;
     canEdit?: (m: MessageDTO) => boolean;
     editingMessageId?: number | null;
-    editContent?: string;
-    onEditChange?: (content: string) => void;
-    onEditSave?: (messageId: number) => void;
-    onEditCancel?: () => void;
 }
 
 const MessageGroup: React.FC<MessageGroupProps> = ({
@@ -32,11 +28,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     findMessageById,
     onEdit,
     canEdit,
-    editingMessageId,
-    editContent,
-    onEditChange,
-    onEditSave,
-    onEditCancel
+    editingMessageId
 }) => {
     if (messages.length === 0) return null;
 
@@ -79,10 +71,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
                     onEdit={onEdit}
                     canEdit={canEdit ? canEdit(msg) : false}
                     isEditing={editingMessageId === msg.id}
-                    editContent={editContent}
-                    onEditChange={onEditChange}
-                    onEditSave={onEditSave}
-                    onEditCancel={onEditCancel}
                     showSenderName={!isOwn && idx === 0} // Show sender name only on first message in group (WhatsApp style)
                 />
             ))}

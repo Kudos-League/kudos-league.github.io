@@ -33,7 +33,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Globe,
-    Plus
+    Plus,
+    ArrowRight
 } from 'lucide-react';
 import { EventDTO } from '@/shared/api/types';
 import { useEvents } from '@/shared/api/queries/events';
@@ -1687,13 +1688,21 @@ export default function GanttEventsCalendar() {
 
                     {/* Search Events + Jump to Period + Create Event */}
                     <div className='flex gap-2 sm:gap-3 mb-3 sm:mb-4'>
-                        <input
-                            type='text'
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            placeholder='Search events by title, description, or location...'
-                            className='flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
-                        />
+                        <div className='relative flex-1 flex gap-2'>
+                            <input
+                                type='text'
+                                value={filterText}
+                                onChange={(e) => setFilterText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && filterText.trim()) {
+                                        // Search is handled by filteredEvents memoization
+                                        e.currentTarget.blur();
+                                    }
+                                }}
+                                placeholder='Search events by title, description, or location...'
+                                className='flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
+                            />
+                        </div>
                         <Button
                             onClick={() =>
                                 setShowPeriodPicker(!showPeriodPicker)
@@ -1971,21 +1980,30 @@ export default function GanttEventsCalendar() {
                                     <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5 text-gray-900 dark:text-zinc-100' />
                                 </button>
 
-                                <div className='flex items-center gap-2 sm:gap-3'>
-                                    <button
-                                        onClick={handleShowRangeEvents}
-                                        className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-gray-300 dark:hover:border-zinc-600'
-                                    >
-                                        {getPeriodLabel()}
-                                    </button>
-                                    {periodOffset !== 0 && (
+                                <div className='flex flex-col items-center gap-1'>
+                                    <div className='flex items-center gap-2 sm:gap-3'>
                                         <button
-                                            onClick={handleNavigateToday}
-                                            className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors'
+                                            onClick={handleShowRangeEvents}
+                                            className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-gray-300 dark:hover:border-zinc-600'
                                         >
-                                            Today
+                                            {getPeriodLabel()}
                                         </button>
-                                    )}
+                                        {periodOffset !== 0 && (
+                                            <button
+                                                onClick={handleNavigateToday}
+                                                className='px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors'
+                                            >
+                                                Today
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
+                                        {filteredEvents.length === 0 ? (
+                                            'No events found for this date'
+                                        ) : (
+                                            `Showing ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
+                                        )}
+                                    </div>
                                 </div>
 
                                 <button
@@ -1999,13 +2017,20 @@ export default function GanttEventsCalendar() {
 
                         {/* Custom Range Header */}
                         {useCustomRange && (
-                            <div className='flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-2 sm:p-3 border-b dark:border-zinc-700'>
+                            <div className='flex flex-col items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-2 sm:p-3 border-b dark:border-zinc-700 gap-1'>
                                 <button
                                     onClick={handleShowRangeEvents}
                                     className='text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors hover:shadow-sm border border-transparent hover:border-blue-300 dark:hover:border-blue-700'
                                 >
                                     {getPeriodLabel()}
                                 </button>
+                                <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400'>
+                                    {filteredEvents.length === 0 ? (
+                                        'No events found for this date'
+                                    ) : (
+                                        `Showing ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
+                                    )}
+                                </div>
                             </div>
                         )}
 
