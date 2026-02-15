@@ -9,7 +9,7 @@ import {
     MagnifyingGlassIcon,
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
@@ -26,10 +26,18 @@ interface SearchModalProps {
     onClose: () => void;
 }
 
+function getDefaultTab(pathname: string): SearchTab {
+    if (pathname === '/') return 'posts';
+    if (pathname.startsWith('/dms') || pathname.startsWith('/user/')) return 'users';
+    if (pathname.startsWith('/events') || pathname.startsWith('/event/')) return 'events';
+    return 'all';
+}
+
 export default function SearchModal({ open, onClose }: SearchModalProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchText, setSearchText] = useState('');
-    const [activeTab, setActiveTab] = useState<SearchTab>('all');
+    const [activeTab, setActiveTab] = useState<SearchTab>(() => getDefaultTab(location.pathname));
     const inputRef = React.useRef<HTMLInputElement>(null);
     const debouncedSearch = useDebouncedValue(searchText, 300);
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -47,11 +55,11 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
 
     const hasResults = userSearchResults.length > 0 || searchResults.length > 0 || eventResults.length > 0;
 
-    // Reset search when modal closes, and focus input when modal opens
+    // Reset search when modal closes, set default tab based on route when modal opens
     useEffect(() => {
         if (!open) {
             setSearchText('');
-            setActiveTab('all');
+            setActiveTab(getDefaultTab(location.pathname));
         }
         else {
             // Focus input after modal animation completes (300ms based on the transition duration)
@@ -64,7 +72,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 }
             }, 300);
         }
-    }, [open]);
+    }, [open, location.pathname]);
 
     const handleResultClick = () => {
         onClose();
@@ -120,7 +128,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder='Search users, posts, events…'
+                                    placeholder={activeTab === 'all' ? 'Search users, posts, events…' : `Search ${activeTab}…`}
                                     value={searchText}
                                     onChange={(e) =>
                                         setSearchText(e.target.value)
@@ -140,27 +148,25 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                             </div>
                         </div>
 
-                        {/* Tab Bar */}
-                        {searchingActive && (
-                            <div className='flex-shrink-0 flex border-b border-gray-200 dark:border-zinc-800'>
-                                {(['all', 'users', 'posts', 'events'] as const).map((tab) => {
-                                    const isActive = activeTab === tab;
-                                    return (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveTab(tab)}
-                                            className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                                                isActive
-                                                    ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
-                                                    : 'border-transparent text-zinc-500 hover:text-brand-600'
-                                            }`}
-                                        >
-                                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        {/* Tab Bar - Always visible */}
+                        <div className='flex-shrink-0 flex border-b border-gray-200 dark:border-zinc-800'>
+                            {(['all', 'users', 'posts', 'events'] as const).map((tab) => {
+                                const isActive = activeTab === tab;
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                                            isActive
+                                                ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                                : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                        }`}
+                                    >
+                                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                    </button>
+                                );
+                            })}
+                        </div>
 
                         {/* Show All Results - Visible when there are results */}
                         {searchingActive && hasResults && (
