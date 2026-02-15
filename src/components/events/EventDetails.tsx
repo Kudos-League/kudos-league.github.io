@@ -386,13 +386,13 @@ export default function EventDetails({ event, setEvent }: Props) {
 
     // Prevent body scroll when modal is open
     useEffect(() => {
-        if (showDeleteConfirm) {
+        if (showDeleteConfirm || showInviteSearch) {
             document.body.style.overflow = 'hidden';
         }
         return () => {
             document.body.style.overflow = '';
         };
-    }, [showDeleteConfirm]);
+    }, [showDeleteConfirm, showInviteSearch]);
 
     const handleLeave = async () => {
         if (!user || !event.id) return;
@@ -473,34 +473,43 @@ export default function EventDetails({ event, setEvent }: Props) {
                                     <UserPlusIcon className='w-4 h-4' />
                                     <span className='hidden sm:inline'>Invite</span>
                                 </button>
-                                {showInviteSearch && (
-                                    <div className='absolute right-0 top-full mt-2 w-72 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg z-30'>
-                                        <input
-                                            type='text'
-                                            placeholder='Search users...'
-                                            value={inviteSearchText}
-                                            onChange={(e) => setInviteSearchText(e.target.value)}
-                                            className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                            autoFocus
-                                        />
-                                        {inviteUserResults.length > 0 && (
-                                            <ul className='max-h-48 overflow-y-auto space-y-1'>
-                                                {inviteUserResults.slice(0, 5).map((u) => (
-                                                    <li key={u.id}>
-                                                        <button
-                                                            onClick={() => handleInviteUser(u.id)}
-                                                            className='w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2'
-                                                        >
-                                                            <UserCard user={u} disableTooltip />
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        {debouncedInviteSearch.length >= 2 && inviteUserResults.length === 0 && (
-                                            <p className='text-sm text-gray-500 dark:text-gray-400 text-center py-2'>No users found</p>
-                                        )}
-                                    </div>
+                                {showInviteSearch && createPortal(
+                                    <div className='fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-24' onClick={() => { setShowInviteSearch(false); setInviteSearchText(''); }}>
+                                        <div className='w-full max-w-sm p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg' onClick={(e) => e.stopPropagation()}>
+                                            <div className='flex items-center justify-between mb-3'>
+                                                <h3 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>Invite User</h3>
+                                                <button onClick={() => { setShowInviteSearch(false); setInviteSearchText(''); }} className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'>
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input
+                                                type='text'
+                                                placeholder='Search users...'
+                                                value={inviteSearchText}
+                                                onChange={(e) => setInviteSearchText(e.target.value)}
+                                                className='w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                                autoFocus
+                                            />
+                                            {inviteUserResults.length > 0 && (
+                                                <ul className='max-h-48 overflow-y-auto space-y-1'>
+                                                    {inviteUserResults.slice(0, 5).map((u) => (
+                                                        <li key={u.id}>
+                                                            <button
+                                                                onClick={() => handleInviteUser(u.id)}
+                                                                className='w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2'
+                                                            >
+                                                                <UserCard user={u} disableTooltip />
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            {debouncedInviteSearch.length >= 2 && inviteUserResults.length === 0 && (
+                                                <p className='text-sm text-gray-500 dark:text-gray-400 text-center py-2'>No users found</p>
+                                            )}
+                                        </div>
+                                    </div>,
+                                    document.body
                                 )}
                             </div>
                             <EditEventButton onClick={handleStartEdit} />

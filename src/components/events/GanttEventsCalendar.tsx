@@ -1688,21 +1688,6 @@ export default function GanttEventsCalendar() {
 
                     {/* Search Events + Jump to Period + Create Event */}
                     <div className='flex gap-2 sm:gap-3 mb-3 sm:mb-4'>
-                        <div className='relative flex-1 flex gap-2'>
-                            <input
-                                type='text'
-                                value={filterText}
-                                onChange={(e) => setFilterText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && filterText.trim()) {
-                                        // Search is handled by filteredEvents memoization
-                                        e.currentTarget.blur();
-                                    }
-                                }}
-                                placeholder='Search events by title, description, or location...'
-                                className='flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600'
-                            />
-                        </div>
                         <Button
                             onClick={() =>
                                 setShowPeriodPicker(!showPeriodPicker)

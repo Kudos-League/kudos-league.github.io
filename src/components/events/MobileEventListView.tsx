@@ -262,7 +262,7 @@ export default function MobileEventListView({
                         New
                     </button>
                     <div className='relative flex-1 flex gap-2'>
-                        <div className='relative flex-1'>
+                        {/* <div className='relative flex-1'>
                             <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
                             <input
                                 type='text'
@@ -276,8 +276,8 @@ export default function MobileEventListView({
                                 placeholder='Search events...'
                                 className='w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent'
                             />
-                        </div>
-                        <button
+                        </div> */}
+                        {/* <button
                             onClick={() => {
                                 if (filterText.trim()) {
                                     (document.activeElement as HTMLElement)?.blur();
@@ -292,7 +292,7 @@ export default function MobileEventListView({
                             aria-label='Search events'
                         >
                             <ArrowRight className='w-4 h-4' />
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
