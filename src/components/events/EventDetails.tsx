@@ -124,6 +124,12 @@ export default function EventDetails({ event, setEvent }: Props) {
         );
     }, [eventEndDate, eventAutoEndTime]);
 
+    const isPastEvent = useMemo(() => {
+        const now = new Date();
+        const effectiveEnd = eventEndDate ?? eventAutoEndTime;
+        return effectiveEnd < now;
+    }, [eventEndDate, eventAutoEndTime]);
+
     const autoEditEndTime = useMemo(
         () => endOfDay(editData.startTime),
         [editData.startTime]
@@ -857,7 +863,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                         )}
                     </div>
 
-                    {user && !event.participants?.some(
+                    {user && !isPastEvent && !event.participants?.some(
                         (p: any) => p.id === user?.id
                     ) && (
                         <Button

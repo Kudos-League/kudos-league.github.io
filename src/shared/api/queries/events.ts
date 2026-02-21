@@ -46,12 +46,13 @@ export function useEvent(eventId: number) {
     });
 }
 
-export function useSearchEventsQuery(query: string, limit = 20) {
+export function useSearchEventsQuery(query: string, limit = 20, eventFilter?: 'all' | 'ongoing' | 'upcoming') {
+    const normalizedQuery = query.toLowerCase();
     return useInfiniteQuery<EventDTO[], Error>({
-        queryKey: [...qk.search(query), 'infinite'],
+        queryKey: [...qk.search(normalizedQuery), 'infinite', eventFilter],
         queryFn: ({ pageParam = 0 }) =>
             apiGet<EventDTO[]>('/events/search', {
-                params: { query, limit, offset: pageParam }
+                params: { query: normalizedQuery, limit, offset: pageParam, eventFilter }
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage, _allPages, lastPageParam) => {

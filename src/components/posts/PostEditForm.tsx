@@ -68,19 +68,27 @@ export default function PostEditForm({
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
-        const updated = [...editImages, ...Array.from(files)];
-        const fileError = validateFiles(updated);
-        if (fileError) {
-            setEditImageError(fileError);
+        e.target.value = '';
+        const newFiles = Array.from(files);
+        const tooLarge = newFiles.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) {
+            setEditImageError(`"${tooLarge.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            return;
+        }
+        const updated = [...editImages, ...newFiles];
+        if (updated.length > MAX_FILE_COUNT) {
+            setEditImageError(`You can only attach up to ${MAX_FILE_COUNT} images.`);
             return;
         }
         setEditImages(updated);
         setEditImageError(null);
-        e.target.value = '';
     };
 
     const removeEditImage = (idx: number) => {
         setEditImages((prev) => prev.filter((_, i) => i !== idx));
+        setEditImageError(null);
     };
 
     const removeExistingImage = (idx: number) => {
@@ -89,6 +97,7 @@ export default function PostEditForm({
             next.add(idx);
             return next;
         });
+        setEditImageError(null);
     };
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);

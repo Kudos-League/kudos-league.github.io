@@ -40,16 +40,17 @@ export function usePostsQuery(filters?: {
 }
 
 export function useSearchPostsQuery(query: string, limit = 20) {
+    const normalizedQuery = query.toLowerCase();
     const filters = {
         includeTags: true,
         includeSender: true,
         includeImages: true
     };
     return useInfiniteQuery<PostDTO[], Error>({
-        queryKey: [...qk.search(query, filters), 'infinite'],
+        queryKey: [...qk.search(normalizedQuery, filters), 'infinite'],
         queryFn: ({ pageParam = 0 }) =>
             apiGet<PostDTO[]>('/posts/search', {
-                params: { query, ...filters, limit, offset: pageParam }
+                params: { query: normalizedQuery, ...filters, limit, offset: pageParam }
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage, _allPages, lastPageParam) => {

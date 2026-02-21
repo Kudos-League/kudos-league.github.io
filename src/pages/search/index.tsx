@@ -4,7 +4,8 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
 import { useSearchEventsQuery } from '@/shared/api/queries/events';
-import { X, ArrowLeft, MapPin, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
+import { X, ArrowLeft, MapPin, ChevronDown, Grid3x3, Gift, HandHelping, CalendarClock, CalendarCheck, CalendarArrowUp } from 'lucide-react';
+
 import UserCard from '@/components/users/UserCard';
 import EventCard from '@/components/events/EventCard';
 import PostsInfinite from '@/components/posts/PostsInfinite';
@@ -13,6 +14,7 @@ import { useAuth } from '@/contexts/useAuth';
 
 type SearchFilterType = 'all' | 'posts' | 'users' | 'events';
 type PostFilterType = 'all' | 'gifts' | 'requests';
+type EventFilterType = 'all' | 'ongoing' | 'upcoming';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
 
@@ -38,6 +40,9 @@ export default function SearchPage() {
     const [orderFilterOpen, setOrderFilterOpen] = React.useState(false);
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
 
+    // Event filters
+    const [eventFilter, setEventFilter] = React.useState<EventFilterType>('all');
+
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
     // Use immediate search when forceSearch is true, otherwise use debounced
@@ -55,7 +60,7 @@ export default function SearchPage() {
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(effectiveSearch);
 
-    const eventsQuery = useSearchEventsQuery(effectiveSearch);
+    const eventsQuery = useSearchEventsQuery(effectiveSearch, 20, eventFilter === 'all' ? undefined : eventFilter);
     const eventResults = eventsQuery.data?.pages.flat() ?? [];
     const searchingEvents = eventsQuery.isFetching;
 
@@ -156,13 +161,6 @@ export default function SearchPage() {
         }
     }, [searchText, searchFilter, navigate]);
 
-    const apiParams = {
-        includeSender: true,
-        includeTags: true,
-        includeImages: true,
-        limit: 10
-    } as const;
-
     const totalCount = searchResults.length + userSearchResults.length + eventResults.length;
 
     return (
@@ -210,8 +208,8 @@ export default function SearchPage() {
                         )}
                     </div>
 
-                    {/* Order by dropdown - moved here */}
-                    <div className='relative shrink-0'>
+                    {/* Order by dropdown - only relevant for posts */}
+                    {(searchFilter === 'posts' || searchFilter === 'all') && (<div className='relative shrink-0'>
                         <button
                             onClick={() => setOrderFilterOpen((v) => !v)}
                             className='flex items-center gap-2 px-3 h-10 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
@@ -265,7 +263,7 @@ export default function SearchPage() {
                                 </div>
                             </>
                         )}
-                    </div>
+                    </div>)}
                 </div>
             </div>
 
@@ -349,6 +347,35 @@ export default function SearchPage() {
                                     </Button>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Event Filters */}
+                    {(searchFilter === 'events') && (
+                        <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
+                            {[
+                                { key: 'all', label: 'All', Icon: CalendarClock },
+                                { key: 'ongoing', label: 'Ongoing', Icon: CalendarCheck },
+                                { key: 'upcoming', label: 'Upcoming', Icon: CalendarArrowUp }
+                            ].map(({ key, label, Icon }) => {
+                                const isActive = eventFilter === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => setEventFilter(key as EventFilterType)}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors border-b-2 -mb-px ${
+                                            isActive
+                                                ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                                : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                        }`}
+                                    >
+                                        <Icon
+                                            className={`w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-70'}`}
+                                        />
+                                        <span>{label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 

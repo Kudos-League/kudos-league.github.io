@@ -63,6 +63,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [postType, setPostType] = React.useState<'gift' | 'request'>('gift');
     const [location, setLocation] = React.useState<LocationDTO | null>(null);
     const [serverError, setServerError] = React.useState<string | null>(null);
+    const [imageError, setImageError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
     const [placeholder, setPlaceholder] = React.useState<string>('1');
 
@@ -103,16 +104,27 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
-        const updated = [...selectedImages, ...Array.from(files)];
-        const fileError = validateFiles(updated);
-        if (fileError) return setServerError(fileError);
-        setSelectedImages(updated);
-        setServerError(null);
         e.target.value = '';
+        const newFiles = Array.from(files);
+        const tooLarge = newFiles.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) {
+            setImageError(`"${tooLarge.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            return;
+        }
+        const updated = [...selectedImages, ...newFiles];
+        if (updated.length > MAX_FILE_COUNT) {
+            setImageError(`You can only attach up to ${MAX_FILE_COUNT} images.`);
+            return;
+        }
+        setSelectedImages(updated);
+        setImageError(null);
     };
 
     const removeImage = (idx: number) => {
         setSelectedImages((prev) => prev.filter((_, i) => i !== idx));
+        setImageError(null);
     };
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
@@ -379,9 +391,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     accept='image/*'
                     multiple
                     onChange={handleImageUpload}
-                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
+                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}
                 />
+                {imageError && (
+                    <p className='text-sm text-red-600 dark:text-red-400 mb-3'>{imageError}</p>
+                )}
                 {selectedImages.length > 0 && (
                     <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pr-2'>
                         {selectedImages.map((file, index) => (
