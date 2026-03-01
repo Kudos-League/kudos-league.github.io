@@ -340,6 +340,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}
                 />
+                <p className='text-xs text-gray-500 dark:text-gray-400 mb-2'>
+                    Each image must be under {MAX_FILE_SIZE_MB}MB.
+                </p>
                 {imageError && (
                     <p className='text-sm text-red-600 dark:text-red-400 mb-3'>{imageError}</p>
                 )}
