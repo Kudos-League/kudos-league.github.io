@@ -3,29 +3,27 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-import { useEvents } from '@/shared/api/queries/events';
-import { X, ArrowLeft, MapPin, Clock, Users, ChevronDown, Grid3x3, Gift, HandHelping } from 'lucide-react';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
+import { X, ArrowLeft, MapPin, ChevronDown, Grid3x3, Gift, HandHelping, CalendarClock, CalendarCheck, CalendarArrowUp } from 'lucide-react';
+
 import UserCard from '@/components/users/UserCard';
 import EventCard from '@/components/events/EventCard';
 import PostsInfinite from '@/components/posts/PostsInfinite';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/contexts/useAuth';
 
-type SearchFilterType = 'posts' | 'users' | 'events';
+type SearchFilterType = 'all' | 'posts' | 'users' | 'events';
 type PostFilterType = 'all' | 'gifts' | 'requests';
+type EventFilterType = 'all' | 'ongoing' | 'upcoming';
 type OrderType = 'date' | 'distance' | 'kudos';
 type TypeOfOrdering = { type: OrderType; order: 'asc' | 'desc' };
-type EventLocationType = 'all' | 'local' | 'global';
-type EventTimeType = 'all' | 'today' | 'week' | 'month';
 
 export default function SearchPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const queryParam = searchParams.get('q') || '';
     const filterParam = (searchParams.get('filter') ||
-        'posts') as SearchFilterType;
+        'all') as SearchFilterType;
     const { user } = useAuth();
 
     const [searchText, setSearchText] = React.useState(queryParam);
@@ -43,10 +41,7 @@ export default function SearchPage() {
     const [showLocationWarning, setShowLocationWarning] = React.useState(false);
 
     // Event filters
-    const [eventLocation, setEventLocation] =
-        React.useState<EventLocationType>('all');
-    const [eventTime, setEventTime] = React.useState<EventTimeType>('all');
-    const [timeDropdownOpen, setTimeDropdownOpen] = React.useState(false);
+    const [eventFilter, setEventFilter] = React.useState<EventFilterType>('all');
 
     const debouncedSearch = useDebouncedValue(searchText, 300);
 
@@ -58,87 +53,16 @@ export default function SearchPage() {
         effectiveSearch.length >= 2 ||
         (forceSearch && effectiveSearch.length >= 1);
 
-    const { data: searchResults = [], isFetching: searching } =
-        useSearchPostsQuery(effectiveSearch);
+    const postsQuery = useSearchPostsQuery(effectiveSearch);
+    const searchResults = postsQuery.data?.pages.flat() ?? [];
+    const searching = postsQuery.isLoading;
 
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(effectiveSearch);
 
-    const { data: allEvents = [] } = useEvents();
-
-    // Filter events client-side based on search text
-    const eventSearchResults = useMemo(() => {
-        if (!searchingActive) return [];
-        const searchLower = effectiveSearch.toLowerCase();
-        let filtered = allEvents.filter(
-            (event) =>
-                event.title.toLowerCase().includes(searchLower) ||
-                event.description.toLowerCase().includes(searchLower) ||
-                event.location?.name?.toLowerCase().includes(searchLower)
-        );
-
-        // Apply location filter
-        if (eventLocation === 'local') {
-            filtered = filtered.filter((event) => !event.isGlobal);
-        }
-        else if (eventLocation === 'global') {
-            filtered = filtered.filter((event) => event.isGlobal);
-        }
-
-        // Apply time filter
-        if (eventTime !== 'all') {
-            const now = new Date();
-            const today = new Date(now);
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            const weekStart = new Date(today);
-            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 7);
-
-            const monthStart = new Date(
-                today.getFullYear(),
-                today.getMonth(),
-                1
-            );
-            const monthEnd = new Date(
-                today.getFullYear(),
-                today.getMonth() + 1,
-                1
-            );
-
-            filtered = filtered.filter((event) => {
-                const startTime = new Date(event.startTime);
-                const endTime = event.endTime ? new Date(event.endTime) : null;
-
-                if (eventTime === 'today') {
-                    return (
-                        (startTime >= today && startTime < tomorrow) ||
-                        (endTime && endTime >= today && startTime < tomorrow)
-                    );
-                }
-                else if (eventTime === 'week') {
-                    return (
-                        (startTime >= weekStart && startTime < weekEnd) ||
-                        (endTime && endTime >= weekStart && startTime < weekEnd)
-                    );
-                }
-                else if (eventTime === 'month') {
-                    return (
-                        (startTime >= monthStart && startTime < monthEnd) ||
-                        (endTime &&
-                            endTime >= monthStart &&
-                            startTime < monthEnd)
-                    );
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }, [effectiveSearch, allEvents, searchingActive, eventLocation, eventTime]);
+    const eventsQuery = useSearchEventsQuery(effectiveSearch, 20, eventFilter === 'all' ? undefined : eventFilter);
+    const eventResults = eventsQuery.data?.pages.flat() ?? [];
+    const searchingEvents = eventsQuery.isFetching;
 
     // Filter and sort posts
     const filteredPosts = useMemo(() => {
@@ -230,19 +154,14 @@ export default function SearchPage() {
         if (searchText) {
             const params = new URLSearchParams();
             params.set('q', searchText);
-            if (searchFilter !== 'posts') {
+            if (searchFilter !== 'all') {
                 params.set('filter', searchFilter);
             }
             navigate(`/search?${params.toString()}`, { replace: true });
         }
     }, [searchText, searchFilter, navigate]);
 
-    const apiParams = {
-        includeSender: true,
-        includeTags: true,
-        includeImages: true,
-        limit: 10
-    } as const;
+    const totalCount = searchResults.length + userSearchResults.length + eventResults.length;
 
     return (
         <div className='w-full max-w-4xl mx-auto space-y-4 overflow-x-hidden px-4 sm:px-6 pt-4 mb-2'>
@@ -289,8 +208,8 @@ export default function SearchPage() {
                         )}
                     </div>
 
-                    {/* Order by dropdown - moved here */}
-                    <div className='relative shrink-0'>
+                    {/* Order by dropdown - only relevant for posts */}
+                    {(searchFilter === 'posts' || searchFilter === 'all') && (<div className='relative shrink-0'>
                         <button
                             onClick={() => setOrderFilterOpen((v) => !v)}
                             className='flex items-center gap-2 px-3 h-10 text-sm font-medium border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors'
@@ -344,7 +263,7 @@ export default function SearchPage() {
                                 </div>
                             </>
                         )}
-                    </div>
+                    </div>)}
                 </div>
             </div>
 
@@ -353,8 +272,10 @@ export default function SearchPage() {
                     {/* Search Filter Tabs */}
                     <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                         {[
+                            { key: 'all', label: 'All', count: totalCount },
+                            { key: 'users', label: 'Users', count: userSearchResults.length },
                             { key: 'posts', label: 'Posts', count: searchResults.length },
-                            { key: 'users', label: 'Users', count: userSearchResults.length }
+                            { key: 'events', label: 'Events', count: eventResults.length },
                         ].map(({ key, label, count }) => {
                             const isActive = searchFilter === key;
                             return (
@@ -375,7 +296,7 @@ export default function SearchPage() {
                     </div>
 
                     {/* Post Filters */}
-                    {searchFilter === 'posts' && (
+                    {(searchFilter === 'posts' || searchFilter === 'all') && (
                         <div className='space-y-3'>
                             <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
                                 {[
@@ -430,127 +351,144 @@ export default function SearchPage() {
                     )}
 
                     {/* Event Filters */}
-                    {searchFilter === 'events' && (
-                        <div className='flex flex-wrap items-center gap-2'>
-                            <div className='flex flex-wrap gap-2'>
-                                <Button
-                                    onClick={() => setEventLocation('all')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'all'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    All Locations
-                                </Button>
-                                <Button
-                                    onClick={() => setEventLocation('local')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'local'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    Local
-                                </Button>
-                                <Button
-                                    onClick={() => setEventLocation('global')}
-                                    variant='secondary'
-                                    className={`text-sm px-4 py-2 border-2 rounded-lg font-medium transition-all duration-200 ${
-                                        eventLocation === 'global'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    Global
-                                </Button>
-                            </div>
-
-                            <div className='ml-auto relative'>
-                                <button
-                                    onClick={() =>
-                                        setTimeDropdownOpen(!timeDropdownOpen)
-                                    }
-                                    className='text-base sm:text-sm px-4 py-3 sm:py-2 border-2 rounded-lg font-medium transition-all duration-200 border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:border-gray-400 focus:outline-none focus:border-blue-500 min-w-[140px] text-left flex items-center justify-between'
-                                >
-                                    <span>
-                                        {eventTime === 'all' && 'All Time'}
-                                        {eventTime === 'today' && 'Today'}
-                                        {eventTime === 'week' && 'This Week'}
-                                        {eventTime === 'month' && 'This Month'}
-                                    </span>
-                                    <svg
-                                        className='w-4 h-4 ml-2'
-                                        fill='none'
-                                        stroke='currentColor'
-                                        viewBox='0 0 24 24'
+                    {(searchFilter === 'events') && (
+                        <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
+                            {[
+                                { key: 'all', label: 'All', Icon: CalendarClock },
+                                { key: 'ongoing', label: 'Ongoing', Icon: CalendarCheck },
+                                { key: 'upcoming', label: 'Upcoming', Icon: CalendarArrowUp }
+                            ].map(({ key, label, Icon }) => {
+                                const isActive = eventFilter === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => setEventFilter(key as EventFilterType)}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] sm:text-xs font-medium transition-colors border-b-2 -mb-px ${
+                                            isActive
+                                                ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                                : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                        }`}
                                     >
-                                        <path
-                                            strokeLinecap='round'
-                                            strokeLinejoin='round'
-                                            strokeWidth={2}
-                                            d='M19 9l-7 7-7-7'
+                                        <Icon
+                                            className={`w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-70'}`}
                                         />
-                                    </svg>
-                                </button>
-                                {timeDropdownOpen && (
-                                    <>
-                                        <div
-                                            className='fixed inset-0 z-10'
-                                            onClick={() =>
-                                                setTimeDropdownOpen(false)
-                                            }
-                                        />
-                                        <div className='absolute right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-zinc-800 border-2 border-gray-300 dark:border-zinc-700 rounded-lg shadow-xl z-20'>
-                                            {[
-                                                {
-                                                    value: 'all',
-                                                    label: 'All Time'
-                                                },
-                                                {
-                                                    value: 'today',
-                                                    label: 'Today'
-                                                },
-                                                {
-                                                    value: 'week',
-                                                    label: 'This Week'
-                                                },
-                                                {
-                                                    value: 'month',
-                                                    label: 'This Month'
-                                                }
-                                            ].map((option) => (
-                                                <button
-                                                    key={option.value}
-                                                    onClick={() => {
-                                                        setEventTime(
-                                                            option.value as EventTimeType
-                                                        );
-                                                        setTimeDropdownOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                    className={`w-full text-left px-4 py-4 text-lg sm:text-base font-medium transition-colors ${
-                                                        eventTime ===
-                                                        option.value
-                                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700'
-                                                    } first:rounded-t-lg last:rounded-b-lg`}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                                        <span>{label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 
+
                     {/* Search Results */}
                     <div className='space-y-6'>
+                        {/* All Results */}
+                        {searchFilter === 'all' && (
+                            <>
+                                {/* Users Section */}
+                                {searchingUsers ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching users...
+                                    </div>
+                                ) : userSearchResults.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Users
+                                            </h3>
+                                            {userSearchResults.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('users')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({userSearchResults.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className='space-y-3 w-full'>
+                                            {userSearchResults.slice(0, 5).map((user) => (
+                                                <div
+                                                    key={user.id}
+                                                    className='bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-3 hover:shadow-md transition-shadow cursor-pointer'
+                                                    onClick={() =>
+                                                        navigate(`/user/${user.id}`)
+                                                    }
+                                                >
+                                                    <UserCard
+                                                        user={user}
+                                                        disableTooltip={true}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Posts Section */}
+                                {searching ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching posts...
+                                    </div>
+                                ) : filteredPosts.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Posts
+                                            </h3>
+                                            {filteredPosts.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('posts')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({filteredPosts.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <PostsInfinite.StaticList
+                                            posts={filteredPosts.slice(0, 5)}
+                                            loading={false}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Events Section */}
+                                {searchingEvents ? (
+                                    <div className='text-center py-4 text-gray-500 dark:text-zinc-400'>
+                                        Searching events...
+                                    </div>
+                                ) : eventResults.length > 0 && (
+                                    <div>
+                                        <div className='flex items-center justify-between mb-3'>
+                                            <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide'>
+                                                Events
+                                            </h3>
+                                            {eventResults.length > 5 && (
+                                                <button
+                                                    onClick={() => setSearchFilter('events')}
+                                                    className='text-sm text-brand-600 dark:text-brand-400 hover:underline'
+                                                >
+                                                    Show all ({eventResults.length})
+                                                </button>
+                                            )}
+                                        </div>
+                                        <ul className='space-y-3 w-full'>
+                                            {eventResults.slice(0, 5).map((event) => (
+                                                <EventCard key={event.id} event={event} />
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* No results at all */}
+                                {!searching && !searchingUsers && !searchingEvents &&
+                                    filteredPosts.length === 0 && userSearchResults.length === 0 && eventResults.length === 0 && (
+                                    <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
+                                        No results found for &quot;{searchText}&quot;
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                         {/* User Results */}
                         {searchFilter === 'users' && (
                             <>
@@ -592,10 +530,23 @@ export default function SearchPage() {
                                         Searching posts...
                                     </div>
                                 ) : filteredPosts.length > 0 ? (
-                                    <PostsInfinite.StaticList
-                                        posts={filteredPosts}
-                                        loading={false}
-                                    />
+                                    <>
+                                        <PostsInfinite.StaticList
+                                            posts={filteredPosts}
+                                            loading={false}
+                                        />
+                                        {postsQuery.hasNextPage && (
+                                            <div className='flex justify-center mt-4'>
+                                                <Button
+                                                    onClick={() => postsQuery.fetchNextPage()}
+                                                    disabled={postsQuery.isFetchingNextPage}
+                                                    variant='secondary'
+                                                >
+                                                    {postsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                         No posts found for &quot;{searchText}
@@ -608,115 +559,29 @@ export default function SearchPage() {
                         {/* Event Results */}
                         {searchFilter === 'events' && (
                             <>
-                                {eventSearchResults.length > 0 ? (
-                                    <ul className='space-y-2 sm:space-y-3 mb-8'>
-                                        {eventSearchResults.map((event) => {
-                                            const tz =
-                                                Intl.DateTimeFormat().resolvedOptions()
-                                                    .timeZone;
-                                            return (
-                                                <li
-                                                    key={event.id}
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/event/${event.id}`
-                                                        )
-                                                    }
-                                                    className='p-3 sm:p-4 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors'
+                                {searchingEvents ? (
+                                    <div className='text-center py-8 text-gray-500 dark:text-zinc-400'>
+                                        Searching events...
+                                    </div>
+                                ) : eventResults.length > 0 ? (
+                                    <>
+                                        <ul className='space-y-3 w-full'>
+                                            {eventResults.map((event) => (
+                                                <EventCard key={event.id} event={event} />
+                                            ))}
+                                        </ul>
+                                        {eventsQuery.hasNextPage && (
+                                            <div className='flex justify-center mt-4'>
+                                                <Button
+                                                    onClick={() => eventsQuery.fetchNextPage()}
+                                                    disabled={eventsQuery.isFetchingNextPage}
+                                                    variant='secondary'
                                                 >
-                                                    <div className='flex items-start justify-between mb-1.5 sm:mb-2'>
-                                                        <p className='font-bold text-base sm:text-lg text-gray-900 dark:text-zinc-100'>
-                                                            {event.title}
-                                                        </p>
-                                                        {event.location
-                                                            ?.global ? (
-                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                                🌐 Global
-                                                                </span>
-                                                            ) : (
-                                                                <span className='px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-[0.65rem] sm:text-xs font-medium rounded whitespace-nowrap ml-2'>
-                                                                📍 Local
-                                                                </span>
-                                                            )}
-                                                    </div>
-                                                    {event.description && (
-                                                        <p className='text-gray-600 dark:text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2'>
-                                                            {event.description}
-                                                        </p>
-                                                    )}
-                                                    <div className='space-y-0.5 sm:space-y-1'>
-                                                        <p className='text-xs sm:text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5 sm:gap-2'>
-                                                            <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                            <span className='truncate'>
-                                                                {format(
-                                                                    toZonedTime(
-                                                                        new Date(
-                                                                            event.startTime
-                                                                        ),
-                                                                        tz
-                                                                    ),
-                                                                    'MMM d, yyyy • h:mm a'
-                                                                )}{' '}
-                                                                –{' '}
-                                                                {event.endTime
-                                                                    ? format(
-                                                                        toZonedTime(
-                                                                            new Date(
-                                                                                event.endTime
-                                                                            ),
-                                                                            tz
-                                                                        ),
-                                                                        'MMM d, yyyy • h:mm a'
-                                                                    )
-                                                                    : 'Ongoing'}
-                                                            </span>
-                                                        </p>
-                                                        {event.location?.name &&
-                                                            !event.location
-                                                                .global && (
-                                                            <p className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                {
-                                                                    event
-                                                                        .location
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                        )}
-                                                        {event.creator && (
-                                                            <div className='text-xs sm:text-sm text-gray-600 dark:text-zinc-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <UserCard
-                                                                    user={
-                                                                        event.creator
-                                                                    }
-                                                                    subtitle={`@${event.creator.username || 'user'}`}
-                                                                    showKudos={
-                                                                        true
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        {typeof event.participantCount ===
-                                                            'number' &&
-                                                            event.participantCount >
-                                                                0 && (
-                                                            <p className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 sm:gap-2'>
-                                                                <Users className='w-3 h-3 sm:w-4 sm:h-4' />
-                                                                {
-                                                                    event.participantCount
-                                                                }{' '}
-                                                                    participant
-                                                                {event.participantCount !==
-                                                                    1
-                                                                    ? 's'
-                                                                    : ''}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                                    {eventsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                         No events found for &quot;{searchText}
@@ -725,6 +590,7 @@ export default function SearchPage() {
                                 )}
                             </>
                         )}
+
                     </div>
                 </div>
             ) : (

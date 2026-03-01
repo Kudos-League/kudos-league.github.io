@@ -10,7 +10,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
-import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import RichEmbeds from '../common/RichEmbeds';
 
 interface Props {
     messages: MessageDTO[];
@@ -395,9 +395,14 @@ const MessageList: React.FC<Props> = ({
                         </p>
                     </div>
                 ) : (
-                    <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
-                        {msg.content}
-                    </TextWithLinks>
+                    <>
+                        <TextWithLinks className='text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap'>
+                            {msg.content}
+                        </TextWithLinks>
+                        {!msg.deletedAt && (
+                            <RichEmbeds text={msg.content} className='mt-2' />
+                        )}
+                    </>
                 )}
             </div>
         );
@@ -443,7 +448,11 @@ const MessageList: React.FC<Props> = ({
                     <div className='flex items-center gap-2'>
                         <input
                             type='text'
-                            placeholder='Type a message...'
+                            placeholder={
+                                !user
+                                    ? 'Please log in to comment...'
+                                    : 'Type a message...'
+                            }
                             value={messageContent}
                             onChange={(e) => setMessageContent(e.target.value)}
                             ref={inputRef}
@@ -456,7 +465,8 @@ const MessageList: React.FC<Props> = ({
                                     setReplyTo(null);
                                 }
                             }}
-                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300'
+                            disabled={!user}
+                            className='flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800'
                         />
                         <Button
                             onMouseDown={(e) => {
@@ -465,13 +475,18 @@ const MessageList: React.FC<Props> = ({
                                     handleSubmitMessage();
                                 }
                             }}
-                            disabled={!messageContent.trim()}
+                            disabled={!messageContent.trim() || !user}
                             className='w-10 h-10'
                             shape='circle'
                         >
                             ➤
                         </Button>
                     </div>
+                    {!user && (
+                        <p className='text-xs text-zinc-500 dark:text-zinc-400 text-center'>
+                            Please log in to comment
+                        </p>
+                    )}
                 </div>
             )}
 

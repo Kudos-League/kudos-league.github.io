@@ -1,5 +1,6 @@
 import {
     useQuery,
+    useInfiniteQuery,
     UseQueryOptions,
     useSuspenseQuery
 } from '@tanstack/react-query';
@@ -8,7 +9,8 @@ import type { EventDTO } from '@/shared/api/types';
 
 export const qk = {
     events: (filters?: any) => ['events', filters] as const,
-    event: (id: number) => ['event', id] as const
+    event: (id: number) => ['event', id] as const,
+    search: (query: string) => ['eventSearch', query] as const
 };
 
 type Filters =
@@ -41,6 +43,25 @@ export function useEvent(eventId: number) {
         queryKey: qk.event(eventId),
         queryFn: () => apiGet<EventDTO>(`/events/${eventId}`),
         enabled: !!eventId
+    });
+}
+
+export function useSearchEventsQuery(query: string, limit = 20, eventFilter?: 'all' | 'ongoing' | 'upcoming') {
+    const normalizedQuery = query.toLowerCase();
+    return useInfiniteQuery<EventDTO[], Error>({
+        queryKey: [...qk.search(normalizedQuery), 'infinite', eventFilter],
+        queryFn: ({ pageParam = 0 }) =>
+            apiGet<EventDTO[]>('/events/search', {
+                params: { query: normalizedQuery, limit, offset: pageParam, eventFilter }
+            }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+            if (lastPage.length < limit) return undefined;
+            return (lastPageParam as number) + limit;
+        },
+        enabled: query.length >= 2,
+        staleTime: 0,
+        gcTime: 60_000
     });
 }
 

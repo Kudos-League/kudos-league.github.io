@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
     ExclamationTriangleIcon,
     ArrowLeftIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    ArrowUturnRightIcon,
+    ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -21,7 +23,7 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useCategories } from '@/shared/api/queries/categories';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { getImagePath } from '@/shared/api/config';
+import { getImagePath, getEndpointUrl } from '@/shared/api/config';
 import { pushAlert } from '@/components/common/alertBus';
 import {
     useUpdatePost,
@@ -140,7 +142,25 @@ export default function PostDetails(props: Props) {
         kudos: number;
     } | null>(null);
     const [showKudosTooltip, setShowKudosTooltip] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
     const navigate = useNavigate();
+
+    const handleSharePost = async () => {
+        const backendUrl = getEndpointUrl();
+        const url = `${backendUrl}/posts/${postDetails?.id}/share`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: postDetails?.title, url });
+                return;
+            }
+            catch {
+                // Fallback to clipboard
+            }
+        }
+        await navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+    };
 
     // Redirect to home if post not found after loading completes
     useEffect(() => {
@@ -922,25 +942,55 @@ export default function PostDetails(props: Props) {
                     <UserCard user={postDetails.sender} large />
                 </div>
 
-                {/* Post Owner Actions */}
-                {isPostOwner && (
-                    <div className='flex flex-row gap-2 flex-shrink-0'>
-                        <EditPostButton
-                            onClick={handleStartEdit}
-                            disabled={isEditing}
-                        />
-                        {postDetails.status !== 'closed' && (
-                            <Button
-                                onClick={handleClosePost}
-                                className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
-                                variant='danger'
+                <div className='flex flex-row gap-2 flex-shrink-0'>
+                    {/* Share Button (logged-in users only) */}
+                    {user && (
+                        <button
+                            onClick={handleSharePost}
+                            title={linkCopied ? 'Link copied!' : 'Share post'}
+                            className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition'
+                        >
+                            {linkCopied ? (
+                                <ClipboardDocumentCheckIcon className='w-5 h-5 text-green-500' />
+                            ) : (
+                                <ArrowUturnRightIcon className='w-5 h-5' />
+                            )}
+                            <span className='hidden sm:inline'>{linkCopied ? 'Copied!' : 'Share'}</span>
+                        </button>
+                    )}
+
+                    {/* Report Button (non-owners) */}
+                    {!isPostOwner && user && (
+                        <button
+                            onClick={() => setReportModalVisible(true)}
+                            title='Report'
+                            className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition'
+                        >
+                            <ExclamationTriangleIcon className='w-5 h-5' />
+                            <span className='hidden sm:inline'>Report</span>
+                        </button>
+                    )}
+
+                    {/* Post Owner Actions */}
+                    {isPostOwner && (
+                        <>
+                            <EditPostButton
+                                onClick={handleStartEdit}
                                 disabled={isEditing}
-                            >
-                                Close Post
-                            </Button>
-                        )}
-                    </div>
-                )}
+                            />
+                            {postDetails.status !== 'closed' && (
+                                <Button
+                                    onClick={handleClosePost}
+                                    className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
+                                    variant='danger'
+                                    disabled={isEditing}
+                                >
+                                    Close Post
+                                </Button>
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Title */}
@@ -1358,17 +1408,20 @@ export default function PostDetails(props: Props) {
                         )}
                     </div>
 
-                    {/* User Interaction Actions (Report) */}
-                    {!isPostOwner && (
-                        <div className='flex gap-2 items-center mb-6'>
-                            <button
-                                onClick={() => setReportModalVisible(true)}
-                                title='Report'
-                                className='px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-600 transition flex items-center gap-2'
-                            >
-                                <ExclamationTriangleIcon className='w-5 h-5' />
-                                <span>Report</span>
-                            </button>
+                    {/* Unauthenticated user banner */}
+                    {!user && (
+                        <div className='bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 mb-6 text-center'>
+                            <p className='text-sm text-brand-800 dark:text-brand-200 font-medium'>
+                                Log in or register to interact with this post
+                            </p>
+                            <div className='flex justify-center gap-3 mt-2'>
+                                <Button onClick={() => navigate('/login')} variant='primary' className='text-sm'>
+                                    Log In
+                                </Button>
+                                <Button onClick={() => navigate('/signup')} variant='secondary' className='text-sm'>
+                                    Register
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </>
@@ -1497,7 +1550,7 @@ export default function PostDetails(props: Props) {
                     showUserKudos={true}
                 />
 
-                {postDetails.status !== 'closed' &&
+                {user && postDetails.status !== 'closed' &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
                         (h: any) =>
@@ -1514,6 +1567,11 @@ export default function PostDetails(props: Props) {
                                     ? 'Request This'
                                     : 'Gift This'}
                         </Button>
+                    </div>
+                )}
+                {!user && (
+                    <div className='mt-4 text-center text-sm text-gray-500 dark:text-gray-400'>
+                        Log in or register to interact
                     </div>
                 )}
             </div>

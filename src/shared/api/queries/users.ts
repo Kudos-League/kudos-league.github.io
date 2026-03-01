@@ -73,11 +73,12 @@ export function useUsersByIdsQuery(
 }
 
 export function useSearchUsersQuery(query: string) {
+    const normalizedQuery = query.toLowerCase();
     return useQuery<UserDTO[]>({
-        queryKey: qkUsers.search(query),
+        queryKey: qkUsers.search(normalizedQuery),
         queryFn: () =>
             apiGet<UserDTO[]>('/users/search', {
-                params: { query }
+                params: { query: normalizedQuery }
             }),
         enabled: query.length >= 2,
         staleTime: 0,

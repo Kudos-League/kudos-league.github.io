@@ -10,6 +10,7 @@ import { useAppSelector } from 'redux_store/hooks';
 import Button from '../common/Button';
 import UserCard from '../users/UserCard';
 import TextWithLinks from '../common/TextWithLinks';
+import RichEmbeds from '../common/RichEmbeds';
 import {
     ArrowUturnLeftIcon,
     PencilIcon,
@@ -323,7 +324,7 @@ const MessageList: React.FC<Props> = ({
 
                     {/* Action buttons */}
                     <div className='flex gap-1'>
-                        {!isEditing && (
+                        {!isEditing && user && (
                             <button
                                 type='button'
                                 title='Reply'
@@ -494,6 +495,10 @@ const MessageList: React.FC<Props> = ({
                             )}
                         </div>
 
+                        {!msg.deletedAt && (
+                            <RichEmbeds text={msg.content} className='mt-2' />
+                        )}
+
                         {requiresCollapseHeuristic && (
                             <button
                                 onClick={() => toggleExpansion(msg.id)}
@@ -556,7 +561,11 @@ const MessageList: React.FC<Props> = ({
                         <>
                             <div className='flex items-end gap-2'>
                                 <textarea
-                                    placeholder='Write a comment...'
+                                    placeholder={
+                                        !user
+                                            ? 'Please log in to comment...'
+                                            : 'Write a comment...'
+                                    }
                                     value={messageContent}
                                     onChange={(e) => {
                                         setMessageContent(e.target.value);
@@ -577,13 +586,13 @@ const MessageList: React.FC<Props> = ({
                                         // Enter just creates a new line (default behavior)
                                     }}
                                     // Tailwind classes for textarea styling
-                                    className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                                    className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800'
                                     style={{
                                         minHeight: '42px',
                                         height: '42px',
                                         overflow: 'hidden'
                                     }}
-                                    disabled={!active}
+                                    disabled={!active || !user}
                                 />
                                 <Button
                                     onMouseDown={(e) => {
@@ -592,7 +601,9 @@ const MessageList: React.FC<Props> = ({
                                             handleSubmitMessage();
                                         }
                                     }}
-                                    disabled={!messageContent.trim() || !active}
+                                    disabled={
+                                        !messageContent.trim() || !active || !user
+                                    }
                                     className='w-10 h-10'
                                     shape='circle'
                                 >
@@ -602,7 +613,9 @@ const MessageList: React.FC<Props> = ({
                             {/* --- END TEXTAREA REPLACEMENT --- */}
 
                             <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
-                                Ctrl+Enter or ➤ to send
+                                {!user
+                                    ? 'Please log in to comment'
+                                    : 'Ctrl+Enter or ➤ to send'}
                             </p>
                         </>
                     )}

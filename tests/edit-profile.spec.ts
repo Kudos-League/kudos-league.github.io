@@ -13,7 +13,7 @@ test.describe('Edit Profile', () => {
     }) => {
         await navigateToEdit(page);
 
-        const save = page.getByRole('button', { name: SAVE_BTN });
+        const save = getSaveButton(page);
         await expect(save).toBeDisabled();
 
         const aboutVal = `Playwright about ${Date.now()}`;
@@ -46,7 +46,7 @@ test.describe('Edit Profile', () => {
             buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64')
         });
 
-        const save = page.getByRole('button', { name: SAVE_BTN });
+        const save = getSaveButton(page);
         await expect(save).toBeEnabled();
 
         const patch = waitForUserPatch(page, ({ headers, bodyText }) => {
@@ -59,7 +59,7 @@ test.describe('Edit Profile', () => {
         await patch;
     });
 
-    test('removing uploaded avatar disables save again (no other changes)', async ({
+    test('removing uploaded avatar keeps save enabled and submits without file', async ({
         page
     }) => {
         await navigateToEdit(page);
@@ -72,13 +72,24 @@ test.describe('Edit Profile', () => {
             buffer: Buffer.from(ONE_BY_ONE_PNG, 'base64')
         });
 
-        const save = page.getByRole('button', { name: SAVE_BTN });
+        const save = getSaveButton(page);
         await expect(save).toBeEnabled();
 
-        await page.getByRole('button', { name: /change avatar/i }).click();
-        await page.getByTestId('remove-avatar').click();
+        const removeAvatar = page.getByTestId('remove-avatar');
+        if (!(await removeAvatar.isVisible())) {
+            await page.getByRole('button', { name: /change avatar/i }).click();
+        }
+        await removeAvatar.click();
 
-        await expect(save).toBeDisabled();
+        await expect(save).toBeEnabled();
+
+        const patch = waitForUserPatch(page, ({ headers, bodyText }) => {
+            expect(headers['content-type']).toContain('multipart/form-data');
+            expect(bodyText).not.toMatch(/filename="/);
+        });
+
+        await save.click();
+        await patch;
     });
 
     test('cancel/back returns to profile view', async ({ page }) => {
@@ -99,9 +110,15 @@ async function navigateToEdit(page: Page) {
     await expect(edit).toBeVisible({ timeout: 10_000 });
     await edit.click();
 
-    await expect(page.getByTestId('account-settings')).toBeVisible({
+    await expect(getAccountSettingsHeading(page)).toBeVisible({
         timeout: 10_000
     });
+}
+
+function getAccountSettingsHeading(page: Page) {
+    return page
+        .getByTestId('account-settings')
+        .or(page.getByRole('heading', { name: /account settings/i }).first());
 }
 
 function getEditButton(page: Page) {
@@ -110,6 +127,12 @@ function getEditButton(page: Page) {
         .filter({ hasText: /edit/i })
         .first()
         .or(page.getByRole('button', { name: /edit/i }).first());
+}
+
+function getSaveButton(page: Page) {
+    return page
+        .locator('button[type="submit"]', { hasText: SAVE_BTN })
+        .first();
 }
 
 function waitForUserPatch(

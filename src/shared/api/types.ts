@@ -8,7 +8,7 @@ export type CreatePostDTO = {
     tags: string[];
     type: string;
     files?: File[];
-    categoryID: number;
+    categoryID?: number | null;
     location?: LocationDTO | null;
     itemsLimit?: number | null;
 };

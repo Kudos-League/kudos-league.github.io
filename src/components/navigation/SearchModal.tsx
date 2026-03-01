@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect, useMemo } from 'react';
+import React, { Fragment, useState, useEffect } from 'react';
 import {
     Dialog,
     DialogPanel,
@@ -9,50 +9,57 @@ import {
     MagnifyingGlassIcon,
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchPostsQuery } from '@/shared/api/queries/posts';
 import { useSearchUsersQuery } from '@/shared/api/queries/users';
-// import { useEvents } from '@/shared/api/queries/events';
+import { useSearchEventsQuery } from '@/shared/api/queries/events';
 import { getImagePath } from '@/shared/api/config';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+
+type SearchTab = 'all' | 'users' | 'posts' | 'events';
 
 interface SearchModalProps {
     open: boolean;
     onClose: () => void;
 }
 
+function getDefaultTab(pathname: string): SearchTab {
+    if (pathname === '/') return 'posts';
+    if (pathname.startsWith('/dms') || pathname.startsWith('/user/')) return 'users';
+    if (pathname.startsWith('/events') || pathname.startsWith('/event/')) return 'events';
+    return 'all';
+}
+
 export default function SearchModal({ open, onClose }: SearchModalProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchText, setSearchText] = useState('');
+    const [activeTab, setActiveTab] = useState<SearchTab>(() => getDefaultTab(location.pathname));
     const inputRef = React.useRef<HTMLInputElement>(null);
     const debouncedSearch = useDebouncedValue(searchText, 300);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const searchingActive = debouncedSearch.length >= 2;
 
-    const { data: searchResults = [], isFetching: searching } =
-        useSearchPostsQuery(debouncedSearch);
+    const postsQuery = useSearchPostsQuery(debouncedSearch);
+    const searchResults = postsQuery.data?.pages.flat() ?? [];
+    const searching = postsQuery.isFetching;
     const { data: userSearchResults = [], isFetching: searchingUsers } =
         useSearchUsersQuery(debouncedSearch);
-    // const { data: allEvents = [] } = useEvents();
+    const eventsQuery = useSearchEventsQuery(debouncedSearch);
+    const eventResults = eventsQuery.data?.pages.flat() ?? [];
+    const searchingEvents = eventsQuery.isFetching;
 
-    // Filter events client-side based on search text
-    // const eventSearchResults = useMemo(() => {
-    //     if (!searchingActive) return [];
-    //     const searchLower = debouncedSearch.toLowerCase();
-    //     return allEvents.filter(event =>
-    //         event.title.toLowerCase().includes(searchLower) ||
-    //         event.description.toLowerCase().includes(searchLower) ||
-    //         event.location?.name?.toLowerCase().includes(searchLower)
-    //     );
-    // }, [debouncedSearch, allEvents, searchingActive]);
+    const hasResults = userSearchResults.length > 0 || searchResults.length > 0 || eventResults.length > 0;
 
-    const hasResults = userSearchResults.length > 0 || searchResults.length > 0; // || eventSearchResults.length > 0;
-
-    // Reset search when modal closes, and focus input when modal opens
+    // Reset search when modal closes, set default tab based on route when modal opens
     useEffect(() => {
         if (!open) {
             setSearchText('');
+            setActiveTab(getDefaultTab(location.pathname));
         }
         else {
             // Focus input after modal animation completes (300ms based on the transition duration)
@@ -65,26 +72,27 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                 }
             }, 300);
         }
-    }, [open]);
+    }, [open, location.pathname]);
 
     const handleResultClick = () => {
         onClose();
     };
 
     const handleShowAllResults = () => {
-        navigate(`/search?q=${encodeURIComponent(searchText)}`);
+        const params = new URLSearchParams();
+        params.set('q', searchText);
+        if (activeTab !== 'all') {
+            params.set('filter', activeTab);
+        }
+        navigate(`/search?${params.toString()}`);
         onClose();
     };
 
-    // Format date for events
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    };
+    const showUsers = activeTab === 'all' || activeTab === 'users';
+    const showPosts = activeTab === 'all' || activeTab === 'posts';
+    const showEvents = activeTab === 'all' || activeTab === 'events';
+
+    const isLoading = searching || searchingUsers || searchingEvents;
 
     return (
         <Dialog open={open} onClose={onClose} className='relative z-50'>
@@ -120,7 +128,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                 <input
                                     ref={inputRef}
                                     type='text'
-                                    placeholder='Search users, posts…'
+                                    placeholder={activeTab === 'all' ? 'Search users, posts, events…' : `Search ${activeTab}…`}
                                     value={searchText}
                                     onChange={(e) =>
                                         setSearchText(e.target.value)
@@ -138,6 +146,26 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     </button>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Tab Bar - Always visible */}
+                        <div className='flex-shrink-0 flex border-b border-gray-200 dark:border-zinc-800'>
+                            {(['all', 'users', 'posts', 'events'] as const).map((tab) => {
+                                const isActive = activeTab === tab;
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                                            isActive
+                                                ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
+                                                : 'border-transparent text-zinc-500 hover:text-brand-600'
+                                        }`}
+                                    >
+                                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Show All Results - Visible when there are results */}
@@ -160,7 +188,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     <MagnifyingGlassIcon className='h-12 w-12 mx-auto mb-3 opacity-50' />
                                     <p>Start typing to search</p>
                                 </div>
-                            ) : searching || searchingUsers ? (
+                            ) : isLoading ? (
                                 <div className='text-center py-12 text-gray-500 dark:text-zinc-400'>
                                     Searching...
                                 </div>
@@ -171,7 +199,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                             ) : (
                                 <div className='p-6 space-y-6'>
                                     {/* User Results */}
-                                    {userSearchResults.length > 0 && (
+                                    {showUsers && userSearchResults.length > 0 && (
                                         <div>
                                             <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
                                                 Users
@@ -193,7 +221,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                                     user.avatar
                                                                 )}
                                                                 alt={
-                                                                    user.username
+                                                                    user.displayName || user.username
                                                                 }
                                                                 className='w-12 h-12 rounded-full object-cover'
                                                             />
@@ -202,14 +230,6 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                                     {user.displayName ||
                                                                         user.username}
                                                                 </p>
-                                                                {user.displayName && (
-                                                                    <p className='text-sm text-gray-500 dark:text-zinc-400 truncate'>
-                                                                        @
-                                                                        {
-                                                                            user.username
-                                                                        }
-                                                                    </p>
-                                                                )}
                                                             </div>
                                                         </Link>
                                                     ))}
@@ -218,7 +238,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     )}
 
                                     {/* Post Results */}
-                                    {searchResults.length > 0 && (
+                                    {showPosts && searchResults.length > 0 && (
                                         <div>
                                             <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
                                                 Posts
@@ -241,6 +261,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                                                         ?.avatar
                                                                 )}
                                                                 alt={
+                                                                    post.sender
+                                                                        ?.displayName ||
                                                                     post.sender
                                                                         ?.username ||
                                                                     'User'
@@ -273,44 +295,54 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                                     )}
 
                                     {/* Event Results */}
-                                    {/* {eventSearchResults.length > 0 && (
+                                    {showEvents && eventResults.length > 0 && (
                                         <div>
                                             <h3 className='text-sm font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3'>
                                                 Events
                                             </h3>
                                             <div className='space-y-2'>
-                                                {eventSearchResults.slice(0, 3).map((event) => (
-                                                    <Link
-                                                        key={event.id}
-                                                        to={`/event/${event.id}`}
-                                                        onClick={handleResultClick}
-                                                        className='block p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
-                                                    >
-                                                        <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
-                                                            {event.title}
-                                                        </p>
-                                                        <div className='flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap'>
-                                                            {event.location?.name && (
-                                                                <span className='truncate'>📍 {event.location.name}</span>
-                                                            )}
-                                                            {event.startTime && (
-                                                                <>
-                                                                    {event.location?.name && <span>•</span>}
-                                                                    <span>{formatDate(event.startTime)}</span>
-                                                                </>
-                                                            )}
-                                                            {event.endTime && (
-                                                                <>
-                                                                    <span>→</span>
-                                                                    <span>{formatDate(event.endTime)}</span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                ))}
+                                                {eventResults
+                                                    .slice(0, 3)
+                                                    .map((event) => {
+                                                        const start = toZonedTime(new Date(event.startTime), tz);
+                                                        const end = event.endTime ? toZonedTime(new Date(event.endTime), tz) : null;
+                                                        return (
+                                                            <Link
+                                                                key={event.id}
+                                                                to={`/event/${event.id}`}
+                                                                onClick={handleResultClick}
+                                                                className='flex items-start gap-3 p-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors'
+                                                            >
+                                                                <div className='w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0'>
+                                                                    <span className='text-brand-600 dark:text-brand-400 text-sm font-bold'>
+                                                                        {format(start, 'd')}
+                                                                    </span>
+                                                                </div>
+                                                                <div className='flex-1 min-w-0'>
+                                                                    <p className='font-medium text-gray-900 dark:text-zinc-100 truncate'>
+                                                                        {event.title}
+                                                                    </p>
+                                                                    {event.description && (
+                                                                        <p className='text-sm text-gray-500 dark:text-zinc-400 line-clamp-2 mt-0.5'>
+                                                                            {event.description}
+                                                                        </p>
+                                                                    )}
+                                                                    <p className='text-xs text-gray-400 dark:text-zinc-500 mt-1'>
+                                                                        {format(start, 'MMM d, yyyy h:mm a')}
+                                                                        {end && ` – ${format(end, 'MMM d, yyyy h:mm a')}`}
+                                                                    </p>
+                                                                    {event.location?.name && (
+                                                                        <p className='text-xs text-gray-400 dark:text-zinc-500'>
+                                                                            {event.location.name}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </Link>
+                                                        );
+                                                    })}
                                             </div>
                                         </div>
-                                    )} */}
+                                    )}
                                 </div>
                             )}
                         </div>

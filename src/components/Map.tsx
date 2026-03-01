@@ -15,6 +15,7 @@ import {
     MapPinIcon
 } from '@heroicons/react/16/solid';
 import { useAuth } from '@/contexts/useAuth';
+import { useUpdateUser } from '@/shared/api/mutations/users';
 
 const SearchInput: React.FC<{
     value: string;
@@ -122,7 +123,7 @@ const circleOptions = {
     strokeWeight: 2,
     strokeColor: '#2563eb',
     fillColor: '#3b82f6',
-    fillOpacity: 0.12,
+    fillOpacity: 0,
     clickable: false,
     draggable: false,
     editable: false,
@@ -212,11 +213,12 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     onLocationChange,
     onLabelChange,
     shouldGetYourLocation = false,
-    approximateRadiusMeters = 3200,
+    approximateRadiusMeters = 300,
     shouldSavedLocationButton = false
 }) => {
     const { location: userLocation } = useUserLocation();
     const { user, token } = useAuth();
+    const updateUserMutation = useUpdateUser('me');
     const fallback =
         coordinates ?? (shouldGetYourLocation ? userLocation : null);
     const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(
@@ -227,12 +229,36 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [isSearching, setIsSearching] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [saveAsDefault, setSaveAsDefault] = useState(false);
 
     const hasInitialExplicitLocation = !!coordinates || !!regionID;
     const [isCleared, setIsCleared] = useState(!hasInitialExplicitLocation);
 
     const [selectedSuggestionId, setSelectedSuggestionId] =
         useState<string>('');
+
+    const saveLocationAsDefault = async (locationData: {
+        latitude: number;
+        longitude: number;
+        regionID: string;
+        name?: string;
+    }) => {
+        if (!saveAsDefault || !user) return;
+
+        try {
+            await updateUserMutation.mutateAsync({
+                location: {
+                    latitude: locationData.latitude,
+                    longitude: locationData.longitude,
+                    regionID: locationData.regionID,
+                    name: locationData.name || ''
+                }
+            } as any);
+        }
+        catch (error) {
+            console.error('Failed to save default location:', error);
+        }
+    };
 
     const selectPlaceById = async (
         placeId: string,
@@ -296,6 +322,14 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                     name: label,
                                     businessName: business || undefined,
                                     changed: coords.changed
+                                });
+
+                                // Save as default if checkbox is checked
+                                saveLocationAsDefault({
+                                    latitude: coords.latitude,
+                                    longitude: coords.longitude,
+                                    regionID: det.place_id ?? placeId,
+                                    name: label
                                 });
 
                                 setTimeout(
@@ -393,6 +427,14 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                 name: label,
                 businessName: business || undefined,
                 changed: coords.changed
+            });
+
+            // Save as default if checkbox is checked
+            saveLocationAsDefault({
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                regionID: placeId,
+                name: label
             });
 
             setTimeout(() => (suppressSearchRef.current = false), 500);
@@ -872,6 +914,17 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             Use Saved Location
                         </button>
                     )}
+                    {shouldSavedLocationButton && !hasSavedLocation && (
+                        <label className='mt-2 flex items-center gap-2 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md cursor-pointer dark:bg-gray-900 dark:text-white dark:border-gray-600'>
+                            <input
+                                type='checkbox'
+                                checked={saveAsDefault}
+                                onChange={(e) => setSaveAsDefault(e.target.checked)}
+                                className='w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:focus:ring-indigo-600'
+                            />
+                            <span>Save as default address</span>
+                        </label>
+                    )}
                     {suggestions.length > 0 && (
                         <div className='absolute top-full left-0 right-0 z-[1000]'>
                             <Dropdown
@@ -1022,6 +1075,14 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                         name: label,
                                         businessName: business || undefined,
                                         changed: true
+                                    });
+
+                                    // Save as default if checkbox is checked
+                                    saveLocationAsDefault({
+                                        latitude: coords.latitude,
+                                        longitude: coords.longitude,
+                                        regionID: placeID,
+                                        name: label
                                     });
 
                                     setTimeout(() => {

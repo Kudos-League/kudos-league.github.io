@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { MessageDTO } from '@/shared/api/types';
 import TextWithLinks from '../common/TextWithLinks';
+import RichEmbeds from '../common/RichEmbeds';
 import UserCard from '../users/UserCard';
 import {
     ArrowUturnLeftIcon,
     TrashIcon,
     PencilIcon,
-    XMarkIcon
+    ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
-import Button from '../common/Button';
 
 interface Props {
     message: MessageDTO;
@@ -21,17 +21,8 @@ interface Props {
     onEdit?: (m: MessageDTO) => void;
     canEdit?: boolean;
     isEditing?: boolean;
-    editContent?: string;
-    onEditChange?: (content: string) => void;
-    onEditSave?: (messageId: number) => void;
-    onEditCancel?: () => void;
     showSenderName?: boolean;
 }
-
-// Helper to get display name (prioritize displayName, fallback to name or username)
-const getDisplayName = (user: any) => {
-    return user?.displayName || user?.name || user?.username || 'Unknown';
-};
 
 const parseDate = (date: string | Date | null | undefined): Date | null => {
     if (!date) return null;
@@ -71,13 +62,10 @@ const MessageBubble: React.FC<Props> = ({
     onEdit,
     canEdit = false,
     isEditing = false,
-    editContent = '',
-    onEditChange,
-    onEditSave,
-    onEditCancel,
     showSenderName = false
 }) => {
     const [showActions, setShowActions] = useState(false);
+    const [copied, setCopied] = useState(false);
     const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
     const touchStartPos = useRef<{ x: number; y: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -148,9 +136,17 @@ const MessageBubble: React.FC<Props> = ({
         e: React.MouseEvent | React.TouchEvent,
         action: () => void
     ) => {
-        e.stopPropagation(); // Prevent click from bubbling up
+        e.stopPropagation();
         action();
         setShowActions(false);
+    };
+
+    const handleCopy = () => {
+        if (message.content) {
+            navigator.clipboard.writeText(message.content);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }
     };
 
     return (
@@ -165,22 +161,6 @@ const MessageBubble: React.FC<Props> = ({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Cancel button when editing */}
-                {isOwn && isEditing && (
-                    <div className='absolute -left-14 bottom-0 opacity-100 transition-opacity flex gap-1 bg-amber-50/95 dark:bg-amber-900/30 rounded px-1.5 py-1 shadow-lg border border-amber-400 dark:border-amber-500 z-10 backdrop-blur-sm'>
-                        <button
-                            type='button'
-                            title='Cancel edit (Esc)'
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEditCancel?.();
-                            }}
-                            className='p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-800/30'
-                        >
-                            <XMarkIcon className='w-4 h-4 text-amber-600 dark:text-amber-400' />
-                        </button>
-                    </div>
-                )}
 
                 {/* Action buttons - positioned absolutely at bottom for own messages */}
                 {isOwn && !isEditing && (
@@ -223,23 +203,37 @@ const MessageBubble: React.FC<Props> = ({
                                 />
                             </button>
                         )}
-                        {/* {canDelete && ( //HACK: for some unexplainable reason this doesn't work on mobile so I'm deleting it atm*/}
-                        <button
-                            type='button'
-                            title={
-                                message.deletedAt ? 'Message deleted' : 'Delete'
-                            }
-                            onClick={(e) =>
-                                handleActionClick(e, () => onDelete?.(message))
-                            }
-                            disabled={Boolean(message.deletedAt)}
-                            className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
-                        >
-                            <TrashIcon
-                                className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`}
-                            />
-                        </button>
-                        {/* )} */}
+                        {!message.deletedAt && (
+                            <button
+                                type='button'
+                                title={copied ? 'Copied!' : 'Copy'}
+                                onClick={(e) =>
+                                    handleActionClick(e, handleCopy)
+                                }
+                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                            >
+                                <ClipboardDocumentIcon
+                                    className={`w-4 h-4 ${copied ? 'text-green-500' : 'text-zinc-700 dark:text-zinc-200'}`}
+                                />
+                            </button>
+                        )}
+                        {canDelete && (
+                            <button
+                                type='button'
+                                title={
+                                    message.deletedAt ? 'Message deleted' : 'Delete'
+                                }
+                                onClick={(e) =>
+                                    handleActionClick(e, () => onDelete?.(message))
+                                }
+                                disabled={Boolean(message.deletedAt)}
+                                className={`p-1 rounded ${message.deletedAt ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                            >
+                                <TrashIcon
+                                    className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`}
+                                />
+                            </button>
+                        )}
                     </div>
                 )}
                 {/* Show sender name for non-own messages (WhatsApp style) */}
@@ -307,7 +301,7 @@ const MessageBubble: React.FC<Props> = ({
                 )}
 
                 <div
-                    className={`relative px-4 py-3 ${
+                    className={`relative px-4 py-3 select-none ${
                         replyTo && !isEditing ? 'rounded-b-xl' : 'rounded-xl'
                     } ${
                         isOwn ? 'rounded-br-none' : 'rounded-bl-none'
@@ -315,10 +309,6 @@ const MessageBubble: React.FC<Props> = ({
                         isOwn
                             ? 'bg-brand-600 dark:bg-brand-400 text-white'
                             : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
-                    } ${
-                        isEditing
-                            ? 'ring-2 ring-amber-400 dark:ring-amber-500'
-                            : ''
                     }`}
                 >
                     {message.deletedAt ? (
@@ -327,29 +317,35 @@ const MessageBubble: React.FC<Props> = ({
                         </div>
                     ) : (
                         <>
-                            {isEditing && (
-                                <div className='text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1'>
-                                    Editing this message...
-                                </div>
-                            )}
                             {isMessageEdited(
                                 message.createdAt,
                                 message.updatedAt
                             ) ? (
                                     <>
-                                        <TextWithLinks className='italic opacity-90'>
+                                        <TextWithLinks className='italic opacity-90'
+                                            linkClassName={isOwn ? 'text-blue-200 hover:text-blue-100 underline' : 'text-sky-500 hover:text-sky-400 underline dark:text-sky-400 dark:hover:text-sky-300'}>
                                             {`[edited] `}
                                         </TextWithLinks>
-                                        <TextWithLinks>
+                                        <TextWithLinks
+                                            linkClassName={isOwn ? 'text-blue-200 hover:text-blue-100 underline' : 'text-sky-500 hover:text-sky-400 underline dark:text-sky-400 dark:hover:text-sky-300'}>
                                             {message.content}
                                         </TextWithLinks>
                                     </>
                                 ) : (
-                                    <TextWithLinks>{message.content}</TextWithLinks>
+                                    <TextWithLinks
+                                        linkClassName={isOwn ? 'text-blue-200 hover:text-blue-100 underline' : 'text-sky-500 hover:text-sky-400 underline dark:text-sky-400 dark:hover:text-sky-300'}>
+                                        {message.content}
+                                    </TextWithLinks>
                                 )}
                         </>
                     )}
                 </div>
+
+                {!message.deletedAt && !isEditing && (
+                    <div className={`mt-2 ${isOwn ? 'mr-1' : 'ml-1'}`}>
+                        <RichEmbeds text={message.content} />
+                    </div>
+                )}
 
                 {/* Action buttons - positioned absolutely at bottom for other users' messages */}
                 {!isOwn && !isEditing && (
@@ -389,6 +385,20 @@ const MessageBubble: React.FC<Props> = ({
                             >
                                 <PencilIcon
                                     className={`w-4 h-4 ${message.deletedAt ? 'text-zinc-400 dark:text-brand-200' : 'text-zinc-700 dark:text-zinc-200'}`}
+                                />
+                            </button>
+                        )}
+                        {!message.deletedAt && (
+                            <button
+                                type='button'
+                                title={copied ? 'Copied!' : 'Copy'}
+                                onClick={(e) =>
+                                    handleActionClick(e, handleCopy)
+                                }
+                                className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                            >
+                                <ClipboardDocumentIcon
+                                    className={`w-4 h-4 ${copied ? 'text-green-500' : 'text-zinc-700 dark:text-zinc-200'}`}
                                 />
                             </button>
                         )}

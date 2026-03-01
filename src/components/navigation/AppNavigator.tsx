@@ -73,9 +73,14 @@ function AppNavigator() {
 
                     <Route
                         path='/post/:id'
+                        element={<Post />}
+                    />
+
+                    <Route
+                        path='/post/:id/edit'
                         element={
                             <RequireAuth>
-                                <Post />
+                                <EditPost />
                             </RequireAuth>
                         }
                     />
@@ -107,11 +112,7 @@ function AppNavigator() {
                     />
                     <Route
                         path='/event/:id'
-                        element={
-                            <RequireAuth>
-                                <EventDetails />
-                            </RequireAuth>
-                        }
+                        element={<EventDetails />}
                     />
                     <Route
                         path={routes.events}

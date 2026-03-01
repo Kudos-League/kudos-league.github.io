@@ -39,18 +39,24 @@ export function usePostsQuery(filters?: {
     });
 }
 
-export function useSearchPostsQuery(query: string) {
+export function useSearchPostsQuery(query: string, limit = 20) {
+    const normalizedQuery = query.toLowerCase();
     const filters = {
         includeTags: true,
         includeSender: true,
         includeImages: true
     };
-    return useQuery<PostDTO[]>({
-        queryKey: qk.search(query, filters),
-        queryFn: () =>
+    return useInfiniteQuery<PostDTO[], Error>({
+        queryKey: [...qk.search(normalizedQuery, filters), 'infinite'],
+        queryFn: ({ pageParam = 0 }) =>
             apiGet<PostDTO[]>('/posts/search', {
-                params: { query, ...filters }
+                params: { query: normalizedQuery, ...filters, limit, offset: pageParam }
             }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+            if (lastPage.length < limit) return undefined;
+            return (lastPageParam as number) + limit;
+        },
         enabled: query.length >= 2,
         staleTime: 0,
         gcTime: 60_000

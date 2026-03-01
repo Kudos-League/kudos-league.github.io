@@ -28,8 +28,11 @@ export default function SearchDebugSection() {
         return () => clearTimeout(timer);
     }, [userQuery]);
 
-    const { data: postResults = [] } = useSearchPostsQuery(debouncedPostQuery);
-    const { data: userResults = [] } = useSearchUsersQuery(debouncedUserQuery);
+    const { data: postData } = useSearchPostsQuery(debouncedPostQuery);
+    const { data: userData } = useSearchUsersQuery(debouncedUserQuery);
+    
+    const postResults = postData?.pages?.flat() ?? [];
+    const userResults = userData ?? [];
 
     const handleSelectPost = (post: PostDTO) => {
         setSelectedItem({
