@@ -65,8 +65,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [imageError, setImageError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
-    const [placeholder, setPlaceholder] = React.useState<string>('1');
-
     React.useEffect(() => {
         form.setValue('type', postType);
     }, [postType, form]);
@@ -129,30 +127,18 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
     const createImagePreview = (f: File) => URL.createObjectURL(f);
 
-    const validateQuantity = (value: number) => {
-        if (!value || value < 1) return 'Quantity must be at least 1';
-        if (value > 999) return 'Quantity cannot exceed 999';
-        if (!Number.isInteger(value)) return 'Quantity must be a whole number';
-        return true;
-    };
-
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         if (!isLoggedIn) return setShowLoginForm(true);
 
         const fileError = validateFiles(selectedImages);
         if (fileError) return setServerError(fileError);
 
-        const quantityValidation = validateQuantity(data.itemsLimit);
-        if (quantityValidation !== true) {
-            return setServerError(quantityValidation);
-        }
-
         // Ensure all values are properly typed before sending to backend
         const payload: CreatePostDTO = {
             title: String(data.title || '').trim(),
             body: String(data.body || '').trim(),
             type: postType as 'gift' | 'request',
-            itemsLimit: Number(data.itemsLimit),
+            itemsLimit: 1,
             tags: data.tags.map((tag) => String(tag).trim()),
             categoryID: data.categoryID ? Number(data.categoryID) : null,
             files: selectedImages,
@@ -304,51 +290,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             </FormField>
 
             <FormField
-                name='itemsLimit'
-                label='Number of Items *'
-                helper={`How many items are you ${postType === 'gift' ? 'giving away' : 'requesting'}? 0 for unlimited. 1 in case of doubt or not applicable.`}
-            >
-                <Input
-                    name='itemsLimit'
-                    label=''
-                    form={form}
-                    placeholder={placeholder}
-                    htmlInputType='number'
-                    valueTransformer={(v) => (v === '' ? '' : Number(v))}
-                    onValueChange={(val) => {
-                        if (val !== '') {
-                            Number(val) < 0
-                                ? form.setValue('itemsLimit', 0)
-                                : form.setValue('itemsLimit', Number(val));
-                        }
-                        else {
-                            setPlaceholder('');
-                        }
-                    }}
-                    registerOptions={{
-                        required: 'Quantity is required',
-                        min: {
-                            value: 1,
-                            message: 'Quantity must be at least 1'
-                        },
-                        max: {
-                            value: 999,
-                            message: 'Quantity cannot exceed 999'
-                        },
-                        validate: (v: any) => {
-                            const num = Number(v);
-                            if (!num || num < 1)
-                                return 'Quantity must be at least 1';
-                            if (num > 999) return 'Quantity cannot exceed 999';
-                            if (!Number.isInteger(num))
-                                return 'Quantity must be a whole number';
-                            return true;
-                        }
-                    }}
-                />
-            </FormField>
-
-            <FormField
                 name='categoryID'
                 label='Category'
                 helper='Optional - select a category to help others find your post'
@@ -386,6 +327,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 />
             </FormField>
 
+            <TagInput
+                initialTags={form.watch('tags')}
+                onTagsChange={handleTagsChange}
+            />
+
             <div className='w-full overflow-hidden'>
                 <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
                     Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
@@ -398,6 +344,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}
                 />
+                <p className='text-xs text-gray-500 dark:text-gray-400 mb-2'>
+                    Each image must be under {MAX_FILE_SIZE_MB}MB.
+                </p>
                 {imageError && (
                     <p className='text-sm text-red-600 dark:text-red-400 mb-3'>{imageError}</p>
                 )}
@@ -428,11 +377,6 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     </div>
                 )}
             </div>
-
-            <TagInput
-                initialTags={form.watch('tags')}
-                onTagsChange={handleTagsChange}
-            />
 
             <div>
                 <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>

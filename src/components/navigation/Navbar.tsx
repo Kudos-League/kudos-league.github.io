@@ -148,7 +148,7 @@ function UserMenu({
     }, [open]);
 
     return (
-        <div className='relative' ref={menuRef}>
+        <div className={clsx('relative', open && 'z-[60]')} ref={menuRef}>
             <button
                 id='profile-button'
                 onClick={() => setOpen(!open)}

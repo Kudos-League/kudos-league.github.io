@@ -93,11 +93,6 @@ function renderMetadata(item: KudosHistoryDTO) {
                         {String(metadata.reason)}
                     </div>
                 ) : null}
-                {metadata.status ? (
-                    <div className='text-xs text-gray-600 capitalize'>
-                        Status: {String(metadata.status)}
-                    </div>
-                ) : null}
             </>
         );
     }
@@ -108,11 +103,6 @@ function renderMetadata(item: KudosHistoryDTO) {
 
         return (
             <>
-                {metadata.status ? (
-                    <div className='text-xs text-gray-600 capitalize'>
-                        Status: {String(metadata.status)}
-                    </div>
-                ) : null}
                 {typeof item.total === 'number' ? (
                     <div className='text-sm'>Final kudos: {item.total}</div>
                 ) : null}

@@ -377,7 +377,7 @@ export default function Feed() {
                 </div>
 
                 {/* Desktop Sidebar */}
-                <div className='hidden lg:block w-80 shrink-0 sticky top-4'>
+                <div className='hidden lg:block w-80 shrink-0 sticky top-4 xl:ml-6 lg:ml-6'>
                     {user ? <Leaderboard compact /> : <AboutCTA />}
                 </div>
             </div>
