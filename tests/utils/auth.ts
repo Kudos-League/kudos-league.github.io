@@ -1,6 +1,9 @@
 import type { Page, Route, Request } from '@playwright/test';
 
-const ORIGIN = 'http://localhost:3000';
+const ORIGIN =
+    process.env.PLAYWRIGHT_BASE_URL ??
+    process.env.PLAYWRIGHT_WEB_BASE_URL ??
+    'http://localhost:3000';
 export const CORS = {
     'access-control-allow-origin': ORIGIN,
     'access-control-allow-credentials': 'true',

@@ -51,6 +51,7 @@
         "analyze": "GENERATE_SOURCEMAP=true CRA_STATS=true yarn build && webpack-bundle-analyzer build/stats.json",
         "format": "prettier --write . && eslint . --fix",
         "lint": "eslint .",
+        "prepare": "husky",
         "postinstall": "patch-package",
         "generate:components": "node scripts/generateComponentRegistry.mjs",
         "start": "craco start",
@@ -59,6 +60,12 @@
         "build:prod": "NODE_ENV=production dotenv -e .env.live -- yarn build",
         "test": "craco test",
         "test:e2e": "playwright test",
+        "test:e2e:smoke": "playwright test tests/core-smoke.spec.ts",
+        "test:e2e:auth": "playwright test --project=chromium-auth",
+        "test:e2e:auth:headed": "playwright test --project=chromium-auth --headed",
+        "test:e2e:headed": "playwright test --headed",
+        "test:e2e:ui": "playwright test --ui",
+        "test:e2e:install": "playwright install chromium",
         "eject": "react-scripts eject"
     },
     "eslintConfig": {
@@ -96,6 +103,7 @@
         "eslint-plugin-prettier": "^5.4.0",
         "eslint-plugin-react": "^7.37.5",
         "globals": "^16.1.0",
+        "husky": "^9.1.7",
         "patch-package": "^8.0.0",
         "postcss": "^8.5.3",
         "postinstall-postinstall": "^2.1.0",
