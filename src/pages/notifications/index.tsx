@@ -600,31 +600,35 @@ function describeNotification(
         return { title, description };
     }
     case NotificationType.HANDSHAKE_COMPLETED: {
-        const user = getUserFromNotificationOrHandshake(
-            notification,
-            handshake,
-            userID
-        );
-        const username = getNotificationDisplayName(user, userID);
-        const usernameCapitalized = getNotificationDisplayName(
-            user,
-            userID,
-            true
-        );
-
         let title = 'Help completed';
         let description = showingHandshakeCard
             ? 'The help exchange has been completed successfully.'
             : 'The help exchange has been completed successfully.';
 
         if (userID && handshake) {
-            // Determine if user was receiving or giving help
+            // Determine current user's role in the handshake
             const postType = handshake.post?.type;
+            const isSender = handshake.senderID === userID;
             const isReceiver =
                     handshake.receiverID === userID ||
                     handshake.recipientID === userID;
-            const isSender = handshake.senderID === userID;
 
+            // Pick the correct "other user" based on current user's role:
+            // - handshake sender's counterpart is the receiver (= post creator)
+            // - handshake receiver's counterpart is the sender
+            const otherUser = isSender
+                ? (handshake.receiver ?? handshake.post?.sender)
+                : handshake.sender;
+
+            const username = getNotificationDisplayName(otherUser, userID);
+            const usernameCapitalized = getNotificationDisplayName(
+                otherUser,
+                userID,
+                true
+            );
+
+            // For request posts: receiver (post creator) receives help, sender gives it
+            // For gift posts: sender (handshake initiator) receives the gift, receiver gives it
             const userWasReceivingHelp =
                     (postType === 'request' && isReceiver) ||
                     (postType === 'gift' && isSender);
