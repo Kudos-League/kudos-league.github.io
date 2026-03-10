@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
-import { useCachedHandshake, useCachedUser } from '@/contexts/DataCacheContext';
+import { useCachedHandshake, useCachedPost, useCachedUser } from '@/contexts/DataCacheContext';
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -116,6 +116,14 @@ function HandshakeNotificationPreview({
                         <div className='text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline truncate'>
                             &quot;{postTitle}&quot;
                         </div>
+                        {(() => {
+                            const creator = handshake.post?.sender?.displayName || handshake.post?.sender?.username;
+                            return creator ? (
+                                <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                    by {creator}
+                                </div>
+                            ) : null;
+                        })()}
                         <div className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
                             Status:{' '}
                             <span className='font-semibold capitalize'>
@@ -125,6 +133,53 @@ function HandshakeNotificationPreview({
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function PostReplyBellItem({
+    n,
+    formatTimeAgo
+}: {
+    n: any;
+    formatTimeAgo: (n: any) => string;
+}) {
+    const navigate = useNavigate();
+    const postID = 'postID' in n ? n.postID : undefined;
+    const { post } = useCachedPost(postID || 0);
+
+    return (
+        <div>
+            <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                <div className='text-sm md:text-sm font-medium pr-12'>
+                    <UserCard user={n.message?.author} triggerVariant='name' />{' '}
+                    replied to{post ? (
+                        <>
+                            {' '}
+                            <span
+                                className='font-semibold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer'
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/post/${post.id}`);
+                                }}
+                            >
+                                &quot;{post.title}&quot;
+                            </span>
+                            {(post.sender?.displayName || post.sender?.username) && (
+                                <span className='font-normal text-zinc-500 dark:text-zinc-400'>
+                                    {' '}by {post.sender.displayName || post.sender.username}
+                                </span>
+                            )}
+                        </>
+                    ) : ' your post'}
+                </div>
+                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                    {formatTimeAgo(n)}
+                </div>
+            </div>
+            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                {n.message?.content}
+            </div>
         </div>
     );
 }
@@ -446,26 +501,10 @@ export default function NotificationsBell() {
                                         onClick={() => go(n)}
                                     >
                                         {n.type === 'post-reply' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium pr-12'>
-                                                        <UserCard
-                                                            user={
-                                                                n.message
-                                                                    ?.author
-                                                            }
-                                                            triggerVariant='name'
-                                                        />{' '}
-                                                        replied to your post
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
-                                                    {n.message?.content}
-                                                </div>
-                                            </div>
+                                            <PostReplyBellItem
+                                                n={n}
+                                                formatTimeAgo={formatTimeAgo}
+                                            />
                                         ) : n.type === 'past-gift' ? (
                                             <div>
                                                 <div className='flex items-start justify-between gap-2 mb-1'>

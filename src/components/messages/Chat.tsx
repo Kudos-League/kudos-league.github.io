@@ -533,6 +533,8 @@ export default function Chat({ channelType, initialUserId }: Props) {
                                             : undefined
                                     }
                                     isMobile={true}
+                                    onDelete={(m) => handleDeleteMessage(m.id)}
+                                    allowDelete={true}
                                     allowEdit={true}
                                     onEdit={handleEditMessage}
                                     isLoading={isLoadingMessages}

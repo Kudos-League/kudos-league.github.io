@@ -1672,17 +1672,24 @@ export default function PostDetails(props: Props) {
                                 </svg>
                             </div>
                             <h2 className='text-2xl font-bold mb-3'>
-                                Help request/offer Created!
+                                {postDetails.type === 'gift'
+                                    ? 'Help Request Created!'
+                                    : 'Help Offer Created!'}
                             </h2>
                             <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                Your help request/offer has been successfully
-                                created. The post owner has been notified.
+                                {postDetails.type === 'gift'
+                                    ? 'Your help request has been successfully created.'
+                                    : 'Your help offer has been successfully created.'}{' '}
+                                The post owner has been notified.
                             </p>
                             <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
                                 <p className='text-xs text-blue-800 dark:text-blue-200'>
                                     💡 You can message the post owner now to
-                                    coordinate details, or do it later from your
-                                    handshakes page.
+                                    coordinate details, or do it later from your{' '}
+                                    {postDetails.type === 'gift'
+                                        ? 'requests'
+                                        : 'offers'}{' '}
+                                    page.
                                 </p>
                             </div>
                         </div>

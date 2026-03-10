@@ -169,6 +169,7 @@ function HandshakeNotificationByPost({
                 showPostDetails={true}
                 hideCardBorder={true}
                 onInteraction={onInteraction}
+                notificationType={notificationType}
             />
         </div>
     );
@@ -182,11 +183,71 @@ function HandshakePostReference({ postID }: { postID: number }) {
     }
 
     const postType = post.type === 'request' ? 'request' : 'gift';
+    const creator = post.sender?.displayName || post.sender?.username;
 
     return (
         <p className='text-xs text-zinc-600 dark:text-zinc-400 mt-1 italic'>
-            On your {postType}: &quot;{post.title}&quot;
+            {postType}: &quot;{post.title}&quot;{creator ? <> by <span className='font-medium not-italic'>{creator}</span></> : null}
         </p>
+    );
+}
+
+function PostReplyNotificationContent({
+    notification,
+    currentUserID,
+    createdAt
+}: {
+    notification: NotificationRecord & { type: typeof NotificationType.POST_REPLY; postID: number };
+    currentUserID?: number;
+    createdAt: string;
+}) {
+    const { post } = useCachedPost(notification.postID);
+    const author = notification.message?.author;
+    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const hasUsername = author?.username || author?.displayName;
+
+    return (
+        <div className='flex items-start gap-3'>
+            {isCurrentUser ? (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        You
+                    </span>
+                </div>
+            ) : hasUsername ? (
+                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                </div>
+            ) : (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        Someone
+                    </span>
+                </div>
+            )}
+            <div className='flex-1 min-w-0'>
+                <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                    replied to{post ? (
+                        <>
+                            {' '}<span className='font-medium text-zinc-800 dark:text-zinc-200 italic'>&quot;{post.title}&quot;</span>
+                            {(post.sender?.displayName || post.sender?.username) && (
+                                <span className='text-zinc-500 dark:text-zinc-500'>{' '}by {post.sender.displayName || post.sender.username}</span>
+                            )}
+                        </>
+                    ) : ' your post'}
+                </p>
+                {notification.message?.content && (
+                    <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                        {notification.message.content}
+                    </p>
+                )}
+                {createdAt && (
+                    <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                        {createdAt}
+                    </time>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -211,6 +272,7 @@ function NotificationContentWrapper({
     const isHandshakeNotification =
         notification.type === NotificationType.HANDSHAKE_CREATED ||
         notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+        notification.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
         notification.type === NotificationType.HANDSHAKE_COMPLETED ||
         notification.type === NotificationType.HANDSHAKE_CANCELLED ||
         notification.type === NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
@@ -363,6 +425,7 @@ function HandshakeNotificationCard({
                 showPostDetails={true}
                 hideCardBorder={true}
                 onInteraction={onInteraction}
+                notificationType={notificationType}
             />
         </div>
     );
@@ -391,8 +454,8 @@ const getUserFromNotificationOrHandshake = (
     if ('user' in notification) user = (notification as any).user;
     else if ('sender' in notification) user = (notification as any).sender;
 
-    // If we got a user with a username, use it
-    if (user?.username) {
+    // If we got a user with a username and they are NOT the current user, use it
+    if (user?.username && !(currentUserID && user.id === currentUserID)) {
         return user;
     }
 
@@ -660,6 +723,32 @@ function describeNotification(
         return {
             title: `${username} joined your event`,
             description: 'Click to view event details.'
+        };
+    }
+    case NotificationType.EVENT_INVITE: {
+        const user = 'user' in notification ? notification.user : null;
+        const username = getNotificationDisplayName(user, userID, true);
+        return {
+            title: `${username} invited you to an event`,
+            description: 'Click to view event details.'
+        };
+    }
+    case NotificationType.HANDSHAKE_UNDO_ACCEPTED: {
+        const user = getUserFromNotificationOrHandshake(
+            notification,
+            handshake,
+            userID
+        );
+        const usernameCapitalized = getNotificationDisplayName(
+            user,
+            userID,
+            true
+        );
+        return {
+            title: 'Help offer acceptance withdrawn',
+            description: showingHandshakeCard
+                ? `${usernameCapitalized} withdrew their acceptance of the help offer.`
+                : `${usernameCapitalized} withdrew their acceptance.`
         };
     }
     default:
@@ -1062,6 +1151,7 @@ export default function NotificationsPage() {
             else if (
                 notification.type === NotificationType.HANDSHAKE_CREATED ||
                 notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+                notification.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
                 notification.type === NotificationType.HANDSHAKE_COMPLETED ||
                 notification.type === NotificationType.HANDSHAKE_CANCELLED ||
                 notification.type ===
@@ -1071,7 +1161,8 @@ export default function NotificationsPage() {
                 navigate(`/post/${notification.postID}`);
             }
             else if (
-                notification.type === NotificationType.EVENT_USER_JOINED
+                notification.type === NotificationType.EVENT_USER_JOINED ||
+                notification.type === NotificationType.EVENT_INVITE
             ) {
                 navigate(`/event/${notification.eventID}`);
             }
@@ -1114,50 +1205,12 @@ export default function NotificationsPage() {
         const createdAt = formatCreatedAt(notification.createdAt);
 
         if (notification.type === NotificationType.POST_REPLY) {
-            const author = notification.message?.author;
-            const isCurrentUser = author && user?.id && author.id === user.id;
-            const hasUsername = author?.username || author?.displayName;
             return (
-                <div className='flex items-start gap-3'>
-                    {isCurrentUser ? (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                You
-                            </span>
-                        </div>
-                    ) : hasUsername ? (
-                        <div
-                            onClick={(e) => e.stopPropagation()}
-                            className='flex-shrink-0'
-                        >
-                            <DelayedUserCard
-                                user={author}
-                                triggerVariant='avatar-name'
-                            />
-                        </div>
-                    ) : (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                Someone
-                            </span>
-                        </div>
-                    )}
-                    <div className='flex-1 min-w-0'>
-                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                            Someone replied to your post
-                        </p>
-                        {notification.message?.content && (
-                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
-                                {notification.message.content}
-                            </p>
-                        )}
-                        {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
-                                {createdAt}
-                            </time>
-                        )}
-                    </div>
-                </div>
+                <PostReplyNotificationContent
+                    notification={notification as any}
+                    currentUserID={user?.id}
+                    createdAt={createdAt}
+                />
             );
         }
 
@@ -1213,6 +1266,7 @@ export default function NotificationsPage() {
         if (
             notification.type === NotificationType.HANDSHAKE_CREATED ||
             notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
+            notification.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
             notification.type === NotificationType.HANDSHAKE_COMPLETED ||
             notification.type === NotificationType.HANDSHAKE_CANCELLED ||
             notification.type ===
@@ -1350,6 +1404,50 @@ export default function NotificationsPage() {
                             ) : (
                                 <p className='text-sm text-zinc-700 dark:text-zinc-300'>
                                     Someone joined your event
+                                </p>
+                            )}
+                            <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 italic'>
+                                Click to view event details
+                            </p>
+                        </div>
+                        {createdAt && (
+                            <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
+                                {createdAt}
+                            </time>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Event invite notifications
+        if (notification.type === NotificationType.EVENT_INVITE) {
+            const eventUser =
+                'user' in notification ? notification.user : undefined;
+            const isCurrentUser =
+                eventUser && user?.id && eventUser.id === user.id;
+            const hasUsername = eventUser?.username || eventUser?.displayName;
+            return (
+                <div className='flex flex-col gap-3'>
+                    <div className='flex items-start justify-between gap-3'>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2'>
+                                Event invitation
+                            </p>
+                            {isCurrentUser ? (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300'>
+                                    You were invited to an event
+                                </p>
+                            ) : hasUsername ? (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <DelayedUserCard
+                                        user={eventUser}
+                                        triggerVariant='avatar-name'
+                                    />
+                                </div>
+                            ) : (
+                                <p className='text-sm text-zinc-700 dark:text-zinc-300'>
+                                    Someone invited you to an event
                                 </p>
                             )}
                             <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 italic'>

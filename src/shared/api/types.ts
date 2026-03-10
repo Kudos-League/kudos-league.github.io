@@ -393,7 +393,8 @@ export const NotificationType = {
     HANDSHAKE_CANCELLED: 'handshake-cancelled',
     POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
     POST_REOPENED: 'post-reopened',
-    EVENT_USER_JOINED: 'event-user-joined'
+    EVENT_USER_JOINED: 'event-user-joined',
+    EVENT_INVITE: 'event-invite'
 } as const;
 
 export type NotificationTypeKeys =
@@ -424,11 +425,19 @@ export type EventUserJoinedNotification = {
     user?: UserDTO;
 };
 
+export type EventInviteNotification = {
+    type: typeof NotificationType.EVENT_INVITE;
+    eventID: number;
+    userID: number;
+    user?: UserDTO;
+};
+
 export type NotificationPayload =
     | DirectMessageNotification
     | PostReplyNotification
     | EventReplyNotification
     | EventUserJoinedNotification
+    | EventInviteNotification
     | {
           type: typeof NotificationType.POST_AUTO_CLOSE;
           postID: number;

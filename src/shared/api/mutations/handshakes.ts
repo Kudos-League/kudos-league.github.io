@@ -79,6 +79,28 @@ export function useDeleteHandshake() {
     });
 }
 
+export function useUndoAcceptHandshake() {
+    const qc = useQueryClient();
+    const { invalidateHandshake, invalidatePost } = useDataCache();
+    return useMutation<any, any, { handshakeID: number; postID?: number }>({
+        mutationFn: ({ handshakeID }) => {
+            if (typeof handshakeID !== 'number') {
+                throw new Error('handshakeID is required');
+            }
+            return apiMutate(`/handshakes/${handshakeID}`, 'patch', {
+                status: 'new'
+            });
+        },
+        onSuccess: (_, { handshakeID, postID }) => {
+            qc.invalidateQueries({ queryKey: ['posts'] });
+            qc.invalidateQueries({ queryKey: ['handshakes'] });
+            qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
+            invalidateHandshake(handshakeID);
+            if (postID) invalidatePost(postID);
+        }
+    });
+}
+
 export function useCreateOffer() {
     const qc = useQueryClient();
     return useMutation<any, any, any>({

@@ -5,7 +5,8 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import {
     useCompleteHandshake,
-    useCreateOffer
+    useCreateOffer,
+    useUndoAcceptHandshake
 } from '@/shared/api/mutations/handshakes';
 import type { HandshakeDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
@@ -31,6 +32,7 @@ interface Props {
     compact?: boolean;
     onInteraction?: () => void;
     showUserKudos?: boolean;
+    notificationType?: string;
 }
 
 const HandshakeCard: React.FC<Props> = ({
@@ -42,7 +44,8 @@ const HandshakeCard: React.FC<Props> = ({
     hideCardBorder = false,
     compact = false,
     onInteraction,
-    showUserKudos = false
+    showUserKudos = false,
+    notificationType
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -272,8 +275,9 @@ const HandshakeCard: React.FC<Props> = ({
         setError(null);
         setProcessing(true);
         try {
-            await apiMutate(`/handshakes/${handshake.id}`, 'patch', {
-                status: 'new'
+            await undoAcceptMutation.mutateAsync({
+                handshakeID: handshake.id,
+                postID: handshake.postID
             });
             setStatus('new');
             pushAlert({
@@ -421,6 +425,7 @@ const HandshakeCard: React.FC<Props> = ({
 
     const createOfferMutation = useCreateOffer();
     const completeHandshakeMutation = useCompleteHandshake();
+    const undoAcceptMutation = useUndoAcceptHandshake();
 
     return (
         <>
@@ -659,7 +664,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {status === 'completed' && showUser && (
+                    {status === 'completed' && showUser && notificationType !== 'handshake-undo-accepted' && (
                         <div className='p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800'>
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}
