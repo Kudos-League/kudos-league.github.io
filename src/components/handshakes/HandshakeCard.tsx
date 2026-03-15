@@ -802,7 +802,7 @@ const HandshakeCard: React.FC<Props> = ({
                                 <label
                                     className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-green-800 dark:text-green-300 block`}
                                 >
-                                        Send Kudos to Complete Exchange
+                                        Send Kudos to Complete Interaction
                                 </label>
                                 <p
                                     className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}

@@ -13,7 +13,6 @@ import {
     Handshake,
     MessageCircle,
     MoreHorizontal,
-    Check,
     ChevronDown,
     ChevronUp
 } from 'lucide-react';
@@ -30,9 +29,8 @@ import { routes } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/useAuth';
 import UserCard from '@/components/users/UserCard';
-import HandshakeCard from '@/components/handshakes/HandshakeCard';
-import type { HandshakeDTO } from '@/shared/api/types';
 import { useCachedHandshake, useCachedPost } from '@/contexts/DataCacheContext';
+import HandshakeNotifItem from '@/components/notifications/HandshakeNotifItem';
 
 const PAGE_SIZE = 20;
 const historyQueryKey = ['notifications', 'history'] as const;
@@ -46,151 +44,6 @@ const DelayedUserCard = memo(
 
 DelayedUserCard.displayName = 'DelayedUserCard';
 
-function HandshakeNotificationByPost({
-    postID,
-    userID,
-    notificationType,
-    onInteraction
-}: {
-    postID: number;
-    userID: number;
-    notificationType: string;
-    onInteraction?: () => void;
-}) {
-    const { post, loading, error } = useCachedPost(postID);
-    const [showError, setShowError] = useState(false);
-
-    console.log('[HandshakeNotificationByPost] Using cached post:', {
-        postID,
-        userID,
-        notificationType,
-        post,
-        loading,
-        error
-    });
-
-    // Delay showing error message
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => {
-                setShowError(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-        else {
-            setShowError(false);
-        }
-    }, [error]);
-
-    if (loading) {
-        return (
-            <div className='flex items-center justify-center py-8'>
-                <Spinner text='Loading...' />
-            </div>
-        );
-    }
-
-    if (error && showError) {
-        console.error(
-            '[HandshakeNotificationByPost] Error loading post:',
-            error
-        );
-        return (
-            <div className='text-center py-4'>
-                <p className='text-sm text-red-600 dark:text-red-400'>
-                    Failed to load details: {error}
-                </p>
-            </div>
-        );
-    }
-
-    // While waiting to show error, don't render anything to avoid flashing
-    if (error && !showError) {
-        return null;
-    }
-
-    if (!post) {
-        console.error('[HandshakeNotificationByPost] Post not found:', {
-            postID
-        });
-        return (
-            <div className='text-center py-4'>
-                <p className='text-sm text-red-600 dark:text-red-400'>
-                    Post not found (ID: {postID})
-                </p>
-            </div>
-        );
-    }
-
-    // Find the relevant handshake for this user
-    const handshakes = post.handshakes || [];
-    const relevantHandshake = handshakes.find(
-        (h: any) => h.senderID === userID || h.receiverID === userID
-    );
-
-    console.log('[HandshakeNotificationByPost] Looking for handshake:', {
-        userID,
-        handshakesCount: handshakes.length,
-        relevantHandshake
-    });
-
-    if (!relevantHandshake) {
-        console.error(
-            '[HandshakeNotificationByPost] No handshake found for user:',
-            { userID, handshakes }
-        );
-        return (
-            <div className='text-center py-4'>
-                <p className='text-sm text-red-600 dark:text-red-400'>
-                    Not found
-                </p>
-            </div>
-        );
-    }
-
-    console.log(
-        '[HandshakeNotificationByPost] Rendering HandshakeCard with:',
-        relevantHandshake
-    );
-
-    return (
-        <div
-            className='transition-opacity'
-            style={{
-                opacity: 1,
-                transitionDuration: '250ms',
-                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                animation: 'fadeIn 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-        >
-            <HandshakeCard
-                handshake={{ ...relevantHandshake, post }}
-                userID={userID}
-                showPostDetails={true}
-                hideCardBorder={true}
-                onInteraction={onInteraction}
-                notificationType={notificationType}
-            />
-        </div>
-    );
-}
-
-function HandshakePostReference({ postID }: { postID: number }) {
-    const { post, loading } = useCachedPost(postID);
-
-    if (loading || !post) {
-        return null;
-    }
-
-    const postType = post.type === 'request' ? 'request' : 'gift';
-    const creator = post.sender?.displayName || post.sender?.username;
-
-    return (
-        <p className='text-xs text-zinc-600 dark:text-zinc-400 mt-1 italic'>
-            {postType}: &quot;{post.title}&quot;{creator ? <> by <span className='font-medium not-italic'>{creator}</span></> : null}
-        </p>
-    );
-}
 
 function PostReplyNotificationContent({
     notification,
@@ -338,95 +191,6 @@ function PreviousNotificationItem({
                     {prevCreatedAt}
                 </time>
             )}
-        </div>
-    );
-}
-
-function HandshakeNotificationCard({
-    handshakeID,
-    userID,
-    notificationType,
-    onInteraction
-}: {
-    handshakeID: number;
-    userID?: number;
-    notificationType: string;
-    onInteraction?: () => void;
-}) {
-    const { handshake, loading, error } = useCachedHandshake(handshakeID);
-    const [showError, setShowError] = useState(false);
-
-    // Delay showing error message
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => {
-                setShowError(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-        else {
-            setShowError(false);
-        }
-    }, [error]);
-
-    if (loading) {
-        return (
-            <div className='flex items-center justify-center py-8'>
-                <Spinner text='Loading...' />
-            </div>
-        );
-    }
-
-    if (error && showError) {
-        console.error(
-            '[HandshakeNotificationCard] Error loading handshake:',
-            error
-        );
-        return (
-            <div className='text-center py-4'>
-                <p className='text-sm text-red-600 dark:text-red-400'>
-                    Failed to load details: {error}
-                </p>
-            </div>
-        );
-    }
-
-    // While waiting to show error, don't render anything to avoid flashing
-    if (error && !showError) {
-        return null;
-    }
-
-    if (!handshake) {
-        console.error('[HandshakeNotificationCard] Handshake not found:', {
-            handshakeID
-        });
-        return (
-            <div className='text-center py-4'>
-                <p className='text-sm text-red-600 dark:text-red-400'>
-                    Not found (ID: {handshakeID})
-                </p>
-            </div>
-        );
-    }
-
-    return (
-        <div
-            className='transition-opacity'
-            style={{
-                opacity: 1,
-                transitionDuration: '250ms',
-                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                animation: 'fadeIn 250ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-        >
-            <HandshakeCard
-                handshake={handshake}
-                userID={userID}
-                showPostDetails={true}
-                hideCardBorder={true}
-                onInteraction={onInteraction}
-                notificationType={notificationType}
-            />
         </div>
     );
 }
@@ -770,7 +534,7 @@ function formatCreatedAt(value?: string) {
     return date.toLocaleString();
 }
 
-type NotificationFilter = 'all' | 'handshakes' | 'comments' | 'other';
+type NotificationFilter = 'all' | 'help' | 'comments' | 'other';
 
 type GroupedNotification = {
     latest: NotificationRecord;
@@ -876,7 +640,7 @@ export default function NotificationsPage() {
             filter === 'all'
                 ? itemsWithoutDMs
                 : itemsWithoutDMs.filter((item) => {
-                    if (filter === 'handshakes') {
+                    if (filter === 'help') {
                         return (
                             item.type ===
                                   NotificationType.HANDSHAKE_CREATED ||
@@ -1283,20 +1047,6 @@ export default function NotificationsPage() {
                     : undefined;
             const postID =
                 'postID' in notification ? notification.postID : undefined;
-            const meta = describeNotification(
-                notification,
-                shouldShowHandshakeCard,
-                user?.id,
-                handshake
-            );
-
-            console.log('[renderNotificationContent] Handshake notification:', {
-                type: notification.type,
-                handshakeID,
-                postID,
-                userID: user?.id,
-                notification
-            });
 
             const handleHandshakeInteraction = () => {
                 if (!notification.isActedOn) {
@@ -1309,66 +1059,15 @@ export default function NotificationsPage() {
                 }
             };
 
-            const handshakeContent = shouldShowHandshakeCard ? (
-                handshakeID ? (
-                    <HandshakeNotificationCard
-                        handshakeID={handshakeID}
-                        userID={user?.id}
-                        notificationType={notification.type}
-                        onInteraction={handleHandshakeInteraction}
-                    />
-                ) : postID && user?.id ? (
-                    <HandshakeNotificationByPost
-                        postID={postID}
-                        userID={user.id}
-                        notificationType={notification.type}
-                        onInteraction={handleHandshakeInteraction}
-                    />
-                ) : (
-                    <div className='text-center py-4'>
-                        <p className='text-sm text-red-600 dark:text-red-400'>
-                            Missing handshake data. Notification:{' '}
-                            {JSON.stringify({
-                                id: notification.id,
-                                type: notification.type,
-                                handshakeID:
-                                    'handshakeID' in notification
-                                        ? notification.handshakeID
-                                        : 'N/A',
-                                postID:
-                                    'postID' in notification
-                                        ? notification.postID
-                                        : 'N/A'
-                            })}
-                        </p>
-                    </div>
-                )
-            ) : null;
-
             return (
-                <div className='flex flex-col gap-3'>
-                    <div className='flex items-start justify-between gap-3'>
-                        <div className='flex-1 min-w-0'>
-                            <p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-                                {meta.title}
-                            </p>
-                            {meta.description && (
-                                <p className='text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 mt-1'>
-                                    {meta.description}
-                                </p>
-                            )}
-                            {!shouldShowHandshakeCard && postID && (
-                                <HandshakePostReference postID={postID} />
-                            )}
-                        </div>
-                        {createdAt && (
-                            <time className='flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400'>
-                                {createdAt}
-                            </time>
-                        )}
-                    </div>
-                    {handshakeContent && <div>{handshakeContent}</div>}
-                </div>
+                <HandshakeNotifItem
+                    handshakeID={handshakeID}
+                    postID={postID}
+                    userID={user?.id}
+                    notificationType={notification.type}
+                    createdAt={createdAt}
+                    onInteraction={handleHandshakeInteraction}
+                />
             );
         }
 
@@ -1503,8 +1202,8 @@ export default function NotificationsPage() {
                     {[
                         { key: 'all', label: 'All', Icon: Filter },
                         {
-                            key: 'handshakes',
-                            label: 'Handshakes',
+                            key: 'help',
+                            label: 'Help',
                             Icon: Handshake
                         },
                         {

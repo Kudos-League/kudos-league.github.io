@@ -84,8 +84,8 @@ export default function PostCard(props: Props) {
             {isClosed && (
                 <div className='absolute inset-0 bg-gray-400 dark:bg-gray-600 opacity-20 pointer-events-none rounded-lg z-10' />
             )}
-            {/* Image Carousel - appears first on all sizes, images fill the space */}
-            {hasImages && (
+            {/* Image Carousel or placeholder */}
+            {hasImages ? (
                 <div
                     className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden cursor-pointer h-60'
                     onClick={(e) => {
@@ -100,6 +100,12 @@ export default function PostCard(props: Props) {
                     }}
                 >
                     <ImageCarousel images={images} variant='postCard' />
+                </div>
+            ) : (
+                <div className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden h-60 bg-gray-100 dark:bg-gray-700 flex items-center justify-center px-4'>
+                    <span className='text-gray-400 dark:text-gray-500 text-lg font-semibold text-center line-clamp-3'>
+                        {title}
+                    </span>
                 </div>
             )}
 

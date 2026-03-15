@@ -71,6 +71,8 @@ export default function EventDetails({ event, setEvent }: Props) {
     const navigate = useNavigate();
 
     const [joining, setJoining] = useState(false);
+    const [activeTab, setActiveTab] = useState<'discussion' | 'participants'>('discussion');
+    const [showAllParticipants, setShowAllParticipants] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({
         title: '',
@@ -802,79 +804,136 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </div>
             )}
 
-            <div className='shadow p-4 rounded mb-6'>
-                <MessageList
-                    title='Discussion'
-                    messages={event.messages || []}
-                    callback={handleMessageCreated}
-                    eventID={event.id}
-                    showSendMessage={!!user}
-                    allowDelete={!!user}
-                    allowEdit={!!user}
-                    onMessageUpdate={handleMessageUpdate}
-                    onMessageDelete={handleMessageDelete}
-                />
-            </div>
+            {/* Discussion + Participants: two-column on desktop, tabs on mobile */}
+            {!isEditing && (
+                <div>
+                    {/* Unauthenticated user banner */}
+                    {!user && (
+                        <div className='bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 text-center mb-4'>
+                            <p className='text-sm text-brand-800 dark:text-brand-200 font-medium'>
+                                Register or ask for an invite to interact with this event
+                            </p>
+                            <div className='flex justify-center gap-3 mt-2'>
+                                <Button onClick={() => navigate('/login')} variant='primary' className='text-sm'>
+                                    Log In
+                                </Button>
+                                <Button onClick={() => navigate('/signup')} variant='secondary' className='text-sm'>
+                                    Register
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
-            {/* Unauthenticated user banner */}
-            {!user && !isEditing && (
-                <div className='bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 text-center'>
-                    <p className='text-sm text-brand-800 dark:text-brand-200 font-medium'>
-                        Register or ask for an invite to interact with this event
-                    </p>
-                    <div className='flex justify-center gap-3 mt-2'>
-                        <Button onClick={() => navigate('/login')} variant='primary' className='text-sm'>
-                            Log In
-                        </Button>
-                        <Button onClick={() => navigate('/signup')} variant='secondary' className='text-sm'>
-                            Register
-                        </Button>
+                    {/* Join/Leave — mobile only (always visible above tabs) */}
+                    {user && !isPastEvent && (
+                        <div className='mb-4 md:hidden'>
+                            {event.participants?.some((p: any) => p.id === user.id) ? (
+                                <Button variant='danger' onClick={handleLeave}>
+                                    Leave Event
+                                </Button>
+                            ) : (
+                                <Button onClick={handleJoin} disabled={joining}>
+                                    {joining ? 'Joining...' : 'Join Event'}
+                                </Button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Mobile tab buttons */}
+                    <div className='flex border-b border-zinc-200 dark:border-zinc-700 mb-4 md:hidden'>
+                        <button
+                            onClick={() => setActiveTab('discussion')}
+                            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'discussion'
+                                    ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                                    : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                            }`}
+                        >
+                            Discussion
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('participants')}
+                            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'participants'
+                                    ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                                    : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                            }`}
+                        >
+                            Participants{event.participants?.length ? ` (${event.participants.length})` : ''}
+                        </button>
+                    </div>
+
+                    {/* Two-column on desktop, tab panels on mobile */}
+                    <div className='md:grid md:grid-cols-2 md:gap-6 md:items-start'>
+                        {/* Discussion panel */}
+                        <div className={activeTab === 'discussion' ? '' : 'hidden md:block'}>
+                            <div className='shadow p-4 rounded'>
+                                <MessageList
+                                    title='Discussion'
+                                    messages={event.messages || []}
+                                    callback={handleMessageCreated}
+                                    eventID={event.id}
+                                    showSendMessage={!!user}
+                                    allowDelete={!!user}
+                                    allowEdit={!!user}
+                                    onMessageUpdate={handleMessageUpdate}
+                                    onMessageDelete={handleMessageDelete}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Participants panel */}
+                        <div className={activeTab === 'participants' ? '' : 'hidden md:block'}>
+                            <div className='flex items-center justify-between mb-3'>
+                                <h2 className='text-lg font-semibold'>Participants</h2>
+                                {/* Join/Leave — desktop only (inside participants column) */}
+                                {user && !isPastEvent && (
+                                    <div className='hidden md:block'>
+                                        {event.participants?.some((p: any) => p.id === user.id) ? (
+                                            <Button variant='danger' onClick={handleLeave}>
+                                                Leave Event
+                                            </Button>
+                                        ) : (
+                                            <Button onClick={handleJoin} disabled={joining}>
+                                                {joining ? 'Joining...' : 'Join Event'}
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <div className='space-y-3'>
+                                {event.participants?.length ? (
+                                    <>
+                                        {(showAllParticipants
+                                            ? event.participants
+                                            : event.participants.slice(0, 5)
+                                        ).map((p: any) => (
+                                            <div
+                                                key={p.id}
+                                                className='flex items-center gap-3 border p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'
+                                            >
+                                                <UserCard user={p} large />
+                                            </div>
+                                        ))}
+                                        {event.participants.length > 5 && (
+                                            <Button
+                                                variant='secondary'
+                                                className='w-full'
+                                                onClick={() => setShowAllParticipants(!showAllParticipants)}
+                                            >
+                                                {showAllParticipants
+                                                    ? 'Show less'
+                                                    : `Show all participants (${event.participants.length - 5} more)`}
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p>No participants yet.</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            )}
-
-            {/* Participants (only show when not editing) */}
-            {!isEditing && (
-                <>
-                    <h2 className='text-lg font-semibold'>Participants</h2>
-                    <div className='space-y-3'>
-                        {event.participants?.length ? (
-                            event.participants.map((p: any) => (
-                                <div
-                                    key={p.id}
-                                    className='flex items-center gap-3 border p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'
-                                >
-                                    <div className='flex-1'>
-                                        <UserCard user={p} large />
-                                    </div>
-                                    {p.id === user?.id && (
-                                        <Button
-                                            variant='danger'
-                                            onClick={handleLeave}
-                                            className='ml-auto'
-                                        >
-                                            Leave
-                                        </Button>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <p>No participants yet.</p>
-                        )}
-                    </div>
-
-                    {user && !isPastEvent && !event.participants?.some(
-                        (p: any) => p.id === user?.id
-                    ) && (
-                        <Button
-                            onClick={handleJoin}
-                            disabled={joining}
-                            className='mt-6'
-                        >
-                            {joining ? 'Joining...' : 'Join Event'}
-                        </Button>
-                    )}
-                </>
             )}
         </div>
     );
