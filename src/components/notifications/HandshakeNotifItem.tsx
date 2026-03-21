@@ -379,6 +379,16 @@ export default function HandshakeNotifItem({
                     {sentence}
                 </p>
 
+                {/* Person row: who acted */}
+                {otherUser && (
+                    <div
+                        className='flex items-center gap-2'
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <UserCard user={otherUser} triggerVariant='avatar-name' compact />
+                    </div>
+                )}
+
                 {/* Post mini-preview */}
                 {handshake.post && (
                     <div
@@ -438,15 +448,7 @@ export default function HandshakeNotifItem({
                     </div>
                 )}
 
-                {/* Person row: who acted */}
-                {otherUser && (
-                    <div
-                        className='flex items-center gap-2'
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <UserCard user={otherUser} triggerVariant='avatar-name' compact />
-                    </div>
-                )}
+
 
                 {/* Status context */}
                 {isPostClosedByOther ? (
@@ -475,70 +477,6 @@ export default function HandshakeNotifItem({
                         {handshake.noShowReported && ' No-show reported.'}
                     </div>
                 ) : null}
-
-                {/* Action buttons */}
-                {!isPostClosedByOther &&
-                    status !== 'completed' &&
-                    (canAccept || canUndoAccept || canCancel) && (
-                    <div
-                        className='flex gap-2'
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {(canAccept || canUndoAccept) && (
-                            <Button
-                                variant={canUndoAccept ? 'warning' : 'success'}
-                                onClick={canUndoAccept ? handleUndoAccept : handleAccept}
-                                disabled={processing}
-                                className='flex-1 py-2 text-sm'
-                            >
-                                {processing
-                                    ? canUndoAccept ? 'Undoing...' : 'Accepting...'
-                                    : canUndoAccept ? 'Undo Accept' : 'Accept Offer'}
-                            </Button>
-                        )}
-                        {canCancel && (
-                            <Button
-                                variant='danger'
-                                onClick={handleCancelClick}
-                                disabled={cancelling}
-                                className='py-2 px-4 text-sm'
-                            >
-                                {cancelling ? 'Deleting...' : 'Delete'}
-                            </Button>
-                        )}
-                    </div>
-                )}
-
-                {/* Kudos / Complete */}
-                {canComplete && !isPostClosedByOther && (
-                    <div
-                        className='rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 p-3 space-y-2'
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <p className='text-xs font-semibold text-emerald-800 dark:text-emerald-300'>
-                            Send kudos to complete the exchange
-                        </p>
-                        <div className='flex gap-2'>
-                            <input
-                                type='number'
-                                value={kudosValue}
-                                onChange={(e) => { e.stopPropagation(); setKudosValue(e.target.value); }}
-                                onClick={(e) => e.stopPropagation()}
-                                onFocus={(e) => e.stopPropagation()}
-                                className='flex-1 min-w-0 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent'
-                                placeholder='Kudos amount'
-                            />
-                            <Button
-                                variant='success'
-                                onClick={handleKudosSubmit}
-                                disabled={submitting}
-                                className='flex-shrink-0 px-4 py-2 text-sm'
-                            >
-                                {submitting ? 'Sending...' : 'Send Kudos'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {localError && (
                     <p className='text-xs text-red-600 dark:text-red-400'>{localError}</p>
