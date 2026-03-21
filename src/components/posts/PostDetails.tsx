@@ -904,11 +904,12 @@ export default function PostDetails(props: Props) {
     if (!postDetails) return null;
 
     const isPostOwner = user?.id === postDetails.sender?.id;
-    const hasPendingHandshakes = (postDetails.handshakes || []).some(
+    const pendingHandshakesCount = (postDetails.handshakes || []).filter(
         (h: any) => h.status === 'new'
-    );
+    ).length;
+    const hasPendingHandshakes = pendingHandshakesCount > 0;
     const showAcceptHighestKudosButton =
-        isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
+        isPostOwner && pendingHandshakesCount > 1 && postDetails.status !== 'closed';
 
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
