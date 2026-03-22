@@ -64,6 +64,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
 
     const createPost = useCreatePost();
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [postType, setPostType] = React.useState<'gift' | 'request'>('gift');
     const [giftType, setGiftType] = React.useState<GiftType>('physical');
     const [showGiftTypeInfo, setShowGiftTypeInfo] = React.useState(false);
@@ -167,29 +168,17 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         } as CreatePostDTO;
 
         setServerError(null);
+        setIsSubmitting(true);
 
         try {
             await createPost.mutateAsync(payload);
-            form.reset({
-                title: '',
-                body: '',
-                tags: [],
-                categoryID: null,
-                type: 'gift',
-                giftType: 'physical',
-                itemsLimit: 1
-            });
-            setSelectedImages([]);
-            setLocation(null);
-            setPostType('gift');
-            setGiftType('physical');
-
             // Navigate after a short delay to allow toast to be visible
             setTimeout(() => {
                 navigate('/feed');
             }, 1500);
         }
         catch (errs: any) {
+            setIsSubmitting(false);
             form.clearErrors();
 
             const first = Array.isArray(errs) ? errs[0] : null;
@@ -230,6 +219,17 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             }
         }
     };
+
+    if (isSubmitting) {
+        return (
+            <div className='max-w-3xl mx-2 sm:mx-auto p-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow mt-4 mb-4 flex flex-col items-center justify-center min-h-[60vh] gap-4'>
+                <div className='w-10 h-10 border-4 border-gray-300 dark:border-gray-600 border-t-brand-600 rounded-full animate-spin' />
+                <p className='text-gray-600 dark:text-gray-300 font-medium'>
+                    Creating your post...
+                </p>
+            </div>
+        );
+    }
 
     return (
         <Form
