@@ -814,6 +814,11 @@ const HandshakeCard: React.FC<Props> = ({
                                         : 'poster'}{' '}
                                         once you receive it.
                                 </p>
+                                <p
+                                    className={`${compact ? 'text-xs' : 'text-sm'} text-green-600 dark:text-green-500`}
+                                >
+                                        Sending kudos will close the post.
+                                </p>
                             </div>
                             <div className='flex gap-2'>
                                 <input

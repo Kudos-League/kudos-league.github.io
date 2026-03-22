@@ -2,11 +2,14 @@
 
 import { MapCoordinates } from '@/components/Map';
 
+export type GiftType = 'physical' | 'digital';
+
 export type CreatePostDTO = {
     title: string;
     body: string;
     tags: string[];
     type: string;
+    giftType?: GiftType;
     files?: File[];
     categoryID?: number | null;
     location?: LocationDTO | null;
@@ -38,6 +41,7 @@ export type PostDTO = {
     isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';
+    giftType?: GiftType;
     status: string;
     isActive: boolean;
     kudos?: number;
@@ -291,6 +295,7 @@ export interface Post {
     location: LocationDTO;
     title: string;
     type: 'request' | 'gift';
+    giftType?: GiftType;
     body: string;
     createdAt: Date;
     updatedAt: Date;

@@ -1,9 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import type {
     CategoryDTO,
     CreatePostDTO,
+    GiftType,
     LocationDTO
 } from '@/shared/api/types';
 import MapDisplay from '@/components/Map';
@@ -23,6 +25,7 @@ type FormValues = {
     title: string;
     body: string;
     type: 'gift' | 'request';
+    giftType: GiftType;
     itemsLimit: number;
     files?: File[];
     tags: string[];
@@ -42,6 +45,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             tags: [],
             categoryID: null,
             type: 'gift',
+            giftType: 'physical',
             itemsLimit: 1
         }
     });
@@ -61,13 +65,27 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const createPost = useCreatePost();
 
     const [postType, setPostType] = React.useState<'gift' | 'request'>('gift');
+    const [giftType, setGiftType] = React.useState<GiftType>('physical');
+    const [showGiftTypeInfo, setShowGiftTypeInfo] = React.useState(false);
     const [location, setLocation] = React.useState<LocationDTO | null>(null);
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [imageError, setImageError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
     React.useEffect(() => {
-        form.setValue('type', postType);
+        form.setValue('type', postType, { shouldValidate: false });
+        form.clearErrors();
+        setServerError(null);
+        if (postType !== 'gift') {
+            setGiftType('physical');
+            form.setValue('giftType', 'physical', { shouldValidate: false });
+        }
     }, [postType, form]);
+
+    React.useEffect(() => {
+        form.setValue('giftType', giftType, { shouldValidate: false });
+        form.clearErrors();
+        setServerError(null);
+    }, [giftType, form]);
 
     React.useEffect(() => {
         form.setValue('files', selectedImages);
@@ -138,11 +156,14 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             title: String(data.title || '').trim(),
             body: String(data.body || '').trim(),
             type: postType as 'gift' | 'request',
+            giftType: postType === 'gift' ? giftType : 'physical',
             itemsLimit: 1,
             tags: data.tags.map((tag) => String(tag).trim()),
             categoryID: data.categoryID ? Number(data.categoryID) : null,
             files: selectedImages,
-            location
+            location: (postType === 'gift' && giftType === 'digital')
+                ? { regionID: null, global: true }
+                : location
         } as CreatePostDTO;
 
         setServerError(null);
@@ -155,11 +176,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 tags: [],
                 categoryID: null,
                 type: 'gift',
+                giftType: 'physical',
                 itemsLimit: 1
             });
             setSelectedImages([]);
             setLocation(null);
             setPostType('gift');
+            setGiftType('physical');
 
             // Navigate after a short delay to allow toast to be visible
             setTimeout(() => {
@@ -231,6 +254,54 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     Request stuff
                 </Button>
             </div>
+
+            {postType === 'gift' && (
+                <div className='flex items-center gap-3'>
+                    <div className='flex rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden'>
+                        <button
+                            type='button'
+                            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                giftType === 'physical'
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                            onClick={() => setGiftType('physical')}
+                        >
+                            Physical
+                        </button>
+                        <button
+                            type='button'
+                            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                giftType === 'digital'
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                            onClick={() => setGiftType('digital')}
+                        >
+                            Digital
+                        </button>
+                    </div>
+                    <div className='relative'>
+                        <button
+                            type='button'
+                            onClick={() => setShowGiftTypeInfo(!showGiftTypeInfo)}
+                            onMouseEnter={() => setShowGiftTypeInfo(true)}
+                            onMouseLeave={() => setShowGiftTypeInfo(false)}
+                            className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
+                            aria-label='Gift type information'
+                        >
+                            <InformationCircleIcon className='w-5 h-5' />
+                        </button>
+                        {showGiftTypeInfo && (
+                            <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                <p className='font-semibold mb-1'>Physical vs Digital</p>
+                                <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off (e.g. clothes, books, furniture).</p>
+                                <p><strong>Digital:</strong> An online resource anyone can access (e.g. a PDF, template, guide). Users just give kudos — no handshake needed.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <FormField name='title' label='Title *'>
                 <Input
@@ -374,26 +445,35 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 )}
             </div>
 
-            <div>
-                <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
-                    Location
-                </label>
+            <div className={postType === 'gift' && giftType === 'digital' ? 'relative' : ''}>
+                {postType === 'gift' && giftType === 'digital' && (
+                    <div className='absolute inset-0 z-10 bg-gray-200/60 dark:bg-gray-900/60 rounded-lg flex items-center justify-center pointer-events-auto cursor-not-allowed'>
+                        <span className='bg-white dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-full shadow font-medium'>
+                            Digital gifts use global location
+                        </span>
+                    </div>
+                )}
+                <div className={postType === 'gift' && giftType === 'digital' ? 'opacity-40 pointer-events-none' : ''}>
+                    <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
+                        Location
+                    </label>
 
-                <MapDisplay
-                    edit
-                    height={300}
-                    shouldGetYourLocation={true}
-                    regionID={location?.regionID}
-                    onLocationChange={(data) => {
-                        if (data)
-                            setLocation({
-                                regionID: data.placeID,
-                                name: data.name
-                            });
-                    }}
-                    shouldSavedLocationButton
-                    exactLocation
-                />
+                    <MapDisplay
+                        edit
+                        height={300}
+                        shouldGetYourLocation={true}
+                        regionID={location?.regionID}
+                        onLocationChange={(data) => {
+                            if (data)
+                                setLocation({
+                                    regionID: data.placeID,
+                                    name: data.name
+                                });
+                        }}
+                        shouldSavedLocationButton
+                        exactLocation
+                    />
+                </div>
             </div>
 
             {/* Collect all form errors */}

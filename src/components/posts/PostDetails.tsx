@@ -4,7 +4,8 @@ import {
     ArrowLeftIcon,
     QuestionMarkCircleIcon,
     ArrowUturnRightIcon,
-    ClipboardDocumentCheckIcon
+    ClipboardDocumentCheckIcon,
+    InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -39,7 +40,8 @@ import type {
     PostDTO,
     LocationDTO,
     UpdatePostDTO,
-    CategoryDTO
+    CategoryDTO,
+    GiftType
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
@@ -105,11 +107,13 @@ export default function PostDetails(props: Props) {
     const { data: categories = [] } = useCategories();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [showGiftTypeInfo, setShowGiftTypeInfo] = useState(false);
     const [editData, setEditData] = useState({
         title: '',
         body: '',
         tags: [] as string[],
         type: 'gift' as 'gift' | 'request',
+        giftType: 'physical' as GiftType,
         categoryID: null as number | null,
         location: null as LocationDTO | null,
         itemsLimit: '' as string
@@ -636,6 +640,7 @@ export default function PostDetails(props: Props) {
             body: postDetails.body,
             tags: postDetails.tags?.map((tag) => tag.name) || [],
             type: postDetails.type as 'gift' | 'request',
+            giftType: (postDetails.giftType || 'physical') as GiftType,
             categoryID: postDetails.category?.id || null,
             location: postDetails.location || null,
             itemsLimit:
@@ -665,11 +670,16 @@ export default function PostDetails(props: Props) {
                 body: editData.body,
                 tags: editData.tags,
                 type: editData.type,
+                giftType: editData.type === 'gift' ? editData.giftType : 'physical',
                 categoryID: editData.categoryID
             };
 
+            // Digital gifts are always global
+            if (editData.type === 'gift' && editData.giftType === 'digital') {
+                updateData.location = { regionID: null, global: true };
+            }
             // Handle location changes (including deletion)
-            if (editData.location !== postDetails.location) {
+            else if (editData.location !== postDetails.location) {
                 updateData.location = editData.location;
             }
 
@@ -1014,6 +1024,13 @@ export default function PostDetails(props: Props) {
                         {postDetails.type}
                     </Pill>
 
+                    {/* Digital Badge */}
+                    {postDetails.type === 'gift' && postDetails.giftType === 'digital' && (
+                        <Pill tone='info' className='uppercase font-semibold text-xs'>
+                            DIGITAL
+                        </Pill>
+                    )}
+
                     {/* Status Badge */}
                     {postDetails.status === 'closed' || postDetails.status == 'offer_posted' ? (
                         <Pill
@@ -1124,13 +1141,62 @@ export default function PostDetails(props: Props) {
                             onClick={() =>
                                 setEditData({
                                     ...editData,
-                                    type: 'request'
+                                    type: 'request',
+                                    giftType: 'physical'
                                 })
                             }
                         >
                             Request stuff
                         </Button>
                     </div>
+
+                    {editData.type === 'gift' && (
+                        <div className='flex items-center gap-3'>
+                            <div className='flex rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden'>
+                                <button
+                                    type='button'
+                                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                        editData.giftType === 'physical'
+                                            ? 'bg-brand-600 text-white'
+                                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                    onClick={() => setEditData({ ...editData, giftType: 'physical' })}
+                                >
+                                    Physical
+                                </button>
+                                <button
+                                    type='button'
+                                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                        editData.giftType === 'digital'
+                                            ? 'bg-brand-600 text-white'
+                                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                    onClick={() => setEditData({ ...editData, giftType: 'digital' })}
+                                >
+                                    Digital
+                                </button>
+                            </div>
+                            <div className='relative'>
+                                <button
+                                    type='button'
+                                    onClick={() => setShowGiftTypeInfo(!showGiftTypeInfo)}
+                                    onMouseEnter={() => setShowGiftTypeInfo(true)}
+                                    onMouseLeave={() => setShowGiftTypeInfo(false)}
+                                    className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
+                                    aria-label='Gift type information'
+                                >
+                                    <InformationCircleIcon className='w-5 h-5' />
+                                </button>
+                                {showGiftTypeInfo && (
+                                    <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                        <p className='font-semibold mb-1'>Physical vs Digital</p>
+                                        <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off.</p>
+                                        <p><strong>Digital:</strong> An online resource anyone can access. Users just give kudos — no handshake needed.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
@@ -1202,41 +1268,50 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    <div>
-                        <label className='block text-sm font-medium mb-2'>
-                            Location
-                        </label>
-
-                        {editData.location && (
-                            <div className='mb-2 flex items-center justify-between gap-2'>
-                                <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
-                                    {editData.location.name || 'Location set'}
-                                </div>
-                                <Button
-                                    type='button'
-                                    variant='ghost'
-                                    onClick={() =>
-                                        setEditData({
-                                            ...editData,
-                                            location: null
-                                        })
-                                    }
-                                    className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
-                                >
-                                    ✕ Remove
-                                </Button>
+                    <div className='relative'>
+                        {editData.type === 'gift' && editData.giftType === 'digital' && (
+                            <div className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none'>
+                                <span className='bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200 text-sm font-medium px-3 py-1.5 rounded-lg shadow'>
+                                    Digital gifts are automatically global
+                                </span>
                             </div>
                         )}
+                        <div className={editData.type === 'gift' && editData.giftType === 'digital' ? 'opacity-40 pointer-events-none' : ''}>
+                            <label className='block text-sm font-medium mb-2'>
+                                Location
+                            </label>
 
-                        <MapDisplay
-                            key={editData.location?.regionID || 'no-location'}
-                            edit
-                            regionID={editData.location?.regionID}
-                            height={300}
-                            exactLocation={isPostOwner}
-                            onLocationChange={handleLocationChange}
-                            shouldSavedLocationButton
-                        />
+                            {editData.location && (
+                                <div className='mb-2 flex items-center justify-between gap-2'>
+                                    <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                        {editData.location.name || 'Location set'}
+                                    </div>
+                                    <Button
+                                        type='button'
+                                        variant='ghost'
+                                        onClick={() =>
+                                            setEditData({
+                                                ...editData,
+                                                location: null
+                                            })
+                                        }
+                                        className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                    >
+                                        ✕ Remove
+                                    </Button>
+                                </div>
+                            )}
+
+                            <MapDisplay
+                                key={editData.location?.regionID || 'no-location'}
+                                edit
+                                regionID={editData.location?.regionID}
+                                height={300}
+                                exactLocation={isPostOwner}
+                                onLocationChange={handleLocationChange}
+                                shouldSavedLocationButton
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -1457,7 +1532,9 @@ export default function PostDetails(props: Props) {
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
-                        {postDetails.type === 'request' ? 'Offers' : 'Requests'}
+                        {postDetails.giftType === 'digital'
+                            ? 'Kudos'
+                            : postDetails.type === 'request' ? 'Offers' : 'Requests'}
                     </h2>
 
                     {showAcceptHighestKudosButton && (
@@ -1563,9 +1640,9 @@ export default function PostDetails(props: Props) {
                             disabled={creatingHandshake || isEditing}
                         >
                             {creatingHandshake
-                                ? 'Creating...'
+                                ? (postDetails.giftType === 'digital' ? 'Giving Kudos...' : 'Creating...')
                                 : postDetails.type === 'gift'
-                                    ? 'Request This'
+                                    ? (postDetails.giftType === 'digital' ? 'Give Kudos' : 'Request This')
                                     : 'Gift This'}
                         </Button>
                     </div>
@@ -1672,42 +1749,57 @@ export default function PostDetails(props: Props) {
                                     />
                                 </svg>
                             </div>
-                            <h2 className='text-2xl font-bold mb-3'>
-                                {postDetails.type === 'gift'
-                                    ? 'Help Request Created!'
-                                    : 'Help Offer Created!'}
-                            </h2>
-                            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                {postDetails.type === 'gift'
-                                    ? 'Your help request has been successfully created.'
-                                    : 'Your help offer has been successfully created.'}{' '}
-                                The post owner has been notified.
-                            </p>
-                            <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
-                                <p className='text-xs text-blue-800 dark:text-blue-200'>
-                                    💡 You can message the post owner now to
-                                    coordinate details, or do it later from your{' '}
-                                    {postDetails.type === 'gift'
-                                        ? 'requests'
-                                        : 'offers'}{' '}
-                                    page.
-                                </p>
-                            </div>
+                            {postDetails.giftType === 'digital' ? (
+                                <>
+                                    <h2 className='text-2xl font-bold mb-3'>
+                                        Kudos Given!
+                                    </h2>
+                                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                        You gave kudos to {postDetails.sender?.displayName || postDetails.sender?.username || 'the poster'} for sharing this digital resource.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className='text-2xl font-bold mb-3'>
+                                        {postDetails.type === 'gift'
+                                            ? 'Help Request Created!'
+                                            : 'Help Offer Created!'}
+                                    </h2>
+                                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                        {postDetails.type === 'gift'
+                                            ? 'Your help request has been successfully created.'
+                                            : 'Your help offer has been successfully created.'}{' '}
+                                        The post owner has been notified.
+                                    </p>
+                                    <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
+                                        <p className='text-xs text-blue-800 dark:text-blue-200'>
+                                            You can message the post owner now to
+                                            coordinate details, or do it later from your{' '}
+                                            {postDetails.type === 'gift'
+                                                ? 'requests'
+                                                : 'offers'}{' '}
+                                            page.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div className='flex flex-col gap-2'>
-                            <Button
-                                onClick={handleOpenChatFromSuccess}
-                                variant='primary'
-                                className='w-full justify-center'
-                            >
-                                💬 Message Post Owner
-                            </Button>
+                            {postDetails.giftType !== 'digital' && (
+                                <Button
+                                    onClick={handleOpenChatFromSuccess}
+                                    variant='primary'
+                                    className='w-full justify-center'
+                                >
+                                    Message Post Owner
+                                </Button>
+                            )}
                             <Button
                                 onClick={() => setHandshakeSuccessModal(false)}
-                                variant='secondary'
+                                variant={postDetails.giftType === 'digital' ? 'primary' : 'secondary'}
                                 className='w-full justify-center'
                             >
-                                I&apos;ll Message Later
+                                {postDetails.giftType === 'digital' ? 'Done' : "I'll Message Later"}
                             </Button>
                         </div>
                     </div>

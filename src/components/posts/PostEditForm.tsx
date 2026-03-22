@@ -7,14 +7,15 @@ import { useAuth } from '@/contexts/useAuth';
 import { useUpdatePost } from '@/shared/api/mutations/posts';
 import { useCategories } from '@/shared/api/queries/categories';
 import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { getImagePath } from '@/shared/api/config';
 
 import type {
     PostDTO,
     LocationDTO,
     UpdatePostDTO,
-    CategoryDTO
+    CategoryDTO,
+    GiftType
 } from '@/shared/api/types';
 import Button from '../common/Button';
 import DropdownPicker from '@/components/forms/DropdownPicker';
@@ -41,8 +42,10 @@ export default function PostEditForm({
         tags: post.tags?.map((tag) => tag.name) || [],
         location: post.location || (null as LocationDTO | null),
         type: post.type as 'gift' | 'request',
+        giftType: (post.giftType || 'physical') as GiftType,
         categoryID: post.category?.id || (null as number | null)
     });
+    const [showGiftTypeInfo, setShowGiftTypeInfo] = useState(false);
     const [editImages, setEditImages] = useState<File[]>([]);
     const [editImageError, setEditImageError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -140,11 +143,16 @@ export default function PostEditForm({
                 body: editData.body,
                 tags: editData.tags,
                 type: editData.type,
+                giftType: editData.type === 'gift' ? editData.giftType : 'physical',
                 categoryID: editData.categoryID
             };
 
+            // Digital gifts are always global
+            if (editData.type === 'gift' && editData.giftType === 'digital') {
+                updateData.location = { regionID: null, global: true };
+            }
             // Handle location changes (including deletion)
-            if (editData.location !== post.location) {
+            else if (editData.location !== post.location) {
                 updateData.location = editData.location;
                 console.log('[PostEditForm] Location change detected:', {
                     oldLocation: post.location,
@@ -226,12 +234,13 @@ export default function PostEditForm({
                         variant={
                             editData.type === 'gift' ? 'primary' : 'secondary'
                         }
-                        onClick={() =>
+                        onClick={() => {
                             setEditData({
                                 ...editData,
                                 type: 'gift'
-                            })
-                        }
+                            });
+                            setEditImageError(null);
+                        }}
                         disabled={isSaving}
                     >
                         Give stuff
@@ -242,17 +251,69 @@ export default function PostEditForm({
                                 ? 'primary'
                                 : 'secondary'
                         }
-                        onClick={() =>
+                        onClick={() => {
                             setEditData({
                                 ...editData,
-                                type: 'request'
-                            })
-                        }
+                                type: 'request',
+                                giftType: 'physical'
+                            });
+                            setEditImageError(null);
+                        }}
                         disabled={isSaving}
                     >
                         Request stuff
                     </Button>
                 </div>
+
+                {editData.type === 'gift' && (
+                    <div className='flex items-center gap-3'>
+                        <div className='flex rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden'>
+                            <button
+                                type='button'
+                                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    editData.giftType === 'physical'
+                                        ? 'bg-brand-600 text-white'
+                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                                onClick={() => setEditData({ ...editData, giftType: 'physical' })}
+                                disabled={isSaving}
+                            >
+                                Physical
+                            </button>
+                            <button
+                                type='button'
+                                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    editData.giftType === 'digital'
+                                        ? 'bg-brand-600 text-white'
+                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                                onClick={() => setEditData({ ...editData, giftType: 'digital' })}
+                                disabled={isSaving}
+                            >
+                                Digital
+                            </button>
+                        </div>
+                        <div className='relative'>
+                            <button
+                                type='button'
+                                onClick={() => setShowGiftTypeInfo(!showGiftTypeInfo)}
+                                onMouseEnter={() => setShowGiftTypeInfo(true)}
+                                onMouseLeave={() => setShowGiftTypeInfo(false)}
+                                className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
+                                aria-label='Gift type information'
+                            >
+                                <InformationCircleIcon className='w-5 h-5' />
+                            </button>
+                            {showGiftTypeInfo && (
+                                <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                    <p className='font-semibold mb-1'>Physical vs Digital</p>
+                                    <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off.</p>
+                                    <p><strong>Digital:</strong> An online resource anyone can access. Users just give kudos — no handshake needed.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <div>
                     <label className='block text-sm font-medium mb-1'>
@@ -326,48 +387,57 @@ export default function PostEditForm({
                     />
                 </div>
 
-                <div>
-                    <label className='block text-sm font-medium mb-2'>
-                        Location
-                    </label>
-
-                    {editData.location && (
-                        <div className='mb-2 flex items-center justify-between gap-2'>
-                            <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
-                                {editData.location.name || 'Location set'}
-                            </div>
-                            <Button
-                                type='button'
-                                variant='ghost'
-                                onClick={() =>
-                                    setEditData({ ...editData, location: null })
-                                }
-                                className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
-                                disabled={isSaving}
-                            >
-                                ✕ Remove
-                            </Button>
+                <div className={editData.type === 'gift' && editData.giftType === 'digital' ? 'relative' : ''}>
+                    {editData.type === 'gift' && editData.giftType === 'digital' && (
+                        <div className='absolute inset-0 z-10 bg-gray-200/60 dark:bg-gray-900/60 rounded-lg flex items-center justify-center pointer-events-auto cursor-not-allowed'>
+                            <span className='bg-white dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-full shadow font-medium'>
+                                Digital gifts use global location
+                            </span>
                         </div>
                     )}
+                    <div className={editData.type === 'gift' && editData.giftType === 'digital' ? 'opacity-40 pointer-events-none' : ''}>
+                        <label className='block text-sm font-medium mb-2'>
+                            Location
+                        </label>
 
-                    <MapDisplay
-                        key={editData.location?.regionID || 'no-location'}
-                        edit
-                        regionID={editData.location?.regionID || undefined}
-                        coordinates={
-                            editData.location
-                                ? {
-                                    latitude: editData.location.latitude,
-                                    longitude: editData.location.longitude,
-                                    name: editData.location.name
-                                }
-                                : undefined
-                        }
-                        height={300}
-                        exactLocation={isPostOwner}
-                        onLocationChange={handleLocationChange}
-                        shouldSavedLocationButton
-                    />
+                        {editData.location && (
+                            <div className='mb-2 flex items-center justify-between gap-2'>
+                                <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                    {editData.location.name || 'Location set'}
+                                </div>
+                                <Button
+                                    type='button'
+                                    variant='ghost'
+                                    onClick={() =>
+                                        setEditData({ ...editData, location: null })
+                                    }
+                                    className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                    disabled={isSaving}
+                                >
+                                    ✕ Remove
+                                </Button>
+                            </div>
+                        )}
+
+                        <MapDisplay
+                            key={editData.location?.regionID || 'no-location'}
+                            edit
+                            regionID={editData.location?.regionID || undefined}
+                            coordinates={
+                                editData.location
+                                    ? {
+                                        latitude: editData.location.latitude,
+                                        longitude: editData.location.longitude,
+                                        name: editData.location.name
+                                    }
+                                    : undefined
+                            }
+                            height={300}
+                            exactLocation={isPostOwner}
+                            onLocationChange={handleLocationChange}
+                            shouldSavedLocationButton
+                        />
+                    </div>
                 </div>
 
                 <div className='w-full overflow-hidden box-border'>

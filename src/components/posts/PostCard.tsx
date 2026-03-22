@@ -40,7 +40,8 @@ export default function PostCard(props: Props) {
         fake,
         showHandshakeShortcut = false,
         distance,
-        type
+        type,
+        giftType
     } = props;
 
     const { user } = useAuth();
@@ -157,6 +158,11 @@ export default function PostCard(props: Props) {
                     >
                         {type.toUpperCase()}
                     </span>
+                )}
+                {type === 'gift' && giftType === 'digital' && (
+                    <Pill tone='info' className='uppercase font-semibold text-xs'>
+                        DIGITAL
+                    </Pill>
                 )}
                 {tags.map((tag, i) => (
                     <Pill key={i} name={tag.name} />
