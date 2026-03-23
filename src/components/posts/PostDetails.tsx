@@ -32,7 +32,7 @@ import {
     useReportPost,
     useCreateHandshake
 } from '@/shared/api/mutations/posts';
-import { useCreateChannel, useAcceptHandshake } from '@/shared/api/mutations/handshakes';
+import { useCreateChannel, useAcceptHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
 
 import type {
     ChannelDTO,
@@ -147,6 +147,10 @@ export default function PostDetails(props: Props) {
     } | null>(null);
     const [showKudosTooltip, setShowKudosTooltip] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
+    const [digitalKudosModal, setDigitalKudosModal] = useState(false);
+    const [digitalKudosValue, setDigitalKudosValue] = useState('');
+    const [submittingDigitalKudos, setSubmittingDigitalKudos] = useState(false);
+    const createOfferMut = useCreateOffer();
     const navigate = useNavigate();
 
     const handleSharePost = async () => {
@@ -286,6 +290,13 @@ export default function PostDetails(props: Props) {
             return;
         }
 
+        // Digital gifts: prompt for kudos amount before creating the handshake
+        if (postDetails.type === 'gift' && postDetails.giftType === 'digital') {
+            setDigitalKudosValue('');
+            setDigitalKudosModal(true);
+            return;
+        }
+
         setCreatingHandshake(true);
 
         try {
@@ -324,6 +335,66 @@ export default function PostDetails(props: Props) {
         }
         finally {
             setCreatingHandshake(false);
+        }
+    };
+
+    const handleSubmitDigitalKudos = async () => {
+        if (!postDetails || !user) return;
+
+        const kudos = Number(digitalKudosValue);
+        if (!digitalKudosValue || isNaN(kudos) || kudos <= 0) {
+            pushAlert({ type: 'danger', message: 'Please enter a valid kudos amount.' });
+            return;
+        }
+
+        setSubmittingDigitalKudos(true);
+
+        try {
+            // 1. Create the handshake (auto-completed on backend for digital gifts)
+            const handshakeData: CreateHandshakeDTO = {
+                postID: postDetails.id,
+                senderID: user.id || 0,
+                receiverID: postDetails.sender?.id || 0,
+                type: postDetails.type,
+                status: 'new'
+            };
+
+            const newHandshake = await createHsMut.mutateAsync(handshakeData);
+
+            // 2. Create the reward offer with the user-specified kudos amount
+            await createOfferMut.mutateAsync({
+                postID: postDetails.id,
+                kudos,
+                currency: 'kudos',
+                receiverID: postDetails.sender?.id || 0
+            });
+
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+                return {
+                    ...prevDetails,
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
+                } as PostDTO;
+            });
+
+            setDigitalKudosModal(false);
+            setDigitalKudosValue('');
+            setIsHandshakeAlreadyCreated(true);
+            setHandshakeSuccessModal(true);
+            fetchPostDetails?.(postDetails.id);
+        }
+        catch (error) {
+            console.error('Error giving kudos for digital gift:', error);
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to give kudos. Please try again.'
+            });
+        }
+        finally {
+            setSubmittingDigitalKudos(false);
         }
     };
 
@@ -1656,6 +1727,11 @@ export default function PostDetails(props: Props) {
 
             {/* Comments */}
             <div className='p-4 mb-6'>
+                {(postDetails.status === 'closed' || postDetails.status === 'offer_posted') && (
+                    <p className='text-red-500 text-sm font-medium mb-3'>
+                        Comments are not allowed because this post is closed.
+                    </p>
+                )}
                 <MessageList
                     title=''
                     messages={postDetails.messages || []}
@@ -1844,6 +1920,50 @@ export default function PostDetails(props: Props) {
                 cancelText='Cancel'
                 variant='info'
             />
+
+            {/* Digital Gift Kudos Modal */}
+            {digitalKudosModal && (
+                <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
+                    <div className='bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-gray-900 dark:text-gray-100'>
+                        <h2 className='text-xl font-bold mb-2'>Give Kudos</h2>
+                        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                            How many kudos would you like to give to{' '}
+                            {postDetails?.sender?.displayName || postDetails?.sender?.username || 'the poster'}{' '}
+                            for sharing this digital resource?
+                        </p>
+                        <input
+                            type='number'
+                            min='1'
+                            value={digitalKudosValue}
+                            onChange={(e) => setDigitalKudosValue(e.target.value)}
+                            placeholder='Enter kudos amount'
+                            className='w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700'
+                            autoFocus
+                        />
+                        <div className='flex gap-2'>
+                            <Button
+                                variant='secondary'
+                                onClick={() => {
+                                    setDigitalKudosModal(false);
+                                    setDigitalKudosValue('');
+                                }}
+                                className='flex-1 justify-center'
+                                disabled={submittingDigitalKudos}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant='success'
+                                onClick={handleSubmitDigitalKudos}
+                                disabled={submittingDigitalKudos || !digitalKudosValue || isNaN(Number(digitalKudosValue)) || Number(digitalKudosValue) <= 0}
+                                className='flex-1 justify-center'
+                            >
+                                {submittingDigitalKudos ? 'Sending...' : 'Send Kudos'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
