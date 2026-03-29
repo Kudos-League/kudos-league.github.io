@@ -162,12 +162,15 @@ const HandshakeCard: React.FC<Props> = ({
     };
 
     // Check if another handshake on this post has been completed or if items limit reached
+    // Digital gifts can have many completed handshakes (one per person giving kudos), so
+    // a completed handshake from someone else does NOT close the post for others.
+    const isDigitalGift = handshake.post?.giftType === 'digital';
     const otherCompletedHandshake = useMemo(() => {
-        if (!handshake.post?.handshakes) return null;
+        if (isDigitalGift || !handshake.post?.handshakes) return null;
         return handshake.post.handshakes.find(
             (h) => h.id !== handshake.id && h.status === 'completed'
         );
-    }, [handshake.post?.handshakes, handshake.id]);
+    }, [isDigitalGift, handshake.post?.handshakes, handshake.id]);
 
     // Check if items limit has been reached
     const itemsLimitReached = useMemo(() => {
@@ -186,7 +189,8 @@ const HandshakeCard: React.FC<Props> = ({
             (itemsLimitReached &&
                 status !== 'accepted' &&
                 status !== 'completed') ||
-            handshake.post?.status === 'closed') &&
+            (handshake.post?.status === 'closed' &&
+                status !== 'accepted')) &&
         (status === 'new' || status === 'accepted');
 
     useEffect(() => {

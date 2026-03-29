@@ -375,6 +375,7 @@ const ChatWindow: React.FC<Props> = ({
                                             <UserCard
                                                 triggerVariant='name'
                                                 user={replyTo.author}
+                                                showMessageButton={false}
                                             />
                                         </p>
                                         <p className='text-sm text-zinc-600 dark:text-zinc-400 truncate'>

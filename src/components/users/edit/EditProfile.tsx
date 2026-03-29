@@ -887,9 +887,10 @@ const EditProfile: React.FC<Props> = ({
 
                         {/* Fix for TagInput */}
                         {canEditProfile && (
-                            <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
+                            <FormField help='These interests appear on your profile. Use skills, hobbies, or topics you care about.'>
                                 <div className='w-full overflow-hidden'>
                                     <TagInput
+                                        label='Interests'
                                         initialTags={tags}
                                         onTagsChange={(nextTags) => {
                                             const next = nextTags.map(

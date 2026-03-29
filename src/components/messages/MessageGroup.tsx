@@ -39,6 +39,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         <UserCard
             triggerVariant='name'
             user={{ ...author, username: authorName }}
+            showMessageButton={false}
         />
     );
 

@@ -305,10 +305,10 @@ export default function PostEditForm({
                                 <InformationCircleIcon className='w-5 h-5' />
                             </button>
                             {showGiftTypeInfo && (
-                                <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                <div className='absolute top-full right-0 mt-1 z-50 w-48 sm:w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
                                     <p className='font-semibold mb-1'>Physical vs Digital</p>
                                     <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off.</p>
-                                    <p><strong>Digital:</strong> An online resource anyone can access. Users just give kudos — no handshake needed.</p>
+                                    <p><strong>Digital:</strong> An online resource anyone can access. Users just give kudos.</p>
                                 </div>
                             )}
                         </div>

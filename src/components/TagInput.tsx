@@ -14,12 +14,14 @@ interface TagInputProps {
     onTagsChange: (tags: Tag[]) => void;
     initialTags?: string[];
     className?: string;
+    label?: string;
 }
 
 const TagInput: React.FC<TagInputProps> = ({
     onTagsChange,
     initialTags = [],
-    className
+    className,
+    label = 'Tags'
 }) => {
     const [currentTagInput, setCurrentTagInput] = useState('');
     const [selectedTags, setSelectedTags] = useState<Tag[]>(() =>
@@ -115,7 +117,7 @@ const TagInput: React.FC<TagInputProps> = ({
     }, [fetchSuggestions]);
 
     const handleAddTag = useCallback(() => {
-        const trimmedInput = currentTagInput.trim();
+        const trimmedInput = currentTagInput.trim().replace(/,+$/, '');
         if (!trimmedInput) return;
 
         if (
@@ -170,7 +172,7 @@ const TagInput: React.FC<TagInputProps> = ({
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' || e.key === ',') {
                 e.preventDefault();
                 e.stopPropagation();
                 handleAddTag();
@@ -187,7 +189,7 @@ const TagInput: React.FC<TagInputProps> = ({
 
     return (
         <div className={`w-full space-y-3 ${className ? className : ''}`}>
-            <label className='text-sm font-semibold'>Tags</label>
+            <label className='text-sm font-semibold'>{label}</label>
             <div className='flex items-center gap-2 w-full'>
                 <input
                     ref={inputRef}
@@ -196,7 +198,7 @@ const TagInput: React.FC<TagInputProps> = ({
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     className='flex-1 min-w-0 border rounded px-3 py-2'
-                    placeholder='Enter tag and press Add'
+                    placeholder='Type and press Enter, comma, or Add'
                     autoComplete='off'
                 />
                 <Button

@@ -293,10 +293,10 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                             <InformationCircleIcon className='w-5 h-5' />
                         </button>
                         {showGiftTypeInfo && (
-                            <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                            <div className='absolute top-full right-0 mt-1 z-50 w-48 sm:w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
                                 <p className='font-semibold mb-1'>Physical vs Digital</p>
                                 <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off (e.g. clothes, books, furniture).</p>
-                                <p><strong>Digital:</strong> An online resource anyone can access (e.g. a PDF, template, guide). Users just give kudos — no handshake needed.</p>
+                                <p><strong>Digital:</strong> An online resource anyone can access (e.g. a PDF, template, guide). Users just give kudos.</p>
                             </div>
                         )}
                     </div>
@@ -336,6 +336,11 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             </FormField>
 
             <FormField name='body' label='Description *'>
+                {giftType === 'digital' && postType === 'gift' && (
+                    <p className='text-xs text-blue-600 dark:text-blue-400 mb-1'>
+                        Please include a link to the digital resource in your description.
+                    </p>
+                )}
                 <Input
                     name='body'
                     label=''
