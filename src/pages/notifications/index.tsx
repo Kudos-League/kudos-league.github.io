@@ -25,7 +25,7 @@ import {
     NotificationType,
     NotificationsHistoryResponse
 } from '@/shared/api/types';
-import { routes } from '@/routes';
+import { routes, withQuery } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/useAuth';
 import UserCard from '@/components/users/UserCard';
@@ -88,6 +88,57 @@ function PostReplyNotificationContent({
                             )}
                         </>
                     ) : ' your post'}
+                </p>
+                {notification.message?.content && (
+                    <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                        {notification.message.content}
+                    </p>
+                )}
+                {createdAt && (
+                    <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                        {createdAt}
+                    </time>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function MessageReplyNotificationContent({
+    notification,
+    currentUserID,
+    createdAt
+}: {
+    notification: NotificationRecord & { type: typeof NotificationType.MESSAGE_REPLY };
+    currentUserID?: number;
+    createdAt: string;
+}) {
+    const author = notification.message?.author;
+    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const hasUsername = author?.username || author?.displayName;
+
+    return (
+        <div className='flex items-start gap-3'>
+            {isCurrentUser ? (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        You
+                    </span>
+                </div>
+            ) : hasUsername ? (
+                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
+                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                </div>
+            ) : (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        Someone
+                    </span>
+                </div>
+            )}
+            <div className='flex-1 min-w-0'>
+                <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                    replied to your message
                 </p>
                 {notification.message?.content && (
                     <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -260,6 +311,11 @@ function describeNotification(
     handshake?: any
 ) {
     switch (notification.type) {
+    case NotificationType.MESSAGE_REPLY:
+        return {
+            title: 'Reply to your message',
+            description: notification.message?.content || ''
+        };
     case NotificationType.POST_REPLY:
         return {
             title: 'Reply to your post',
@@ -601,6 +657,9 @@ export default function NotificationsPage() {
                 hasEventUserJoined: response.items.some(
                     (item) => item.type === 'event-user-joined'
                 ),
+                hasMessageReply: response.items.some(
+                    (item) => item.type === NotificationType.MESSAGE_REPLY
+                ),
                 hasEventReply: response.items.some(
                     (item) => item.type === 'event-reply'
                 )
@@ -657,12 +716,14 @@ export default function NotificationsPage() {
                     }
                     if (filter === 'comments') {
                         return (
+                            item.type === NotificationType.MESSAGE_REPLY ||
                             item.type === NotificationType.POST_REPLY ||
                               item.type === NotificationType.EVENT_REPLY
                         );
                     }
                     if (filter === 'other') {
                         return (
+                            item.type !== NotificationType.MESSAGE_REPLY &&
                             item.type !== NotificationType.POST_REPLY &&
                               item.type !== NotificationType.EVENT_REPLY &&
                               item.type !==
@@ -901,6 +962,26 @@ export default function NotificationsPage() {
             if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
             }
+            else if (notification.type === NotificationType.MESSAGE_REPLY) {
+                if ('postID' in notification && notification.postID) {
+                    navigate(`/post/${notification.postID}`);
+                }
+                else if ('eventID' in notification && notification.eventID) {
+                    navigate(`/event/${notification.eventID}`);
+                }
+                else if ('channelID' in notification && notification.channelID) {
+                    const basePath =
+                        'channelType' in notification &&
+                        notification.channelType === 'dm'
+                            ? routes.dms
+                            : routes.chat;
+                    navigate(
+                        withQuery(basePath, {
+                            channelID: notification.channelID
+                        })
+                    );
+                }
+            }
             else if (notification.type === NotificationType.EVENT_REPLY) {
                 navigate(`/event/${notification.eventID}`);
             }
@@ -971,6 +1052,16 @@ export default function NotificationsPage() {
         handshake?: any
     ) => {
         const createdAt = formatCreatedAt(notification.createdAt);
+
+        if (notification.type === NotificationType.MESSAGE_REPLY) {
+            return (
+                <MessageReplyNotificationContent
+                    notification={notification as any}
+                    currentUserID={user?.id}
+                    createdAt={createdAt}
+                />
+            );
+        }
 
         if (notification.type === NotificationType.POST_REPLY) {
             return (

@@ -570,6 +570,7 @@ export default function ChatModal({
                                                     <UserCard
                                                         triggerVariant='name'
                                                         user={replyTo.author}
+                                                        showMessageButton={false}
                                                     />
                                                 </div>
                                                 <div
@@ -677,6 +678,7 @@ export default function ChatModal({
                                                             user={
                                                                 replyTo.author
                                                             }
+                                                            showMessageButton={false}
                                                         />
                                                     </div>
                                                 )}

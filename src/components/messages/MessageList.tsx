@@ -210,7 +210,10 @@ const MessageList: React.FC<Props> = ({
             >
                 <div className='mb-2 flex justify-between items-start'>
                     <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                        <UserCard user={msg.author} />
+                        <UserCard
+                            user={msg.author}
+                            showMessageButton={false}
+                        />
                     </span>
 
                     {/* Action buttons */}
@@ -342,6 +345,7 @@ const MessageList: React.FC<Props> = ({
                                     user={
                                         byId.get(msg.replyToMessageID)?.author
                                     }
+                                    showMessageButton={false}
                                 />
                             </span>
                             <span className='opacity-90 truncate'>

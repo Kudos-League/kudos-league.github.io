@@ -384,6 +384,7 @@ export interface FeedbackDTO {
 
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
+    MESSAGE_REPLY: 'message-reply',
     POST_REPLY: 'post-reply',
     EVENT_REPLY: 'event-reply',
     POST_AUTO_CLOSE: 'post-auto-close',
@@ -417,6 +418,15 @@ export type PostReplyNotification = {
     message: MessageDTO;
 };
 
+export type MessageReplyNotification = {
+    type: typeof NotificationType.MESSAGE_REPLY;
+    message: MessageDTO;
+    channelID?: number;
+    channelType?: ChannelDTO['type'];
+    postID?: number;
+    eventID?: number;
+};
+
 export type EventReplyNotification = {
     type: typeof NotificationType.EVENT_REPLY;
     eventID: number;
@@ -439,6 +449,7 @@ export type EventInviteNotification = {
 
 export type NotificationPayload =
     | DirectMessageNotification
+    | MessageReplyNotification
     | PostReplyNotification
     | EventReplyNotification
     | EventUserJoinedNotification

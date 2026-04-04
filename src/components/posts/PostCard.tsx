@@ -8,6 +8,7 @@ import Pill from '@/components/common/Pill';
 import TextWithLinks from '../common/TextWithLinks';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
 import ImageCarousel from '@/components/Carousel';
+import { isPostEffectivelyClosed } from '@/shared/postStatus';
 
 function truncateBody(body: string, max = 100) {
     return body.length <= max ? body : body.slice(0, max) + '…';
@@ -60,7 +61,7 @@ export default function PostCard(props: Props) {
 
     const viewerHandshake = getUserHandshake({ handshakes }, user?.id);
 
-    const isClosed = status === 'closed' || status === 'offer_posted';
+    const isClosed = isPostEffectivelyClosed({ status, type, giftType });
     const isOwnPost = user?.id && sender?.id === user.id;
 
     // Determine background color based on post state

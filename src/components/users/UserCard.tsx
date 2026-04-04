@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
+import { useCreateChannel } from '@/shared/api/mutations/handshakes';
 import Tippy from '@tippyjs/react/headless';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -122,6 +123,7 @@ const UserCard: React.FC<Props> = ({
         block,
         unblock
     } = useBlockedUsers();
+    const createChannelMutation = useCreateChannel();
 
     // Detect mobile devices
     const isMobile = useMemo(() => {
@@ -142,6 +144,30 @@ const UserCard: React.FC<Props> = ({
         e.stopPropagation();
         if (user?.id) {
             navigate(`/user/${user.id}`);
+        }
+    };
+
+    const handleStartDM = async (
+        e: React.MouseEvent<HTMLButtonElement>
+    ) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (!currentUser?.id || !user?.id || currentUser.id === user.id) {
+            return;
+        }
+
+        try {
+            await createChannelMutation.mutateAsync({
+                name: `DM: User ${currentUser.id} & User ${user.id}`,
+                channelType: 'dm',
+                userIDs: [currentUser.id, user.id]
+            });
+            navigate(`/dms/${user.id}`);
+        }
+        catch (err) {
+            console.error('Failed to create or get DM channel', err);
+            alert('Failed to start a direct message. Please try again.');
         }
     };
 
@@ -268,13 +294,14 @@ const UserCard: React.FC<Props> = ({
                     ? 'focus'
                     : 'mouseenter focus';
 
+    const canMessageUser =
+        showMessageButton &&
+        currentUser &&
+        user?.id &&
+        currentUser.id !== user.id;
+
     if (disableTooltip || isMobile) {
-        const showDMButton =
-            isMobile &&
-            showMessageButton &&
-            currentUser &&
-            user?.id &&
-            currentUser.id !== user.id;
+        const showDMButton = isMobile && canMessageUser;
 
         return (
             <div
@@ -290,11 +317,10 @@ const UserCard: React.FC<Props> = ({
                 {trigger}
                 {showDMButton && (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/dms/${user.id}`);
-                        }}
+                        type='button'
+                        onClick={handleStartDM}
                         title={`Send message to ${displayName}`}
+                        disabled={createChannelMutation.isPending}
                         className='ml-1 p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400'
                     >
                         <EnvelopeIcon className='h-5 w-5' />
@@ -544,6 +570,22 @@ const UserCard: React.FC<Props> = ({
                                         >
                                             View Profile
                                         </button>
+                                        {canMessageUser && (
+                                            <button
+                                                type='button'
+                                                onClick={handleStartDM}
+                                                disabled={
+                                                    createChannelMutation.isPending
+                                                }
+                                                className='inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium
+                                            bg-brand-600 text-white hover:opacity-90 active:opacity-80 transition disabled:opacity-60 disabled:cursor-not-allowed ml-2 gap-1.5'
+                                            >
+                                                <EnvelopeIcon className='h-4 w-4' />
+                                                {createChannelMutation.isPending
+                                                    ? 'Opening...'
+                                                    : 'DM'}
+                                            </button>
+                                        )}
                                         {currentUser &&
                                             user?.id &&
                                             currentUser.id !== user.id && (

@@ -6,6 +6,7 @@ import Spinner from '../common/Spinner';
 import Alert from '../common/Alert';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/useAuth';
+import { isPostEffectivelyClosed } from '@/shared/postStatus';
 
 type PostFilterType = 'all' | 'gifts' | 'requests';
 type OrderType = 'date' | 'distance' | 'kudos';
@@ -105,8 +106,7 @@ export default function PostsInfinite({
 
         // Filter out closed posts unless user is the creator
         filtered = filtered.filter((post) => {
-            const isClosed =
-                post.status === 'closed' || post.status === 'offer_posted';
+            const isClosed = isPostEffectivelyClosed(post);
             if (!isClosed) return true; // Show open posts
 
             // Only show closed posts if user is the creator

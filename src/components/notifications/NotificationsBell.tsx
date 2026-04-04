@@ -1,9 +1,9 @@
 import { useNotifications } from '@/contexts/NotificationsContext';
-import { NotificationRecord } from '@/shared/api/types';
+import { NotificationRecord, NotificationType } from '@/shared/api/types';
 import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { routes } from '@/routes';
+import { useNavigate } from 'react-router-dom';
+import { routes, withQuery } from '@/routes';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
 import { useCachedHandshake, useCachedPost, useCachedUser } from '@/contexts/DataCacheContext';
@@ -172,6 +172,31 @@ function PostReplyBellItem({
                             )}
                         </>
                     ) : ' your post'}
+                </div>
+                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                    {formatTimeAgo(n)}
+                </div>
+            </div>
+            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                {n.message?.content}
+            </div>
+        </div>
+    );
+}
+
+function MessageReplyBellItem({
+    n,
+    formatTimeAgo
+}: {
+    n: any;
+    formatTimeAgo: (n: any) => string;
+}) {
+    return (
+        <div>
+            <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                <div className='text-sm md:text-sm font-medium pr-12'>
+                    <UserCard user={n.message?.author} triggerVariant='name' />{' '}
+                    replied to your message
                 </div>
                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                     {formatTimeAgo(n)}
@@ -366,7 +391,22 @@ export default function NotificationsBell() {
             });
         }
 
-        if (n.type === 'post-reply') {
+        if (n.type === NotificationType.MESSAGE_REPLY) {
+            if ('postID' in n && n.postID) {
+                navigate(`/post/${n.postID}`);
+            }
+            else if ('eventID' in n && n.eventID) {
+                navigate(`/event/${n.eventID}`);
+            }
+            else if ('channelID' in n && n.channelID) {
+                const basePath =
+                    'channelType' in n && n.channelType === 'dm'
+                        ? routes.dms
+                        : routes.chat;
+                navigate(withQuery(basePath, { channelID: n.channelID }));
+            }
+        }
+        else if (n.type === 'post-reply') {
             if (postID) {
                 navigate(`/post/${postID}`);
             }
@@ -500,7 +540,12 @@ export default function NotificationsBell() {
                                         `}
                                         onClick={() => go(n)}
                                     >
-                                        {n.type === 'post-reply' ? (
+                                        {n.type === NotificationType.MESSAGE_REPLY ? (
+                                            <MessageReplyBellItem
+                                                n={n}
+                                                formatTimeAgo={formatTimeAgo}
+                                            />
+                                        ) : n.type === 'post-reply' ? (
                                             <PostReplyBellItem
                                                 n={n}
                                                 formatTimeAgo={formatTimeAgo}

@@ -27,6 +27,11 @@ import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { getImagePath, getEndpointUrl } from '@/shared/api/config';
 import { pushAlert } from '@/components/common/alertBus';
 import {
+    hasUserGivenDigitalKudos,
+    isDigitalGiftPost,
+    isPostEffectivelyClosed
+} from '@/shared/postStatus';
+import {
     useUpdatePost,
     useLikePost,
     useReportPost,
@@ -292,6 +297,13 @@ export default function PostDetails(props: Props) {
 
         // Digital gifts: prompt for kudos amount before creating the handshake
         if (postDetails.type === 'gift' && postDetails.giftType === 'digital') {
+            if (hasUserGivenDigitalKudos(postDetails, user?.id)) {
+                pushAlert({
+                    type: 'info',
+                    message: "You've already given kudos to this account."
+                });
+                return;
+            }
             setDigitalKudosValue('');
             setDigitalKudosModal(true);
             return;
@@ -340,6 +352,15 @@ export default function PostDetails(props: Props) {
 
     const handleSubmitDigitalKudos = async () => {
         if (!postDetails || !user) return;
+
+        if (hasUserGivenDigitalKudos(postDetails, user.id)) {
+            setDigitalKudosModal(false);
+            pushAlert({
+                type: 'info',
+                message: "You've already given kudos to this account."
+            });
+            return;
+        }
 
         const kudos = Number(digitalKudosValue);
         if (!digitalKudosValue || isNaN(kudos) || kudos <= 0) {
@@ -836,7 +857,10 @@ export default function PostDetails(props: Props) {
         setAcceptingHighestKudos(true);
 
         try {
-            await acceptHandshakeMut.mutateAsync(highestKudosHandshakeData.handshake.id);
+            await acceptHandshakeMut.mutateAsync({
+                handshakeID: highestKudosHandshakeData.handshake.id,
+                postID: postDetails.id
+            });
 
             setPostDetails((prev: PostDTO) => {
                 if (!prev) return prev;
@@ -985,12 +1009,17 @@ export default function PostDetails(props: Props) {
     if (!postDetails) return null;
 
     const isPostOwner = user?.id === postDetails.sender?.id;
+    const isDigitalGift = isDigitalGiftPost(postDetails);
+    const isClosedPost = isPostEffectivelyClosed(postDetails);
+    const alreadyGaveDigitalKudos = hasUserGivenDigitalKudos(
+        postDetails,
+        user?.id
+    );
     const pendingHandshakesCount = (postDetails.handshakes || []).filter(
         (h: any) => h.status === 'new'
     ).length;
-    const hasPendingHandshakes = pendingHandshakesCount > 0;
     const showAcceptHighestKudosButton =
-        isPostOwner && pendingHandshakesCount > 1 && postDetails.status !== 'closed';
+        isPostOwner && pendingHandshakesCount > 1 && !isClosedPost;
 
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
@@ -1060,7 +1089,7 @@ export default function PostDetails(props: Props) {
                                 onClick={handleStartEdit}
                                 disabled={isEditing}
                             />
-                            {postDetails.status !== 'closed' && (
+                            {!isClosedPost && (
                                 <Button
                                     onClick={handleClosePost}
                                     className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
@@ -1096,14 +1125,14 @@ export default function PostDetails(props: Props) {
                     </Pill>
 
                     {/* Digital Badge */}
-                    {postDetails.type === 'gift' && postDetails.giftType === 'digital' && (
+                    {isDigitalGift && (
                         <Pill tone='info' className='uppercase font-semibold text-xs'>
                             DIGITAL
                         </Pill>
                     )}
 
                     {/* Status Badge */}
-                    {postDetails.status === 'closed' || postDetails.status == 'offer_posted' ? (
+                    {isClosedPost ? (
                         <Pill
                             tone='danger'
                             className='uppercase font-semibold text-xs'
@@ -1112,7 +1141,9 @@ export default function PostDetails(props: Props) {
                         </Pill>
                     ) : (
                         <Pill tone='neutral' className='uppercase text-xs'>
-                            {postDetails.status}
+                            {postDetails.status === 'offer_posted' && isDigitalGift
+                                ? 'new'
+                                : postDetails.status}
                         </Pill>
                     )}
 
@@ -1603,7 +1634,7 @@ export default function PostDetails(props: Props) {
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
-                        {postDetails.giftType === 'digital'
+                        {isDigitalGift
                             ? 'Kudos'
                             : postDetails.type === 'request' ? 'Offers' : 'Requests'}
                     </h2>
@@ -1612,7 +1643,7 @@ export default function PostDetails(props: Props) {
                         <div className='flex items-center gap-2'>
                             <Button
                                 onClick={handleAcceptHighestKudos}
-                                disabled={acceptingHighestKudos || isEditing || postDetails.status === 'closed' || postDetails.status == 'offer_posted'} 
+                                disabled={acceptingHighestKudos || isEditing || isClosedPost}
                                 variant='success'
                                 className='flex items-center gap-2 ml-2'
                             >
@@ -1699,7 +1730,7 @@ export default function PostDetails(props: Props) {
                     showUserKudos={true}
                 />
 
-                {user && postDetails.status !== 'closed' &&
+                {user && !isClosedPost &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
                         (h: any) =>
@@ -1711,9 +1742,9 @@ export default function PostDetails(props: Props) {
                             disabled={creatingHandshake || isEditing}
                         >
                             {creatingHandshake
-                                ? (postDetails.giftType === 'digital' ? 'Giving Kudos...' : 'Creating...')
+                                ? (isDigitalGift ? 'Giving Kudos...' : 'Creating...')
                                 : postDetails.type === 'gift'
-                                    ? (postDetails.giftType === 'digital' ? 'Give Kudos' : 'Request This')
+                                    ? (isDigitalGift ? 'Give Kudos' : 'Request This')
                                     : 'Gift This'}
                         </Button>
                     </div>
@@ -1723,11 +1754,16 @@ export default function PostDetails(props: Props) {
                         Log in or register to interact
                     </div>
                 )}
+                {alreadyGaveDigitalKudos && (
+                    <div className='mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200'>
+                        You&apos;ve already given kudos to this account. You can still comment below.
+                    </div>
+                )}
             </div>
 
             {/* Comments */}
             <div className='p-4 mb-6'>
-                {(postDetails.status === 'closed' || postDetails.status === 'offer_posted') && (
+                {isClosedPost && (
                     <p className='text-red-500 text-sm font-medium mb-3'>
                         Comments are not allowed because this post is closed.
                     </p>
@@ -1749,12 +1785,12 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user && !isEditing || (postDetails.status !== 'closed' && postDetails.status !== 'offer_posted')}
+                    showSendMessage={!!user && !isEditing && !isClosedPost}
                     allowDelete={!!user && !isEditing}
                     allowEdit={!!user && !isEditing}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
-                    active={postDetails.status !== 'closed' && postDetails.status !== 'offer_posted' && !isEditing}
+                    active={!isClosedPost && !isEditing}
                 />
             </div>
 
@@ -1825,7 +1861,7 @@ export default function PostDetails(props: Props) {
                                     />
                                 </svg>
                             </div>
-                            {postDetails.giftType === 'digital' ? (
+                            {isDigitalGift ? (
                                 <>
                                     <h2 className='text-2xl font-bold mb-3'>
                                         Kudos Given!
@@ -1861,7 +1897,7 @@ export default function PostDetails(props: Props) {
                             )}
                         </div>
                         <div className='flex flex-col gap-2'>
-                            {postDetails.giftType !== 'digital' && (
+                            {!isDigitalGift && (
                                 <Button
                                     onClick={handleOpenChatFromSuccess}
                                     variant='primary'
@@ -1872,10 +1908,10 @@ export default function PostDetails(props: Props) {
                             )}
                             <Button
                                 onClick={() => setHandshakeSuccessModal(false)}
-                                variant={postDetails.giftType === 'digital' ? 'primary' : 'secondary'}
+                                variant={isDigitalGift ? 'primary' : 'secondary'}
                                 className='w-full justify-center'
                             >
-                                {postDetails.giftType === 'digital' ? 'Done' : "I'll Message Later"}
+                                {isDigitalGift ? 'Done' : "I'll Message Later"}
                             </Button>
                         </div>
                     </div>

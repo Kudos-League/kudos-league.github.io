@@ -395,7 +395,10 @@ const HandshakeCard: React.FC<Props> = ({
                 receiverID: gifterID
             };
             await createOfferMutation.mutateAsync(dto);
-            await completeHandshakeMutation.mutateAsync(handshake.id);
+            await completeHandshakeMutation.mutateAsync({
+                handshakeID: handshake.id,
+                postID: handshake.postID
+            });
             setStatus('completed');
             setKudosValue('');
             pushAlert({

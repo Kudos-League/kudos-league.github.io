@@ -127,7 +127,10 @@ export default function MinimalHandshakeCard({
                 currency: 'kudos',
                 receiverID: stage.gifterID
             });
-            await completeHandshakeMutation.mutateAsync(handshake.id);
+            await completeHandshakeMutation.mutateAsync({
+                handshakeID: handshake.id,
+                postID: handshake.postID
+            });
             setStatus('completed');
             setKudosValue('');
             setShowKudosInput(false);

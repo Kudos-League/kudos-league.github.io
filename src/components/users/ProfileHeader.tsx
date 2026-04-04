@@ -61,6 +61,7 @@ const ProfileHeader: React.FC<Props> = ({
                     user={targetUser}
                     triggerVariant='name'
                     disableTooltip
+                    showMessageButton={false}
                 />
             </h1>
             <p className='text-gray-600 dark:text-gray-300 text-sm'>

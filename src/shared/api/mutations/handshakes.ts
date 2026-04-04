@@ -1,7 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiMutate } from '@/shared/api/apiClient';
+import { qk } from '@/shared/api/queries/posts';
 import type { ChannelDTO } from '@/shared/api/types';
 import { useDataCache } from '@/contexts/DataCacheContext';
+
+type HandshakeMutationVars =
+    | number
+    | {
+        handshakeID: number;
+        postID?: number;
+    };
+
+function normalizeHandshakeMutationVars(variables: HandshakeMutationVars) {
+    return typeof variables === 'number'
+        ? { handshakeID: variables, postID: undefined }
+        : variables;
+}
 
 export function useCreateChannel() {
     const qc = useQueryClient();
@@ -20,9 +34,10 @@ export function useCreateChannel() {
 
 export function useAcceptHandshake() {
     const qc = useQueryClient();
-    const { invalidateHandshake } = useDataCache();
-    return useMutation<any, any, number>({
-        mutationFn: (handshakeID) => {
+    const { invalidateHandshake, invalidatePost } = useDataCache();
+    return useMutation<any, any, HandshakeMutationVars>({
+        mutationFn: (variables) => {
+            const { handshakeID } = normalizeHandshakeMutationVars(variables);
             if (typeof handshakeID !== 'number') {
                 throw new Error('handshakeID is required');
             }
@@ -30,8 +45,14 @@ export function useAcceptHandshake() {
                 status: 'accepted'
             });
         },
-        onSuccess: (_, handshakeID) => {
+        onSuccess: (_, variables) => {
+            const { handshakeID, postID } =
+                normalizeHandshakeMutationVars(variables);
             qc.invalidateQueries({ queryKey: ['posts'] });
+            if (postID) {
+                qc.invalidateQueries({ queryKey: qk.post(postID) });
+                invalidatePost(postID);
+            }
             qc.invalidateQueries({ queryKey: ['handshakes'] });
             qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
             invalidateHandshake(handshakeID);
@@ -41,9 +62,10 @@ export function useAcceptHandshake() {
 
 export function useCompleteHandshake() {
     const qc = useQueryClient();
-    const { invalidateHandshake } = useDataCache();
-    return useMutation<any, any, number>({
-        mutationFn: (handshakeID) => {
+    const { invalidateHandshake, invalidatePost } = useDataCache();
+    return useMutation<any, any, HandshakeMutationVars>({
+        mutationFn: (variables) => {
+            const { handshakeID } = normalizeHandshakeMutationVars(variables);
             if (typeof handshakeID !== 'number') {
                 throw new Error('handshakeID is required');
             }
@@ -51,8 +73,14 @@ export function useCompleteHandshake() {
                 status: 'completed'
             });
         },
-        onSuccess: (_, handshakeID) => {
+        onSuccess: (_, variables) => {
+            const { handshakeID, postID } =
+                normalizeHandshakeMutationVars(variables);
             qc.invalidateQueries({ queryKey: ['posts'] });
+            if (postID) {
+                qc.invalidateQueries({ queryKey: qk.post(postID) });
+                invalidatePost(postID);
+            }
             qc.invalidateQueries({ queryKey: ['handshakes'] });
             qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
             invalidateHandshake(handshakeID);
@@ -62,16 +90,23 @@ export function useCompleteHandshake() {
 
 export function useDeleteHandshake() {
     const qc = useQueryClient();
-    const { invalidateHandshake } = useDataCache();
-    return useMutation<void, any, number>({
-        mutationFn: (handshakeID) => {
+    const { invalidateHandshake, invalidatePost } = useDataCache();
+    return useMutation<void, any, HandshakeMutationVars>({
+        mutationFn: (variables) => {
+            const { handshakeID } = normalizeHandshakeMutationVars(variables);
             if (typeof handshakeID !== 'number') {
                 throw new Error('handshakeID is required');
             }
             return apiMutate(`/handshakes/${handshakeID}`, 'delete');
         },
-        onSuccess: (_, handshakeID) => {
+        onSuccess: (_, variables) => {
+            const { handshakeID, postID } =
+                normalizeHandshakeMutationVars(variables);
             qc.invalidateQueries({ queryKey: ['posts'] });
+            if (postID) {
+                qc.invalidateQueries({ queryKey: qk.post(postID) });
+                invalidatePost(postID);
+            }
             qc.invalidateQueries({ queryKey: ['handshakes'] });
             qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
             invalidateHandshake(handshakeID);
@@ -93,6 +128,9 @@ export function useUndoAcceptHandshake() {
         },
         onSuccess: (_, { handshakeID, postID }) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
+            if (postID) {
+                qc.invalidateQueries({ queryKey: qk.post(postID) });
+            }
             qc.invalidateQueries({ queryKey: ['handshakes'] });
             qc.invalidateQueries({ queryKey: ['notifications', 'history'] });
             invalidateHandshake(handshakeID);
@@ -103,10 +141,15 @@ export function useUndoAcceptHandshake() {
 
 export function useCreateOffer() {
     const qc = useQueryClient();
+    const { invalidatePost } = useDataCache();
     return useMutation<any, any, any>({
         mutationFn: (payload) => apiMutate('/offers', 'post', payload),
-        onSuccess: () => {
+        onSuccess: (_, payload) => {
             qc.invalidateQueries({ queryKey: ['posts'] });
+            if (payload?.postID) {
+                qc.invalidateQueries({ queryKey: qk.post(payload.postID) });
+                invalidatePost(payload.postID);
+            }
         }
     });
 }

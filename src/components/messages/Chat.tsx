@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ChannelDrawer from './ChannelDrawer';
 import { apiGet } from '@/shared/api/apiClient';
 import { MessageDTO, ChannelDTO } from '@/shared/api/types';
@@ -14,7 +14,6 @@ import {
     useDeleteMessage,
     useUpdateMessage
 } from '@/shared/api/mutations/messages';
-import Button from '@/components/common/Button';
 
 type Props = {
     channelType?: 'dm' | 'public';
@@ -25,6 +24,7 @@ export default function Chat({ channelType, initialUserId }: Props) {
     const [pageHeaderHeight, setPageHeaderHeight] = useState<number>(0);
     const { id: targetUserIDParam } = useParams<{ id: string }>();
     const targetUserID = initialUserId?.toString() ?? targetUserIDParam;
+    const [searchParams] = useSearchParams();
     const { token, user } = useAuth();
     const { messages, setMessages, joinChannel, leaveChannel, send } =
         useWebSocketContext();
@@ -56,6 +56,10 @@ export default function Chat({ channelType, initialUserId }: Props) {
         location.pathname.includes('/dms') || Boolean(targetUserID);
     const isDMFromProp = channelType === 'dm';
     const resolvedIsDM = channelType ? isDMFromProp : routeIsDM;
+    const requestedChannelID = Number(searchParams.get('channelID') || '');
+    const targetChannelID = Number.isFinite(requestedChannelID)
+        ? requestedChannelID
+        : null;
 
     // Track previous value to detect actual mode changes
     const prevResolvedIsDM = useRef<boolean | null>(null);
@@ -87,13 +91,17 @@ export default function Chat({ channelType, initialUserId }: Props) {
         if (channelsQuery.data && channelsQuery.data.length > 0) {
             setChannels(channelsQuery.data);
 
-            // Auto-select first public channel if none selected
             if (!selectedChannel) {
-                selectChannel(channelsQuery.data[0]);
+                const matchedChannel = targetChannelID
+                    ? channelsQuery.data.find(
+                        (channel) => channel.id === targetChannelID
+                    )
+                    : null;
+                selectChannel(matchedChannel || channelsQuery.data[0]);
                 setShowChatOnMobile(true);
             }
         }
-    }, [channelsQuery.data, resolvedIsDM, selectedChannel]);
+    }, [channelsQuery.data, resolvedIsDM, selectedChannel, targetChannelID]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -253,7 +261,17 @@ export default function Chat({ channelType, initialUserId }: Props) {
 
                 setChannels(sortedChannels);
 
-                if (targetUserID) {
+                if (targetChannelID) {
+                    const matchedChannel = channelsWithLastMessage.find(
+                        (channel) => channel.id === targetChannelID
+                    );
+
+                    if (matchedChannel) {
+                        await selectChannel(matchedChannel);
+                        setShowChatOnMobile(true);
+                    }
+                }
+                else if (targetUserID) {
                     const parsedId = Number(targetUserID);
                     const matchedChannel = channelsWithLastMessage.find(
                         (channel) =>
@@ -278,7 +296,7 @@ export default function Chat({ channelType, initialUserId }: Props) {
         if (resolvedIsDM) {
             fetchDMChannels();
         }
-    }, [user, token, targetUserID, joinChannel, resolvedIsDM, channelType]);
+    }, [user, token, targetUserID, targetChannelID, joinChannel, resolvedIsDM, channelType]);
 
     // Keep track of the latest messages to detect actual changes
     useEffect(() => {

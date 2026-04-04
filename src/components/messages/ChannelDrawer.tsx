@@ -70,7 +70,10 @@ export default function ChannelDrawer({
                                     >
                                         <div className='text-sm font-medium text-gray-900 dark:text-white'>
                                             {isDMView ? (
-                                                <UserCard user={otherUser} />
+                                                <UserCard
+                                                    user={otherUser}
+                                                    showMessageButton={false}
+                                                />
                                             ) : (
                                                 c.name
                                             )}

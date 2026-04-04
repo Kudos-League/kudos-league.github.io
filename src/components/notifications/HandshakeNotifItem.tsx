@@ -304,7 +304,10 @@ export default function HandshakeNotifItem({
                 currency: 'kudos',
                 receiverID: gifterID,
             } as any);
-            await completeHandshakeMutation.mutateAsync(handshake!.id);
+            await completeHandshakeMutation.mutateAsync({
+                handshakeID: handshake!.id,
+                postID: handshake!.postID
+            });
             setStatus('completed');
             setKudosValue('');
             pushAlert({ type: 'success', message: `${kudosValue} kudos sent!` });

@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, {
+    useState,
+    useMemo,
+    useRef,
+    useCallback,
+    useEffect
+} from 'react';
 import { CreateMessageDTO, MessageDTO } from '@/shared/api/types';
 import {
     useSendMessage,
@@ -104,6 +110,8 @@ const MessageList: React.FC<Props> = ({
     const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
     // Use HTMLTextAreaElement instead of HTMLInputElement for the ref
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const editFormRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const editTextareaRefs = useRef<Map<number, HTMLTextAreaElement>>(new Map());
 
     // Helper function to auto-adjust textarea height
     const adjustTextareaHeight = useCallback(
@@ -272,6 +280,29 @@ const MessageList: React.FC<Props> = ({
         return map;
     }, [processedMessages]);
 
+    useEffect(() => {
+        if (editingMessageId == null) return;
+
+        const frame = window.requestAnimationFrame(() => {
+            const editForm = editFormRefs.current.get(editingMessageId);
+            const textarea = editTextareaRefs.current.get(editingMessageId);
+
+            editForm?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+
+            if (textarea) {
+                textarea.focus();
+                const cursorPosition = textarea.value.length;
+                textarea.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [editingMessageId]);
+
     // --- New Toggle Function ---
     const toggleExpansion = (messageId: number) => {
         setExpandedMessages((prev) => {
@@ -308,6 +339,22 @@ const MessageList: React.FC<Props> = ({
             }
             else {
                 messageRefs.current.delete(msg.id);
+            }
+        };
+        const editFormRef = (el: HTMLDivElement | null) => {
+            if (el) {
+                editFormRefs.current.set(msg.id, el);
+            }
+            else {
+                editFormRefs.current.delete(msg.id);
+            }
+        };
+        const editTextareaRef = (el: HTMLTextAreaElement | null) => {
+            if (el) {
+                editTextareaRefs.current.set(msg.id, el);
+            }
+            else {
+                editTextareaRefs.current.delete(msg.id);
             }
         };
 
@@ -430,8 +477,9 @@ const MessageList: React.FC<Props> = ({
 
                 {/* Message content or edit form */}
                 {isEditing ? (
-                    <div className='space-y-2'>
+                    <div ref={editFormRef} className='space-y-2 scroll-mt-24'>
                         <textarea
+                            ref={editTextareaRef}
                             value={editContent}
                             onChange={(e) => {
                                 setEditContent(e.target.value);
@@ -453,18 +501,18 @@ const MessageList: React.FC<Props> = ({
                                 }
                             }}
                         />
-                        <div className='flex gap-2'>
+                        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
                             <Button
                                 onClick={() => handleEditSave(msg.id)}
                                 disabled={!editContent.trim()}
-                                className='text-xs'
+                                className='w-full sm:w-auto text-xs'
                             >
                                 Save
                             </Button>
                             <Button
                                 onClick={handleEditCancel}
                                 variant='secondary'
-                                className='text-xs'
+                                className='w-full sm:w-auto text-xs'
                             >
                                 Cancel
                             </Button>
