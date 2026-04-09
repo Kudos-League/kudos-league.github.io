@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { useUpdateUser } from '@/shared/api/mutations/users';
@@ -78,6 +78,7 @@ const EditProfile: React.FC<Props> = ({
     });
     const [locationLabel, setLocationLabel] = useState<string>(
         targetUser?.location?.name || ''
+
     );
     const deleteAccountMutation = useDeleteAccountMutation();
     const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
@@ -589,6 +590,71 @@ const EditProfile: React.FC<Props> = ({
         }
     };
 
+    // Warn user about unsaved changes when trying to close
+    const handleClose = useCallback(() => {
+        if (canSave) {
+            if (!window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                return;
+            }
+        }
+        onClose();
+    }, [canSave, onClose]);
+
+    // Warn on browser tab close / refresh
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (canSave) {
+                e.preventDefault();
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [canSave]);
+
+    // Block browser back/forward and client-side navigation when there are unsaved changes
+    useEffect(() => {
+        if (!canSave) return;
+
+        // Push a sentinel state so pressing back stays on the same page
+        window.history.pushState(null, '', window.location.href);
+
+        const handlePopState = () => {
+            if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                window.history.back();
+            }
+            else {
+                window.history.pushState(null, '', window.location.href);
+            }
+        };
+
+        // Intercept pushState/replaceState to catch <Link> / navigate() calls
+        const originalPushState = window.history.pushState.bind(window.history);
+        const originalReplaceState = window.history.replaceState.bind(window.history);
+
+        const guardNavigation = (
+            original: typeof window.history.pushState,
+            ...args: Parameters<typeof window.history.pushState>
+        ) => {
+            const [, , url] = args;
+            const isSamePage = !url || String(url) === window.location.href;
+            if (isSamePage) return original(...args);
+
+            if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                return original(...args);
+            }
+        };
+
+        window.history.pushState = (...args) => guardNavigation(originalPushState, ...args);
+        window.history.replaceState = (...args) => guardNavigation(originalReplaceState, ...args);
+
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.history.pushState = originalPushState;
+            window.history.replaceState = originalReplaceState;
+        };
+    }, [canSave]);
+
     return (
         <>
             <style>{`
@@ -613,7 +679,7 @@ const EditProfile: React.FC<Props> = ({
                     <div className='flex items-center justify-between min-w-0'>
                         <div className='flex items-center gap-4 min-w-0 flex-1'>
                             <button
-                                onClick={onClose}
+                                onClick={handleClose}
                                 className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex-shrink-0'
                                 aria-label='Close settings'
                             >
@@ -821,9 +887,10 @@ const EditProfile: React.FC<Props> = ({
 
                         {/* Fix for TagInput */}
                         {canEditProfile && (
-                            <FormField help='These tags appear on your profile. Use interests, skills, or hobbies.'>
+                            <FormField help='These interests appear on your profile. Use skills, hobbies, or topics you care about.'>
                                 <div className='w-full overflow-hidden'>
                                     <TagInput
+                                        label='Interests'
                                         initialTags={tags}
                                         onTagsChange={(nextTags) => {
                                             const next = nextTags.map(
@@ -938,7 +1005,7 @@ const EditProfile: React.FC<Props> = ({
                                 <ActionsBar
                                     canSave={canSave}
                                     isSubmitting={updateUserMutation.isPending}
-                                    onCancel={onClose}
+                                    onCancel={handleClose}
                                 />
                             </div>
                         </div>
@@ -1262,7 +1329,7 @@ const EditProfile: React.FC<Props> = ({
                                 <div className='flex items-center gap-2 sm:gap-3'>
                                     <button
                                         type='button'
-                                        onClick={onClose}
+                                        onClick={handleClose}
                                         className='px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-colors'
                                     >
                                         Discard

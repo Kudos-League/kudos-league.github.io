@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, {
+    useState,
+    useMemo,
+    useRef,
+    useCallback,
+    useEffect
+} from 'react';
 import { CreateMessageDTO, MessageDTO } from '@/shared/api/types';
 import {
     useSendMessage,
@@ -104,6 +110,8 @@ const MessageList: React.FC<Props> = ({
     const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
     // Use HTMLTextAreaElement instead of HTMLInputElement for the ref
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const editFormRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const editTextareaRefs = useRef<Map<number, HTMLTextAreaElement>>(new Map());
 
     // Helper function to auto-adjust textarea height
     const adjustTextareaHeight = useCallback(
@@ -272,6 +280,29 @@ const MessageList: React.FC<Props> = ({
         return map;
     }, [processedMessages]);
 
+    useEffect(() => {
+        if (editingMessageId == null) return;
+
+        const frame = window.requestAnimationFrame(() => {
+            const editForm = editFormRefs.current.get(editingMessageId);
+            const textarea = editTextareaRefs.current.get(editingMessageId);
+
+            editForm?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+
+            if (textarea) {
+                textarea.focus();
+                const cursorPosition = textarea.value.length;
+                textarea.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [editingMessageId]);
+
     // --- New Toggle Function ---
     const toggleExpansion = (messageId: number) => {
         setExpandedMessages((prev) => {
@@ -308,6 +339,22 @@ const MessageList: React.FC<Props> = ({
             }
             else {
                 messageRefs.current.delete(msg.id);
+            }
+        };
+        const editFormRef = (el: HTMLDivElement | null) => {
+            if (el) {
+                editFormRefs.current.set(msg.id, el);
+            }
+            else {
+                editFormRefs.current.delete(msg.id);
+            }
+        };
+        const editTextareaRef = (el: HTMLTextAreaElement | null) => {
+            if (el) {
+                editTextareaRefs.current.set(msg.id, el);
+            }
+            else {
+                editTextareaRefs.current.delete(msg.id);
             }
         };
 
@@ -430,8 +477,9 @@ const MessageList: React.FC<Props> = ({
 
                 {/* Message content or edit form */}
                 {isEditing ? (
-                    <div className='space-y-2'>
+                    <div ref={editFormRef} className='space-y-2 scroll-mt-24'>
                         <textarea
+                            ref={editTextareaRef}
                             value={editContent}
                             onChange={(e) => {
                                 setEditContent(e.target.value);
@@ -453,18 +501,18 @@ const MessageList: React.FC<Props> = ({
                                 }
                             }}
                         />
-                        <div className='flex gap-2'>
+                        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
                             <Button
                                 onClick={() => handleEditSave(msg.id)}
                                 disabled={!editContent.trim()}
-                                className='text-xs'
+                                className='w-full sm:w-auto text-xs'
                             >
                                 Save
                             </Button>
                             <Button
                                 onClick={handleEditCancel}
                                 variant='secondary'
-                                className='text-xs'
+                                className='w-full sm:w-auto text-xs'
                             >
                                 Cancel
                             </Button>
@@ -526,7 +574,7 @@ const MessageList: React.FC<Props> = ({
                 </div>
             )}
 
-            <div className='max-h-72 mb-3 relative'>
+            <div className='mb-3'>
                 {processedMessages.length === 0 && (
                     <p className='text-red-500 text-sm mb-2 pb-2'>
                         No comments yet
@@ -534,118 +582,98 @@ const MessageList: React.FC<Props> = ({
                 )}
 
                 {displayedMessages.map(renderMessage)}
-
-                {/* Should be sticky at the bottom*/}
-                <div className='sticky bottom-0 bg-white dark:bg-gray-900 pt-2 pb-1'>
-                    {/* Gradient fade at the top for smoother transition */}
-                    <div className='absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-transparent via-white/50 to-white dark:via-gray-900/50 dark:to-gray-900 pointer-events-none -mt-6' />
-
-                    {hasMoreMessages && (
-                        <div className='z-10 bg-white dark:bg-gray-800 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
-                            <Button
-                                onClick={() =>
-                                    setShowAllMessages(!showAllMessages)
-                                }
-                                variant='secondary'
-                                className='w-full'
-                            >
-                                {showAllMessages
-                                    ? 'Show less'
-                                    : `Show all messages (${processedMessages.length - 3} more)`}
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* --- REPLACED INPUT WITH TEXTAREA --- */}
-                    {showSendMessage && (
-                        <>
-                            <div className='flex items-end gap-2'>
-                                <textarea
-                                    placeholder={
-                                        !user
-                                            ? 'Please log in to comment...'
-                                            : 'Write a comment...'
-                                    }
-                                    value={messageContent}
-                                    onChange={(e) => {
-                                        setMessageContent(e.target.value);
-                                        adjustTextareaHeight(inputRef.current);
-                                    }}
-                                    ref={inputRef}
-                                    rows={1}
-                                    onKeyDown={(e) => {
-                                        // Submit on Ctrl+Enter
-                                        if (e.key === 'Enter' && e.ctrlKey) {
-                                            e.preventDefault();
-                                            handleSubmitMessage();
-                                        }
-                                        // Escape cancels reply
-                                        else if (e.key === 'Escape') {
-                                            setReplyTo(null);
-                                        }
-                                        // Enter just creates a new line (default behavior)
-                                    }}
-                                    // Tailwind classes for textarea styling
-                                    className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800'
-                                    style={{
-                                        minHeight: '42px',
-                                        height: '42px',
-                                        overflow: 'hidden'
-                                    }}
-                                    disabled={!active || !user}
-                                />
-                                <Button
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        if (messageContent.trim()) {
-                                            handleSubmitMessage();
-                                        }
-                                    }}
-                                    disabled={
-                                        !messageContent.trim() || !active || !user
-                                    }
-                                    className='w-10 h-10'
-                                    shape='circle'
-                                >
-                                    ➤
-                                </Button>
-                            </div>
-                            {/* --- END TEXTAREA REPLACEMENT --- */}
-
-                            <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
-                                {!user
-                                    ? 'Please log in to comment'
-                                    : 'Ctrl+Enter or ➤ to send'}
-                            </p>
-                        </>
-                    )}
-
-                    {showSendMessage && replyTo && (
-                        <div className='flex flex-col pt-3 gap-2'>
-                            {replyTo && (
-                                <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
-                                    <div className='flex items-center justify-between mb-1'>
-                                        <span className='text-xs font-semibold text-brand-600 dark:text-brand-300'>
-                                            Replying to{' '}
-                                            {getDisplayName(replyTo.author)}
-                                        </span>
-                                        <button
-                                            className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
-                                            onClick={() => setReplyTo(null)}
-                                            title='Cancel reply (Esc)'
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <span className='text-xs text-zinc-600 dark:text-zinc-300 truncate'>
-                                        {replyTo.content.slice(0, 100)}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
             </div>
+
+            {hasMoreMessages && (
+                <div className='pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700'>
+                    <Button
+                        onClick={() => setShowAllMessages(!showAllMessages)}
+                        variant='secondary'
+                        className='w-full'
+                    >
+                        {showAllMessages
+                            ? 'Show less'
+                            : `Show all messages (${processedMessages.length - 3} more)`}
+                    </Button>
+                </div>
+            )}
+
+            {showSendMessage && replyTo && (
+                <div className='flex flex-col pb-2 gap-2'>
+                    <div className='flex flex-col bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-lg border-l-4 border-brand-600 dark:border-brand-300'>
+                        <div className='flex items-center justify-between mb-1'>
+                            <span className='text-xs font-semibold text-brand-600 dark:text-brand-300'>
+                                Replying to{' '}
+                                {getDisplayName(replyTo.author)}
+                            </span>
+                            <button
+                                className='text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 ml-2'
+                                onClick={() => setReplyTo(null)}
+                                title='Cancel reply (Esc)'
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <span className='text-xs text-zinc-600 dark:text-zinc-300 truncate'>
+                            {replyTo.content.slice(0, 100)}
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {showSendMessage && (
+                <>
+                    <div className='flex items-end gap-2'>
+                        <textarea
+                            placeholder={
+                                !user
+                                    ? 'Please log in to comment...'
+                                    : 'Write a comment...'
+                            }
+                            value={messageContent}
+                            onChange={(e) => {
+                                setMessageContent(e.target.value);
+                                adjustTextareaHeight(inputRef.current);
+                            }}
+                            ref={inputRef}
+                            rows={1}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.ctrlKey) {
+                                    e.preventDefault();
+                                    handleSubmitMessage();
+                                }
+                                else if (e.key === 'Escape') {
+                                    setReplyTo(null);
+                                }
+                            }}
+                            className='flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800'
+                            style={{
+                                minHeight: '42px',
+                                height: '42px',
+                                overflow: 'hidden'
+                            }}
+                            disabled={!active || !user}
+                        />
+                        <Button
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                if (messageContent.trim()) {
+                                    handleSubmitMessage();
+                                }
+                            }}
+                            disabled={!messageContent.trim() || !active || !user}
+                            className='w-10 h-10'
+                            shape='circle'
+                        >
+                            ➤
+                        </Button>
+                    </div>
+
+                    <p className='text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-4 text-right'>
+                        {!user ? 'Please log in to comment' : 'Ctrl+Enter or ➤ to send'}
+                    </p>
+                </>
+            )}
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (

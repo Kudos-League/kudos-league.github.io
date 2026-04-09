@@ -2,11 +2,14 @@
 
 import { MapCoordinates } from '@/components/Map';
 
+export type GiftType = 'physical' | 'digital';
+
 export type CreatePostDTO = {
     title: string;
     body: string;
     tags: string[];
     type: string;
+    giftType?: GiftType;
     files?: File[];
     categoryID?: number | null;
     location?: LocationDTO | null;
@@ -38,6 +41,7 @@ export type PostDTO = {
     isPast?: boolean;
     images?: string[];
     type: 'request' | 'gift';
+    giftType?: GiftType;
     status: string;
     isActive: boolean;
     kudos?: number;
@@ -291,6 +295,7 @@ export interface Post {
     location: LocationDTO;
     title: string;
     type: 'request' | 'gift';
+    giftType?: GiftType;
     body: string;
     createdAt: Date;
     updatedAt: Date;
@@ -379,6 +384,7 @@ export interface FeedbackDTO {
 
 export const NotificationType = {
     DIRECT_MESSAGE: 'direct-message',
+    MESSAGE_REPLY: 'message-reply',
     POST_REPLY: 'post-reply',
     EVENT_REPLY: 'event-reply',
     POST_AUTO_CLOSE: 'post-auto-close',
@@ -393,7 +399,8 @@ export const NotificationType = {
     HANDSHAKE_CANCELLED: 'handshake-cancelled',
     POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
     POST_REOPENED: 'post-reopened',
-    EVENT_USER_JOINED: 'event-user-joined'
+    EVENT_USER_JOINED: 'event-user-joined',
+    EVENT_INVITE: 'event-invite'
 } as const;
 
 export type NotificationTypeKeys =
@@ -411,6 +418,15 @@ export type PostReplyNotification = {
     message: MessageDTO;
 };
 
+export type MessageReplyNotification = {
+    type: typeof NotificationType.MESSAGE_REPLY;
+    message: MessageDTO;
+    channelID?: number;
+    channelType?: ChannelDTO['type'];
+    postID?: number;
+    eventID?: number;
+};
+
 export type EventReplyNotification = {
     type: typeof NotificationType.EVENT_REPLY;
     eventID: number;
@@ -424,11 +440,20 @@ export type EventUserJoinedNotification = {
     user?: UserDTO;
 };
 
+export type EventInviteNotification = {
+    type: typeof NotificationType.EVENT_INVITE;
+    eventID: number;
+    userID: number;
+    user?: UserDTO;
+};
+
 export type NotificationPayload =
     | DirectMessageNotification
+    | MessageReplyNotification
     | PostReplyNotification
     | EventReplyNotification
     | EventUserJoinedNotification
+    | EventInviteNotification
     | {
           type: typeof NotificationType.POST_AUTO_CLOSE;
           postID: number;

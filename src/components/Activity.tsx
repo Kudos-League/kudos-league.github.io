@@ -1402,7 +1402,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                 {/* Search Bar and Dropdown Filter */}
                 {filter !== 'kudos' && (
                     <div className='w-full flex items-center justify-center gap-2'>
-                        <div className='relative flex-1 max-w-md'>
+                        <div className='relative flex-1 min-w-0 max-w-md'>
                             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
                             <input
                                 type='text'
@@ -1510,7 +1510,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                         {filter !== 'kudos' && (
                             <>
                                 <div className='w-full flex items-center justify-center gap-2'>
-                                    <div className='relative flex-1 max-w-md'>
+                                    <div className='relative flex-1 min-w-0 max-w-md'>
                                         <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
                                         <input
                                             type='text'

@@ -4,7 +4,8 @@ import {
     ArrowLeftIcon,
     QuestionMarkCircleIcon,
     ArrowUturnRightIcon,
-    ClipboardDocumentCheckIcon
+    ClipboardDocumentCheckIcon,
+    InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -26,12 +27,17 @@ import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { getImagePath, getEndpointUrl } from '@/shared/api/config';
 import { pushAlert } from '@/components/common/alertBus';
 import {
+    hasUserGivenDigitalKudos,
+    isDigitalGiftPost,
+    isPostEffectivelyClosed
+} from '@/shared/postStatus';
+import {
     useUpdatePost,
     useLikePost,
     useReportPost,
     useCreateHandshake
 } from '@/shared/api/mutations/posts';
-import { useCreateChannel, useAcceptHandshake } from '@/shared/api/mutations/handshakes';
+import { useCreateChannel, useAcceptHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
 
 import type {
     ChannelDTO,
@@ -39,7 +45,8 @@ import type {
     PostDTO,
     LocationDTO,
     UpdatePostDTO,
-    CategoryDTO
+    CategoryDTO,
+    GiftType
 } from '@/shared/api/types';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
@@ -105,11 +112,13 @@ export default function PostDetails(props: Props) {
     const { data: categories = [] } = useCategories();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [showGiftTypeInfo, setShowGiftTypeInfo] = useState(false);
     const [editData, setEditData] = useState({
         title: '',
         body: '',
         tags: [] as string[],
         type: 'gift' as 'gift' | 'request',
+        giftType: 'physical' as GiftType,
         categoryID: null as number | null,
         location: null as LocationDTO | null,
         itemsLimit: '' as string
@@ -143,6 +152,10 @@ export default function PostDetails(props: Props) {
     } | null>(null);
     const [showKudosTooltip, setShowKudosTooltip] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
+    const [digitalKudosModal, setDigitalKudosModal] = useState(false);
+    const [digitalKudosValue, setDigitalKudosValue] = useState('');
+    const [submittingDigitalKudos, setSubmittingDigitalKudos] = useState(false);
+    const createOfferMut = useCreateOffer();
     const navigate = useNavigate();
 
     const handleSharePost = async () => {
@@ -282,6 +295,20 @@ export default function PostDetails(props: Props) {
             return;
         }
 
+        // Digital gifts: prompt for kudos amount before creating the handshake
+        if (postDetails.type === 'gift' && postDetails.giftType === 'digital') {
+            if (hasUserGivenDigitalKudos(postDetails, user?.id)) {
+                pushAlert({
+                    type: 'info',
+                    message: "You've already given kudos to this account."
+                });
+                return;
+            }
+            setDigitalKudosValue('');
+            setDigitalKudosModal(true);
+            return;
+        }
+
         setCreatingHandshake(true);
 
         try {
@@ -320,6 +347,75 @@ export default function PostDetails(props: Props) {
         }
         finally {
             setCreatingHandshake(false);
+        }
+    };
+
+    const handleSubmitDigitalKudos = async () => {
+        if (!postDetails || !user) return;
+
+        if (hasUserGivenDigitalKudos(postDetails, user.id)) {
+            setDigitalKudosModal(false);
+            pushAlert({
+                type: 'info',
+                message: "You've already given kudos to this account."
+            });
+            return;
+        }
+
+        const kudos = Number(digitalKudosValue);
+        if (!digitalKudosValue || isNaN(kudos) || kudos <= 0) {
+            pushAlert({ type: 'danger', message: 'Please enter a valid kudos amount.' });
+            return;
+        }
+
+        setSubmittingDigitalKudos(true);
+
+        try {
+            // 1. Create the handshake (auto-completed on backend for digital gifts)
+            const handshakeData: CreateHandshakeDTO = {
+                postID: postDetails.id,
+                senderID: user.id || 0,
+                receiverID: postDetails.sender?.id || 0,
+                type: postDetails.type,
+                status: 'new'
+            };
+
+            const newHandshake = await createHsMut.mutateAsync(handshakeData);
+
+            // 2. Create the reward offer with the user-specified kudos amount
+            await createOfferMut.mutateAsync({
+                postID: postDetails.id,
+                kudos,
+                currency: 'kudos',
+                receiverID: postDetails.sender?.id || 0
+            });
+
+            setPostDetails((prevDetails: PostDTO | undefined) => {
+                if (!prevDetails) return prevDetails as any;
+                return {
+                    ...prevDetails,
+                    handshakes: [
+                        ...(prevDetails.handshakes || []),
+                        newHandshake
+                    ]
+                } as PostDTO;
+            });
+
+            setDigitalKudosModal(false);
+            setDigitalKudosValue('');
+            setIsHandshakeAlreadyCreated(true);
+            setHandshakeSuccessModal(true);
+            fetchPostDetails?.(postDetails.id);
+        }
+        catch (error) {
+            console.error('Error giving kudos for digital gift:', error);
+            pushAlert({
+                type: 'danger',
+                message: 'Failed to give kudos. Please try again.'
+            });
+        }
+        finally {
+            setSubmittingDigitalKudos(false);
         }
     };
 
@@ -636,6 +732,7 @@ export default function PostDetails(props: Props) {
             body: postDetails.body,
             tags: postDetails.tags?.map((tag) => tag.name) || [],
             type: postDetails.type as 'gift' | 'request',
+            giftType: (postDetails.giftType || 'physical') as GiftType,
             categoryID: postDetails.category?.id || null,
             location: postDetails.location || null,
             itemsLimit:
@@ -665,11 +762,16 @@ export default function PostDetails(props: Props) {
                 body: editData.body,
                 tags: editData.tags,
                 type: editData.type,
+                giftType: editData.type === 'gift' ? editData.giftType : 'physical',
                 categoryID: editData.categoryID
             };
 
+            // Digital gifts are always global
+            if (editData.type === 'gift' && editData.giftType === 'digital') {
+                updateData.location = { regionID: null, global: true };
+            }
             // Handle location changes (including deletion)
-            if (editData.location !== postDetails.location) {
+            else if (editData.location !== postDetails.location) {
                 updateData.location = editData.location;
             }
 
@@ -755,7 +857,10 @@ export default function PostDetails(props: Props) {
         setAcceptingHighestKudos(true);
 
         try {
-            await acceptHandshakeMut.mutateAsync(highestKudosHandshakeData.handshake.id);
+            await acceptHandshakeMut.mutateAsync({
+                handshakeID: highestKudosHandshakeData.handshake.id,
+                postID: postDetails.id
+            });
 
             setPostDetails((prev: PostDTO) => {
                 if (!prev) return prev;
@@ -904,11 +1009,17 @@ export default function PostDetails(props: Props) {
     if (!postDetails) return null;
 
     const isPostOwner = user?.id === postDetails.sender?.id;
-    const hasPendingHandshakes = (postDetails.handshakes || []).some(
-        (h: any) => h.status === 'new'
+    const isDigitalGift = isDigitalGiftPost(postDetails);
+    const isClosedPost = isPostEffectivelyClosed(postDetails);
+    const alreadyGaveDigitalKudos = hasUserGivenDigitalKudos(
+        postDetails,
+        user?.id
     );
+    const pendingHandshakesCount = (postDetails.handshakes || []).filter(
+        (h: any) => h.status === 'new'
+    ).length;
     const showAcceptHighestKudosButton =
-        isPostOwner && hasPendingHandshakes && postDetails.status !== 'closed';
+        isPostOwner && pendingHandshakesCount > 1 && !isClosedPost;
 
     return (
         <div className='max-w-4xl mx-auto p-4 min-height-dvh'>
@@ -978,7 +1089,7 @@ export default function PostDetails(props: Props) {
                                 onClick={handleStartEdit}
                                 disabled={isEditing}
                             />
-                            {postDetails.status !== 'closed' && (
+                            {!isClosedPost && (
                                 <Button
                                     onClick={handleClosePost}
                                     className='inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap'
@@ -1013,8 +1124,15 @@ export default function PostDetails(props: Props) {
                         {postDetails.type}
                     </Pill>
 
+                    {/* Digital Badge */}
+                    {isDigitalGift && (
+                        <Pill tone='info' className='uppercase font-semibold text-xs'>
+                            DIGITAL
+                        </Pill>
+                    )}
+
                     {/* Status Badge */}
-                    {postDetails.status === 'closed' || postDetails.status == 'offer_posted' ? (
+                    {isClosedPost ? (
                         <Pill
                             tone='danger'
                             className='uppercase font-semibold text-xs'
@@ -1023,7 +1141,9 @@ export default function PostDetails(props: Props) {
                         </Pill>
                     ) : (
                         <Pill tone='neutral' className='uppercase text-xs'>
-                            {postDetails.status}
+                            {postDetails.status === 'offer_posted' && isDigitalGift
+                                ? 'new'
+                                : postDetails.status}
                         </Pill>
                     )}
 
@@ -1123,13 +1243,62 @@ export default function PostDetails(props: Props) {
                             onClick={() =>
                                 setEditData({
                                     ...editData,
-                                    type: 'request'
+                                    type: 'request',
+                                    giftType: 'physical'
                                 })
                             }
                         >
                             Request stuff
                         </Button>
                     </div>
+
+                    {editData.type === 'gift' && (
+                        <div className='flex items-center gap-3'>
+                            <div className='flex rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden'>
+                                <button
+                                    type='button'
+                                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                        editData.giftType === 'physical'
+                                            ? 'bg-brand-600 text-white'
+                                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                    onClick={() => setEditData({ ...editData, giftType: 'physical' })}
+                                >
+                                    Physical
+                                </button>
+                                <button
+                                    type='button'
+                                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                        editData.giftType === 'digital'
+                                            ? 'bg-brand-600 text-white'
+                                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                                    onClick={() => setEditData({ ...editData, giftType: 'digital' })}
+                                >
+                                    Digital
+                                </button>
+                            </div>
+                            <div className='relative'>
+                                <button
+                                    type='button'
+                                    onClick={() => setShowGiftTypeInfo(!showGiftTypeInfo)}
+                                    onMouseEnter={() => setShowGiftTypeInfo(true)}
+                                    onMouseLeave={() => setShowGiftTypeInfo(false)}
+                                    className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
+                                    aria-label='Gift type information'
+                                >
+                                    <InformationCircleIcon className='w-5 h-5' />
+                                </button>
+                                {showGiftTypeInfo && (
+                                    <div className='absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
+                                        <p className='font-semibold mb-1'>Physical vs Digital</p>
+                                        <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off.</p>
+                                        <p><strong>Digital:</strong> An online resource anyone can access. Users just give kudos — no handshake needed.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <label className='block text-sm font-medium mb-1'>
@@ -1201,41 +1370,50 @@ export default function PostDetails(props: Props) {
                         />
                     </div>
 
-                    <div>
-                        <label className='block text-sm font-medium mb-2'>
-                            Location
-                        </label>
-
-                        {editData.location && (
-                            <div className='mb-2 flex items-center justify-between gap-2'>
-                                <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
-                                    {editData.location.name || 'Location set'}
-                                </div>
-                                <Button
-                                    type='button'
-                                    variant='ghost'
-                                    onClick={() =>
-                                        setEditData({
-                                            ...editData,
-                                            location: null
-                                        })
-                                    }
-                                    className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
-                                >
-                                    ✕ Remove
-                                </Button>
+                    <div className='relative'>
+                        {editData.type === 'gift' && editData.giftType === 'digital' && (
+                            <div className='absolute inset-0 z-10 flex items-center justify-center pointer-events-none'>
+                                <span className='bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200 text-sm font-medium px-3 py-1.5 rounded-lg shadow'>
+                                    Digital gifts are automatically global
+                                </span>
                             </div>
                         )}
+                        <div className={editData.type === 'gift' && editData.giftType === 'digital' ? 'opacity-40 pointer-events-none' : ''}>
+                            <label className='block text-sm font-medium mb-2'>
+                                Location
+                            </label>
 
-                        <MapDisplay
-                            key={editData.location?.regionID || 'no-location'}
-                            edit
-                            regionID={editData.location?.regionID}
-                            height={300}
-                            exactLocation={isPostOwner}
-                            onLocationChange={handleLocationChange}
-                            shouldSavedLocationButton
-                        />
+                            {editData.location && (
+                                <div className='mb-2 flex items-center justify-between gap-2'>
+                                    <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
+                                        {editData.location.name || 'Location set'}
+                                    </div>
+                                    <Button
+                                        type='button'
+                                        variant='ghost'
+                                        onClick={() =>
+                                            setEditData({
+                                                ...editData,
+                                                location: null
+                                            })
+                                        }
+                                        className='!text-red-600 hover:!text-red-700 !text-sm flex-shrink-0'
+                                    >
+                                        ✕ Remove
+                                    </Button>
+                                </div>
+                            )}
+
+                            <MapDisplay
+                                key={editData.location?.regionID || 'no-location'}
+                                edit
+                                regionID={editData.location?.regionID}
+                                height={300}
+                                exactLocation={isPostOwner}
+                                onLocationChange={handleLocationChange}
+                                shouldSavedLocationButton
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -1456,14 +1634,16 @@ export default function PostDetails(props: Props) {
             <div className='shadow p-4 rounded mb-6'>
                 <div className='flex items-center justify-between mb-4'>
                     <h2 className='text-lg font-bold'>
-                        {postDetails.type === 'request' ? 'Offers' : 'Requests'}
+                        {isDigitalGift
+                            ? 'Kudos'
+                            : postDetails.type === 'request' ? 'Offers' : 'Requests'}
                     </h2>
 
                     {showAcceptHighestKudosButton && (
                         <div className='flex items-center gap-2'>
                             <Button
                                 onClick={handleAcceptHighestKudos}
-                                disabled={acceptingHighestKudos || isEditing || postDetails.status === 'closed' || postDetails.status == 'offer_posted'} 
+                                disabled={acceptingHighestKudos || isEditing || isClosedPost}
                                 variant='success'
                                 className='flex items-center gap-2 ml-2'
                             >
@@ -1550,7 +1730,7 @@ export default function PostDetails(props: Props) {
                     showUserKudos={true}
                 />
 
-                {user && postDetails.status !== 'closed' &&
+                {user && !isClosedPost &&
                     user?.id !== Number(postDetails.sender?.id) &&
                     !postDetails.handshakes?.some(
                         (h: any) =>
@@ -1562,9 +1742,9 @@ export default function PostDetails(props: Props) {
                             disabled={creatingHandshake || isEditing}
                         >
                             {creatingHandshake
-                                ? 'Creating...'
+                                ? (isDigitalGift ? 'Giving Kudos...' : 'Creating...')
                                 : postDetails.type === 'gift'
-                                    ? 'Request This'
+                                    ? (isDigitalGift ? 'Give Kudos' : 'Request This')
                                     : 'Gift This'}
                         </Button>
                     </div>
@@ -1574,10 +1754,20 @@ export default function PostDetails(props: Props) {
                         Log in or register to interact
                     </div>
                 )}
+                {alreadyGaveDigitalKudos && (
+                    <div className='mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200'>
+                        You&apos;ve already given kudos to this account. You can still comment below.
+                    </div>
+                )}
             </div>
 
             {/* Comments */}
             <div className='p-4 mb-6'>
+                {isClosedPost && (
+                    <p className='text-red-500 text-sm font-medium mb-3'>
+                        Comments are not allowed because this post is closed.
+                    </p>
+                )}
                 <MessageList
                     title=''
                     messages={postDetails.messages || []}
@@ -1595,12 +1785,12 @@ export default function PostDetails(props: Props) {
                         )
                     }
                     postID={postDetails?.id}
-                    showSendMessage={!!user && !isEditing || (postDetails.status !== 'closed' && postDetails.status !== 'offer_posted')}
+                    showSendMessage={!!user && !isEditing && !isClosedPost}
                     allowDelete={!!user && !isEditing}
                     allowEdit={!!user && !isEditing}
                     onMessageUpdate={handleMessageUpdate}
                     onMessageDelete={handleMessageDelete}
-                    active={postDetails.status !== 'closed' && postDetails.status !== 'offer_posted' && !isEditing}
+                    active={!isClosedPost && !isEditing}
                 />
             </div>
 
@@ -1671,35 +1861,57 @@ export default function PostDetails(props: Props) {
                                     />
                                 </svg>
                             </div>
-                            <h2 className='text-2xl font-bold mb-3'>
-                                Help request/offer Created!
-                            </h2>
-                            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-                                Your help request/offer has been successfully
-                                created. The post owner has been notified.
-                            </p>
-                            <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
-                                <p className='text-xs text-blue-800 dark:text-blue-200'>
-                                    💡 You can message the post owner now to
-                                    coordinate details, or do it later from your
-                                    handshakes page.
-                                </p>
-                            </div>
+                            {isDigitalGift ? (
+                                <>
+                                    <h2 className='text-2xl font-bold mb-3'>
+                                        Kudos Given!
+                                    </h2>
+                                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                        You gave kudos to {postDetails.sender?.displayName || postDetails.sender?.username || 'the poster'} for sharing this digital resource.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className='text-2xl font-bold mb-3'>
+                                        {postDetails.type === 'gift'
+                                            ? 'Help Request Created!'
+                                            : 'Help Offer Created!'}
+                                    </h2>
+                                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                                        {postDetails.type === 'gift'
+                                            ? 'Your help request has been successfully created.'
+                                            : 'Your help offer has been successfully created.'}{' '}
+                                        The post owner has been notified.
+                                    </p>
+                                    <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4'>
+                                        <p className='text-xs text-blue-800 dark:text-blue-200'>
+                                            You can message the post owner now to
+                                            coordinate details, or do it later from your{' '}
+                                            {postDetails.type === 'gift'
+                                                ? 'requests'
+                                                : 'offers'}{' '}
+                                            page.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div className='flex flex-col gap-2'>
-                            <Button
-                                onClick={handleOpenChatFromSuccess}
-                                variant='primary'
-                                className='w-full justify-center'
-                            >
-                                💬 Message Post Owner
-                            </Button>
+                            {!isDigitalGift && (
+                                <Button
+                                    onClick={handleOpenChatFromSuccess}
+                                    variant='primary'
+                                    className='w-full justify-center'
+                                >
+                                    Message Post Owner
+                                </Button>
+                            )}
                             <Button
                                 onClick={() => setHandshakeSuccessModal(false)}
-                                variant='secondary'
+                                variant={isDigitalGift ? 'primary' : 'secondary'}
                                 className='w-full justify-center'
                             >
-                                I&apos;ll Message Later
+                                {isDigitalGift ? 'Done' : "I'll Message Later"}
                             </Button>
                         </div>
                     </div>
@@ -1744,6 +1956,50 @@ export default function PostDetails(props: Props) {
                 cancelText='Cancel'
                 variant='info'
             />
+
+            {/* Digital Gift Kudos Modal */}
+            {digitalKudosModal && (
+                <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>
+                    <div className='bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl text-gray-900 dark:text-gray-100'>
+                        <h2 className='text-xl font-bold mb-2'>Give Kudos</h2>
+                        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+                            How many kudos would you like to give to{' '}
+                            {postDetails?.sender?.displayName || postDetails?.sender?.username || 'the poster'}{' '}
+                            for sharing this digital resource?
+                        </p>
+                        <input
+                            type='number'
+                            min='1'
+                            value={digitalKudosValue}
+                            onChange={(e) => setDigitalKudosValue(e.target.value)}
+                            placeholder='Enter kudos amount'
+                            className='w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700'
+                            autoFocus
+                        />
+                        <div className='flex gap-2'>
+                            <Button
+                                variant='secondary'
+                                onClick={() => {
+                                    setDigitalKudosModal(false);
+                                    setDigitalKudosValue('');
+                                }}
+                                className='flex-1 justify-center'
+                                disabled={submittingDigitalKudos}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant='success'
+                                onClick={handleSubmitDigitalKudos}
+                                disabled={submittingDigitalKudos || !digitalKudosValue || isNaN(Number(digitalKudosValue)) || Number(digitalKudosValue) <= 0}
+                                className='flex-1 justify-center'
+                            >
+                                {submittingDigitalKudos ? 'Sending...' : 'Send Kudos'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

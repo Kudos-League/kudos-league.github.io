@@ -5,7 +5,8 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/solid';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import {
     useCompleteHandshake,
-    useCreateOffer
+    useCreateOffer,
+    useUndoAcceptHandshake
 } from '@/shared/api/mutations/handshakes';
 import type { HandshakeDTO, MessageDTO, ChannelDTO } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
@@ -31,6 +32,7 @@ interface Props {
     compact?: boolean;
     onInteraction?: () => void;
     showUserKudos?: boolean;
+    notificationType?: string;
 }
 
 const HandshakeCard: React.FC<Props> = ({
@@ -42,7 +44,8 @@ const HandshakeCard: React.FC<Props> = ({
     hideCardBorder = false,
     compact = false,
     onInteraction,
-    showUserKudos = false
+    showUserKudos = false,
+    notificationType
 }) => {
     const navigate = useNavigate();
     useAuth();
@@ -159,12 +162,15 @@ const HandshakeCard: React.FC<Props> = ({
     };
 
     // Check if another handshake on this post has been completed or if items limit reached
+    // Digital gifts can have many completed handshakes (one per person giving kudos), so
+    // a completed handshake from someone else does NOT close the post for others.
+    const isDigitalGift = handshake.post?.giftType === 'digital';
     const otherCompletedHandshake = useMemo(() => {
-        if (!handshake.post?.handshakes) return null;
+        if (isDigitalGift || !handshake.post?.handshakes) return null;
         return handshake.post.handshakes.find(
             (h) => h.id !== handshake.id && h.status === 'completed'
         );
-    }, [handshake.post?.handshakes, handshake.id]);
+    }, [isDigitalGift, handshake.post?.handshakes, handshake.id]);
 
     // Check if items limit has been reached
     const itemsLimitReached = useMemo(() => {
@@ -183,7 +189,8 @@ const HandshakeCard: React.FC<Props> = ({
             (itemsLimitReached &&
                 status !== 'accepted' &&
                 status !== 'completed') ||
-            handshake.post?.status === 'closed') &&
+            (handshake.post?.status === 'closed' &&
+                status !== 'accepted')) &&
         (status === 'new' || status === 'accepted');
 
     useEffect(() => {
@@ -272,8 +279,9 @@ const HandshakeCard: React.FC<Props> = ({
         setError(null);
         setProcessing(true);
         try {
-            await apiMutate(`/handshakes/${handshake.id}`, 'patch', {
-                status: 'new'
+            await undoAcceptMutation.mutateAsync({
+                handshakeID: handshake.id,
+                postID: handshake.postID
             });
             setStatus('new');
             pushAlert({
@@ -387,7 +395,10 @@ const HandshakeCard: React.FC<Props> = ({
                 receiverID: gifterID
             };
             await createOfferMutation.mutateAsync(dto);
-            await completeHandshakeMutation.mutateAsync(handshake.id);
+            await completeHandshakeMutation.mutateAsync({
+                handshakeID: handshake.id,
+                postID: handshake.postID
+            });
             setStatus('completed');
             setKudosValue('');
             pushAlert({
@@ -421,6 +432,7 @@ const HandshakeCard: React.FC<Props> = ({
 
     const createOfferMutation = useCreateOffer();
     const completeHandshakeMutation = useCompleteHandshake();
+    const undoAcceptMutation = useUndoAcceptHandshake();
 
     return (
         <>
@@ -659,7 +671,7 @@ const HandshakeCard: React.FC<Props> = ({
                         </div>
                     )}
 
-                    {status === 'completed' && showUser && (
+                    {status === 'completed' && showUser && notificationType !== 'handshake-undo-accepted' && (
                         <div className='p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800'>
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}
@@ -797,7 +809,7 @@ const HandshakeCard: React.FC<Props> = ({
                                 <label
                                     className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-green-800 dark:text-green-300 block`}
                                 >
-                                        Send Kudos to Complete Exchange
+                                        Send Kudos to Complete Interaction
                                 </label>
                                 <p
                                     className={`${compact ? 'text-xs' : 'text-sm'} text-green-700 dark:text-green-400`}
@@ -808,6 +820,11 @@ const HandshakeCard: React.FC<Props> = ({
                                         ? 'giver'
                                         : 'poster'}{' '}
                                         once you receive it.
+                                </p>
+                                <p
+                                    className={`${compact ? 'text-xs' : 'text-sm'} text-green-600 dark:text-green-500`}
+                                >
+                                        Sending kudos will close the post.
                                 </p>
                             </div>
                             <div className='flex gap-2'>

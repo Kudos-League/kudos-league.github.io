@@ -239,7 +239,11 @@ const MessageBubble: React.FC<Props> = ({
                 {/* Show sender name for non-own messages (WhatsApp style) */}
                 {!isOwn && showSenderName && (
                     <div className='text-xs font-semibold mb-1 ml-1 text-brand-600 dark:text-brand-300'>
-                        <UserCard triggerVariant='name' user={message.author} />
+                        <UserCard
+                            triggerVariant='name'
+                            user={message.author}
+                            showMessageButton={false}
+                        />
                     </div>
                 )}
 
@@ -285,6 +289,7 @@ const MessageBubble: React.FC<Props> = ({
                                 <UserCard
                                     triggerVariant='name'
                                     user={replyTo.author}
+                                    showMessageButton={false}
                                 />
                             </div>
                             <div

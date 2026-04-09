@@ -155,7 +155,7 @@ const DMItem: React.FC<DMItemProps> = ({
                                 : 'font-semibold text-zinc-900 dark:text-zinc-100'
                         } ${isMobile ? 'text-base' : 'text-sm'}`}
                     >
-                        <UserCard user={user} />
+                        <UserCard user={user} showMessageButton={false} />
                     </div>
                     <div className='flex items-center gap-2 ml-2 flex-shrink-0'>
                         {timestamp && (
