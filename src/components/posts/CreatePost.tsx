@@ -20,6 +20,8 @@ import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { SubmitHandler, useForm, Controller } from 'react-hook-form';
 import { useCategories } from '@/shared/api/queries/categories';
 import { useCreatePost } from '@/shared/api/mutations/posts';
+import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 type FormValues = {
     title: string;
@@ -118,11 +120,10 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         return null;
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-        e.target.value = '';
-        const newFiles = Array.from(files);
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawFiles = takeFilesFromInput(e.target);
+        if (rawFiles.length === 0) return;
+        const newFiles = await ensureJpegAll(rawFiles);
         const tooLarge = newFiles.find(
             (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
         );
@@ -185,7 +186,12 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             const errorMessage =
                 first || errs?.message || 'Failed to create post.';
 
-            if (
+            if (errorMessage.toLowerCase().includes('unsupported image format')) {
+                setServerError(
+                    'One or more images have an unsupported format. Please use JPEG, PNG, or WebP.'
+                );
+            }
+            else if (
                 first?.includes('413') ||
                 errorMessage.toLowerCase().includes('too large')
             ) {

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import Button from '../common/Button';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 type FilePickerProps = {
     onChange: (files: File[]) => void;
@@ -19,8 +20,9 @@ export default function FilePicker({
 }: FilePickerProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(event.target.files || []);
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = Array.from(event.target.files || []);
+        const files = type === 'file-image' ? await ensureJpegAll(raw) : raw;
         onChange(multiple ? files : [files[0]]);
     };
 

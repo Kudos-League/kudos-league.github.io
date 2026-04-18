@@ -17,6 +17,8 @@ import type {
     CategoryDTO,
     GiftType
 } from '@/shared/api/types';
+import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import { ensureJpegAll } from '@/shared/convertHeic';
 import Button from '../common/Button';
 import DropdownPicker from '@/components/forms/DropdownPicker';
 
@@ -64,11 +66,10 @@ export default function PostEditForm({
         return null;
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-        e.target.value = '';
-        const newFiles = Array.from(files);
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawFiles = takeFilesFromInput(e.target);
+        if (rawFiles.length === 0) return;
+        const newFiles = await ensureJpegAll(rawFiles);
         const tooLarge = newFiles.find(
             (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
         );
@@ -184,9 +185,13 @@ export default function PostEditForm({
         }
         catch (err) {
             console.error('Failed to save changes', err);
-            setEditImageError(
-                err instanceof Error ? err.message : 'Failed to save changes'
-            );
+            const firstMsg = Array.isArray(err) ? (err as string[])[0] : (err instanceof Error ? err.message : null);
+            if (firstMsg?.toLowerCase().includes('unsupported image format')) {
+                setEditImageError('One or more images have an unsupported format. Please use JPEG, PNG, or WebP.');
+            }
+            else {
+                setEditImageError(firstMsg || 'Failed to save changes');
+            }
         }
         finally {
             setIsSaving(false);

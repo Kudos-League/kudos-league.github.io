@@ -9,6 +9,7 @@ import { useCategories } from '@/shared/api/queries/categories';
 import { useReportPastGift } from '@/shared/api/mutations/posts';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 type FormValues = {
     title: string;
@@ -115,11 +116,11 @@ export default function ReportPastGiftModal({
                         type='file'
                         accept='image/*'
                         multiple
-                        onChange={(e) =>
-                            setSelectedImages(
-                                e.target.files ? Array.from(e.target.files) : []
-                            )
-                        }
+                        onChange={async (e) => {
+                            const raw = e.target.files ? Array.from(e.target.files) : [];
+                            const converted = await ensureJpegAll(raw);
+                            setSelectedImages(converted);
+                        }}
                     />
                 </div>
                 <div className='flex justify-end gap-2'>

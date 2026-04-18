@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import Button from '@/components/common/Button';
 import Auth from './Auth';
-import { Alert, TinyHelpLink } from './fields';
+import { TinyHelpLink } from './fields';
 import { routes } from '@/routes';
 import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
@@ -92,6 +92,14 @@ export default function LoginForm({
         initialError ?? null
     );
     const navigate = useNavigate();
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1);
+            return;
+        }
+
+        navigate(routes.home);
+    };
 
     const getErrorMessage = (error: any): React.ReactNode => {
         const resp = error?.response ?? error;
@@ -255,7 +263,7 @@ export default function LoginForm({
     }
 
     return (
-        <Auth title='Sign in to your account'>
+        <Auth title='Sign in to your account' onBack={handleBack}>
             <Form
                 methods={methods}
                 onSubmit={onSubmit}

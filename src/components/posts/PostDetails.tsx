@@ -31,6 +31,8 @@ import {
     isDigitalGiftPost,
     isPostEffectivelyClosed
 } from '@/shared/postStatus';
+import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import { ensureJpegAll } from '@/shared/convertHeic';
 import {
     useUpdatePost,
     useLikePost,
@@ -689,10 +691,11 @@ export default function PostDetails(props: Props) {
         return null;
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-        const updated = [...editImages, ...Array.from(files)];
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawFiles = takeFilesFromInput(e.target);
+        if (rawFiles.length === 0) return;
+        const newFiles = await ensureJpegAll(rawFiles);
+        const updated = [...editImages, ...newFiles];
         const fileError = validateFiles(updated);
         if (fileError) {
             setEditImageError(fileError);
@@ -700,7 +703,6 @@ export default function PostDetails(props: Props) {
         }
         setEditImages(updated);
         setEditImageError(null);
-        e.target.value = '';
     };
 
     const removeEditImage = (idx: number) => {
@@ -803,9 +805,13 @@ export default function PostDetails(props: Props) {
         }
         catch (err) {
             console.error('Failed to save changes', err);
-            setEditImageError(
-                err instanceof Error ? err.message : 'Failed to save changes'
-            );
+            const firstMsg = Array.isArray(err) ? (err as string[])[0] : (err instanceof Error ? err.message : null);
+            if (firstMsg?.toLowerCase().includes('unsupported image format')) {
+                setEditImageError('One or more images have an unsupported format. Please use JPEG, PNG, or WebP.');
+            }
+            else {
+                setEditImageError(firstMsg || 'Failed to save changes');
+            }
         }
     };
 
@@ -1050,7 +1056,7 @@ export default function PostDetails(props: Props) {
             {/* Header: User Card and Action Buttons */}
             <div className='flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3 sm:gap-4'>
                 <div className='flex-1 min-w-0'>
-                    <UserCard user={postDetails.sender} large />
+                    <UserCard user={postDetails.sender} large showKudos />
                 </div>
 
                 <div className='flex flex-row gap-2 flex-shrink-0'>
@@ -1157,7 +1163,7 @@ export default function PostDetails(props: Props) {
                     )}
 
                     {/* Items Limit */}
-                    {typeof postDetails.itemsLimit === 'number' &&
+                    {/* {typeof postDetails.itemsLimit === 'number' &&
                         postDetails.itemsLimit > 0 && (
                         <div className='flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 sm:px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800'>
                             <span className='font-medium'>
@@ -1168,7 +1174,7 @@ export default function PostDetails(props: Props) {
                                     max
                             </span>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Tags - Full width on mobile for better readability */}
                     {postDetails.tags && postDetails.tags.length > 0 && (

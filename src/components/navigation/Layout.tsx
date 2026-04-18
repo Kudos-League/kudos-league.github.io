@@ -2,14 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { routes } from '@/routes';
 
-import {
-    HomeIcon,
-    EnvelopeIcon,
-    UserCircleIcon,
-    InformationCircleIcon,
-    ArrowRightOnRectangleIcon,
-    UserPlusIcon
-} from '@heroicons/react/24/outline';
 import Navbar from './Navbar';
 import AppSidebar from './Sidebar';
 import DMsModal from '../messages/DMsModal';
@@ -26,6 +18,12 @@ const Layout: React.FC = () => {
     const [searchModalOpen, setSearchModalOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const isAuthRoute =
+        location.pathname === routes.login ||
+        location.pathname === routes.signUp ||
+        location.pathname === '/sign-up' ||
+        location.pathname === routes.forgotPassword ||
+        location.pathname === routes.resetPassword;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -95,6 +93,14 @@ const Layout: React.FC = () => {
             />
         </Link>
     );
+
+    if (isAuthRoute) {
+        return (
+            <div className='min-h-screen min-h-[100dvh] bg-slate-950'>
+                <Outlet />
+            </div>
+        );
+    }
 
     return (
         <div className='flex height-dvh'>

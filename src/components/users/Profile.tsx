@@ -22,6 +22,7 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteManager from './InviteManager';
+import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
 
 type Props = {
     user: UserDTO;
@@ -82,14 +83,13 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
     const handleReportImageUpload = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
-        const files = e.target.files;
-        if (!files) return;
-        const updated = [...reportFiles, ...Array.from(files)];
+        const newFiles = takeFilesFromInput(e.target);
+        if (newFiles.length === 0) return;
+        const updated = [...reportFiles, ...newFiles];
         const fileError = validateReportFiles(updated);
         if (fileError) return setReportServerError(fileError);
         setReportFiles(updated);
         setReportServerError(null);
-        e.target.value = '';
     };
 
     const removeReportImage = (idx: number) => {

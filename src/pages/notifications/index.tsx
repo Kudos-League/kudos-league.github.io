@@ -25,6 +25,12 @@ import {
     NotificationType,
     NotificationsHistoryResponse
 } from '@/shared/api/types';
+import { useEvent } from '@/shared/api/queries/events';
+import { getEventReplyDescription } from '@/shared/notifications/eventReplyText';
+import {
+    getMessageReplyDescription,
+    getMessageReplyTitle
+} from '@/shared/notifications/messageReplyText';
 import { routes, withQuery } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/useAuth';
@@ -44,19 +50,22 @@ const DelayedUserCard = memo(
 
 DelayedUserCard.displayName = 'DelayedUserCard';
 
-
 function PostReplyNotificationContent({
     notification,
     currentUserID,
     createdAt
 }: {
-    notification: NotificationRecord & { type: typeof NotificationType.POST_REPLY; postID: number };
+    notification: NotificationRecord & {
+        type: typeof NotificationType.POST_REPLY;
+        postID: number;
+    };
     currentUserID?: number;
     createdAt: string;
 }) {
     const { post } = useCachedPost(notification.postID);
     const author = notification.message?.author;
-    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
     const hasUsername = author?.username || author?.displayName;
 
     return (
@@ -68,8 +77,14 @@ function PostReplyNotificationContent({
                     </span>
                 </div>
             ) : hasUsername ? (
-                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
                 </div>
             ) : (
                 <div className='flex-shrink-0'>
@@ -80,14 +95,26 @@ function PostReplyNotificationContent({
             )}
             <div className='flex-1 min-w-0'>
                 <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                    replied to{post ? (
+                    replied to
+                    {post ? (
                         <>
-                            {' '}<span className='font-medium text-zinc-800 dark:text-zinc-200 italic'>&quot;{post.title}&quot;</span>
-                            {(post.sender?.displayName || post.sender?.username) && (
-                                <span className='text-zinc-500 dark:text-zinc-500'>{' '}by {post.sender.displayName || post.sender.username}</span>
+                            {' '}
+                            <span className='font-medium text-zinc-800 dark:text-zinc-200 italic'>
+                                &quot;{post.title}&quot;
+                            </span>
+                            {(post.sender?.displayName ||
+                                post.sender?.username) && (
+                                <span className='text-zinc-500 dark:text-zinc-500'>
+                                    {' '}
+                                    by{' '}
+                                    {post.sender.displayName ||
+                                        post.sender.username}
+                                </span>
                             )}
                         </>
-                    ) : ' your post'}
+                    ) : (
+                        ' your post'
+                    )}
                 </p>
                 {notification.message?.content && (
                     <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -109,13 +136,18 @@ function MessageReplyNotificationContent({
     currentUserID,
     createdAt
 }: {
-    notification: NotificationRecord & { type: typeof NotificationType.MESSAGE_REPLY };
+    notification: NotificationRecord & {
+        type: typeof NotificationType.MESSAGE_REPLY;
+    };
     currentUserID?: number;
     createdAt: string;
 }) {
     const author = notification.message?.author;
-    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
     const hasUsername = author?.username || author?.displayName;
+    const eventID =
+        'eventID' in notification ? notification.eventID : undefined;
 
     return (
         <div className='flex items-start gap-3'>
@@ -126,8 +158,14 @@ function MessageReplyNotificationContent({
                     </span>
                 </div>
             ) : hasUsername ? (
-                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
                 </div>
             ) : (
                 <div className='flex-shrink-0'>
@@ -138,7 +176,71 @@ function MessageReplyNotificationContent({
             )}
             <div className='flex-1 min-w-0'>
                 <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                    replied to your message
+                    {getMessageReplyDescription(eventID)}
+                </p>
+                {notification.message?.content && (
+                    <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                        {notification.message.content}
+                    </p>
+                )}
+                {createdAt && (
+                    <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                        {createdAt}
+                    </time>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EventReplyNotificationContent({
+    notification,
+    currentUserID,
+    createdAt
+}: {
+    notification: NotificationRecord & {
+        type: typeof NotificationType.EVENT_REPLY;
+        eventID: number;
+    };
+    currentUserID?: number;
+    createdAt: string;
+}) {
+    const { data: event } = useEvent(notification.eventID);
+    const author = notification.message?.author;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
+    const hasUsername = author?.username || author?.displayName;
+    const isEventCreator =
+        typeof currentUserID === 'number' && event?.creatorID === currentUserID;
+
+    return (
+        <div className='flex items-start gap-3'>
+            {isCurrentUser ? (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        You
+                    </span>
+                </div>
+            ) : hasUsername ? (
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
+                </div>
+            ) : (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        Someone
+                    </span>
+                </div>
+            )}
+            <div className='flex-1 min-w-0'>
+                <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                    {getEventReplyDescription(isEventCreator)}
                 </p>
                 {notification.message?.content && (
                     <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -311,275 +413,279 @@ function describeNotification(
     handshake?: any
 ) {
     switch (notification.type) {
-    case NotificationType.MESSAGE_REPLY:
-        return {
-            title: 'Reply to your message',
-            description: notification.message?.content || ''
-        };
-    case NotificationType.POST_REPLY:
-        return {
-            title: 'Reply to your post',
-            description: notification.message?.content || ''
-        };
-    case NotificationType.POST_AUTO_CLOSE: {
-        const closeAt =
+        case NotificationType.MESSAGE_REPLY:
+            return {
+                title: getMessageReplyTitle(
+                    'eventID' in notification ? notification.eventID : undefined
+                ),
+                description: notification.message?.content || ''
+            };
+        case NotificationType.POST_REPLY:
+            return {
+                title: 'Reply to your post',
+                description: notification.message?.content || ''
+            };
+        case NotificationType.EVENT_REPLY:
+            return {
+                title: 'Event comment',
+                description: notification.message?.content || ''
+            };
+        case NotificationType.POST_AUTO_CLOSE: {
+            const closeAt =
                 (notification as any).closeAt || (notification as any).closedAt;
-        const when =
+            const when =
                 typeof closeAt === 'string' && closeAt
                     ? new Date(closeAt).toLocaleString()
                     : null;
-        return {
-            title: 'Post auto-close',
-            description: when
-                ? `Closed at ${when}`
-                : 'Closed due to inactivity.'
-        };
-    }
-    case NotificationType.PAST_GIFT:
-        return {
-            title: 'Past gift logged',
-            description: 'Open to view details.'
-        };
-    case NotificationType.BUG_REPORT: {
-        const feedbackID =
-                'feedbackID' in notification
-                    ? notification.feedbackID
-                    : undefined;
-        return {
-            title: 'New bug report submitted',
-            description: feedbackID
-                ? `Feedback #${feedbackID}`
-                : 'Review in the admin dashboard.'
-        };
-    }
-    case NotificationType.SITE_FEEDBACK: {
-        const feedbackID =
-                'feedbackID' in notification
-                    ? notification.feedbackID
-                    : undefined;
-        return {
-            title: 'New site feedback submitted',
-            description: feedbackID
-                ? `Feedback #${feedbackID}`
-                : 'Review in the admin dashboard.'
-        };
-    }
-    case NotificationType.HANDSHAKE_CREATED: {
-        const user = getUserFromNotificationOrHandshake(
-            notification,
-            handshake,
-            userID
-        );
-        const username = getNotificationDisplayName(user, userID, true);
-        return {
-            title: 'New offer to help',
-            description: showingHandshakeCard
-                ? `${username} wants to help with your post. Click to view details.`
-                : `${username} wants to help with your post.`
-        };
-    }
-    case NotificationType.HANDSHAKE_ACCEPTED: {
-        // Determine who accepted based on post ownership
-        const user = getUserFromNotificationOrHandshake(
-            notification,
-            handshake,
-            userID
-        );
-        const username = getNotificationDisplayName(user, userID);
-        const usernameCapitalized = getNotificationDisplayName(
-            user,
-            userID,
-            true
-        );
-
-        let title = 'Help offer accepted';
-        let description = showingHandshakeCard
-            ? 'The help offer was accepted! You can now coordinate.'
-            : 'The help offer was accepted!';
-
-        if (userID && handshake) {
-            if (handshake.senderID === userID) {
-                // Current user sent the request, so the other person accepted
-                title = `${usernameCapitalized} accepted your help offer`;
-                description = showingHandshakeCard
-                    ? `${usernameCapitalized} accepted your help offer! You can now coordinate.`
-                    : `${usernameCapitalized} accepted your help offer!`;
-            }
-            else if (
-                handshake.receiverID === userID ||
-                    handshake.recipientID === userID
-            ) {
-                // Current user is the post owner/receiver, so they accepted
-                title = `You accepted ${username}'s help offer`;
-                description = showingHandshakeCard
-                    ? `You accepted ${username}'s help offer. You can now coordinate.`
-                    : `You accepted ${username}'s help offer.`;
-            }
+            return {
+                title: 'Post auto-close',
+                description: when
+                    ? `Closed at ${when}`
+                    : 'Closed due to inactivity.'
+            };
         }
-
-        return { title, description };
-    }
-    case NotificationType.HANDSHAKE_COMPLETED: {
-        let title = 'Help completed';
-        let description = showingHandshakeCard
-            ? 'The help exchange has been completed successfully.'
-            : 'The help exchange has been completed successfully.';
-
-        if (userID && handshake) {
-            // Determine current user's role in the handshake
-            const postType = handshake.post?.type;
-            const isSender = handshake.senderID === userID;
-            const isReceiver =
-                    handshake.receiverID === userID ||
-                    handshake.recipientID === userID;
-
-            // Pick the correct "other user" based on current user's role:
-            // - handshake sender's counterpart is the receiver (= post creator)
-            // - handshake receiver's counterpart is the sender
-            const otherUser = isSender
-                ? (handshake.receiver ?? handshake.post?.sender)
-                : handshake.sender;
-
-            const username = getNotificationDisplayName(otherUser, userID);
+        case NotificationType.PAST_GIFT:
+            return {
+                title: 'Past gift logged',
+                description: 'Open to view details.'
+            };
+        case NotificationType.BUG_REPORT: {
+            const feedbackID =
+                'feedbackID' in notification
+                    ? notification.feedbackID
+                    : undefined;
+            return {
+                title: 'New bug report submitted',
+                description: feedbackID
+                    ? `Feedback #${feedbackID}`
+                    : 'Review in the admin dashboard.'
+            };
+        }
+        case NotificationType.SITE_FEEDBACK: {
+            const feedbackID =
+                'feedbackID' in notification
+                    ? notification.feedbackID
+                    : undefined;
+            return {
+                title: 'New site feedback submitted',
+                description: feedbackID
+                    ? `Feedback #${feedbackID}`
+                    : 'Review in the admin dashboard.'
+            };
+        }
+        case NotificationType.HANDSHAKE_CREATED: {
+            const user = getUserFromNotificationOrHandshake(
+                notification,
+                handshake,
+                userID
+            );
+            const username = getNotificationDisplayName(user, userID, true);
+            return {
+                title: 'New offer to help',
+                description: showingHandshakeCard
+                    ? `${username} wants to help with your post. Click to view details.`
+                    : `${username} wants to help with your post.`
+            };
+        }
+        case NotificationType.HANDSHAKE_ACCEPTED: {
+            // Determine who accepted based on post ownership
+            const user = getUserFromNotificationOrHandshake(
+                notification,
+                handshake,
+                userID
+            );
+            const username = getNotificationDisplayName(user, userID);
             const usernameCapitalized = getNotificationDisplayName(
-                otherUser,
+                user,
                 userID,
                 true
             );
 
-            // For request posts: receiver (post creator) receives help, sender gives it
-            // For gift posts: sender (handshake initiator) receives the gift, receiver gives it
-            const userWasReceivingHelp =
-                    (postType === 'request' && isReceiver) ||
-                    (postType === 'gift' && isSender);
+            let title = 'Help offer accepted';
+            let description = showingHandshakeCard
+                ? 'The help offer was accepted! You can now coordinate.'
+                : 'The help offer was accepted!';
 
-            if (isSender) {
-                title = userWasReceivingHelp
-                    ? `You received help from ${username}`
-                    : `You helped ${username}`;
-                description = userWasReceivingHelp
-                    ? `You received help from ${username}.`
-                    : `You helped ${username}.`;
+            if (userID && handshake) {
+                if (handshake.senderID === userID) {
+                    // Current user sent the request, so the other person accepted
+                    title = `${usernameCapitalized} accepted your help offer`;
+                    description = showingHandshakeCard
+                        ? `${usernameCapitalized} accepted your help offer! You can now coordinate.`
+                        : `${usernameCapitalized} accepted your help offer!`;
+                } else if (
+                    handshake.receiverID === userID ||
+                    handshake.recipientID === userID
+                ) {
+                    // Current user is the post owner/receiver, so they accepted
+                    title = `You accepted ${username}'s help offer`;
+                    description = showingHandshakeCard
+                        ? `You accepted ${username}'s help offer. You can now coordinate.`
+                        : `You accepted ${username}'s help offer.`;
+                }
             }
-            else if (isReceiver) {
-                title = userWasReceivingHelp
-                    ? `${usernameCapitalized} helped you`
-                    : `${usernameCapitalized} received help from you`;
-                description = showingHandshakeCard
-                    ? userWasReceivingHelp
-                        ? `${usernameCapitalized} helped you. The exchange is complete.`
-                        : `${usernameCapitalized} received help from you. The exchange is complete.`
-                    : userWasReceivingHelp
-                        ? `${usernameCapitalized} helped you.`
-                        : `${usernameCapitalized} received help from you.`;
-            }
+
+            return { title, description };
         }
+        case NotificationType.HANDSHAKE_COMPLETED: {
+            let title = 'Help completed';
+            let description = showingHandshakeCard
+                ? 'The help exchange has been completed successfully.'
+                : 'The help exchange has been completed successfully.';
 
-        return { title, description };
-    }
-    case NotificationType.HANDSHAKE_CANCELLED: {
-        const noShow =
-                'noShowReported' in notification
-                    ? notification.noShowReported
-                    : false;
-        const user = getUserFromNotificationOrHandshake(
-            notification,
-            handshake,
-            userID
-        );
-
-        let title = 'Help cancelled';
-        let description = noShow
-            ? 'The help was cancelled due to a no-show.'
-            : 'The help was cancelled.';
-
-        if (userID && handshake && !noShow) {
-            const cancelledByUserID = handshake.cancelledByUserID;
-            const postType = handshake.post?.type;
-            const isReceiver =
+            if (userID && handshake) {
+                // Determine current user's role in the handshake
+                const postType = handshake.post?.type;
+                const isSender = handshake.senderID === userID;
+                const isReceiver =
                     handshake.receiverID === userID ||
                     handshake.recipientID === userID;
-            const isSender = handshake.senderID === userID;
-            const userWasReceivingHelp =
-                    (postType === 'request' && isReceiver) ||
-                    (postType === 'gift' && isSender);
 
-            if (cancelledByUserID === userID) {
-                title = userWasReceivingHelp
-                    ? 'You stopped receiving help'
-                    : 'You stopped giving help';
-                description = userWasReceivingHelp
-                    ? 'You stopped receiving help.'
-                    : 'You stopped giving help.';
-            }
-            else if (cancelledByUserID) {
+                // Pick the correct "other user" based on current user's role:
+                // - handshake sender's counterpart is the receiver (= post creator)
+                // - handshake receiver's counterpart is the sender
+                const otherUser = isSender
+                    ? (handshake.receiver ?? handshake.post?.sender)
+                    : handshake.sender;
+
+                const username = getNotificationDisplayName(otherUser, userID);
                 const usernameCapitalized = getNotificationDisplayName(
-                    user,
+                    otherUser,
                     userID,
                     true
                 );
-                title = `${usernameCapitalized} stopped helping`;
-                description = `${usernameCapitalized} stopped helping.`;
-            }
-        }
 
-        return { title, description };
-    }
-    case NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE: {
-        return {
-            title: 'Post closed',
-            description: showingHandshakeCard
-                ? 'Another person completed a handshake on this post. The post is no longer available.'
-                : 'Another person completed a handshake on this post.'
-        };
-    }
-    case NotificationType.POST_REOPENED: {
-        return {
-            title: 'Post reopened',
-            description: showingHandshakeCard
-                ? 'A completed handshake was cancelled. The post is available again!'
-                : 'The post is available again!'
-        };
-    }
-    case NotificationType.EVENT_USER_JOINED: {
-        const user = 'user' in notification ? notification.user : null;
-        const username = getNotificationDisplayName(user, userID, true);
-        return {
-            title: `${username} joined your event`,
-            description: 'Click to view event details.'
-        };
-    }
-    case NotificationType.EVENT_INVITE: {
-        const user = 'user' in notification ? notification.user : null;
-        const username = getNotificationDisplayName(user, userID, true);
-        return {
-            title: `${username} invited you to an event`,
-            description: 'Click to view event details.'
-        };
-    }
-    case NotificationType.HANDSHAKE_UNDO_ACCEPTED: {
-        const user = getUserFromNotificationOrHandshake(
-            notification,
-            handshake,
-            userID
-        );
-        const usernameCapitalized = getNotificationDisplayName(
-            user,
-            userID,
-            true
-        );
-        return {
-            title: 'Help offer acceptance withdrawn',
-            description: showingHandshakeCard
-                ? `${usernameCapitalized} withdrew their acceptance of the help offer.`
-                : `${usernameCapitalized} withdrew their acceptance.`
-        };
-    }
-    default:
-        return {
-            title: 'Notification',
-            description: ''
-        };
+                // For request posts: receiver (post creator) receives help, sender gives it
+                // For gift posts: sender (handshake initiator) receives the gift, receiver gives it
+                const userWasReceivingHelp =
+                    (postType === 'request' && isReceiver) ||
+                    (postType === 'gift' && isSender);
+
+                if (isSender) {
+                    title = userWasReceivingHelp
+                        ? `You received help from ${username}`
+                        : `You helped ${username}`;
+                    description = userWasReceivingHelp
+                        ? `You received help from ${username}.`
+                        : `You helped ${username}.`;
+                } else if (isReceiver) {
+                    title = userWasReceivingHelp
+                        ? `${usernameCapitalized} helped you`
+                        : `${usernameCapitalized} received help from you`;
+                    description = showingHandshakeCard
+                        ? userWasReceivingHelp
+                            ? `${usernameCapitalized} helped you. The exchange is complete.`
+                            : `${usernameCapitalized} received help from you. The exchange is complete.`
+                        : userWasReceivingHelp
+                          ? `${usernameCapitalized} helped you.`
+                          : `${usernameCapitalized} received help from you.`;
+                }
+            }
+
+            return { title, description };
+        }
+        case NotificationType.HANDSHAKE_CANCELLED: {
+            const noShow =
+                'noShowReported' in notification
+                    ? notification.noShowReported
+                    : false;
+            const user = getUserFromNotificationOrHandshake(
+                notification,
+                handshake,
+                userID
+            );
+
+            let title = 'Help cancelled';
+            let description = noShow
+                ? 'The help was cancelled due to a no-show.'
+                : 'The help was cancelled.';
+
+            if (userID && handshake && !noShow) {
+                const cancelledByUserID = handshake.cancelledByUserID;
+                const postType = handshake.post?.type;
+                const isReceiver =
+                    handshake.receiverID === userID ||
+                    handshake.recipientID === userID;
+                const isSender = handshake.senderID === userID;
+                const userWasReceivingHelp =
+                    (postType === 'request' && isReceiver) ||
+                    (postType === 'gift' && isSender);
+
+                if (cancelledByUserID === userID) {
+                    title = userWasReceivingHelp
+                        ? 'You stopped receiving help'
+                        : 'You stopped giving help';
+                    description = userWasReceivingHelp
+                        ? 'You stopped receiving help.'
+                        : 'You stopped giving help.';
+                } else if (cancelledByUserID) {
+                    const usernameCapitalized = getNotificationDisplayName(
+                        user,
+                        userID,
+                        true
+                    );
+                    title = `${usernameCapitalized} stopped helping`;
+                    description = `${usernameCapitalized} stopped helping.`;
+                }
+            }
+
+            return { title, description };
+        }
+        case NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE: {
+            return {
+                title: 'Post closed',
+                description: showingHandshakeCard
+                    ? 'Another person completed a handshake on this post. The post is no longer available.'
+                    : 'Another person completed a handshake on this post.'
+            };
+        }
+        case NotificationType.POST_REOPENED: {
+            return {
+                title: 'Post reopened',
+                description: showingHandshakeCard
+                    ? 'A completed handshake was cancelled. The post is available again!'
+                    : 'The post is available again!'
+            };
+        }
+        case NotificationType.EVENT_USER_JOINED: {
+            const user = 'user' in notification ? notification.user : null;
+            const username = getNotificationDisplayName(user, userID, true);
+            return {
+                title: `${username} joined your event`,
+                description: 'Click to view event details.'
+            };
+        }
+        case NotificationType.EVENT_INVITE: {
+            const user = 'user' in notification ? notification.user : null;
+            const username = getNotificationDisplayName(user, userID, true);
+            return {
+                title: `${username} invited you to an event`,
+                description: 'Click to view event details.'
+            };
+        }
+        case NotificationType.HANDSHAKE_UNDO_ACCEPTED: {
+            const user = getUserFromNotificationOrHandshake(
+                notification,
+                handshake,
+                userID
+            );
+            const usernameCapitalized = getNotificationDisplayName(
+                user,
+                userID,
+                true
+            );
+            return {
+                title: 'Help offer acceptance withdrawn',
+                description: showingHandshakeCard
+                    ? `${usernameCapitalized} withdrew their acceptance of the help offer.`
+                    : `${usernameCapitalized} withdrew their acceptance.`
+            };
+        }
+        default:
+            return {
+                title: 'Notification',
+                description: ''
+            };
     }
 }
 
@@ -699,9 +805,9 @@ export default function NotificationsPage() {
             filter === 'all'
                 ? itemsWithoutDMs
                 : itemsWithoutDMs.filter((item) => {
-                    if (filter === 'help') {
-                        return (
-                            item.type ===
+                      if (filter === 'help') {
+                          return (
+                              item.type ===
                                   NotificationType.HANDSHAKE_CREATED ||
                               item.type ===
                                   NotificationType.HANDSHAKE_ACCEPTED ||
@@ -712,19 +818,19 @@ export default function NotificationsPage() {
                               item.type ===
                                   NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE ||
                               item.type === NotificationType.POST_REOPENED
-                        );
-                    }
-                    if (filter === 'comments') {
-                        return (
-                            item.type === NotificationType.MESSAGE_REPLY ||
-                            item.type === NotificationType.POST_REPLY ||
+                          );
+                      }
+                      if (filter === 'comments') {
+                          return (
+                              item.type === NotificationType.MESSAGE_REPLY ||
+                              item.type === NotificationType.POST_REPLY ||
                               item.type === NotificationType.EVENT_REPLY
-                        );
-                    }
-                    if (filter === 'other') {
-                        return (
-                            item.type !== NotificationType.MESSAGE_REPLY &&
-                            item.type !== NotificationType.POST_REPLY &&
+                          );
+                      }
+                      if (filter === 'other') {
+                          return (
+                              item.type !== NotificationType.MESSAGE_REPLY &&
+                              item.type !== NotificationType.POST_REPLY &&
                               item.type !== NotificationType.EVENT_REPLY &&
                               item.type !==
                                   NotificationType.HANDSHAKE_CREATED &&
@@ -737,10 +843,10 @@ export default function NotificationsPage() {
                               item.type !==
                                   NotificationType.POST_CLOSED_BY_OTHER_HANDSHAKE &&
                               item.type !== NotificationType.POST_REOPENED
-                        );
-                    }
-                    return true;
-                });
+                          );
+                      }
+                      return true;
+                  });
 
         // Group handshake notifications by postID + handshakeID
         const handshakeGroups = new Map<string, NotificationRecord[]>();
@@ -770,8 +876,7 @@ export default function NotificationsPage() {
                 if (group) {
                     group.push(item);
                 }
-            }
-            else {
+            } else {
                 nonHandshakeItems.push(item);
             }
         });
@@ -784,8 +889,7 @@ export default function NotificationsPage() {
             if (notifications.length === 1) {
                 // Single notification, don't group
                 result.push(notifications[0]);
-            }
-            else {
+            } else {
                 // Multiple notifications, create a group
                 // Sort by createdAt descending (most recent first)
                 const sorted = [...notifications].sort((a, b) => {
@@ -855,8 +959,7 @@ export default function NotificationsPage() {
             timer = setTimeout(() => {
                 setShowLoadingSpinner(true);
             }, 500);
-        }
-        else {
+        } else {
             setShowLoadingSpinner(false);
         }
         return () => {
@@ -871,8 +974,7 @@ export default function NotificationsPage() {
             timer = setTimeout(() => {
                 setShowEmptyState(true);
             }, 300);
-        }
-        else {
+        } else {
             setShowEmptyState(false);
         }
         return () => {
@@ -901,8 +1003,7 @@ export default function NotificationsPage() {
                         notificationsToMark.push(notif);
                     }
                 });
-            }
-            else {
+            } else {
                 // For single notifications
                 if (
                     !item.isActedOn &&
@@ -936,8 +1037,7 @@ export default function NotificationsPage() {
                         toMark.map((notification) => markActed(notification.id))
                     );
                     // No need to refetch here - markActed invalidates the query in NotificationsContext
-                }
-                catch (err) {
+                } catch (err) {
                     console.error(
                         'Failed to auto-mark handshake notifications as read:',
                         err
@@ -961,15 +1061,15 @@ export default function NotificationsPage() {
 
             if (notification.type === NotificationType.POST_REPLY) {
                 navigate(`/post/${notification.postID}`);
-            }
-            else if (notification.type === NotificationType.MESSAGE_REPLY) {
+            } else if (notification.type === NotificationType.MESSAGE_REPLY) {
                 if ('postID' in notification && notification.postID) {
                     navigate(`/post/${notification.postID}`);
-                }
-                else if ('eventID' in notification && notification.eventID) {
+                } else if ('eventID' in notification && notification.eventID) {
                     navigate(`/event/${notification.eventID}`);
-                }
-                else if ('channelID' in notification && notification.channelID) {
+                } else if (
+                    'channelID' in notification &&
+                    notification.channelID
+                ) {
                     const basePath =
                         'channelType' in notification &&
                         notification.channelType === 'dm'
@@ -981,26 +1081,22 @@ export default function NotificationsPage() {
                         })
                     );
                 }
-            }
-            else if (notification.type === NotificationType.EVENT_REPLY) {
+            } else if (notification.type === NotificationType.EVENT_REPLY) {
                 navigate(`/event/${notification.eventID}`);
-            }
-            else if (notification.type === NotificationType.POST_AUTO_CLOSE) {
+            } else if (notification.type === NotificationType.POST_AUTO_CLOSE) {
                 navigate(`/post/${notification.postID}`);
-            }
-            else if (notification.type === NotificationType.PAST_GIFT) {
+            } else if (notification.type === NotificationType.PAST_GIFT) {
                 navigate(`/post/${notification.postID}`);
-            }
-            else if (
+            } else if (
                 notification.type === NotificationType.BUG_REPORT ||
                 notification.type === NotificationType.SITE_FEEDBACK
             ) {
                 navigate(routes.admin);
-            }
-            else if (
+            } else if (
                 notification.type === NotificationType.HANDSHAKE_CREATED ||
                 notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
-                notification.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
+                notification.type ===
+                    NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
                 notification.type === NotificationType.HANDSHAKE_COMPLETED ||
                 notification.type === NotificationType.HANDSHAKE_CANCELLED ||
                 notification.type ===
@@ -1008,8 +1104,7 @@ export default function NotificationsPage() {
                 notification.type === NotificationType.POST_REOPENED
             ) {
                 navigate(`/post/${notification.postID}`);
-            }
-            else if (
+            } else if (
                 notification.type === NotificationType.EVENT_USER_JOINED ||
                 notification.type === NotificationType.EVENT_INVITE
             ) {
@@ -1074,50 +1169,12 @@ export default function NotificationsPage() {
         }
 
         if (notification.type === NotificationType.EVENT_REPLY) {
-            const author = notification.message?.author;
-            const isCurrentUser = author && user?.id && author.id === user.id;
-            const hasUsername = author?.username || author?.displayName;
             return (
-                <div className='flex items-start gap-3'>
-                    {isCurrentUser ? (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                You
-                            </span>
-                        </div>
-                    ) : hasUsername ? (
-                        <div
-                            onClick={(e) => e.stopPropagation()}
-                            className='flex-shrink-0'
-                        >
-                            <DelayedUserCard
-                                user={author}
-                                triggerVariant='avatar-name'
-                            />
-                        </div>
-                    ) : (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                Someone
-                            </span>
-                        </div>
-                    )}
-                    <div className='flex-1 min-w-0'>
-                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                            Someone commented on your event
-                        </p>
-                        {notification.message?.content && (
-                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
-                                {notification.message.content}
-                            </p>
-                        )}
-                        {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
-                                {createdAt}
-                            </time>
-                        )}
-                    </div>
-                </div>
+                <EventReplyNotificationContent
+                    notification={notification as any}
+                    currentUserID={user?.id}
+                    createdAt={createdAt}
+                />
             );
         }
 
@@ -1286,7 +1343,6 @@ export default function NotificationsPage() {
 
     return (
         <div className='mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8'>
-
             {/* Filter buttons */}
             <div className='w-full mb-2'>
                 <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>
@@ -1329,7 +1385,7 @@ export default function NotificationsPage() {
                             isActive
                                 ? 'border-brand-600 text-brand-600 dark:border-brand-300 dark:text-brand-300'
                                 : 'border-transparent text-zinc-500 hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-300'
-                            }
+                        }
                     `}
                             >
                                 {Icon && (
@@ -1363,8 +1419,7 @@ export default function NotificationsPage() {
                     try {
                         // Mark ALL notifications as read on the server
                         await acknowledgeAll();
-                    }
-                    catch (err) {
+                    } catch (err) {
                         console.error(
                             'Failed to mark all notifications as read:',
                             err
@@ -1462,8 +1517,7 @@ export default function NotificationsPage() {
                                             )
                                         );
                                         // No need to refetch - markActed invalidates the query
-                                    }
-                                    catch (err) {
+                                    } catch (err) {
                                         console.error(
                                             'Failed to mark notification(s) as read:',
                                             err
@@ -1479,8 +1533,7 @@ export default function NotificationsPage() {
                                         const next = new Set(prev);
                                         if (next.has(item.postID)) {
                                             next.delete(item.postID);
-                                        }
-                                        else {
+                                        } else {
                                             next.add(item.postID);
                                         }
                                         return next;
@@ -1566,8 +1619,8 @@ export default function NotificationsPage() {
                                                                             'handshakeID' in
                                                                             item.latest
                                                                                 ? item
-                                                                                    .latest
-                                                                                    .handshakeID
+                                                                                      .latest
+                                                                                      .handshakeID
                                                                                 : null;
                                                                         const isDifferentHandshake =
                                                                             multipleHandshakes &&

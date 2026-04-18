@@ -33,10 +33,18 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
     const [successMessage, setSuccess] = useState<string | null>(null);
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1);
+            return;
+        }
+
+        navigate('/');
+    };
 
     if (!inviteToken) {
         return (
-            <Auth title='Invite Required'>
+            <Auth title='Invite Required' onBack={handleBack}>
                 <div className='space-y-4 text-sm text-gray-200 dark:text-gray-300'>
                     <p>
                         Kudos is currently invite-only. Ask an existing member
@@ -101,7 +109,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     };
 
     return (
-        <Auth title='Create your account'>
+        <Auth title='Create your account' onBack={handleBack}>
             <Form
                 methods={form}
                 onSubmit={onSubmit}

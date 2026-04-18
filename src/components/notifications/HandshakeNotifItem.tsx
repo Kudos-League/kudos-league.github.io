@@ -88,7 +88,15 @@ function buildSentence(
         return `${name} accepted the help offer`;
     case 'handshake-completed': {
         if (!handshake || !currentUserID) return 'Help interaction completed';
+        const isDigitalGift = handshake?.post?.giftType === 'digital';
         const isSender = handshake.senderID === currentUserID;
+
+        if (isDigitalGift) {
+            return isSender
+                ? `You gave kudos to ${name} for sharing their digital resource`
+                : `${name} gave you kudos for sharing your digital resource`;
+        }
+
         const userReceived =
                 (postType === 'request' && !isSender) ||
                 (postType === 'gift' && isSender);
@@ -358,6 +366,13 @@ export default function HandshakeNotifItem({
     const sentence = buildSentence(notificationType, otherUser, userID, handshake);
     const otherName = otherUser?.displayName || otherUser?.username || 'the other person';
     const postType = handshake.post?.type ?? 'request';
+    const isDigitalGift = handshake.post?.giftType === 'digital';
+    const metaLabel =
+        notificationType === 'handshake-completed' && isDigitalGift
+            ? handshake.senderID === userID
+                ? 'Kudos given'
+                : 'Kudos received'
+            : meta.label;
     const showImagePlaceholder = imgError || !postImageSrc;
 
     return (
@@ -368,7 +383,7 @@ export default function HandshakeNotifItem({
                     <span
                         className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${meta.bgClass} ${meta.textClass}`}
                     >
-                        {meta.label}
+                        {metaLabel}
                     </span>
                     {createdAt && (
                         <time className='flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500'>
@@ -470,7 +485,11 @@ export default function HandshakeNotifItem({
                     </div>
                 ) : status === 'completed' && notificationType !== 'handshake-undo-accepted' ? (
                     <div className='rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-300'>
-                        Interaction complete.
+                        {isDigitalGift
+                            ? handshake.senderID === userID
+                                ? 'Kudos given!'
+                                : 'Kudos received!'
+                            : 'Interaction complete.'}
                     </div>
                 ) : status === 'cancelled' ? (
                     <div className='rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400'>

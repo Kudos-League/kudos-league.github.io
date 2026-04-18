@@ -15,6 +15,7 @@ import {
     SITE_FEEDBACK_CATEGORIES
 } from '@/shared/constants';
 import { apiMutate } from '@/shared/api/apiClient';
+import { ensureJpegAll } from '@/shared/convertHeic';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import type { FeedbackKind } from '@/shared/api/types';
@@ -148,10 +149,12 @@ export default function FeedbackModal({
         return null;
     };
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files) return;
-        const updated = [...selectedImages, ...Array.from(files)];
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = event.target.files;
+        if (!raw) return;
+        event.target.value = '';
+        const converted = await ensureJpegAll(Array.from(raw));
+        const updated = [...selectedImages, ...converted];
         const validation = validateFiles(updated);
         if (validation) {
             setServerError(validation);
@@ -159,7 +162,6 @@ export default function FeedbackModal({
         }
         setServerError(null);
         setSelectedImages(updated);
-        event.target.value = '';
     };
 
     const removeImage = (index: number) => {

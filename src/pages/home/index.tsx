@@ -258,7 +258,7 @@ export default function Feed() {
             ? localStorage.getItem('aboutCTA-dismissed') === 'true'
             : false;
     });
-    const [searchModalOpen, setSearchModalOpen] = useState(false);
+    // const [searchModalOpen, setSearchModalOpen] = useState(false);
 
     const handleDismissAboutCTA = () => {
         setAboutCTADismissed(true);
@@ -277,6 +277,16 @@ export default function Feed() {
         scrollContainer?.addEventListener('scroll', handleScroll);
         return () =>
             scrollContainer?.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    React.useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setActiveView('posts');
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const scrollToTop = () => {

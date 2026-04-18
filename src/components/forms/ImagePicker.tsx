@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import Button from '../common/Button';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 type ImagePickerProps = {
     form: UseFormReturn<any>;
@@ -33,8 +34,9 @@ export default function ImagePicker({
                             hidden
                             multiple={multiple}
                             ref={fileInputRef}
-                            onChange={(e) => {
-                                const files = Array.from(e.target.files || []);
+                            onChange={async (e) => {
+                                const raw = Array.from(e.target.files || []);
+                                const files = await ensureJpegAll(raw);
                                 field.onChange(multiple ? files : [files[0]]);
                             }}
                         />

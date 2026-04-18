@@ -296,6 +296,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                                     centered={false}
                                     subtitleClassName="max-w-[150px] opacity-60"
                                     nameClassName={isTopThree ? 'font-black' : 'font-bold'}
+                                    showMessageButton={false}
                                 />
                             </div>
 

@@ -4,9 +4,16 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routes, withQuery } from '@/routes';
+import { useEvent } from '@/shared/api/queries/events';
+import { getEventReplyDescription } from '@/shared/notifications/eventReplyText';
+import { getMessageReplyDescription } from '@/shared/notifications/messageReplyText';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
-import { useCachedHandshake, useCachedPost, useCachedUser } from '@/contexts/DataCacheContext';
+import {
+    useCachedHandshake,
+    useCachedPost,
+    useCachedUser
+} from '@/contexts/DataCacheContext';
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -56,10 +63,10 @@ function HandshakeNotificationPreview({
                 ? 'receiving'
                 : 'giving'
             : userID === handshake.senderID
-                ? postType === 'request'
-                    ? 'giving'
-                    : 'receiving'
-                : null;
+              ? postType === 'request'
+                  ? 'giving'
+                  : 'receiving'
+              : null;
 
     let statusMessage = '';
     let statusColor = 'text-zinc-700 dark:text-zinc-300';
@@ -68,19 +75,16 @@ function HandshakeNotificationPreview({
         statusMessage =
             postType === 'request' ? 'wants to help with' : 'wants to request';
         statusColor = 'text-blue-700 dark:text-blue-300';
-    }
-    else if (notificationType === 'handshake-accepted') {
+    } else if (notificationType === 'handshake-accepted') {
         statusMessage = 'accepted your help offer on';
         statusColor = 'text-green-700 dark:text-green-300';
-    }
-    else if (notificationType === 'handshake-completed') {
+    } else if (notificationType === 'handshake-completed') {
         statusMessage =
             userHelpAction === 'receiving'
                 ? 'received help on'
                 : 'completed helping on';
         statusColor = 'text-emerald-700 dark:text-emerald-300';
-    }
-    else if (notificationType === 'handshake-cancelled') {
+    } else if (notificationType === 'handshake-cancelled') {
         statusMessage =
             userHelpAction === 'receiving'
                 ? 'stopped receiving help on'
@@ -117,7 +121,9 @@ function HandshakeNotificationPreview({
                             &quot;{postTitle}&quot;
                         </div>
                         {(() => {
-                            const creator = handshake.post?.sender?.displayName || handshake.post?.sender?.username;
+                            const creator =
+                                handshake.post?.sender?.displayName ||
+                                handshake.post?.sender?.username;
                             return creator ? (
                                 <div className='text-xs text-zinc-500 dark:text-zinc-400'>
                                     by {creator}
@@ -153,7 +159,8 @@ function PostReplyBellItem({
             <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                 <div className='text-sm md:text-sm font-medium pr-12'>
                     <UserCard user={n.message?.author} triggerVariant='name' />{' '}
-                    replied to{post ? (
+                    replied to
+                    {post ? (
                         <>
                             {' '}
                             <span
@@ -165,13 +172,19 @@ function PostReplyBellItem({
                             >
                                 &quot;{post.title}&quot;
                             </span>
-                            {(post.sender?.displayName || post.sender?.username) && (
+                            {(post.sender?.displayName ||
+                                post.sender?.username) && (
                                 <span className='font-normal text-zinc-500 dark:text-zinc-400'>
-                                    {' '}by {post.sender.displayName || post.sender.username}
+                                    {' '}
+                                    by{' '}
+                                    {post.sender.displayName ||
+                                        post.sender.username}
                                 </span>
                             )}
                         </>
-                    ) : ' your post'}
+                    ) : (
+                        ' your post'
+                    )}
                 </div>
                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                     {formatTimeAgo(n)}
@@ -191,12 +204,46 @@ function MessageReplyBellItem({
     n: any;
     formatTimeAgo: (n: any) => string;
 }) {
+    const eventID = 'eventID' in n ? n.eventID : undefined;
+
     return (
         <div>
             <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                 <div className='text-sm md:text-sm font-medium pr-12'>
                     <UserCard user={n.message?.author} triggerVariant='name' />{' '}
-                    replied to your message
+                    {getMessageReplyDescription(eventID)}
+                </div>
+                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                    {formatTimeAgo(n)}
+                </div>
+            </div>
+            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                {n.message?.content}
+            </div>
+        </div>
+    );
+}
+
+function EventReplyBellItem({
+    n,
+    formatTimeAgo,
+    currentUserID
+}: {
+    n: any;
+    formatTimeAgo: (n: any) => string;
+    currentUserID?: number;
+}) {
+    const eventID = 'eventID' in n ? n.eventID : undefined;
+    const { data: event } = useEvent(eventID || 0);
+    const isEventCreator =
+        typeof currentUserID === 'number' && event?.creatorID === currentUserID;
+
+    return (
+        <div>
+            <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                <div className='text-sm md:text-sm font-medium pr-12'>
+                    <UserCard user={n.message?.author} triggerVariant='name' />{' '}
+                    {getEventReplyDescription(isEventCreator)}
                 </div>
                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                     {formatTimeAgo(n)}
@@ -272,14 +319,12 @@ export default function NotificationsBell() {
         if (unreadItems.length >= 10) {
             // Show all unread notifications if 10 or more
             return unreadItems;
-        }
-        else if (unreadItems.length > 0) {
+        } else if (unreadItems.length > 0) {
             // Show unread on top, then fill with read items to make at least 5 total
             const totalNeeded = Math.max(5, unreadItems.length);
             const readNeeded = totalNeeded - unreadItems.length;
             return [...unreadItems, ...readItems.slice(0, readNeeded)];
-        }
-        else {
+        } else {
             // No unread - show 5 most recent notifications
             return sortedItems.slice(0, 5);
         }
@@ -351,8 +396,7 @@ export default function NotificationsBell() {
     useEffect(() => {
         if (open) {
             document.body.style.overflow = 'hidden';
-        }
-        else {
+        } else {
             document.body.style.overflow = '';
         }
 
@@ -394,49 +438,49 @@ export default function NotificationsBell() {
         if (n.type === NotificationType.MESSAGE_REPLY) {
             if ('postID' in n && n.postID) {
                 navigate(`/post/${n.postID}`);
-            }
-            else if ('eventID' in n && n.eventID) {
+            } else if ('eventID' in n && n.eventID) {
                 navigate(`/event/${n.eventID}`);
-            }
-            else if ('channelID' in n && n.channelID) {
+            } else if ('channelID' in n && n.channelID) {
                 const basePath =
                     'channelType' in n && n.channelType === 'dm'
                         ? routes.dms
                         : routes.chat;
                 navigate(withQuery(basePath, { channelID: n.channelID }));
             }
-        }
-        else if (n.type === 'post-reply') {
+        } else if (n.type === 'post-reply') {
             if (postID) {
                 navigate(`/post/${postID}`);
-            }
-            else {
+            } else {
                 console.error('No postID found for post-reply notification', n);
             }
-        }
-        else if (n.type === 'post-auto-close') {
+        } else if (n.type === NotificationType.EVENT_REPLY) {
+            const eventID = 'eventID' in n ? n.eventID : null;
+            if (eventID) {
+                navigate(`/event/${eventID}`);
+            } else {
+                console.error(
+                    'No eventID found for event-reply notification',
+                    n
+                );
+            }
+        } else if (n.type === 'post-auto-close') {
             if (postID) {
                 navigate(`/post/${postID}`);
-            }
-            else {
+            } else {
                 console.error(
                     'No postID found for post-auto-close notification',
                     n
                 );
             }
-        }
-        else if (n.type === 'past-gift') {
+        } else if (n.type === 'past-gift') {
             if (postID) {
                 navigate(`/post/${postID}`);
-            }
-            else {
+            } else {
                 console.error('No postID found for past-gift notification', n);
             }
-        }
-        else if (n.type === 'bug-report' || n.type === 'site-feedback') {
+        } else if (n.type === 'bug-report' || n.type === 'site-feedback') {
             navigate(routes.admin);
-        }
-        else if (
+        } else if (
             n.type === 'handshake-created' ||
             n.type === 'handshake-accepted' ||
             n.type === 'handshake-completed' ||
@@ -444,17 +488,14 @@ export default function NotificationsBell() {
         ) {
             if (postID) {
                 navigate(`/post/${postID}`);
-            }
-            else {
+            } else {
                 console.error('No postID found for handshake notification', n);
             }
-        }
-        else if (n.type === 'event-user-joined') {
+        } else if (n.type === 'event-user-joined') {
             const eventID = 'eventID' in n ? n.eventID : null;
             if (eventID) {
                 navigate(`/event/${eventID}`);
-            }
-            else {
+            } else {
                 console.error(
                     'No eventID found for event-user-joined notification',
                     n
@@ -540,10 +581,18 @@ export default function NotificationsBell() {
                                         `}
                                         onClick={() => go(n)}
                                     >
-                                        {n.type === NotificationType.MESSAGE_REPLY ? (
+                                        {n.type ===
+                                        NotificationType.MESSAGE_REPLY ? (
                                             <MessageReplyBellItem
                                                 n={n}
                                                 formatTimeAgo={formatTimeAgo}
+                                            />
+                                        ) : n.type ===
+                                          NotificationType.EVENT_REPLY ? (
+                                            <EventReplyBellItem
+                                                n={n}
+                                                formatTimeAgo={formatTimeAgo}
+                                                currentUserID={user?.id}
                                             />
                                         ) : n.type === 'post-reply' ? (
                                             <PostReplyBellItem
@@ -610,21 +659,21 @@ export default function NotificationsBell() {
                                                 </div>
                                                 {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    <HandshakeNotificationPreview
+                                                        handshakeID={
+                                                            n.handshakeID
+                                                        }
+                                                        userID={user?.id}
+                                                        notificationType={
+                                                            n.type
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         Someone wants to
                                                         handshake on your post
-                                                        </div>
-                                                    )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : n.type === 'handshake-accepted' ? (
                                             <div>
@@ -638,21 +687,21 @@ export default function NotificationsBell() {
                                                 </div>
                                                 {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    <HandshakeNotificationPreview
+                                                        handshakeID={
+                                                            n.handshakeID
+                                                        }
+                                                        userID={user?.id}
+                                                        notificationType={
+                                                            n.type
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         Your handshake request
                                                         was accepted!
-                                                        </div>
-                                                    )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : n.type === 'handshake-completed' ? (
                                             <div>
@@ -666,21 +715,21 @@ export default function NotificationsBell() {
                                                 </div>
                                                 {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                    <HandshakeNotificationPreview
+                                                        handshakeID={
+                                                            n.handshakeID
+                                                        }
+                                                        userID={user?.id}
+                                                        notificationType={
+                                                            n.type
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         The transaction has been
                                                         completed
-                                                        </div>
-                                                    )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : n.type === 'handshake-cancelled' ? (
                                             <div>
@@ -694,24 +743,24 @@ export default function NotificationsBell() {
                                                 </div>
                                                 {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                            {'noShowReported' in
+                                                    <HandshakeNotificationPreview
+                                                        handshakeID={
+                                                            n.handshakeID
+                                                        }
+                                                        userID={user?.id}
+                                                        notificationType={
+                                                            n.type
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                        {'noShowReported' in
                                                             n &&
                                                         n.noShowReported
-                                                                ? 'Cancelled due to no-show'
-                                                                : 'The handshake was cancelled'}
-                                                        </div>
-                                                    )}
+                                                            ? 'Cancelled due to no-show'
+                                                            : 'The handshake was cancelled'}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : n.type === 'event-user-joined' ? (
                                             <div>
