@@ -22,7 +22,10 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteManager from './InviteManager';
-import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
 
 type Props = {
     user: UserDTO;
@@ -431,6 +434,9 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                             type='file'
                             accept='image/*'
                             multiple
+                            onClick={(e) =>
+                                resetFileInputBeforeOpen(e.currentTarget)
+                            }
                             onChange={handleReportImageUpload}
                             className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             disabled={reportFiles.length >= 4}

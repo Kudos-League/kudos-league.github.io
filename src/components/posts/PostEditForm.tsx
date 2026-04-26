@@ -17,7 +17,10 @@ import type {
     CategoryDTO,
     GiftType
 } from '@/shared/api/types';
-import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
 import { ensureJpegAll } from '@/shared/convertHeic';
 import Button from '../common/Button';
 import DropdownPicker from '@/components/forms/DropdownPicker';
@@ -462,6 +465,9 @@ export default function PostEditForm({
                         type='file'
                         accept='image/*'
                         multiple
+                        onClick={(e) =>
+                            resetFileInputBeforeOpen(e.currentTarget)
+                        }
                         onChange={handleImageUpload}
                         className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'
                         disabled={

@@ -1,7 +1,10 @@
-type FileInputLike = Pick<HTMLInputElement, 'files' | 'value'>;
+type FileInputLike = Pick<HTMLInputElement, 'files'>;
+type ResettableFileInputLike = Pick<HTMLInputElement, 'value'>;
 
 export function takeFilesFromInput(input: FileInputLike): File[] {
-    const selectedFiles = Array.from(input.files ?? []);
+    return Array.from(input.files ?? []);
+}
+
+export function resetFileInputBeforeOpen(input: ResettableFileInputLike) {
     input.value = '';
-    return selectedFiles;
 }
