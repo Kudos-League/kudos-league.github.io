@@ -15,6 +15,7 @@ import SettingsSection from './SettingsSection';
 import PageHeader from './PageHeader';
 import FormField from './FormField';
 import AvatarMenu from './AvatarMenu';
+import { ensureJpeg } from '@/shared/convertHeic';
 import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
@@ -255,9 +256,10 @@ const EditProfile: React.FC<Props> = ({
 
 
     const handleFileSelect = React.useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (file) {
+        async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const raw = e.target.files?.[0];
+            if (raw) {
+                const file = await ensureJpeg(raw);
                 form.setValue('avatar', [file] as any, {
                     shouldDirty: true,
                     shouldValidate: true
@@ -534,13 +536,14 @@ const EditProfile: React.FC<Props> = ({
             }, 1500);
         }
         catch (err: any) {
-            const str =
-                err?.response?.data?.errors?.[0]?.message ||
-                err?.response?.data?.message ||
-                err?.message ||
-                'Update failed';
+            const firstMsg = Array.isArray(err) ? err[0] : (err?.response?.data?.message || err?.message);
+            const str = firstMsg || 'Update failed';
             setToastType('error');
-            setToastMessage(str);
+            setToastMessage(
+                str.toLowerCase().includes('unsupported image format')
+                    ? 'Image format not supported. Please use JPEG, PNG, or WebP.'
+                    : str
+            );
         }
     };
 

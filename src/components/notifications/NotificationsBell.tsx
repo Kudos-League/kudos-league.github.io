@@ -4,9 +4,17 @@ import { BellIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routes, withQuery } from '@/routes';
+import { useEvent } from '@/shared/api/queries/events';
+import { getEventReplyDescription } from '@/shared/notifications/eventReplyText';
+import { getMessageReplyDescription } from '@/shared/notifications/messageReplyText';
 import UserCard from '../users/UserCard';
 import { useAuth } from '@/contexts/useAuth';
-import { useCachedHandshake, useCachedPost, useCachedUser } from '@/contexts/DataCacheContext';
+import {
+    useCachedHandshake,
+    useCachedPost,
+    useCachedUser
+} from '@/contexts/DataCacheContext';
+
 
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
@@ -48,6 +56,7 @@ function HandshakeNotificationPreview({
 
     const postTitle = handshake.post?.title || 'Post';
     const postType = handshake.post?.type || 'request';
+    const isDigital = handshake.post?.giftType === 'digital';
 
     // Determine user's help action context
     const userHelpAction: 'receiving' | 'giving' | null =
@@ -65,8 +74,11 @@ function HandshakeNotificationPreview({
     let statusColor = 'text-zinc-700 dark:text-zinc-300';
 
     if (notificationType === 'handshake-created') {
-        statusMessage =
-            postType === 'request' ? 'wants to help with' : 'wants to request';
+        statusMessage = isDigital
+            ? 'gave you kudos for'
+            : postType === 'request'
+                ? 'wants to help with'
+                : 'wants to request';
         statusColor = 'text-blue-700 dark:text-blue-300';
     }
     else if (notificationType === 'handshake-accepted') {
@@ -117,7 +129,9 @@ function HandshakeNotificationPreview({
                             &quot;{postTitle}&quot;
                         </div>
                         {(() => {
-                            const creator = handshake.post?.sender?.displayName || handshake.post?.sender?.username;
+                            const creator =
+                                handshake.post?.sender?.displayName ||
+                                handshake.post?.sender?.username;
                             return creator ? (
                                 <div className='text-xs text-zinc-500 dark:text-zinc-400'>
                                     by {creator}
@@ -153,7 +167,8 @@ function PostReplyBellItem({
             <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                 <div className='text-sm md:text-sm font-medium pr-12'>
                     <UserCard user={n.message?.author} triggerVariant='name' />{' '}
-                    replied to{post ? (
+                    replied to
+                    {post ? (
                         <>
                             {' '}
                             <span
@@ -165,13 +180,19 @@ function PostReplyBellItem({
                             >
                                 &quot;{post.title}&quot;
                             </span>
-                            {(post.sender?.displayName || post.sender?.username) && (
+                            {(post.sender?.displayName ||
+                                post.sender?.username) && (
                                 <span className='font-normal text-zinc-500 dark:text-zinc-400'>
-                                    {' '}by {post.sender.displayName || post.sender.username}
+                                    {' '}
+                                    by{' '}
+                                    {post.sender.displayName ||
+                                        post.sender.username}
                                 </span>
                             )}
                         </>
-                    ) : ' your post'}
+                    ) : (
+                        ' your post'
+                    )}
                 </div>
                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                     {formatTimeAgo(n)}
@@ -191,12 +212,46 @@ function MessageReplyBellItem({
     n: any;
     formatTimeAgo: (n: any) => string;
 }) {
+    const eventID = 'eventID' in n ? n.eventID : undefined;
+
     return (
         <div>
             <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
                 <div className='text-sm md:text-sm font-medium pr-12'>
                     <UserCard user={n.message?.author} triggerVariant='name' />{' '}
-                    replied to your message
+                    {getMessageReplyDescription(eventID)}
+                </div>
+                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                    {formatTimeAgo(n)}
+                </div>
+            </div>
+            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                {n.message?.content}
+            </div>
+        </div>
+    );
+}
+
+function EventReplyBellItem({
+    n,
+    formatTimeAgo,
+    currentUserID
+}: {
+    n: any;
+    formatTimeAgo: (n: any) => string;
+    currentUserID?: number;
+}) {
+    const eventID = 'eventID' in n ? n.eventID : undefined;
+    const { data: event } = useEvent(eventID || 0);
+    const isEventCreator =
+        typeof currentUserID === 'number' && event?.creatorID === currentUserID;
+
+    return (
+        <div>
+            <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                <div className='text-sm md:text-sm font-medium pr-12'>
+                    <UserCard user={n.message?.author} triggerVariant='name' />{' '}
+                    {getEventReplyDescription(isEventCreator)}
                 </div>
                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                     {formatTimeAgo(n)}
@@ -414,6 +469,18 @@ export default function NotificationsBell() {
                 console.error('No postID found for post-reply notification', n);
             }
         }
+        else if (n.type === NotificationType.EVENT_REPLY) {
+            const eventID = 'eventID' in n ? n.eventID : null;
+            if (eventID) {
+                navigate(`/event/${eventID}`);
+            }
+            else {
+                console.error(
+                    'No eventID found for event-reply notification',
+                    n
+                );
+            }
+        }
         else if (n.type === 'post-auto-close') {
             if (postID) {
                 navigate(`/post/${postID}`);
@@ -447,6 +514,14 @@ export default function NotificationsBell() {
             }
             else {
                 console.error('No postID found for handshake notification', n);
+            }
+        }
+        else if (n.type === NotificationType.KUDOS_RECEIVED) {
+            if (postID) {
+                navigate(`/post/${postID}`);
+            }
+            else {
+                navigate(routes.notifications);
             }
         }
         else if (n.type === 'event-user-joined') {
@@ -540,246 +615,279 @@ export default function NotificationsBell() {
                                         `}
                                         onClick={() => go(n)}
                                     >
-                                        {n.type === NotificationType.MESSAGE_REPLY ? (
-                                            <MessageReplyBellItem
-                                                n={n}
-                                                formatTimeAgo={formatTimeAgo}
-                                            />
-                                        ) : n.type === 'post-reply' ? (
-                                            <PostReplyBellItem
-                                                n={n}
-                                                formatTimeAgo={formatTimeAgo}
-                                            />
-                                        ) : n.type === 'past-gift' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>
+                                        {n.type ===
+                                        NotificationType.MESSAGE_REPLY ? (
+                                                <MessageReplyBellItem
+                                                    n={n}
+                                                    formatTimeAgo={formatTimeAgo}
+                                                />
+                                            ) : n.type ===
+                                          NotificationType.EVENT_REPLY ? (
+                                                    <EventReplyBellItem
+                                                        n={n}
+                                                        formatTimeAgo={formatTimeAgo}
+                                                        currentUserID={user?.id}
+                                                    />
+                                                ) : n.type === 'post-reply' ? (
+                                                    <PostReplyBellItem
+                                                        n={n}
+                                                        formatTimeAgo={formatTimeAgo}
+                                                    />
+                                                ) : n.type === 'past-gift' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-1'>
+                                                            <div className='text-sm md:text-sm font-medium'>
                                                         Past gift logged
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Open to view details
-                                                </div>
-                                            </div>
-                                        ) : n.type === 'bug-report' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>
+                                                        </div>
+                                                    </div>
+                                                ) : n.type === 'bug-report' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-1'>
+                                                            <div className='text-sm md:text-sm font-medium'>
                                                         New bug report
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #
-                                                    {'feedbackID' in n
-                                                        ? n.feedbackID
-                                                        : ''}
-                                                </div>
-                                            </div>
-                                        ) : n.type === 'site-feedback' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>
+                                                            {'feedbackID' in n
+                                                                ? n.feedbackID
+                                                                : ''}
+                                                        </div>
+                                                    </div>
+                                                ) : n.type === 'site-feedback' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-1'>
+                                                            <div className='text-sm md:text-sm font-medium'>
                                                         New site feedback
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Feedback #
-                                                    {'feedbackID' in n
-                                                        ? n.feedbackID
-                                                        : ''}
-                                                </div>
-                                            </div>
-                                        ) : n.type === 'handshake-created' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-blue-700 dark:text-blue-300'>
+                                                            {'feedbackID' in n
+                                                                ? n.feedbackID
+                                                                : ''}
+                                                        </div>
+                                                    </div>
+                                                ) : n.type === 'handshake-created' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-2'>
+                                                            <div className='text-sm md:text-sm font-medium text-blue-700 dark:text-blue-300'>
                                                         New handshake request
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                {'handshakeID' in n &&
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                <HandshakeNotificationPreview
+                                                                    handshakeID={
+                                                                        n.handshakeID
+                                                                    }
+                                                                    userID={user?.id}
+                                                                    notificationType={
+                                                                        n.type
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         Someone wants to
                                                         handshake on your post
-                                                        </div>
-                                                    )}
-                                            </div>
-                                        ) : n.type === 'handshake-accepted' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-green-700 dark:text-green-300'>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                ) : n.type === 'handshake-accepted' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-2'>
+                                                            <div className='text-sm md:text-sm font-medium text-green-700 dark:text-green-300'>
                                                         Handshake accepted
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                {'handshakeID' in n &&
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                <HandshakeNotificationPreview
+                                                                    handshakeID={
+                                                                        n.handshakeID
+                                                                    }
+                                                                    userID={user?.id}
+                                                                    notificationType={
+                                                                        n.type
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         Your handshake request
                                                         was accepted!
-                                                        </div>
-                                                    )}
-                                            </div>
-                                        ) : n.type === 'handshake-completed' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                ) : n.type === 'handshake-completed' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-2'>
+                                                            <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>
                                                         Handshake completed
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                {'handshakeID' in n &&
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                <HandshakeNotificationPreview
+                                                                    handshakeID={
+                                                                        n.handshakeID
+                                                                    }
+                                                                    userID={user?.id}
+                                                                    notificationType={
+                                                                        n.type
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className='text-sm text-zinc-600 dark:text-zinc-400'>
                                                         The transaction has been
                                                         completed
-                                                        </div>
-                                                    )}
-                                            </div>
-                                        ) : n.type === 'handshake-cancelled' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-2'>
-                                                    <div className='text-sm md:text-sm font-medium text-red-700 dark:text-red-300'>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                ) : n.type === 'handshake-cancelled' ? (
+                                                    <div>
+                                                        <div className='flex items-start justify-between gap-2 mb-2'>
+                                                            <div className='text-sm md:text-sm font-medium text-red-700 dark:text-red-300'>
                                                         Handshake cancelled
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                {'handshakeID' in n &&
+                                                            </div>
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                {formatTimeAgo(n)}
+                                                            </div>
+                                                        </div>
+                                                        {'handshakeID' in n &&
                                                 n.handshakeID ? (
-                                                        <HandshakeNotificationPreview
-                                                            handshakeID={
-                                                                n.handshakeID
-                                                            }
-                                                            userID={user?.id}
-                                                            notificationType={
-                                                                n.type
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400'>
-                                                            {'noShowReported' in
+                                                                <HandshakeNotificationPreview
+                                                                    handshakeID={
+                                                                        n.handshakeID
+                                                                    }
+                                                                    userID={user?.id}
+                                                                    notificationType={
+                                                                        n.type
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                    {'noShowReported' in
                                                             n &&
                                                         n.noShowReported
-                                                                ? 'Cancelled due to no-show'
-                                                                : 'The handshake was cancelled'}
+                                                                        ? 'Cancelled due to no-show'
+                                                                        : 'The handshake was cancelled'}
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                ) : n.type ===
+                                          NotificationType.KUDOS_RECEIVED ? (
+                                                        <div>
+                                                            <div className='flex items-start justify-between gap-2 mb-1'>
+                                                                <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>
+                                                        Someone gave you kudos
+                                                                </div>
+                                                                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                    {formatTimeAgo(n)}
+                                                                </div>
+                                                            </div>
+                                                            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                {(() => {
+                                                                    const amount =
+                                                            'kudos' in n
+                                                                ? (n as any).kudos
+                                                                : undefined;
+                                                                    return typeof amount ===
+                                                            'number' &&
+                                                            amount > 0
+                                                                        ? `You received ${amount} kudos!`
+                                                                        : 'You received kudos!';
+                                                                })()}
+                                                            </div>
                                                         </div>
-                                                    )}
-                                            </div>
-                                        ) : n.type === 'event-user-joined' ? (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium text-brand-700 dark:text-brand-300'>
+                                                    ) : n.type === 'event-user-joined' ? (
+                                                        <div>
+                                                            <div className='flex items-start justify-between gap-2 mb-1.5 md:mb-1'>
+                                                                <div className='text-sm md:text-sm font-medium text-brand-700 dark:text-brand-300'>
                                                         Someone joined your
                                                         event
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                {(() => {
-                                                    const hasUser =
+                                                                </div>
+                                                                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                    {formatTimeAgo(n)}
+                                                                </div>
+                                                            </div>
+                                                            {(() => {
+                                                                const hasUser =
                                                         'user' in n && n.user;
-                                                    console.log(
-                                                        '[NotificationsBell] EVENT_USER_JOINED:',
-                                                        {
-                                                            notification: n,
-                                                            hasUser,
-                                                            user:
+                                                                console.log(
+                                                                    '[NotificationsBell] EVENT_USER_JOINED:',
+                                                                    {
+                                                                        notification: n,
+                                                                        hasUser,
+                                                                        user:
                                                                 'user' in n
                                                                     ? n.user
                                                                     : undefined,
-                                                            userID:
+                                                                        userID:
                                                                 'userID' in n
                                                                     ? n.userID
                                                                     : undefined
-                                                        }
-                                                    );
-                                                    return hasUser ? (
-                                                        <div
-                                                            className='mb-1'
-                                                            onClick={(e) =>
-                                                                e.stopPropagation()
-                                                            }
-                                                        >
-                                                            <UserCard
-                                                                user={n.user}
-                                                                triggerVariant='avatar-name'
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                                                                    }
+                                                                );
+                                                                return hasUser ? (
+                                                                    <div
+                                                                        className='mb-1'
+                                                                        onClick={(e) =>
+                                                                            e.stopPropagation()
+                                                                        }
+                                                                    >
+                                                                        <UserCard
+                                                                            user={n.user}
+                                                                            triggerVariant='avatar-name'
+                                                                        />
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
                                                             Someone joined your
                                                             event
-                                                        </div>
-                                                    );
-                                                })()}
-                                                <div className='text-xs text-zinc-500 dark:text-zinc-400 italic'>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                            <div className='text-xs text-zinc-500 dark:text-zinc-400 italic'>
                                                     Click to view event
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <div className='flex items-start justify-between gap-2 mb-1'>
-                                                    <div className='text-sm md:text-sm font-medium'>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <div className='flex items-start justify-between gap-2 mb-1'>
+                                                                <div className='text-sm md:text-sm font-medium'>
                                                         Post auto-close
-                                                    </div>
-                                                    <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
-                                                        {formatTimeAgo(n)}
-                                                    </div>
-                                                </div>
-                                                <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
+                                                                </div>
+                                                                <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
+                                                                    {formatTimeAgo(n)}
+                                                                </div>
+                                                            </div>
+                                                            <div className='line-clamp-2 md:truncate text-sm text-zinc-600 dark:text-zinc-400'>
                                                     Due to inactivity
-                                                </div>
-                                            </div>
-                                        )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                     </li>
                                 ))
                             )}

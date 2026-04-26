@@ -25,6 +25,12 @@ import {
     NotificationType,
     NotificationsHistoryResponse
 } from '@/shared/api/types';
+import { useEvent } from '@/shared/api/queries/events';
+import { getEventReplyDescription } from '@/shared/notifications/eventReplyText';
+import {
+    getMessageReplyDescription,
+    getMessageReplyTitle
+} from '@/shared/notifications/messageReplyText';
 import { routes, withQuery } from '@/routes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/useAuth';
@@ -44,19 +50,22 @@ const DelayedUserCard = memo(
 
 DelayedUserCard.displayName = 'DelayedUserCard';
 
-
 function PostReplyNotificationContent({
     notification,
     currentUserID,
     createdAt
 }: {
-    notification: NotificationRecord & { type: typeof NotificationType.POST_REPLY; postID: number };
+    notification: NotificationRecord & {
+        type: typeof NotificationType.POST_REPLY;
+        postID: number;
+    };
     currentUserID?: number;
     createdAt: string;
 }) {
     const { post } = useCachedPost(notification.postID);
     const author = notification.message?.author;
-    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
     const hasUsername = author?.username || author?.displayName;
 
     return (
@@ -68,8 +77,14 @@ function PostReplyNotificationContent({
                     </span>
                 </div>
             ) : hasUsername ? (
-                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
                 </div>
             ) : (
                 <div className='flex-shrink-0'>
@@ -80,14 +95,26 @@ function PostReplyNotificationContent({
             )}
             <div className='flex-1 min-w-0'>
                 <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                    replied to{post ? (
+                    replied to
+                    {post ? (
                         <>
-                            {' '}<span className='font-medium text-zinc-800 dark:text-zinc-200 italic'>&quot;{post.title}&quot;</span>
-                            {(post.sender?.displayName || post.sender?.username) && (
-                                <span className='text-zinc-500 dark:text-zinc-500'>{' '}by {post.sender.displayName || post.sender.username}</span>
+                            {' '}
+                            <span className='font-medium text-zinc-800 dark:text-zinc-200 italic'>
+                                &quot;{post.title}&quot;
+                            </span>
+                            {(post.sender?.displayName ||
+                                post.sender?.username) && (
+                                <span className='text-zinc-500 dark:text-zinc-500'>
+                                    {' '}
+                                    by{' '}
+                                    {post.sender.displayName ||
+                                        post.sender.username}
+                                </span>
                             )}
                         </>
-                    ) : ' your post'}
+                    ) : (
+                        ' your post'
+                    )}
                 </p>
                 {notification.message?.content && (
                     <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -109,13 +136,18 @@ function MessageReplyNotificationContent({
     currentUserID,
     createdAt
 }: {
-    notification: NotificationRecord & { type: typeof NotificationType.MESSAGE_REPLY };
+    notification: NotificationRecord & {
+        type: typeof NotificationType.MESSAGE_REPLY;
+    };
     currentUserID?: number;
     createdAt: string;
 }) {
     const author = notification.message?.author;
-    const isCurrentUser = author && currentUserID && author.id === currentUserID;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
     const hasUsername = author?.username || author?.displayName;
+    const eventID =
+        'eventID' in notification ? notification.eventID : undefined;
 
     return (
         <div className='flex items-start gap-3'>
@@ -126,8 +158,14 @@ function MessageReplyNotificationContent({
                     </span>
                 </div>
             ) : hasUsername ? (
-                <div onClick={(e) => e.stopPropagation()} className='flex-shrink-0'>
-                    <DelayedUserCard user={author} triggerVariant='avatar-name' />
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
                 </div>
             ) : (
                 <div className='flex-shrink-0'>
@@ -138,7 +176,71 @@ function MessageReplyNotificationContent({
             )}
             <div className='flex-1 min-w-0'>
                 <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                    replied to your message
+                    {getMessageReplyDescription(eventID)}
+                </p>
+                {notification.message?.content && (
+                    <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
+                        {notification.message.content}
+                    </p>
+                )}
+                {createdAt && (
+                    <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
+                        {createdAt}
+                    </time>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EventReplyNotificationContent({
+    notification,
+    currentUserID,
+    createdAt
+}: {
+    notification: NotificationRecord & {
+        type: typeof NotificationType.EVENT_REPLY;
+        eventID: number;
+    };
+    currentUserID?: number;
+    createdAt: string;
+}) {
+    const { data: event } = useEvent(notification.eventID);
+    const author = notification.message?.author;
+    const isCurrentUser =
+        author && currentUserID && author.id === currentUserID;
+    const hasUsername = author?.username || author?.displayName;
+    const isEventCreator =
+        typeof currentUserID === 'number' && event?.creatorID === currentUserID;
+
+    return (
+        <div className='flex items-start gap-3'>
+            {isCurrentUser ? (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        You
+                    </span>
+                </div>
+            ) : hasUsername ? (
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='flex-shrink-0'
+                >
+                    <DelayedUserCard
+                        user={author}
+                        triggerVariant='avatar-name'
+                    />
+                </div>
+            ) : (
+                <div className='flex-shrink-0'>
+                    <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                        Someone
+                    </span>
+                </div>
+            )}
+            <div className='flex-1 min-w-0'>
+                <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
+                    {getEventReplyDescription(isEventCreator)}
                 </p>
                 {notification.message?.content && (
                     <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
@@ -313,12 +415,19 @@ function describeNotification(
     switch (notification.type) {
     case NotificationType.MESSAGE_REPLY:
         return {
-            title: 'Reply to your message',
+            title: getMessageReplyTitle(
+                'eventID' in notification ? notification.eventID : undefined
+            ),
             description: notification.message?.content || ''
         };
     case NotificationType.POST_REPLY:
         return {
             title: 'Reply to your post',
+            description: notification.message?.content || ''
+        };
+    case NotificationType.EVENT_REPLY:
+        return {
+            title: 'Event comment',
             description: notification.message?.content || ''
         };
     case NotificationType.POST_AUTO_CLOSE: {
@@ -557,6 +666,19 @@ function describeNotification(
             description: 'Click to view event details.'
         };
     }
+    case NotificationType.KUDOS_RECEIVED: {
+        const amount =
+                'kudos' in notification
+                    ? (notification as any).kudos
+                    : undefined;
+        return {
+            title: 'Someone gave you kudos',
+            description:
+                    typeof amount === 'number' && amount > 0
+                        ? `You received ${amount} kudos!`
+                        : 'You received kudos!'
+        };
+    }
     case NotificationType.HANDSHAKE_UNDO_ACCEPTED: {
         const user = getUserFromNotificationOrHandshake(
             notification,
@@ -717,14 +839,14 @@ export default function NotificationsPage() {
                     if (filter === 'comments') {
                         return (
                             item.type === NotificationType.MESSAGE_REPLY ||
-                            item.type === NotificationType.POST_REPLY ||
+                              item.type === NotificationType.POST_REPLY ||
                               item.type === NotificationType.EVENT_REPLY
                         );
                     }
                     if (filter === 'other') {
                         return (
                             item.type !== NotificationType.MESSAGE_REPLY &&
-                            item.type !== NotificationType.POST_REPLY &&
+                              item.type !== NotificationType.POST_REPLY &&
                               item.type !== NotificationType.EVENT_REPLY &&
                               item.type !==
                                   NotificationType.HANDSHAKE_CREATED &&
@@ -969,7 +1091,10 @@ export default function NotificationsPage() {
                 else if ('eventID' in notification && notification.eventID) {
                     navigate(`/event/${notification.eventID}`);
                 }
-                else if ('channelID' in notification && notification.channelID) {
+                else if (
+                    'channelID' in notification &&
+                    notification.channelID
+                ) {
                     const basePath =
                         'channelType' in notification &&
                         notification.channelType === 'dm'
@@ -1000,7 +1125,8 @@ export default function NotificationsPage() {
             else if (
                 notification.type === NotificationType.HANDSHAKE_CREATED ||
                 notification.type === NotificationType.HANDSHAKE_ACCEPTED ||
-                notification.type === NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
+                notification.type ===
+                    NotificationType.HANDSHAKE_UNDO_ACCEPTED ||
                 notification.type === NotificationType.HANDSHAKE_COMPLETED ||
                 notification.type === NotificationType.HANDSHAKE_CANCELLED ||
                 notification.type ===
@@ -1014,6 +1140,13 @@ export default function NotificationsPage() {
                 notification.type === NotificationType.EVENT_INVITE
             ) {
                 navigate(`/event/${notification.eventID}`);
+            }
+            else if (notification.type === NotificationType.KUDOS_RECEIVED) {
+                const postID =
+                    'postID' in notification ? notification.postID : undefined;
+                if (postID) {
+                    navigate(`/post/${postID}`);
+                }
             }
 
             // Mark all notifications in group as acted
@@ -1074,50 +1207,12 @@ export default function NotificationsPage() {
         }
 
         if (notification.type === NotificationType.EVENT_REPLY) {
-            const author = notification.message?.author;
-            const isCurrentUser = author && user?.id && author.id === user.id;
-            const hasUsername = author?.username || author?.displayName;
             return (
-                <div className='flex items-start gap-3'>
-                    {isCurrentUser ? (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                You
-                            </span>
-                        </div>
-                    ) : hasUsername ? (
-                        <div
-                            onClick={(e) => e.stopPropagation()}
-                            className='flex-shrink-0'
-                        >
-                            <DelayedUserCard
-                                user={author}
-                                triggerVariant='avatar-name'
-                            />
-                        </div>
-                    ) : (
-                        <div className='flex-shrink-0'>
-                            <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-                                Someone
-                            </span>
-                        </div>
-                    )}
-                    <div className='flex-1 min-w-0'>
-                        <p className='text-sm text-zinc-600 dark:text-zinc-400 mb-1'>
-                            Someone commented on your event
-                        </p>
-                        {notification.message?.content && (
-                            <p className='text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 break-all bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2'>
-                                {notification.message.content}
-                            </p>
-                        )}
-                        {createdAt && (
-                            <time className='text-xs text-zinc-500 dark:text-zinc-400 mt-2 block'>
-                                {createdAt}
-                            </time>
-                        )}
-                    </div>
-                </div>
+                <EventReplyNotificationContent
+                    notification={notification as any}
+                    currentUserID={user?.id}
+                    createdAt={createdAt}
+                />
             );
         }
 
@@ -1286,7 +1381,6 @@ export default function NotificationsPage() {
 
     return (
         <div className='mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8'>
-
             {/* Filter buttons */}
             <div className='w-full mb-2'>
                 <div className='flex w-full border-b border-zinc-200 dark:border-zinc-700'>

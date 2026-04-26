@@ -99,10 +99,10 @@ export default function Activity({user, hideWrapper = false}: Props) {
     const [handshakesDisplayLimit, setHandshakesDisplayLimit] = useState(10);
     const ITEMS_PER_PAGE = 10;
 
-    // Only show kudos and handshakes filters for own activity (private data)
+    // Handshakes stay private to the user; kudos history is public.
     const availableFilters: FilterType[] = isOwnActivity
         ? ['all', 'posts', 'events', 'handshakes', 'kudos']
-        : ['all', 'posts', 'events'];
+        : ['all', 'posts', 'events', 'kudos'];
 
     // Sort and filter posts chronologically (latest first)
     const sortedPosts = useMemo(() => {
@@ -957,7 +957,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                     fallback={<Spinner text='Loading kudos history...' />}
                 >
                     <div key='kudos-history-wrapper'>
-                        <KudosHistory />
+                        <KudosHistory userID={user?.id} />
                     </div>
                 </React.Suspense>
             );
@@ -1142,7 +1142,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
             const hasMorePosts = sortedPosts.length > postsDisplayLimit;
 
             return (
-                <div className='space-y-4'>
+                <div className='space-y-4 px-2'>
                     <PostList posts={displayedPosts} showHandshakeShortcut />
                     {hasMorePosts && (
                         <div className='text-center'>
@@ -1403,13 +1403,13 @@ export default function Activity({user, hideWrapper = false}: Props) {
                 {filter !== 'kudos' && (
                     <div className='w-full flex items-center justify-center gap-2'>
                         <div className='relative flex-1 min-w-0 max-w-md'>
-                            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
+                            <Search className='absolute left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500' />
                             <input
                                 type='text'
                                 placeholder={getSearchPlaceholder()}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className='w-full pl-10 pr-10 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-400 focus:border-transparent'
+                                className='w-11/12 pl-8 pr-2 py-2 mx-4 mr-6 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-600 dark:focus:ring-brand-400 focus:border-transparent'
                             />
                             {searchQuery && (
                                 <button
@@ -1429,7 +1429,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                 {renderSubFilters()}
 
                 {/* Filtered Content */}
-                <div className='pt-2'>
+                <div className='pt-2 px-2'>
                     {renderFilteredContent()}
                 </div>
             </div>

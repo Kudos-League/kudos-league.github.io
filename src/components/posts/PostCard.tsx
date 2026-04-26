@@ -117,7 +117,7 @@ export default function PostCard(props: Props) {
                     className='mb-2 max-w-fit'
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <UserCard user={sender} compact={true} showKudos={false} />
+                    <UserCard user={sender} compact={true} showKudos={true} />
                 </div>
             ) : senderID ? (
                 <div className='mb-2 max-w-fit'>

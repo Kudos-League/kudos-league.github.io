@@ -676,7 +676,31 @@ const HandshakeCard: React.FC<Props> = ({
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}
                             >
-                                {userHelpAction === 'receiving' ? (
+                                {isDigitalGift ? (
+                                    userHelpAction === 'receiving' ? (
+                                        <>
+                                            <span className='font-semibold'>
+                                                You gave kudos to {otherUsername}!
+                                            </span>{' '}
+                                            Thanks for supporting this digital resource.
+                                        </>
+                                    ) : userHelpAction === 'giving' ? (
+                                        <>
+                                            <span className='font-semibold'>
+                                                {otherUsername} gave you kudos!
+                                            </span>{' '}
+                                            They appreciated your digital resource.
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className='font-semibold'>
+                                                {getDisplayName(senderUser, true)} gave kudos to{' '}
+                                                {getDisplayName(receiverUser)}!
+                                            </span>{' '}
+                                            Digital resource appreciated.
+                                        </>
+                                    )
+                                ) : userHelpAction === 'receiving' ? (
                                     <>
                                         <span className='font-semibold'>
                                             You received help from{' '}

@@ -83,6 +83,37 @@ const TagInput: React.FC<TagInputProps> = ({
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
+
+            // Android soft keyboards don't reliably fire keydown with key=','
+            // so we detect the comma in the input event instead.
+            if (value.includes(',')) {
+                const tagName = value.replace(/,/g, '').trim();
+                if (tagName) {
+                    setSelectedTags((prev) => {
+                        if (
+                            prev.some(
+                                (t) =>
+                                    t.name.toLowerCase() ===
+                                    tagName.toLowerCase()
+                            )
+                        ) {
+                            return prev;
+                        }
+                        return [
+                            ...prev,
+                            { id: `custom-${Date.now()}`, name: tagName }
+                        ];
+                    });
+                }
+                setCurrentTagInput('');
+                setSuggestedTags([]);
+                currentRequestRef.current += 1;
+                setTimeout(() => {
+                    inputRef.current?.focus();
+                }, 0);
+                return;
+            }
+
             setCurrentTagInput(value);
 
             currentRequestRef.current += 1;

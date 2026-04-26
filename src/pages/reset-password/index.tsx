@@ -68,6 +68,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={onSubmit} className='space-y-6'>
                 <div>
                     <PasswordInput
+                        className='mb-2'
                         placeholder='New password'
                         aria-label='New password'
                         visible={visible1}
@@ -76,6 +77,7 @@ export default function ResetPasswordPage() {
                         onChange={(e) => setPassword(e.target.value)}
                     />
                     <PasswordInput
+                        className='mb-2'
                         placeholder='Confirm password'
                         aria-label='Confirm password'
                         visible={visible2}

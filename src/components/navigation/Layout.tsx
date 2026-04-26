@@ -2,14 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { routes } from '@/routes';
 
-import {
-    HomeIcon,
-    EnvelopeIcon,
-    UserCircleIcon,
-    InformationCircleIcon,
-    ArrowRightOnRectangleIcon,
-    UserPlusIcon
-} from '@heroicons/react/24/outline';
 import Navbar from './Navbar';
 import AppSidebar from './Sidebar';
 import DMsModal from '../messages/DMsModal';
@@ -19,13 +11,19 @@ import { useAuth } from '@/contexts/useAuth';
 import { useDMs } from '@/contexts/DMsContext';
 
 const Layout: React.FC = () => {
-    const { isLoggedIn, user, logout } = useAuth();
+    const { isLoggedIn, user, logout, masquerade, stopMasquerade } = useAuth();
     const { isOpen: dmsModalOpen, openDMs, closeDMs } = useDMs();
     const [showDropdown, setShowDropdown] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [searchModalOpen, setSearchModalOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const isAuthRoute =
+        location.pathname === routes.login ||
+        location.pathname === routes.signUp ||
+        location.pathname === '/sign-up' ||
+        location.pathname === routes.forgotPassword ||
+        location.pathname === routes.resetPassword;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -71,6 +69,11 @@ const Layout: React.FC = () => {
         navigate(routes.home);
     };
 
+    const handleStopMasquerade = async () => {
+        await stopMasquerade();
+        navigate(routes.admin);
+    };
+
     const isDevMode =
         process.env.REACT_APP_BACKEND_URI?.includes('localhost') ||
         process.env.REACT_APP_BACKEND_URI?.includes('api-dev');
@@ -96,6 +99,14 @@ const Layout: React.FC = () => {
         </Link>
     );
 
+    if (isAuthRoute) {
+        return (
+            <div className='min-h-screen min-h-[100dvh] bg-slate-950'>
+                <Outlet />
+            </div>
+        );
+    }
+
     return (
         <div className='flex height-dvh'>
             {/* Sidebar for desktop, mobile hamburger menu */}
@@ -120,6 +131,25 @@ const Layout: React.FC = () => {
             <div
                 className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}
             >
+                {masquerade?.active && (
+                    <div className='sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-amber-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 shadow'>
+                        <span>
+                            Masquerading as{' '}
+                            {user?.username ??
+                                masquerade.targetUser?.username ??
+                                'user'}
+                            . Original admin:{' '}
+                            {masquerade.originalAdmin?.username ?? 'admin'}.
+                        </span>
+                        <button
+                            type='button'
+                            onClick={handleStopMasquerade}
+                            className='rounded-md bg-slate-950 px-3 py-1 text-sm text-white hover:bg-slate-800 disabled:opacity-60'
+                        >
+                            Exit
+                        </button>
+                    </div>
+                )}
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
                     onOpenDMs={() => openDMs()}

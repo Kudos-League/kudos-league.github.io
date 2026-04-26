@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     FieldValues,
     RegisterOptions,
@@ -105,6 +105,10 @@ export default function Input<T extends FieldValues>({
 
     const containerClass = noMargin ? undefined : 'my-2';
 
+    const isPassword =
+        htmlInputType === 'password' || type === 'password';
+    const [passwordVisible, setPasswordVisible] = useState(false);
+
     return (
         <div className={containerClass + (className ? ` ${className}` : '')}>
             <label
@@ -136,27 +140,41 @@ export default function Input<T extends FieldValues>({
                     rows={4}
                 />
             ) : (
-                <input
-                    {...props}
-                    disabled={disabled}
-                    id={name}
-                    type={
-                        htmlInputType ??
-                        (type === 'password' ? 'password' : 'text')
-                    }
-                    value={value ?? field.value}
-                    onChange={(e) => {
-                        const transformed = valueTransformer
-                            ? valueTransformer(e.target.value)
-                            : e.target.value;
-                        field.onChange(transformed);
-                        onValueChange?.(transformed as string);
-                    }}
-                    onBlur={field.onBlur}
-                    className='w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent'
-                    placeholder={placeholder}
-                    multiple={multipleFiles}
-                />
+                <div className={isPassword ? 'relative' : undefined}>
+                    <input
+                        {...props}
+                        disabled={disabled}
+                        id={name}
+                        type={
+                            isPassword
+                                ? (passwordVisible ? 'text' : 'password')
+                                : (htmlInputType ?? 'text')
+                        }
+                        value={value ?? field.value}
+                        onChange={(e) => {
+                            const transformed = valueTransformer
+                                ? valueTransformer(e.target.value)
+                                : e.target.value;
+                            field.onChange(transformed);
+                            onValueChange?.(transformed as string);
+                        }}
+                        onBlur={field.onBlur}
+                        className={`w-full border rounded px-3 py-2 bg-white text-gray-900 placeholder:text-gray-500 dark:bg-zinc-800 dark:text-white dark:placeholder:text-zinc-400 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent${isPassword ? ' pr-10' : ''}`}
+                        placeholder={placeholder}
+                        multiple={multipleFiles}
+                    />
+                    {isPassword && (
+                        <button
+                            type='button'
+                            onClick={() => setPasswordVisible((v) => !v)}
+                            className='absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-300'
+                            aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                            title={passwordVisible ? 'Hide password' : 'Show password'}
+                        >
+                            {passwordVisible ? '🙈' : '👁️'}
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );

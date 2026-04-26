@@ -16,13 +16,20 @@ import {
     markNotificationActed
 } from 'redux_store/slices/notifications.slice';
 
-import { NotificationRecord, NotificationType } from '@/shared/api/types';
+import {
+    EventDTO,
+    NotificationRecord,
+    NotificationType
+} from '@/shared/api/types';
 import { pushAlert } from '@/components/common/alertBus';
 import { useAuth } from '@/contexts/useAuth';
 import { getSocket } from '@/hooks/useWebsocketClient';
 import { Events } from '@/shared/constants';
 import { useDataCache } from '@/contexts/DataCacheContext';
-import { qk } from '@/shared/api/queries/posts';
+import { qk as eventQueryKeys } from '@/shared/api/queries/events';
+import { qk as postQueryKeys } from '@/shared/api/queries/posts';
+import { getEventReplyToastMessage } from '@/shared/notifications/eventReplyText';
+import { getMessageReplyToastMessage } from '@/shared/notifications/messageReplyText';
 
 type Ctx = {
     state: { items: NotificationRecord[]; unread: number; loaded: boolean };
@@ -111,7 +118,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const handleNotification = async (incoming: NotificationRecord) => {
             console.log('[NC] === WEBSOCKET NOTIFICATION RECEIVED ===');
-            console.log('[NC] Raw incoming:', JSON.stringify(incoming, null, 2));
+            console.log(
+                '[NC] Raw incoming:',
+                JSON.stringify(incoming, null, 2)
+            );
 
             const normalized: NotificationRecord = {
                 ...incoming,
@@ -121,11 +131,17 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             };
 
             console.log('[NC] Normalized type:', normalized.type);
-            console.log('[NC] Is HANDSHAKE_ACCEPTED?', normalized.type === NotificationType.HANDSHAKE_ACCEPTED);
+            console.log(
+                '[NC] Is HANDSHAKE_ACCEPTED?',
+                normalized.type === NotificationType.HANDSHAKE_ACCEPTED
+            );
 
             if (normalized.type === NotificationType.HANDSHAKE_ACCEPTED) {
                 console.log('[NC] !!! HANDSHAKE_ACCEPTED DETECTED !!!');
-                console.log('[NC] Full normalized payload:', JSON.stringify(normalized, null, 2));
+                console.log(
+                    '[NC] Full normalized payload:',
+                    JSON.stringify(normalized, null, 2)
+                );
             }
 
             dispatch(pushAction(normalized));
@@ -163,7 +179,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 if (postID) {
                     invalidatePost(postID);
                     queryClient.invalidateQueries({
-                        queryKey: qk.post(postID)
+                        queryKey: postQueryKeys.post(postID)
                     });
                 }
             }
@@ -174,7 +190,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     'eventID' in normalized ? normalized.eventID : undefined;
                 if (eventID) {
                     queryClient.invalidateQueries({
-                        queryKey: ['event', eventID]
+                        queryKey: eventQueryKeys.event(eventID)
                     });
                     queryClient.invalidateQueries({ queryKey: ['events'] });
                 }
@@ -207,16 +223,41 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     const text = normalized.message?.content || '';
                     pushAlert({
                         type: 'info',
-                        message: text
-                            ? `${author} replied to your message: ${text}`
-                            : `${author} replied to your message`
+                        message: getMessageReplyToastMessage({
+                            authorName: author,
+                            content: text,
+                            eventID:
+                                'eventID' in normalized
+                                    ? normalized.eventID
+                                    : undefined
+                        })
                     });
                 }
                 else if (normalized.type === 'event-reply') {
+                    const author =
+                        normalized.message?.author?.username ||
+                        normalized.message?.author?.displayName ||
+                        'Someone';
                     const text = normalized.message?.content || '';
+                    const eventID =
+                        'eventID' in normalized
+                            ? normalized.eventID
+                            : undefined;
+                    const cachedEvent = eventID
+                        ? queryClient.getQueryData<EventDTO>(
+                            eventQueryKeys.event(eventID)
+                        )
+                        : undefined;
+                    const isEventCreator =
+                        typeof user?.id === 'number' &&
+                        cachedEvent?.creatorID === user.id;
                     pushAlert({
                         type: 'info',
-                        message: `New comment on your event: ${text}`
+                        message: getEventReplyToastMessage({
+                            authorName: author,
+                            content: text,
+                            isEventCreator
+                        })
                     });
                 }
                 else if (normalized.type === 'past-gift') {
@@ -276,7 +317,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                     const username =
                         user?.username || user?.displayName || 'They';
                     console.log('[NC] Username for toast:', username);
-                    console.log('[NC] About to call pushAlert for HANDSHAKE_ACCEPTED');
+                    console.log(
+                        '[NC] About to call pushAlert for HANDSHAKE_ACCEPTED'
+                    );
                     pushAlert({
                         type: 'success',
                         message: `${username} accepted your request!`
@@ -332,6 +375,17 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                         message:
                             'A post you initiated a handshake on has been reopened!'
                     });
+                }
+                else if (normalized.type === NotificationType.KUDOS_RECEIVED) {
+                    const amount =
+                        'kudos' in normalized
+                            ? (normalized as any).kudos
+                            : undefined;
+                    const msg =
+                        typeof amount === 'number' && amount > 0
+                            ? `You received ${amount} kudos from your digital gift!`
+                            : 'You received kudos from your digital gift!';
+                    pushAlert({ type: 'success', message: msg });
                 }
                 else if (
                     normalized.type === NotificationType.EVENT_USER_JOINED

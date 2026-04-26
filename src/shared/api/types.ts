@@ -400,7 +400,8 @@ export const NotificationType = {
     POST_CLOSED_BY_OTHER_HANDSHAKE: 'post-closed-by-other-handshake',
     POST_REOPENED: 'post-reopened',
     EVENT_USER_JOINED: 'event-user-joined',
-    EVENT_INVITE: 'event-invite'
+    EVENT_INVITE: 'event-invite',
+    KUDOS_RECEIVED: 'kudos-received'
 } as const;
 
 export type NotificationTypeKeys =
@@ -498,6 +499,11 @@ export type NotificationPayload =
           type: typeof NotificationType.POST_REOPENED;
           postID: number;
           handshakeID: number;
+      }
+    | {
+          type: typeof NotificationType.KUDOS_RECEIVED;
+          postID?: number;
+          kudos?: number;
       };
 
 export type NotificationRecord = NotificationPayload & {
