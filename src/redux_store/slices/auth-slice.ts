@@ -5,6 +5,14 @@ export type AuthState = {
     token: string | null;
     username: string | null;
     tokenTimestamp: number | null;
+    masquerade?: {
+        active: true;
+        originalToken: string;
+        originalAdmin: any;
+        targetUser: any;
+        startedAt?: string;
+        auditID: number;
+    } | null;
 };
 
 export function isValidAuthState(authState: AuthState | null) {
@@ -14,7 +22,12 @@ export function isValidAuthState(authState: AuthState | null) {
     );
 }
 
-const initialState = { token: null, username: null, tokenTimestamp: null };
+const initialState: AuthState = {
+    token: null,
+    username: null,
+    tokenTimestamp: null,
+    masquerade: null
+};
 
 const authSlice = createSlice({
     name: 'auth',
@@ -24,6 +37,7 @@ const authSlice = createSlice({
             state.token = action.payload.token;
             state.username = action.payload.username;
             state.tokenTimestamp = action.payload.tokenTimestamp;
+            state.masquerade = action.payload.masquerade ?? null;
         },
         resetAuthState: () => initialState
     }

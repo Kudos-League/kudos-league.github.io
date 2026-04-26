@@ -13,6 +13,7 @@ const AUTH_STORAGE_KEY = 'web_auth_state';
 type AuthContextType = {
     token: string | null;
     authState: AuthState | null;
+    masquerade: AuthState['masquerade'] | null;
     user: UserDTO | null;
     name: string;
     isLoggedIn: boolean;
@@ -22,6 +23,8 @@ type AuthContextType = {
         password: string;
     }) => Promise<void>;
     logout: () => Promise<void>;
+    startMasquerade: (targetUserID: number, reason?: string) => Promise<void>;
+    stopMasquerade: () => Promise<void>;
     register: (
         username: string,
         email: string,
@@ -49,24 +52,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const qc = useQueryClient();
 
-    const clearPostsCache = React.useCallback(() => {
+    const clearSessionCaches = React.useCallback(async () => {
         try {
-            qc.removeQueries({
-                predicate: (query) => {
-                    const k = query.queryKey;
-                    if (!Array.isArray(k) || k.length === 0) return false;
-                    const first = k[0];
-                    if (typeof first !== 'string') return false;
-                    return first === 'posts';
-                }
-            });
+            await qc.cancelQueries({ predicate: () => true });
+            qc.removeQueries({ predicate: () => true });
         }
         catch (err) {
-            console.warn('Failed to clear posts cache:', err);
+            console.warn('Failed to clear session cache:', err);
         }
     }, [qc]);
 
     type LoginData = { token: string; user?: { username?: string } };
+    type MasqueradeStartResponse = {
+        token: string;
+        user: UserDTO;
+        masquerade: {
+            adminUserID: number;
+            targetUserID: number;
+            auditID: number;
+            startedAt?: string;
+        };
+    };
     type LoginPayload = {
         username?: string;
         password?: string;
@@ -144,7 +150,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const newAuthState: AuthState = {
                 token: response.token,
                 username: response.user?.username ?? '',
-                tokenTimestamp: Date.now()
+                tokenTimestamp: Date.now(),
+                masquerade: null
             };
             setAuthState(newAuthState);
             dispatch(updateAuth(newAuthState));
@@ -153,7 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 JSON.stringify(newAuthState)
             );
             setAuthToken(newAuthState.token);
-            clearPostsCache();
+            await clearSessionCaches();
             try {
                 await qc.fetchQuery({
                     queryKey: ['user', 'me'],
@@ -287,11 +294,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const logoutHandler = async () => {
+        if (authState?.masquerade?.active) {
+            try {
+                await apiMutate<{ success: boolean }, undefined>(
+                    '/users/masquerade/stop',
+                    'post'
+                );
+            }
+            catch (err) {
+                console.warn('Failed to record masquerade stop:', err);
+            }
+        }
+
         setAuthState(null);
         setUserProfile(null);
         dispatch(updateAuth({} as any));
         localStorage.removeItem(AUTH_STORAGE_KEY);
-        clearPostsCache();
+        await clearSessionCaches();
         clearAlerts();
     };
 
@@ -331,6 +350,92 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const startMasquerade = async (targetUserID: number, reason?: string) => {
+        if (!token || !userProfile?.admin) {
+            throw new Error('Admin session required.');
+        }
+
+        const response = await apiMutate<
+            MasqueradeStartResponse,
+            { targetUserID: number; reason?: string }
+        >('/admin/masquerade/start', 'post', { targetUserID, reason });
+
+        const newAuthState: AuthState = {
+            token: response.token,
+            username: response.user?.username ?? '',
+            tokenTimestamp: Date.now(),
+            masquerade: {
+                active: true,
+                originalToken: token,
+                originalAdmin: userProfile,
+                targetUser: response.user,
+                startedAt: response.masquerade?.startedAt,
+                auditID: response.masquerade.auditID
+            }
+        };
+
+        setAuthState(newAuthState);
+        dispatch(updateAuth(newAuthState));
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthState));
+        setAuthToken(newAuthState.token);
+        await clearSessionCaches();
+
+        try {
+            const fetched = await qc.fetchQuery({
+                queryKey: ['user', 'me'],
+                queryFn: () => apiGet<UserDTO>('/users/me')
+            });
+            setUserProfile(fetched ?? response.user);
+        }
+        catch (err) {
+            console.warn('Failed to fetch masquerade profile:', err);
+            setUserProfile(response.user);
+        }
+    };
+
+    const stopMasquerade = async () => {
+        const currentMasquerade = authState?.masquerade;
+        if (!currentMasquerade?.active) return;
+
+        try {
+            await apiMutate<{ success: boolean }, undefined>(
+                '/users/masquerade/stop',
+                'post'
+            );
+        }
+        catch (err) {
+            console.warn('Failed to record masquerade stop:', err);
+        }
+
+        const restoredAuthState: AuthState = {
+            token: currentMasquerade.originalToken,
+            username: currentMasquerade.originalAdmin?.username ?? '',
+            tokenTimestamp: Date.now(),
+            masquerade: null
+        };
+
+        setAuthState(restoredAuthState);
+        dispatch(updateAuth(restoredAuthState));
+        localStorage.setItem(
+            AUTH_STORAGE_KEY,
+            JSON.stringify(restoredAuthState)
+        );
+        setAuthToken(restoredAuthState.token);
+        await clearSessionCaches();
+
+        try {
+            const fetched = await qc.fetchQuery({
+                queryKey: ['user', 'me'],
+                queryFn: () => apiGet<UserDTO>('/users/me')
+            });
+            setUserProfile(fetched ?? currentMasquerade.originalAdmin);
+        }
+        catch (err) {
+            console.warn('Failed to fetch restored admin profile:', err);
+            setUserProfile(currentMasquerade.originalAdmin);
+        }
+    };
+
     const updateUser = (updated: Partial<UserDTO>) => {
         setUserProfile((prev) => (prev ? { ...prev, ...updated } : prev));
     };
@@ -366,12 +471,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             value={{
                 token,
                 authState,
+                masquerade: authState?.masquerade ?? null,
                 isLoggedIn: !!userProfile,
                 user: userProfile,
                 name: userProfile?.displayName ?? userProfile?.username ?? '',
                 loading: isActuallyLoading,
                 login: loginHandler,
                 logout: logoutHandler,
+                startMasquerade,
+                stopMasquerade,
                 register: signUpHandler,
                 updateUser
             }}

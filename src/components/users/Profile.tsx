@@ -35,7 +35,7 @@ type Props = {
 };
 
 const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideWrapper = false }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, startMasquerade } = useAuth();
     const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
@@ -46,6 +46,7 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showBanModal, setShowBanModal] = useState(false);
+    const [masqueradeLoading, setMasqueradeLoading] = useState(false);
     const [banEndDate, setBanEndDate] = useState<string>('');
     const [banIndefinite, setBanIndefinite] = useState<boolean>(false);
     const [banServerError, setBanServerError] = useState<string | null>(null);
@@ -132,6 +133,29 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
         }
     };
 
+    const handleMasquerade = async () => {
+        if (!currentUser?.admin || !user?.id) return;
+        const confirmed = window.confirm(
+            `Masquerade as ${user.username}? Admin tools will be disabled until you exit.`
+        );
+        if (!confirmed) return;
+
+        setMasqueradeLoading(true);
+        try {
+            await startMasquerade(user.id);
+            navigate('/');
+        }
+        catch (err: any) {
+            const message = Array.isArray(err)
+                ? String(err[0])
+                : err?.message || 'Failed to start masquerade.';
+            alert(message);
+        }
+        finally {
+            setMasqueradeLoading(false);
+        }
+    };
+
     if (editing) {
         return (
             <EditProfile
@@ -151,6 +175,8 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                 isSelf={isSelf}
                 onEditProfile={() => setEditing(true)}
                 onStartDM={handleStartDM}
+                onMasquerade={handleMasquerade}
+                masqueradeLoading={masqueradeLoading}
             />
 
             {isSelf && (!INVITES_ADMIN_ONLY || currentUser?.admin) && (

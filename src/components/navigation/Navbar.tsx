@@ -7,6 +7,7 @@ import {
     TrophyIcon,
     InformationCircleIcon,
     ArrowRightOnRectangleIcon,
+    ArrowUturnLeftIcon,
     ShieldCheckIcon,
     UserCircleIcon,
     ChartBarIcon
@@ -124,7 +125,9 @@ function UserMenu({
     menuItems: NavItem[];
 }) {
     const [open, setOpen] = useState(false);
-    const { user } = useAuth();
+    const [stoppingMasquerade, setStoppingMasquerade] = useState(false);
+    const { user, masquerade, stopMasquerade } = useAuth();
+    const navigate = useNavigate();
     const profileHref = user ? routes.user[user.id] : routes.login;
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +149,18 @@ function UserMenu({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [open]);
+
+    const handleStopMasquerade = async () => {
+        setStoppingMasquerade(true);
+        try {
+            await stopMasquerade();
+            setOpen(false);
+            navigate(routes.admin);
+        }
+        finally {
+            setStoppingMasquerade(false);
+        }
+    };
 
     return (
         <div className={clsx('relative', open && 'z-[60]')} ref={menuRef}>
@@ -189,6 +204,21 @@ function UserMenu({
                             </Link>
                         );
                     })}
+                    {masquerade?.active && (
+                        <button
+                            type='button'
+                            onClick={handleStopMasquerade}
+                            disabled={stoppingMasquerade}
+                            className='flex w-full items-center gap-3 px-4 py-3 text-left text-base font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-60 dark:text-amber-300 dark:hover:bg-amber-950/30'
+                        >
+                            <ArrowUturnLeftIcon className='h-5 w-5' />
+                            <span>
+                                {stoppingMasquerade
+                                    ? 'Stopping...'
+                                    : 'Stop masquerading'}
+                            </span>
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             setOpen(false);
