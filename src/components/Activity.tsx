@@ -99,10 +99,10 @@ export default function Activity({user, hideWrapper = false}: Props) {
     const [handshakesDisplayLimit, setHandshakesDisplayLimit] = useState(10);
     const ITEMS_PER_PAGE = 10;
 
-    // Only show kudos and handshakes filters for own activity (private data)
+    // Handshakes stay private to the user; kudos history is public.
     const availableFilters: FilterType[] = isOwnActivity
         ? ['all', 'posts', 'events', 'handshakes', 'kudos']
-        : ['all', 'posts', 'events'];
+        : ['all', 'posts', 'events', 'kudos'];
 
     // Sort and filter posts chronologically (latest first)
     const sortedPosts = useMemo(() => {
@@ -957,7 +957,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                     fallback={<Spinner text='Loading kudos history...' />}
                 >
                     <div key='kudos-history-wrapper'>
-                        <KudosHistory />
+                        <KudosHistory userID={user?.id} />
                     </div>
                 </React.Suspense>
             );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Spinner from '../common/Spinner';
 import { useAuth } from '@/contexts/useAuth';
 import {
@@ -38,87 +39,111 @@ function formatCurrencyFromCents(value?: unknown) {
     });
 }
 
-function renderMetadata(item: KudosHistoryDTO) {
+function renderDetail(item: KudosHistoryDTO): React.ReactNode {
     const metadata = (item.metadata ?? {}) as Record<string, unknown>;
 
     if (item.source === 'donation') {
         const amountLabel = formatCurrencyFromCents(metadata.amount);
-
+        const parts = [
+            amountLabel ? `${amountLabel} donated` : null,
+            metadata.interval ? String(metadata.interval) : null
+        ].filter(Boolean) as string[];
+        if (!parts.length) return null;
         return (
-            <>
-                {metadata.invoiceID ? (
-                    <div className='text-sm text-gray-600'>
-                        Invoice ID: {String(metadata.invoiceID)}
-                    </div>
-                ) : null}
-                {amountLabel ? (
-                    <div className='text-sm'>Amount: {amountLabel}</div>
-                ) : null}
-                {metadata.interval ? (
-                    <div className='text-sm capitalize'>
-                        Interval: {String(metadata.interval)}
-                    </div>
-                ) : null}
-            </>
+            <p className='text-sm text-gray-700 dark:text-gray-300'>
+                {parts.join(' · ')}
+            </p>
         );
     }
 
     if (item.source === 'feedback') {
+        const title = metadata.title ? String(metadata.title) : null;
+        const type = metadata.type ? String(metadata.type).replace('-', ' ') : null;
+        if (!title && !type) return null;
         return (
-            <>
-                {metadata.title ? (
-                    <div className='text-sm font-medium'>
-                        {String(metadata.title)}
-                    </div>
+            <div className='space-y-0.5'>
+                {title ? (
+                    <p className='text-sm font-medium text-gray-800 dark:text-gray-200 break-words'>
+                        “{title}”
+                    </p>
                 ) : null}
-                {metadata.type ? (
-                    <div className='text-xs text-gray-600 capitalize'>
-                        Type: {String(metadata.type).replace('-', ' ')}
-                    </div>
+                {type ? (
+                    <p className='text-xs text-gray-500 capitalize'>{type}</p>
                 ) : null}
-                {metadata.category ? (
-                    <div className='text-xs text-gray-500 capitalize'>
-                        Category: {String(metadata.category)}
-                    </div>
-                ) : null}
-            </>
+            </div>
         );
     }
 
     if (item.source === 'report') {
+        if (!metadata.reason) return null;
         return (
-            <>
-                {metadata.reason ? (
-                    <div className='text-sm font-medium'>
-                        {String(metadata.reason)}
-                    </div>
-                ) : null}
-            </>
+            <p className='text-sm text-gray-700 dark:text-gray-300 break-words'>
+                Reason: {String(metadata.reason)}
+            </p>
         );
     }
 
     if (item.source === 'reward-offer') {
-        const kudosOffered = Number(metadata.kudosOffered);
-        const hasOffered = Number.isFinite(kudosOffered);
+        const title = metadata.postTitle ? String(metadata.postTitle) : null;
+        const postType = metadata.postType ? String(metadata.postType) : null;
+        const giftType = metadata.postGiftType ? String(metadata.postGiftType) : null;
+        const body = metadata.body ? String(metadata.body) : null;
+        const isReceived = item.delta > 0;
+
+        let phrase: string | null = null;
+        if (giftType === 'digital') {
+            phrase = isReceived
+                ? 'for sharing a digital gift'
+                : 'You gave kudos for a digital gift';
+        }
+        else if (postType === 'request') {
+            phrase = isReceived ? 'for helping with a request' : 'You gave kudos for help received';
+        }
+        else if (postType === 'gift') {
+            phrase = isReceived ? 'for receiving a gift' : 'You gave kudos for a gift';
+        }
+        else {
+            phrase = isReceived ? 'Kudos received' : 'Kudos given';
+        }
 
         return (
-            <>
-                {typeof item.total === 'number' ? (
-                    <div className='text-sm'>Final kudos: {item.total}</div>
+            <div className='space-y-0.5'>
+                <p className='text-sm text-gray-700 dark:text-gray-300'>{phrase}</p>
+                {title ? (
+                    <p className='text-sm font-semibold text-gray-900 dark:text-gray-100 break-words'>
+                        “{title}”
+                    </p>
                 ) : null}
-                {typeof item.total !== 'number' && hasOffered ? (
-                    <div className='text-sm'>Offered kudos: {kudosOffered}</div>
+                {body ? (
+                    <p className='text-xs text-gray-500 dark:text-gray-400 italic break-words'>
+                        “{body}”
+                    </p>
                 ) : null}
-            </>
+            </div>
         );
     }
 
     return null;
 }
 
-export default React.memo(function KudosHistoryList() {
+function getMetaPostID(item: KudosHistoryDTO): number | undefined {
+    const meta = (item.metadata ?? {}) as Record<string, unknown>;
+    const raw = meta.postID ?? meta.postId ?? meta.post_id;
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+    if (typeof raw === 'string' && /^\d+$/.test(raw)) return Number(raw);
+    return undefined;
+}
+
+type KudosHistoryListProps = {
+    userID?: number;
+};
+
+export default React.memo(function KudosHistoryList({
+    userID: userIDProp
+}: KudosHistoryListProps = {}) {
     const { user } = useAuth();
-    const userID = user?.id;
+    const userID = userIDProp ?? user?.id;
+    const navigate = useNavigate();
     const pageSize = 10;
     const [source, setSource] = React.useState<KudosHistorySourceFilter>('all');
 
@@ -179,31 +204,58 @@ export default React.memo(function KudosHistoryList() {
                         const createdAtLabel = item.createdAt
                             ? timeAgoLabel(item.createdAt)
                             : undefined;
-                        const totalAfter =
-                            typeof item.total === 'number'
-                                ? item.total
-                                : undefined;
-                        const deltaLabel =
-                            item.delta > 0
-                                ? `+${item.delta}`
-                                : String(item.delta);
+                        const isPositive = item.delta > 0;
+                        const deltaLabel = isPositive
+                            ? `+${item.delta}`
+                            : String(item.delta);
                         const sourceLabel =
                             SOURCE_LABELS[item.source] ?? 'Kudos update';
+                        const postID = getMetaPostID(item);
+                        const navigable = !!postID;
+                        const detail = renderDetail(item);
 
                         return (
                             <div
                                 key={item.id}
-                                className='p-3 border rounded space-y-2'
+                                onClick={
+                                    navigable
+                                        ? () => navigate(`/post/${postID}`)
+                                        : undefined
+                                }
+                                className={`p-3 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 ${
+                                    navigable
+                                        ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/60 transition-colors'
+                                        : ''
+                                }`}
                             >
-                                <div className='flex items-center justify-between text-sm text-gray-600'>
-                                    <span>{sourceLabel}</span>
-                                    <span className='text-xs text-gray-500'>
-                                        Log #{item.id}
-                                    </span>
+                                <div className='flex items-start justify-between gap-3'>
+                                    <div className='flex items-center gap-2'>
+                                        <span
+                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+                                                isPositive
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                            }`}
+                                        >
+                                            {deltaLabel} Kudos
+                                        </span>
+                                        <span className='text-xs text-gray-500 dark:text-gray-400'>
+                                            {sourceLabel}
+                                        </span>
+                                    </div>
+                                    {createdAtLabel ? (
+                                        <span className='text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap'>
+                                            {createdAtLabel}
+                                        </span>
+                                    ) : null}
                                 </div>
-                                {item.actor && (
-                                    <div className='flex items-center gap-2 text-xs text-gray-500'>
-                                        <span>Updated by:</span>
+
+                                {item.actor ? (
+                                    <div
+                                        className='mt-2 flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400'
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <span>from</span>
                                         <UserCard
                                             user={item.actor}
                                             triggerVariant='name'
@@ -212,21 +264,13 @@ export default React.memo(function KudosHistoryList() {
                                             disableTooltip={false}
                                         />
                                     </div>
-                                )}
-                                <div className='flex items-center justify-between'>
-                                    <div className='text-lg font-semibold tracking-tight'>
-                                        Kudos {deltaLabel}
-                                    </div>
-                                    {totalAfter !== undefined ? (
-                                        <div className='text-xs text-gray-500'>
-                                            Total: {totalAfter}
-                                        </div>
-                                    ) : null}
-                                </div>
-                                {renderMetadata(item)}
-                                {createdAtLabel ? (
-                                    <div className='text-xs text-gray-400'>
-                                        {createdAtLabel}
+                                ) : null}
+
+                                {detail ? <div className='mt-2'>{detail}</div> : null}
+
+                                {navigable ? (
+                                    <div className='mt-2 text-xs font-medium text-brand-600 dark:text-brand-400'>
+                                        View post →
                                     </div>
                                 ) : null}
                             </div>

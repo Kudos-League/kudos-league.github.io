@@ -125,6 +125,7 @@ const UserCard: React.FC<Props> = ({
     } = useBlockedUsers();
     const createChannelMutation = useCreateChannel();
 
+
     // Detect mobile devices
     const isMobile = useMemo(() => {
         return (
@@ -195,12 +196,15 @@ const UserCard: React.FC<Props> = ({
             </span>
         );
 
-        const kudosEl =
-            showKudos && !compact ? (
-                <span className='text-xs text-gray-500 dark:text-gray-400 font-normal ml-2'>
-                    {kudos} Kudos
-                </span>
-            ) : null;
+        const kudosEl = showKudos ? (
+            <span
+                className={`text-gray-500 dark:text-gray-400 font-normal ${
+                    compact ? 'text-[11px] ml-1 whitespace-nowrap' : 'text-xs ml-2'
+                }`}
+            >
+                {kudos} Kudos
+            </span>
+        ) : null;
 
         const wrapperClasses = [
             centered && subtitle
@@ -236,7 +240,7 @@ const UserCard: React.FC<Props> = ({
                         : 'min-w-0'
                 }
             >
-                <div className={`flex flex-wrap items-center gap-x-0 ${compact ? "max-w-24" : ''}`}>
+                <div className={`flex flex-wrap items-center gap-x-0 ${compact && !showKudos ? "max-w-24" : ''}`}>
                     {nameEl}
                     {kudosEl}
                 </div>

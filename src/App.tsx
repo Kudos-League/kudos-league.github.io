@@ -33,7 +33,7 @@ function ErrorFallback({ error }: FallbackProps) {
             className='w-full'
             type='danger'
             title='Error loading page'
-            message={error.message}
+            message={error instanceof Error ? error.message : String(error)}
         />
     );
 }

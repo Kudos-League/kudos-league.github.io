@@ -792,6 +792,14 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </div>
             )}
 
+            {/* Address text */}
+            {!isEditing && event.location?.name && (
+                <div className='mt-4 flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200'>
+                    <span aria-hidden='true'>📍</span>
+                    <span className='break-words'>{event.location.name}</span>
+                </div>
+            )}
+
             {/* Map (only show when not editing) */}
             {!isEditing && event.location?.regionID && (
                 <div className='my-4'>
