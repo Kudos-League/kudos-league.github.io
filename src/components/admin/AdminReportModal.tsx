@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import ReportCard from './ReportCard';
 import { apiGet } from '@/shared/api/apiClient';
+import { useAuth } from '@/contexts/useAuth';
+import { routes } from '@/routes';
 
 type LoginAudit = {
     ipAddress: string;
@@ -40,9 +43,13 @@ export default function AdminReportModal({
     onClose: () => void;
     userID: number | null;
 }) {
+    const navigate = useNavigate();
+    const { startMasquerade } = useAuth();
     const [activeTab, setActiveTab] = useState<
         'login' | 'suspects' | 'handshakes' | 'reports'
     >('login');
+    const [masqueradeLoading, setMasqueradeLoading] = useState(false);
+    const [masqueradeError, setMasqueradeError] = useState<string | null>(null);
 
     const [loginAudits, setLoginAudits] = useState<LoginAudit[]>([]);
     const [loginNext, setLoginNext] = useState<string | number | undefined>(
@@ -193,6 +200,31 @@ export default function AdminReportModal({
         }
     }
 
+    async function handleMasquerade() {
+        if (!userID) return;
+        const confirmed = window.confirm(
+            `Masquerade as user ${userID}? Admin tools will be disabled until you exit.`
+        );
+        if (!confirmed) return;
+
+        setMasqueradeLoading(true);
+        setMasqueradeError(null);
+        try {
+            await startMasquerade(userID);
+            onClose();
+            navigate(routes.home);
+        }
+        catch (err: any) {
+            const message = Array.isArray(err)
+                ? String(err[0])
+                : err?.message || 'Failed to start masquerade.';
+            setMasqueradeError(message);
+        }
+        finally {
+            setMasqueradeLoading(false);
+        }
+    }
+
     return (
         <Modal
             open={open}
@@ -200,6 +232,23 @@ export default function AdminReportModal({
             title={`Admin report for ${userID ?? ''}`}
         >
             <div className='max-w-xl'>
+                <div className='mb-3 flex flex-col gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between'>
+                    <span>Open a temporary session as this user.</span>
+                    <Button
+                        type='button'
+                        variant='warning'
+                        onClick={handleMasquerade}
+                        disabled={!userID || masqueradeLoading}
+                        className='shrink-0'
+                    >
+                        {masqueradeLoading ? 'Starting...' : 'Masquerade'}
+                    </Button>
+                </div>
+                {masqueradeError && (
+                    <div className='mb-3 text-sm text-red-600'>
+                        {masqueradeError}
+                    </div>
+                )}
                 <div className='mb-3 flex gap-2'>
                     <Button
                         variant={activeTab === 'login' ? 'secondary' : 'ghost'}

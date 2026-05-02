@@ -22,7 +22,10 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
 import InviteManager from './InviteManager';
-import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
 
 type Props = {
     user: UserDTO;
@@ -32,7 +35,7 @@ type Props = {
 };
 
 const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideWrapper = false }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, startMasquerade } = useAuth();
     const navigate = useNavigate();
 
     const isSelf = currentUser?.id === user.id;
@@ -43,6 +46,7 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showBanModal, setShowBanModal] = useState(false);
+    const [masqueradeLoading, setMasqueradeLoading] = useState(false);
     const [banEndDate, setBanEndDate] = useState<string>('');
     const [banIndefinite, setBanIndefinite] = useState<boolean>(false);
     const [banServerError, setBanServerError] = useState<string | null>(null);
@@ -129,6 +133,29 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
         }
     };
 
+    const handleMasquerade = async () => {
+        if (!currentUser?.admin || !user?.id) return;
+        const confirmed = window.confirm(
+            `Masquerade as ${user.username}? Admin tools will be disabled until you exit.`
+        );
+        if (!confirmed) return;
+
+        setMasqueradeLoading(true);
+        try {
+            await startMasquerade(user.id);
+            navigate('/');
+        }
+        catch (err: any) {
+            const message = Array.isArray(err)
+                ? String(err[0])
+                : err?.message || 'Failed to start masquerade.';
+            alert(message);
+        }
+        finally {
+            setMasqueradeLoading(false);
+        }
+    };
+
     if (editing) {
         return (
             <EditProfile
@@ -148,6 +175,8 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                 isSelf={isSelf}
                 onEditProfile={() => setEditing(true)}
                 onStartDM={handleStartDM}
+                onMasquerade={handleMasquerade}
+                masqueradeLoading={masqueradeLoading}
             />
 
             {isSelf && (!INVITES_ADMIN_ONLY || currentUser?.admin) && (
@@ -431,6 +460,9 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                             type='file'
                             accept='image/*'
                             multiple
+                            onClick={(e) =>
+                                resetFileInputBeforeOpen(e.currentTarget)
+                            }
                             onChange={handleReportImageUpload}
                             className='border border-gray-300 dark:border-gray-700 rounded-lg w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             disabled={reportFiles.length >= 4}

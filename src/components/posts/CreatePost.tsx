@@ -20,7 +20,10 @@ import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
 import { SubmitHandler, useForm, Controller } from 'react-hook-form';
 import { useCategories } from '@/shared/api/queries/categories';
 import { useCreatePost } from '@/shared/api/mutations/posts';
-import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
 import { ensureJpegAll } from '@/shared/convertHeic';
 
 type FormValues = {
@@ -418,6 +421,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     type='file'
                     accept='image/*'
                     multiple
+                    onClick={(e) => resetFileInputBeforeOpen(e.currentTarget)}
                     onChange={handleImageUpload}
                     className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
                     disabled={selectedImages.length >= MAX_FILE_COUNT}

@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useDMs } from '@/contexts/DMsContext';
 
 const Layout: React.FC = () => {
-    const { isLoggedIn, user, logout } = useAuth();
+    const { isLoggedIn, user, logout, masquerade, stopMasquerade } = useAuth();
     const { isOpen: dmsModalOpen, openDMs, closeDMs } = useDMs();
     const [showDropdown, setShowDropdown] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,6 +67,11 @@ const Layout: React.FC = () => {
         logout();
         setShowDropdown(false);
         navigate(routes.home);
+    };
+
+    const handleStopMasquerade = async () => {
+        await stopMasquerade();
+        navigate(routes.admin);
     };
 
     const isDevMode =
@@ -126,6 +131,25 @@ const Layout: React.FC = () => {
             <div
                 className={`flex-1 flex flex-col min-w-0 ${isLoggedIn ? 'lg:ml-20' : ''}`}
             >
+                {masquerade?.active && (
+                    <div className='sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-amber-400 px-3 py-2 text-center text-sm font-semibold text-slate-950 shadow'>
+                        <span>
+                            Masquerading as{' '}
+                            {user?.username ??
+                                masquerade.targetUser?.username ??
+                                'user'}
+                            . Original admin:{' '}
+                            {masquerade.originalAdmin?.username ?? 'admin'}.
+                        </span>
+                        <button
+                            type='button'
+                            onClick={handleStopMasquerade}
+                            className='rounded-md bg-slate-950 px-3 py-1 text-sm text-white hover:bg-slate-800 disabled:opacity-60'
+                        >
+                            Exit
+                        </button>
+                    </div>
+                )}
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
                     onOpenDMs={() => openDMs()}

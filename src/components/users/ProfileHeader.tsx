@@ -15,6 +15,8 @@ interface Props {
     userSettings?: { about?: string };
     onEditProfile?: () => void;
     onStartDM?: () => void;
+    onMasquerade?: () => void;
+    masqueradeLoading?: boolean;
     isSelf: boolean;
 }
 
@@ -23,6 +25,8 @@ const ProfileHeader: React.FC<Props> = ({
     userSettings,
     onEditProfile,
     onStartDM,
+    onMasquerade,
+    masqueradeLoading,
     isSelf
 }) => {
     const { isLoggedIn, user: currentUser } = useAuth();
@@ -96,6 +100,17 @@ const ProfileHeader: React.FC<Props> = ({
                         shape='pill'
                     >
                         ⚙️ Edit Profile/Settings
+                    </Button>
+                )}
+                {currentUser?.admin && !isSelf && !targetUser.admin && (
+                    <Button
+                        type='button'
+                        onClick={onMasquerade}
+                        variant='warning'
+                        shape='pill'
+                        disabled={masqueradeLoading}
+                    >
+                        {masqueradeLoading ? 'Starting...' : 'Masquerade'}
                     </Button>
                 )}
             </div>
