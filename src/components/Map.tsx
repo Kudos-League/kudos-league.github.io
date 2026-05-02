@@ -231,8 +231,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [saveAsDefault, setSaveAsDefault] = useState(false);
 
-    const hasInitialExplicitLocation = !!coordinates || !!regionID;
-    const [isCleared, setIsCleared] = useState(!hasInitialExplicitLocation);
+    // Start as cleared when no direct coordinates are provided; pin shows after async regionID fetch resolves
+    const [isCleared, setIsCleared] = useState(!coordinates);
 
     const [selectedSuggestionId, setSelectedSuggestionId] =
         useState<string>('');
@@ -597,6 +597,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             }
         }
     }, [user, edit, coordinates]);
+    const prevRegionIDRef = useRef(regionID);
     const suppressSearchRef = useRef(false);
     const autoServiceRef =
         useRef<google.maps.places.AutocompleteService | null>(null);
@@ -624,6 +625,19 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         const dummyDiv = document.createElement('div');
         placesRef.current = new google.maps.places.PlacesService(dummyDiv);
     }, [isLoaded]);
+
+    // When regionID prop is removed (e.g. user clicks "Remove" in EditProfile), clear the map state
+    useEffect(() => {
+        const prev = prevRegionIDRef.current;
+        prevRegionIDRef.current = regionID;
+        if (prev && !regionID && !coordinates) {
+            setIsCleared(true);
+            setSearchInput('');
+            setDisplayLabel('');
+            setMapCoordinates(fallback ?? DEFAULT_CENTER);
+            onLabelChange?.('');
+        }
+    }, [regionID, coordinates]);
 
     useEffect(() => {
         if (regionID) {
@@ -885,7 +899,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             setSuggestions([]);
                             setIsSearching(false);
                             setIsCleared(true);
-                            setMapCoordinates(DEFAULT_CENTER);
+                            setMapCoordinates(fallback ?? DEFAULT_CENTER);
                             onLocationChange?.(null);
                             onLabelChange?.('');
 
