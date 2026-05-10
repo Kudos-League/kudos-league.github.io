@@ -118,6 +118,19 @@ type MapComponentProps =
 const DEFAULT_CENTER = { latitude: 39.8283, longitude: -98.5795 };
 const GOOGLE_MAPS_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY!;
 
+const hasCoordinatePair = (coords?: MapCoordinates | null) =>
+    Number.isFinite(Number(coords?.latitude)) &&
+    Number.isFinite(Number(coords?.longitude));
+
+const didCoordinatesChange = (
+    nextLat: number,
+    nextLng: number,
+    previous?: MapCoordinates | null
+) =>
+    !hasCoordinatePair(previous) ||
+    Math.abs(nextLat - Number(previous?.latitude)) > 1e-5 ||
+    Math.abs(nextLng - Number(previous?.longitude)) > 1e-5;
+
 const circleOptions = {
     strokeOpacity: 0.7,
     strokeWeight: 2,
@@ -216,14 +229,15 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     approximateRadiusMeters = 300,
     shouldSavedLocationButton = false
 }) => {
-    const { location: userLocation } = useUserLocation();
+    const { location: userLocation } = useUserLocation({
+        enabled: shouldGetYourLocation
+    });
     const { user, token } = useAuth();
     const updateUserMutation = useUpdateUser('me');
     const fallback =
         coordinates ?? (shouldGetYourLocation ? userLocation : null);
-    const [mapCoordinates, setMapCoordinates] = useState<MapCoordinates>(
-        fallback ?? DEFAULT_CENTER
-    );
+    const [mapCoordinates, setMapCoordinates] =
+        useState<MapCoordinates | null>(fallback);
     const [loading, setLoading] = useState(false);
     const [displayLabel, setDisplayLabel] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -231,8 +245,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [saveAsDefault, setSaveAsDefault] = useState(false);
 
-    const hasInitialExplicitLocation = !!coordinates || !!regionID;
-    const [isCleared, setIsCleared] = useState(!hasInitialExplicitLocation);
+    // Start as cleared when no direct coordinates are provided; pin shows after async regionID fetch resolves
+    const [isCleared, setIsCleared] = useState(!coordinates);
 
     const [selectedSuggestionId, setSelectedSuggestionId] =
         useState<string>('');
@@ -288,13 +302,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                                 const coords = {
                                     latitude: newLat,
                                     longitude: newLng,
-                                    changed:
-                                        Math.abs(
-                                            newLat - mapCoordinates.latitude
-                                        ) > 1e-5 ||
-                                        Math.abs(
-                                            newLng - mapCoordinates.longitude
-                                        ) > 1e-5
+                                    changed: didCoordinatesChange(
+                                        newLat,
+                                        newLng,
+                                        mapCoordinates
+                                    )
                                 };
 
                                 const business = det.name ?? '';
@@ -396,9 +408,11 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             const coords = {
                 latitude: newLat,
                 longitude: newLng,
-                changed:
-                    Math.abs(newLat - mapCoordinates.latitude) > 1e-5 ||
-                    Math.abs(newLng - mapCoordinates.longitude) > 1e-5
+                changed: didCoordinatesChange(
+                    newLat,
+                    newLng,
+                    mapCoordinates
+                )
             };
 
             const business = p.displayName ?? p.name ?? '';
@@ -597,6 +611,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
             }
         }
     }, [user, edit, coordinates]);
+    const prevRegionIDRef = useRef(regionID);
     const suppressSearchRef = useRef(false);
     const autoServiceRef =
         useRef<google.maps.places.AutocompleteService | null>(null);
@@ -625,9 +640,24 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         placesRef.current = new google.maps.places.PlacesService(dummyDiv);
     }, [isLoaded]);
 
+    // When regionID prop is removed (e.g. user clicks "Remove" in EditProfile), clear the map state
+    useEffect(() => {
+        const prev = prevRegionIDRef.current;
+        prevRegionIDRef.current = regionID;
+        if (prev && !regionID && !coordinates) {
+            setIsCleared(true);
+            setSearchInput('');
+            setDisplayLabel('');
+            setMapCoordinates(null);
+            onLabelChange?.('');
+        }
+    }, [regionID, coordinates]);
+
     useEffect(() => {
         if (regionID) {
             const alreadySet =
+                hasCoordinatePair(mapCoordinates) &&
+                hasCoordinatePair(fallback) &&
                 Math.abs(
                     (mapCoordinates?.latitude ?? 0) - (fallback?.latitude ?? 0)
                 ) < 0.0001 &&
@@ -851,12 +881,13 @@ const MapDisplay: React.FC<MapComponentProps> = ({
         label: s.description as string,
         value: s.place_id as string
     }));
+    const shouldShowLocationOverlay =
+        !isCleared && hasCoordinatePair(mapCoordinates);
 
     const hasSavedLocation =
         user?.location &&
         typeof user.location === 'object' &&
-        'latitude' in user.location &&
-        'longitude' in user.location;
+        hasCoordinatePair(user.location as MapCoordinates);
 
     return (
         <div
@@ -885,7 +916,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                             setSuggestions([]);
                             setIsSearching(false);
                             setIsCleared(true);
-                            setMapCoordinates(DEFAULT_CENTER);
+                            setMapCoordinates(null);
                             onLocationChange?.(null);
                             onLabelChange?.('');
 
@@ -952,7 +983,7 @@ const MapDisplay: React.FC<MapComponentProps> = ({
                     clickableIcons: false
                 }}
             >
-                {!isCleared &&
+                {shouldShowLocationOverlay &&
                     (exactLocation ? (
                         <Marker
                             position={center}

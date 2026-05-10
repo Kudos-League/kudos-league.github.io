@@ -26,6 +26,7 @@ import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { useUserPostsQuery } from '@/shared/api/queries/posts';
 import { useUserEventsQuery } from '@/shared/api/queries/events';
 import { useUserHandshakesQuery } from '@/shared/api/queries/handshakes';
+import { isPostEffectivelyClosed } from '@/shared/postStatus';
 
 // Lazy load KudosHistory component outside the main component to prevent re-creation on every render
 const KudosHistory = React.lazy(
@@ -74,6 +75,11 @@ export default function Activity({user, hideWrapper = false}: Props) {
         isError: handshakesError
     } = useUserHandshakesQuery(user?.id);
 
+    // Fetch current user's own handshakes to find closed posts from the viewed user
+    const {
+        data: myHandshakes = []
+    } = useUserHandshakesQuery(isOwnActivity ? undefined : currentUser?.id);
+
     // Derived loading/error state
     const loading = postsLoading || eventsLoading || handshakesLoading;
     const error =
@@ -104,9 +110,23 @@ export default function Activity({user, hideWrapper = false}: Props) {
         ? ['all', 'posts', 'events', 'handshakes', 'kudos']
         : ['all', 'posts', 'events', 'kudos'];
 
+    // Closed posts from current user's handshakes with the viewed user (not included in their posts query)
+    const closedPostsFromHandshakes = useMemo((): PostDTO[] => {
+        if (isOwnActivity || !myHandshakes.length) return [];
+        const existingIds = new Set(posts.map((p) => p.id));
+        return myHandshakes
+            .filter(
+                (h) =>
+                    h.post?.senderID === user?.id &&
+                    isPostEffectivelyClosed(h.post) &&
+                    !existingIds.has(h.post.id)
+            )
+            .map((h) => h.post);
+    }, [isOwnActivity, myHandshakes, posts, user?.id]);
+
     // Sort and filter posts chronologically (latest first)
     const sortedPosts = useMemo(() => {
-        let filtered = [...posts];
+        let filtered = [...posts, ...closedPostsFromHandshakes];
 
         // Apply post type filter
         if (postFilter === 'gifts') {
@@ -1320,6 +1340,25 @@ export default function Activity({user, hideWrapper = false}: Props) {
                                 showPostDetails
                                 compact
                             />
+                        </div>
+                    </div>
+                )}
+
+                {/* Kudos Section */}
+                {availableFilters.includes('kudos') && (
+                    <div>
+                        <h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2'>
+                            <Trophy className='w-5 h-5' />
+                            Kudos history
+                        </h3>
+                        <div className='mt-2 text-center'>
+                            <Button
+                                onClick={() => setFilter('kudos')}
+                                variant='secondary'
+                                className='text-sm'
+                            >
+                                View kudos reward history
+                            </Button>
                         </div>
                     </div>
                 )}
