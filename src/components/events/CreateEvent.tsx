@@ -10,6 +10,12 @@ import { useCreateEvent } from '@/shared/api/mutations/events';
 import { useAuth } from '@/contexts/useAuth';
 import { pushAlert } from '@/components/common/alertBus';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -33,6 +39,8 @@ export default function CreateEvent() {
     const [description, setDescription] = useState('');
     const [global, setGlobal] = useState(false);
     const [location, setLocation] = useState<LocationDTO | null>(null);
+    const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [imageError, setImageError] = useState<string | null>(null);
 
     const now = new Date();
     const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
@@ -217,6 +225,44 @@ export default function CreateEvent() {
         }
     };
 
+    const validateFiles = (files?: File[]) => {
+        if (!files) return null;
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
+        return null;
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawFiles = takeFilesFromInput(e.target);
+        if (rawFiles.length === 0) return;
+        const newFiles = await ensureJpegAll(rawFiles);
+        const tooLarge = newFiles.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) {
+            setImageError(`"${tooLarge.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            return;
+        }
+        const updated = [...selectedImages, ...newFiles];
+        if (updated.length > MAX_FILE_COUNT) {
+            setImageError(`You can only attach up to ${MAX_FILE_COUNT} images.`);
+            return;
+        }
+        setSelectedImages(updated);
+        setImageError(null);
+    };
+
+    const removeImage = (idx: number) => {
+        setSelectedImages((prev) => prev.filter((_, i) => i !== idx));
+        setImageError(null);
+    };
+
+    const createImagePreview = (f: File) => URL.createObjectURL(f);
+
     const onSubmit = async () => {
         setErrorMessages([]);
 
@@ -236,6 +282,12 @@ export default function CreateEvent() {
             return;
         }
 
+        const fileError = validateFiles(selectedImages);
+        if (fileError) {
+            setErrorMessages([fileError]);
+            return;
+        }
+
         const payload: CreateEventDTO = {
             title: title.trim(),
             description: description.trim(),
@@ -245,7 +297,8 @@ export default function CreateEvent() {
                 global
             },
             startTime: startDate,
-            endTime: endDate
+            endTime: endDate,
+            files: selectedImages
         };
 
         try {
@@ -358,6 +411,53 @@ export default function CreateEvent() {
                     <p className='text-red-600 text-sm mt-1 dark:text-red-400'>
                         Description is required
                     </p>
+                )}
+            </div>
+
+            <div className='w-full overflow-hidden'>
+                <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
+                    Attach Images ({selectedImages.length}/{MAX_FILE_COUNT})
+                </label>
+                <input
+                    type='file'
+                    accept='image/*'
+                    multiple
+                    onClick={(e) => resetFileInputBeforeOpen(e.currentTarget)}
+                    onChange={handleImageUpload}
+                    className='border border-gray-300 dark:border-gray-700 rounded-lg w-full max-w-full px-3 py-2 mb-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-700 dark:file:bg-brand-900 dark:file:text-brand-100 hover:file:bg-brand-100 dark:hover:file:bg-brand-800'
+                    disabled={selectedImages.length >= MAX_FILE_COUNT}
+                />
+                <p className='text-xs text-gray-500 dark:text-gray-400 mb-2'>
+                    Each image must be under {MAX_FILE_SIZE_MB}MB.
+                </p>
+                {imageError && (
+                    <p className='text-sm text-red-600 dark:text-red-400 mb-3'>{imageError}</p>
+                )}
+                {selectedImages.length > 0 && (
+                    <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pr-2'>
+                        {selectedImages.map((file, index) => (
+                            <div key={index} className='relative group'>
+                                <img
+                                    src={createImagePreview(file)}
+                                    alt={`Preview ${index + 1}`}
+                                    className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                />
+                                <Button
+                                    type='button'
+                                    shape='circle'
+                                    variant='danger'
+                                    onClick={() => removeImage(index)}
+                                    className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm'
+                                    title='Remove image'
+                                >
+                                    ×
+                                </Button>
+                                <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                                    {file.name}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
 

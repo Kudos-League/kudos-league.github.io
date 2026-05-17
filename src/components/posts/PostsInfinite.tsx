@@ -116,6 +116,14 @@ export default function PostsInfinite({
         return filtered;
     }, [hydrated, activeTab, user?.id]);
 
+    // If client-side filters (e.g. offer_posted) leave fewer than 4 visible posts
+    // but more pages exist, keep fetching until we have enough to fill the screen.
+    React.useEffect(() => {
+        if (visible.length < 4 && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [visible.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
     const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {

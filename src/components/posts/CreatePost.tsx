@@ -6,7 +6,8 @@ import type {
     CategoryDTO,
     CreatePostDTO,
     GiftType,
-    LocationDTO
+    LocationDTO,
+    PostDTO
 } from '@/shared/api/types';
 import MapDisplay from '@/components/Map';
 import Input from '@/components/forms/Input';
@@ -25,6 +26,7 @@ import {
     takeFilesFromInput
 } from '@/shared/takeFilesFromInput';
 import { ensureJpegAll } from '@/shared/convertHeic';
+import { apiGet } from '@/shared/api/apiClient';
 
 type FormValues = {
     title: string;
@@ -37,9 +39,12 @@ type FormValues = {
     categoryID: number | null;
 };
 
-type Props = { setShowLoginForm: (show: boolean) => void };
+type Props = {
+    setShowLoginForm: (show: boolean) => void;
+    repostId?: number;
+};
 
-export default function CreatePost({ setShowLoginForm }: Props) {
+export default function CreatePost({ setShowLoginForm, repostId }: Props) {
     const { isLoggedIn } = useAuth();
     const navigate = useNavigate();
     const routerLocation = useLocation();
@@ -77,6 +82,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [imageError, setImageError] = React.useState<string | null>(null);
     const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
+    const [tagInputKey, setTagInputKey] = React.useState(0);
     React.useEffect(() => {
         form.setValue('type', postType, { shouldValidate: false });
         form.clearErrors();
@@ -101,6 +107,41 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         const loc = routerLocation.state as LocationDTO | null;
         if (loc) setLocation(loc);
     }, [routerLocation.state]);
+
+    React.useEffect(() => {
+        if (repostId) {
+            const fetchOriginalPost = async () => {
+                try {
+                    const post = await apiGet(`/posts/${repostId}`) as PostDTO;
+                    const repostText = `[Reposting: ${post.title ?? ''}]\n\n`;
+                    form.setValue('title', post.title ?? '', { shouldValidate: false });
+                    form.setValue('body', repostText + (post.body ?? ''), { shouldValidate: false });
+                    if (post.type) {
+                        setPostType(post.type);
+                        form.setValue('type', post.type, { shouldValidate: false });
+                    }
+                    if (post.giftType) {
+                        setGiftType(post.giftType);
+                        form.setValue('giftType', post.giftType, { shouldValidate: false });
+                    }
+                    if (post.category?.id) {
+                        form.setValue('categoryID', post.category.id, { shouldValidate: false });
+                    }
+                    if (post.tags?.length) {
+                        form.setValue('tags', post.tags.map((t) => t.name), { shouldValidate: false });
+                        setTagInputKey((k) => k + 1);
+                    }
+                    if (post.location) {
+                        setLocation(post.location);
+                    }
+                }
+                catch (err) {
+                    console.error('Failed to fetch original post for repost:', err);
+                }
+            };
+            fetchOriginalPost();
+        }
+    }, [repostId, form]);
 
     const handleTagsChange = React.useCallback(
         (tags: { id: string; name: string }[]) => {
@@ -409,6 +450,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             </FormField>
 
             <TagInput
+                key={tagInputKey}
                 initialTags={form.watch('tags')}
                 onTagsChange={handleTagsChange}
             />

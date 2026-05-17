@@ -24,11 +24,26 @@ type SignUpFormProps = {
 
 export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const { register: registerUser } = useAuth();
-    const form = useForm<SignUpFormValues>({ mode: 'onBlur' });
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const inviteToken = (searchParams.get('invite') || '').trim();
     const emailToken = (searchParams.get('emailToken') || '').trim();
+
+    const inviteEmail = React.useMemo(() => {
+        if (!emailToken) return '';
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailToken)) return emailToken;
+        try {
+            return atob(emailToken);
+        }
+        catch {
+            return '';
+        }
+    }, [emailToken]);
+
+    const form = useForm<SignUpFormValues>({
+        mode: 'onBlur',
+        defaultValues: { email: inviteEmail }
+    });
 
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
@@ -147,6 +162,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             label=''
                             placeholder='Email'
                             form={form}
+                            disabled={!!inviteEmail}
                             registerOptions={{
                                 required: 'Email is required',
                                 pattern: {
@@ -156,6 +172,11 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                             }}
                             htmlInputType='email'
                         />
+                        {inviteEmail && (
+                            <p className='text-xs text-gray-400 mt-1'>
+                                This invite was sent to {inviteEmail}
+                            </p>
+                        )}
                     </FormField>
                     <FormField name='password'>
                         <Input

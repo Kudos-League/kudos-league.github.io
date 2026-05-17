@@ -305,7 +305,7 @@ export default function Feed() {
         includeSender: true,
         includeTags: true,
         includeImages: true,
-        limit: 10
+        limit: 20
     } as const;
 
     return (

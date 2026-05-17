@@ -55,6 +55,7 @@ const HandshakeCard: React.FC<Props> = ({
     const [cancelling, setCancelling] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [kudosValue, setKudosValue] = useState('');
+    const [completedKudos, setCompletedKudos] = useState<number | null>(null);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [error, setError] = useState<string | null>();
     const [imgError, setImgError] = useState(false);
@@ -394,18 +395,20 @@ const HandshakeCard: React.FC<Props> = ({
                 currency: 'kudos',
                 receiverID: gifterID
             };
-            await createOfferMutation.mutateAsync(dto);
+            const offerResponse = await createOfferMutation.mutateAsync(dto);
             await completeHandshakeMutation.mutateAsync({
                 handshakeID: handshake.id,
                 postID: handshake.postID
             });
+            const kudosGiven = (offerResponse as any)?.kudos ?? Number(kudosValue);
+            setCompletedKudos(kudosGiven);
             setStatus('completed');
             setKudosValue('');
             pushAlert({
                 type: 'success',
                 message:
                     userHelpAction === 'receiving'
-                        ? `${kudosValue} kudos sent successfully.`
+                        ? `${kudosGiven} kudos sent successfully.`
                         : `You helped ${otherUsername}! Waiting for them to complete.`
             });
             onInteraction?.();
@@ -676,65 +679,66 @@ const HandshakeCard: React.FC<Props> = ({
                             <p
                                 className={`${compact ? 'text-sm' : 'text-base'} text-green-800 dark:text-green-300`}
                             >
-                                {isDigitalGift ? (
-                                    userHelpAction === 'receiving' ? (
+                                {(() => {
+                                    const relevantOffer = handshake.post?.rewardOffers
+                                        ?.slice()
+                                        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                        .find((o: any) => o.senderID === userID || o.receiverID === userID);
+                                    const kudosAmount = completedKudos ?? (relevantOffer?.kudos ?? relevantOffer?.kudosFinal);
+                                    const kudosStr = typeof kudosAmount === 'number' ? ` (${kudosAmount} kudos)` : '';
+
+                                    if (isDigitalGift) {
+                                        if (userHelpAction === 'receiving') {
+                                            return (
+                                                <>
+                                                    <span className='font-semibold'>You gave{kudosStr ? ` ${kudosAmount} kudos` : ' kudos'} to {otherUsername}!</span>{' '}
+                                                    Thanks for supporting this digital resource.
+                                                </>
+                                            );
+                                        }
+                                        if (userHelpAction === 'giving') {
+                                            return (
+                                                <>
+                                                    <span className='font-semibold'>{otherUsername} gave you{kudosStr ? ` ${kudosAmount} kudos` : ' kudos'}!</span>{' '}
+                                                    They appreciated your digital resource.
+                                                </>
+                                            );
+                                        }
+                                        return (
+                                            <>
+                                                <span className='font-semibold'>
+                                                    {getDisplayName(senderUser, true)} gave kudos to {getDisplayName(receiverUser)}!
+                                                </span>{kudosStr}{' '}
+                                                Digital resource appreciated.
+                                            </>
+                                        );
+                                    }
+
+                                    if (userHelpAction === 'receiving') {
+                                        return (
+                                            <>
+                                                <span className='font-semibold'>You received help from {otherUsername}!</span>{' '}
+                                                {typeof kudosAmount === 'number' ? `You gave them ${kudosAmount} kudos.` : 'They received kudos from you.'}
+                                            </>
+                                        );
+                                    }
+                                    if (userHelpAction === 'giving') {
+                                        return (
+                                            <>
+                                                <span className='font-semibold'>You helped {otherUsername}!</span>{' '}
+                                                {typeof kudosAmount === 'number' ? `You received ${kudosAmount} kudos.` : 'You received kudos from them.'}
+                                            </>
+                                        );
+                                    }
+                                    return (
                                         <>
                                             <span className='font-semibold'>
-                                                You gave kudos to {otherUsername}!
-                                            </span>{' '}
-                                            Thanks for supporting this digital resource.
+                                                {getDisplayName(senderUser, true)} helped {getDisplayName(receiverUser)}!
+                                            </span>{kudosStr}{' '}
+                                            The exchange is complete.
                                         </>
-                                    ) : userHelpAction === 'giving' ? (
-                                        <>
-                                            <span className='font-semibold'>
-                                                {otherUsername} gave you kudos!
-                                            </span>{' '}
-                                            They appreciated your digital resource.
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className='font-semibold'>
-                                                {getDisplayName(senderUser, true)} gave kudos to{' '}
-                                                {getDisplayName(receiverUser)}!
-                                            </span>{' '}
-                                            Digital resource appreciated.
-                                        </>
-                                    )
-                                ) : userHelpAction === 'receiving' ? (
-                                    <>
-                                        <span className='font-semibold'>
-                                            You received help from{' '}
-                                            {otherUsername}!
-                                        </span>{' '}
-                                        They received kudos from you.
-                                    </>
-                                ) : userHelpAction === 'giving' ? (
-                                    <>
-                                        <span className='font-semibold'>
-                                            You helped {otherUsername}!
-                                        </span>{' '}
-                                        You received kudos from them.
-                                    </>
-                                ) : // For viewers: show who helped who based on post type
-                                    handshake.post?.type === 'request' ? (
-                                        <>
-                                            <span className='font-semibold'>
-                                                {getDisplayName(senderUser, true)}{' '}
-                                            helped{' '}
-                                                {getDisplayName(receiverUser)}!
-                                            </span>{' '}
-                                        The exchange is complete.
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className='font-semibold'>
-                                                {getDisplayName(senderUser, true)}{' '}
-                                            helped{' '}
-                                                {getDisplayName(receiverUser)}!
-                                            </span>{' '}
-                                        The exchange is complete.
-                                        </>
-                                    )}
+                                    );
+                                })()}
                             </p>
                         </div>
                     )}

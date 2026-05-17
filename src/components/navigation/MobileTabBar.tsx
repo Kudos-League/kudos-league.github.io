@@ -6,8 +6,7 @@ import {
     PlusCircleIcon,
     CalendarIcon,
     ChatBubbleLeftRightIcon,
-    BellIcon,
-    UserGroupIcon
+    BellIcon
 } from '@heroicons/react/24/outline';
 import {
     HomeIcon as HomeIconSolid,
@@ -74,13 +73,6 @@ export default function MobileTabBar() {
             iconSolid: BellIconSolid,
             badge: unreadNotifications
         },
-        {
-            name: 'Groups',
-            path: routes.communities,
-            icon: UserGroupIcon,
-            iconSolid: UserGroupIcon,
-            badge: 0
-        }
     ];
 
     const isActive = (path: string) => {

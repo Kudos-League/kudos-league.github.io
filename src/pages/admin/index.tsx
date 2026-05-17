@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
-import { apiGet } from '@/shared/api/apiClient';
+import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
@@ -137,6 +137,7 @@ function SuspiciousPanel({
     const [groups, setGroups] = useState<any[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deletingIPs, setDeletingIPs] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (!user?.admin) return;
@@ -149,6 +150,24 @@ function SuspiciousPanel({
             })
             .finally(() => setLoading(false));
     }, [user]);
+
+    const handleDeleteGroup = async (ipAddress: string) => {
+        setDeletingIPs((prev) => new Set(prev).add(ipAddress));
+        try {
+            await apiMutate(`/admin/suspicious/${encodeURIComponent(ipAddress)}`, 'delete');
+            setGroups((prev) => prev?.filter((g) => g.ipAddress !== ipAddress) ?? prev);
+        }
+        catch (e) {
+            console.error('Failed to delete group', e);
+        }
+        finally {
+            setDeletingIPs((prev) => {
+                const next = new Set(prev);
+                next.delete(ipAddress);
+                return next;
+            });
+        }
+    };
 
     if (!user?.admin)
         return <p className='text-red-600'>Admin access required.</p>;
@@ -165,8 +184,17 @@ function SuspiciousPanel({
                         <div className='font-mono text-sm'>
                             IP: {g.ipAddress}
                         </div>
-                        <div className='text-sm text-gray-600'>
-                            Count: {g.userCount}
+                        <div className='flex items-center gap-3'>
+                            <div className='text-sm text-gray-600'>
+                                Count: {g.userCount}
+                            </div>
+                            <button
+                                onClick={() => handleDeleteGroup(g.ipAddress)}
+                                disabled={deletingIPs.has(g.ipAddress)}
+                                className='text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition'
+                            >
+                                {deletingIPs.has(g.ipAddress) ? 'Deleting…' : 'Delete group'}
+                            </button>
                         </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>

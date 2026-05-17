@@ -157,6 +157,7 @@ export default function HandshakeNotifItem({
     const [cancelling, setCancelling] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [kudosValue, setKudosValue] = useState('');
+    const [completedKudos, setCompletedKudos] = useState<number | null>(null);
     const [localError, setLocalError] = useState<string | null>(null);
     const [imgError, setImgError] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -306,7 +307,7 @@ export default function HandshakeNotifItem({
         setSubmitting(true);
         setLocalError(null);
         try {
-            await createOfferMutation.mutateAsync({
+            const offerResponse = await createOfferMutation.mutateAsync({
                 postID: handshake!.postID,
                 kudos: Number(kudosValue),
                 currency: 'kudos',
@@ -316,9 +317,11 @@ export default function HandshakeNotifItem({
                 handshakeID: handshake!.id,
                 postID: handshake!.postID
             });
+            const kudosGiven = (offerResponse as any)?.kudos ?? Number(kudosValue);
+            setCompletedKudos(kudosGiven);
             setStatus('completed');
             setKudosValue('');
-            pushAlert({ type: 'success', message: `${kudosValue} kudos sent!` });
+            pushAlert({ type: 'success', message: `${kudosGiven} kudos sent!` });
             onInteraction?.();
         }
         catch {
@@ -485,11 +488,25 @@ export default function HandshakeNotifItem({
                     </div>
                 ) : status === 'completed' && notificationType !== 'handshake-undo-accepted' ? (
                     <div className='rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-300'>
-                        {isDigitalGift
-                            ? handshake.senderID === userID
-                                ? 'Kudos given!'
-                                : 'Kudos received!'
-                            : 'Interaction complete.'}
+                        {(() => {
+                            const relevantOffer = handshake.post?.rewardOffers
+                                ?.slice()
+                                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                .find((o: any) => o.senderID === userID || o.receiverID === userID);
+                            const kudosAmount = completedKudos ?? relevantOffer?.kudos ?? relevantOffer?.kudosFinal;
+                            const isSender = handshake.senderID === userID;
+                            if (isDigitalGift) {
+                                return isSender
+                                    ? <><span className='font-semibold'>Kudos given{typeof kudosAmount === 'number' ? `: ${kudosAmount}` : ''}!</span> Thanks for supporting this digital resource.</>
+                                    : <><span className='font-semibold'>Kudos received{typeof kudosAmount === 'number' ? `: ${kudosAmount}` : ''}!</span> They appreciated your digital resource.</>;
+                            }
+                            if (typeof kudosAmount === 'number') {
+                                return isSender
+                                    ? <><span className='font-semibold'>You gave {kudosAmount} kudos!</span> Interaction complete.</>
+                                    : <><span className='font-semibold'>You received {kudosAmount} kudos!</span> Interaction complete.</>;
+                            }
+                            return 'Interaction complete.';
+                        })()}
                     </div>
                 ) : status === 'cancelled' ? (
                     <div className='rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400'>

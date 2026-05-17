@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { endOfDay, format } from 'date-fns';
@@ -8,7 +8,8 @@ import {
     ArrowLeftIcon,
     TrashIcon,
     ClipboardDocumentCheckIcon,
-    UserPlusIcon
+    UserPlusIcon,
+    EllipsisVerticalIcon
 } from '@heroicons/react/24/solid';
 import { ArrowUturnRightIcon } from '@heroicons/react/24/outline';
 
@@ -21,10 +22,18 @@ import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { pushAlert } from '@/components/common/alertBus';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MapDisplay from '@/components/Map';
+import ImageCarousel from '@/components/Carousel';
 import Button from '../common/Button';
 import UniversalDatePicker from '@/components/DatePicker';
 import MessageList from '@/components/posts/MessageList';
 import UserCard from '../users/UserCard';
+import { MAX_FILE_COUNT, MAX_FILE_SIZE_MB } from '@/shared/constants';
+import { getImagePath } from '@/shared/api/config';
+import {
+    resetFileInputBeforeOpen,
+    takeFilesFromInput
+} from '@/shared/takeFilesFromInput';
+import { ensureJpegAll } from '@/shared/convertHeic';
 
 type Props = {
     event: EventDTO;
@@ -71,6 +80,8 @@ export default function EventDetails({ event, setEvent }: Props) {
     const navigate = useNavigate();
 
     const [joining, setJoining] = useState(false);
+    const [showOwnerMenu, setShowOwnerMenu] = useState(false);
+    const ownerMenuRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState<'discussion' | 'participants'>('discussion');
     const [showAllParticipants, setShowAllParticipants] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -82,6 +93,11 @@ export default function EventDetails({ event, setEvent }: Props) {
         global: false,
         location: null as LocationDTO | null
     });
+    const [editImages, setEditImages] = useState<File[]>([]);
+    const [editImageError, setEditImageError] = useState<string | null>(null);
+    const [deletedImageIndices, setDeletedImageIndices] = useState<Set<number>>(
+        new Set()
+    );
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [eventCreator, setEventCreator] = useState<UserDTO | null>(null);
@@ -248,6 +264,45 @@ export default function EventDetails({ event, setEvent }: Props) {
         autoEditEndTime
     ]);
 
+    const validateFiles = (files?: File[]) => {
+        if (!files) return null;
+        if (files.length > MAX_FILE_COUNT)
+            return `Max ${MAX_FILE_COUNT} files allowed.`;
+        const tooLarge = files.find(
+            (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
+        );
+        if (tooLarge) return `Files must be under ${MAX_FILE_SIZE_MB}MB.`;
+        return null;
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawFiles = takeFilesFromInput(e.target);
+        if (rawFiles.length === 0) return;
+        const newFiles = await ensureJpegAll(rawFiles);
+        const updated = [...editImages, ...newFiles];
+        const fileError = validateFiles(updated);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+        setEditImages(updated);
+        setEditImageError(null);
+    };
+
+    const removeEditImage = (idx: number) => {
+        setEditImages((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const removeExistingImage = (idx: number) => {
+        setDeletedImageIndices((prev) => {
+            const next = new Set(prev);
+            next.add(idx);
+            return next;
+        });
+    };
+
+    const createImagePreview = (f: File) => URL.createObjectURL(f);
+
     const handleStartEdit = () => {
         const existingEnd = eventEndDate ? new Date(eventEndDate) : null;
         setEditData({
@@ -258,6 +313,9 @@ export default function EventDetails({ event, setEvent }: Props) {
             global: event.location?.global || false,
             location: event.location || null
         });
+        setEditImages([]);
+        setEditImageError(null);
+        setDeletedImageIndices(new Set());
         setIsEditing(true);
         setError(null);
     };
@@ -265,11 +323,17 @@ export default function EventDetails({ event, setEvent }: Props) {
     const handleSaveEdit = async () => {
         if (!dateValidation.canSubmit) return;
 
+        const fileError = validateFiles(editImages);
+        if (fileError) {
+            setEditImageError(fileError);
+            return;
+        }
+
         setSaving(true);
         setError(null);
 
         try {
-            const updateData: UpdateEventData = {
+            const updateData: any = {
                 title: editData.title.trim(),
                 description: editData.description.trim(),
                 startTime: editData.startTime,
@@ -296,11 +360,21 @@ export default function EventDetails({ event, setEvent }: Props) {
                 }
             }
 
+            if (editImages.length > 0) {
+                updateData.files = editImages;
+            }
+
+            const remainingImages =
+                event.images?.filter(
+                    (_, idx) => !deletedImageIndices.has(idx)
+                ) || [];
+            updateData.images = remainingImages;
+
             const updatedEvent = await apiMutate<EventDTO, any>(
                 `/events/${event.id}`,
-                'put',
+                'patch',
                 updateData,
-                { as: 'json' }
+                { as: 'form' }
             );
 
             const serverEvent = updatedEvent as EventDTO;
@@ -315,11 +389,15 @@ export default function EventDetails({ event, setEvent }: Props) {
             catch (e) {
                 console.warn('Failed to update event cache after save', e);
             }
+            setEditImages([]);
+            setEditImageError(null);
+            setDeletedImageIndices(new Set());
             setIsEditing(false);
         }
         catch (err: any) {
             console.error('Failed to update event:', err);
-            setError(err?.message || 'Failed to update event');
+            const firstMsg = Array.isArray(err) ? (err as string[])[0] : (err instanceof Error ? err.message : null);
+            setError(firstMsg || 'Failed to update event');
         }
         finally {
             setSaving(false);
@@ -337,6 +415,9 @@ export default function EventDetails({ event, setEvent }: Props) {
             global: false,
             location: null
         });
+        setEditImages([]);
+        setEditImageError(null);
+        setDeletedImageIndices(new Set());
     };
 
     const joinMutation = useJoinEvent(event.id);
@@ -472,15 +553,63 @@ export default function EventDetails({ event, setEvent }: Props) {
 
                     {isEventCreator && !isEditing && (
                         <>
-                            <div className='relative'>
+                            {/* Desktop: inline buttons */}
+                            <div className='hidden sm:flex items-center gap-2'>
+                                <div className='relative'>
+                                    <button
+                                        onClick={() => setShowInviteSearch(!showInviteSearch)}
+                                        title='Invite user'
+                                        className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition'
+                                    >
+                                        <UserPlusIcon className='w-4 h-4' />
+                                        <span>Invite</span>
+                                    </button>
+                                </div>
+                                <EditEventButton onClick={handleStartEdit} />
+                                <DeleteEventButton onClick={() => setShowDeleteConfirm(true)} />
+                            </div>
+
+                            {/* Mobile: overflow menu */}
+                            <div className='relative sm:hidden' ref={ownerMenuRef}>
                                 <button
-                                    onClick={() => setShowInviteSearch(!showInviteSearch)}
-                                    title='Invite user'
-                                    className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition'
+                                    onClick={() => setShowOwnerMenu((v) => !v)}
+                                    className='inline-flex items-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition'
+                                    aria-label='Event actions'
                                 >
-                                    <UserPlusIcon className='w-4 h-4' />
-                                    <span className='hidden sm:inline'>Invite</span>
+                                    <EllipsisVerticalIcon className='w-5 h-5' />
                                 </button>
+                                {showOwnerMenu && (
+                                    <>
+                                        <div className='fixed inset-0 z-40' onClick={() => setShowOwnerMenu(false)} />
+                                        <div className='absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden'>
+                                            <button
+                                                onClick={() => { setShowInviteSearch(true); setShowOwnerMenu(false); }}
+                                                className='w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            >
+                                                <UserPlusIcon className='w-4 h-4' />
+                                                Invite
+                                            </button>
+                                            <button
+                                                onClick={() => { handleStartEdit(); setShowOwnerMenu(false); }}
+                                                className='w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            >
+                                                <PencilSquareIcon className='w-4 h-4' />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => { setShowDeleteConfirm(true); setShowOwnerMenu(false); }}
+                                                className='w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                            >
+                                                <TrashIcon className='w-4 h-4' />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Keep invite portal */}
+                            <div className='relative'>
                                 {showInviteSearch && createPortal(
                                     <div className='fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-24' onClick={() => { setShowInviteSearch(false); setInviteSearchText(''); }}>
                                         <div className='w-full max-w-sm p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg' onClick={(e) => e.stopPropagation()}>
@@ -520,10 +649,6 @@ export default function EventDetails({ event, setEvent }: Props) {
                                     document.body
                                 )}
                             </div>
-                            <EditEventButton onClick={handleStartEdit} />
-                            <DeleteEventButton
-                                onClick={() => setShowDeleteConfirm(true)}
-                            />
                         </>
                     )}
                 </div>
@@ -709,6 +834,106 @@ export default function EventDetails({ event, setEvent }: Props) {
                         </div>
                     )}
 
+                    <div className='w-full overflow-hidden box-border'>
+                        <label className='block text-sm font-semibold mb-2'>
+                            Images (
+                            {(event.images?.length || 0) -
+                                deletedImageIndices.size +
+                                editImages.length}
+                            /{MAX_FILE_COUNT})
+                        </label>
+                        {editImageError && (
+                            <p className='text-sm text-red-600 dark:text-red-400 mb-2'>
+                                {editImageError}
+                            </p>
+                        )}
+                        <input
+                            type='file'
+                            accept='image/*'
+                            multiple
+                            onClick={(e) =>
+                                resetFileInputBeforeOpen(e.currentTarget)
+                            }
+                            onChange={handleImageUpload}
+                            className='border border-gray-300 dark:border-gray-700 rounded-lg w-full box-border px-3 py-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 truncate text-ellipsis overflow-hidden min-w-0 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-800'
+                            disabled={
+                                (event.images?.length || 0) -
+                                    deletedImageIndices.size +
+                                    editImages.length >=
+                                MAX_FILE_COUNT
+                            }
+                        />
+                        {((event.images &&
+                            event.images.length > 0) ||
+                            editImages.length > 0) && (
+                            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 pr-2'>
+                                {event.images?.map((url, index) => {
+                                    if (deletedImageIndices.has(index))
+                                        return null;
+                                    const imagePath = getImagePath(url);
+                                    if (!imagePath) return null;
+                                    return (
+                                        <div
+                                            key={`existing-${index}`}
+                                            className='relative group'
+                                        >
+                                            <img
+                                                src={imagePath}
+                                                alt={`Image ${index + 1}`}
+                                                className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                            />
+                                            <Button
+                                                type='button'
+                                                shape='circle'
+                                                variant='danger'
+                                                onClick={() =>
+                                                    removeExistingImage(index)
+                                                }
+                                                className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                                title='Remove image'
+                                            >
+                                                ×
+                                            </Button>
+                                            <div className='absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded'>
+                                                Current
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {editImages.map((file, index) => (
+                                    <div
+                                        key={`new-${index}`}
+                                        className='relative group'
+                                    >
+                                        <img
+                                            src={createImagePreview(file)}
+                                            alt={`Preview ${index + 1}`}
+                                            className='w-full h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600'
+                                        />
+                                        <Button
+                                            type='button'
+                                            shape='circle'
+                                            variant='danger'
+                                            onClick={() =>
+                                                removeEditImage(index)
+                                            }
+                                            className='absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center text-sm opacity-100 shadow-md'
+                                            title='Remove image'
+                                        >
+                                            ×
+                                        </Button>
+                                        <div className='absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded'>
+                                            New
+                                        </div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                                            {file.name}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Validation Messages */}
                     {(dateValidation.errors.length > 0 ||
                         dateValidation.warnings.length > 0) && (
@@ -761,6 +986,14 @@ export default function EventDetails({ event, setEvent }: Props) {
                 </div>
             ) : (
                 <>
+                    {event.images && event.images.length > 0 && (
+                        <div className='mb-6'>
+                            <ImageCarousel
+                                images={event.images}
+                                variant='postDetails'
+                            />
+                        </div>
+                    )}
                     <p className='text-gray-700'>{event.description}</p>
                     <p className='text-sm text-gray-500 italic'>
                         {format(
@@ -833,7 +1066,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                     )}
 
                     {/* Join/Leave — mobile only (always visible above tabs) */}
-                    {user && !isPastEvent && (
+                    {user && !isPastEvent && !isEventCreator && (
                         <div className='mb-4 md:hidden'>
                             {event.participants?.some((p: any) => p.id === user.id) ? (
                                 <Button variant='danger' onClick={handleLeave}>
@@ -895,7 +1128,7 @@ export default function EventDetails({ event, setEvent }: Props) {
                             <div className='flex items-center justify-between mb-3'>
                                 <h2 className='text-lg font-semibold'>Participants</h2>
                                 {/* Join/Leave — desktop only (inside participants column) */}
-                                {user && !isPastEvent && (
+                                {user && !isPastEvent && !isEventCreator && (
                                     <div className='hidden md:block'>
                                         {event.participants?.some((p: any) => p.id === user.id) ? (
                                             <Button variant='danger' onClick={handleLeave}>

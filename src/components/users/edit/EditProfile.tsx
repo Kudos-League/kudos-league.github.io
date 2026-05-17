@@ -18,6 +18,7 @@ import AvatarMenu from './AvatarMenu';
 import { ensureJpeg } from '@/shared/convertHeic';
 import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
+import AvatarCropModal from './AvatarCropModal';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
 import { useDeleteAccountMutation } from '@/shared/api/mutations/users';
@@ -67,15 +68,21 @@ const EditProfile: React.FC<Props> = ({
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showImageOptions, setShowImageOptions] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const urlInputRef = useRef<HTMLInputElement>(null);
     const objectUrlRef = useRef<string | null>(null);
-    const currentFileRef = useRef<File | null>(null);
+    const latestAvatarFileRef = useRef<File | null>(null);
     const [logoutPassword, setLogoutPassword] = useState('');
     const [pwForm, setPwForm] = useState({
         current: '',
         next: '',
         confirm: ''
+    });
+    const [pwVisible, setPwVisible] = useState({
+        current: false,
+        next: false,
+        confirm: false
     });
     const [locationLabel, setLocationLabel] = useState<string>(
         targetUser?.location?.name || ''
@@ -214,29 +221,15 @@ const EditProfile: React.FC<Props> = ({
     }, [toastMessage]);
 
     useEffect(() => {
-        const file =
-            Array.isArray(avatar) &&
-            avatar.length > 0 &&
-            avatar[0] instanceof File
-                ? (avatar[0] as File)
-                : null;
+        const hasFile =
+            Array.isArray(avatar) && avatar.length > 0 && avatar[0] instanceof File;
         const url = typeof avatarURL === 'string' ? avatarURL.trim() : '';
 
-        if (file) {
-            if (currentFileRef.current !== file) {
-                if (objectUrlRef.current)
-                    URL.revokeObjectURL(objectUrlRef.current);
-                objectUrlRef.current = URL.createObjectURL(file);
-                currentFileRef.current = file;
-                setPreviewUrl(objectUrlRef.current);
-            }
-            return;
-        }
+        if (hasFile) return; // preview managed by handleCropComplete
 
         if (objectUrlRef.current) {
             URL.revokeObjectURL(objectUrlRef.current);
             objectUrlRef.current = null;
-            currentFileRef.current = null;
         }
 
         if (url) {
@@ -255,20 +248,38 @@ const EditProfile: React.FC<Props> = ({
     }, []);
 
 
+
     const handleFileSelect = React.useCallback(
         async (e: React.ChangeEvent<HTMLInputElement>) => {
             const raw = e.target.files?.[0];
             if (raw) {
                 const file = await ensureJpeg(raw);
-                form.setValue('avatar', [file] as any, {
-                    shouldDirty: true,
-                    shouldValidate: true
-                });
-                form.setValue('avatarURL', '', {
-                    shouldDirty: true,
-                    shouldValidate: true
-                });
+                const objectUrl = URL.createObjectURL(file);
+                setCropSrc(objectUrl);
+                setShowImageOptions(false);
             }
+        },
+        []
+    );
+
+    const handleCropComplete = React.useCallback(
+        (blob: Blob) => {
+            const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+            latestAvatarFileRef.current = file;
+
+            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = URL.createObjectURL(file);
+            setPreviewUrl(objectUrlRef.current);
+
+            form.setValue('avatar', [file] as any, {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+            form.setValue('avatarURL', '', {
+                shouldDirty: true,
+                shouldValidate: true
+            });
+            setCropSrc(null);
         },
         [form]
     );
@@ -290,6 +301,7 @@ const EditProfile: React.FC<Props> = ({
     }, [form]);
 
     const clearImage = React.useCallback(() => {
+        latestAvatarFileRef.current = null;
         form.setValue('avatar', [], {
             shouldDirty: true,
             shouldValidate: true
@@ -437,17 +449,17 @@ const EditProfile: React.FC<Props> = ({
                 payload.location = cleanLocation;
             }
 
-            if ('avatar' in payload) {
+            // Always use the ref — bypasses useMemo staleness when setValue
+            // doesn't produce a new allValues reference between crops
+            if (latestAvatarFileRef.current) {
+                payload.avatar = latestAvatarFileRef.current;
+            }
+            else if ('avatar' in payload) {
                 const a: any = (payload as any).avatar;
-
                 if (a instanceof File) {
                     (payload as any).avatar = a;
                 }
-                else if (
-                    Array.isArray(a) &&
-                    a.length > 0 &&
-                    a[0] instanceof File
-                ) {
+                else if (Array.isArray(a) && a.length > 0 && a[0] instanceof File) {
                     (payload as any).avatar = a[0];
                 }
                 else {
@@ -528,6 +540,7 @@ const EditProfile: React.FC<Props> = ({
                     (updatedUser as any).kudos ?? (defaults as any).kudos ?? 0
             } as any;
 
+            latestAvatarFileRef.current = null;
             setToastType('success');
             setToastMessage('Profile updated successfully');
 
@@ -1143,23 +1156,9 @@ const EditProfile: React.FC<Props> = ({
                 >
                     <form className='space-y-6' onSubmit={handleChangePassword}>
                         <FormField label='Current password'>
-                            <input
-                                type='password'
-                                value={pwForm.current}
-                                onChange={(e) =>
-                                    setPwForm((s) => ({
-                                        ...s,
-                                        current: e.target.value
-                                    }))
-                                }
-                                className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
-                            />
-                        </FormField>
-
-                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
-                            <FormField label='New password'>
+                            <div className='relative mt-2'>
                                 <input
-                                    type='password'
+                                    type={pwVisible.current ? 'text' : 'password'}
                                     value={pwForm.current}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
@@ -1167,21 +1166,77 @@ const EditProfile: React.FC<Props> = ({
                                             current: e.target.value
                                         }))
                                     }
-                                    className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
+                                    className='block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-10 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
                                 />
+                                <button
+                                    type='button'
+                                    onClick={() => setPwVisible((v) => ({ ...v, current: !v.current }))}
+                                    className='absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                    aria-label={pwVisible.current ? 'Hide password' : 'Show password'}
+                                >
+                                    {pwVisible.current ? (
+                                        <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21' /></svg>
+                                    ) : (
+                                        <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' /><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' /></svg>
+                                    )}
+                                </button>
+                            </div>
+                        </FormField>
+
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
+                            <FormField label='New password'>
+                                <div className='relative mt-2'>
+                                    <input
+                                        type={pwVisible.next ? 'text' : 'password'}
+                                        value={pwForm.next}
+                                        onChange={(e) =>
+                                            setPwForm((s) => ({
+                                                ...s,
+                                                next: e.target.value
+                                            }))
+                                        }
+                                        className='block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-10 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
+                                    />
+                                    <button
+                                        type='button'
+                                        onClick={() => setPwVisible((v) => ({ ...v, next: !v.next }))}
+                                        className='absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                        aria-label={pwVisible.next ? 'Hide password' : 'Show password'}
+                                    >
+                                        {pwVisible.next ? (
+                                            <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21' /></svg>
+                                        ) : (
+                                            <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' /><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' /></svg>
+                                        )}
+                                    </button>
+                                </div>
                             </FormField>
                             <FormField label='Confirm password'>
-                                <input
-                                    type='password'
-                                    value={pwForm.confirm}
-                                    onChange={(e) =>
-                                        setPwForm((s) => ({
-                                            ...s,
-                                            confirm: e.target.value
-                                        }))
-                                    }
-                                    className='mt-2 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
-                                />
+                                <div className='relative mt-2'>
+                                    <input
+                                        type={pwVisible.confirm ? 'text' : 'password'}
+                                        value={pwForm.confirm}
+                                        onChange={(e) =>
+                                            setPwForm((s) => ({
+                                                ...s,
+                                                confirm: e.target.value
+                                            }))
+                                        }
+                                        className='block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pr-10 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
+                                    />
+                                    <button
+                                        type='button'
+                                        onClick={() => setPwVisible((v) => ({ ...v, confirm: !v.confirm }))}
+                                        className='absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                        aria-label={pwVisible.confirm ? 'Hide password' : 'Show password'}
+                                    >
+                                        {pwVisible.confirm ? (
+                                            <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21' /></svg>
+                                        ) : (
+                                            <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' /><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' /></svg>
+                                        )}
+                                    </button>
+                                </div>
                             </FormField>
                         </div>
 
@@ -1286,10 +1341,18 @@ const EditProfile: React.FC<Props> = ({
                 )}
             </div>
 
+            {cropSrc && (
+                <AvatarCropModal
+                    src={cropSrc}
+                    onComplete={handleCropComplete}
+                    onCancel={() => setCropSrc(null)}
+                />
+            )}
+
             {/* FLOATING SAVE BAR - Slides up from bottom when there are unsaved changes */}
             {canSave && (
                 <div className='fixed bottom-0 left-0 right-0 z-50 animate-slide-up'>
-                    <div className='bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-700 dark:to-indigo-800 shadow-2xl'>
+                    <div className='bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-700 dark:to-indigo-800 shadow-2xl' style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         <div className='max-w-5xl mx-auto px-4 sm:px-6 py-4'>
                             <div className='flex items-center justify-between gap-4'>
                                 {/* Left side - Change indicator */}

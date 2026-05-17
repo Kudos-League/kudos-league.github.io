@@ -5,7 +5,8 @@ import {
     QuestionMarkCircleIcon,
     ArrowUturnRightIcon,
     ClipboardDocumentCheckIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
@@ -164,18 +165,17 @@ export default function PostDetails(props: Props) {
     const navigate = useNavigate();
 
     const handleSharePost = async () => {
-        const backendUrl = getEndpointUrl();
-        const url = `${backendUrl}/posts/${postDetails?.id}/share`;
+        const shareUrl = `${getEndpointUrl()}/posts/${postDetails?.id}/share`;
         if (navigator.share) {
             try {
-                await navigator.share({ title: postDetails?.title, url });
+                await navigator.share({ title: postDetails?.title, url: shareUrl });
                 return;
             }
             catch {
                 // Fallback to clipboard
             }
         }
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(shareUrl);
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
     };
@@ -1079,6 +1079,18 @@ export default function PostDetails(props: Props) {
                         </button>
                     )}
 
+                    {/* Repost Button (non-owners, logged-in) */}
+                    {!isPostOwner && user && (
+                        <button
+                            onClick={() => navigate(`/create-post?repostId=${postDetails.id}`)}
+                            title='Repost'
+                            className='inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition'
+                        >
+                            <ArrowPathIcon className='w-5 h-5' />
+                            <span className='hidden sm:inline'>Repost</span>
+                        </button>
+                    )}
+
                     {/* Report Button (non-owners) */}
                     {!isPostOwner && user && (
                         <button
@@ -1094,10 +1106,12 @@ export default function PostDetails(props: Props) {
                     {/* Post Owner Actions */}
                     {isPostOwner && (
                         <>
-                            <EditPostButton
-                                onClick={handleStartEdit}
-                                disabled={isEditing}
-                            />
+                            {!isClosedPost && (
+                                <EditPostButton
+                                    onClick={handleStartEdit}
+                                    disabled={isEditing}
+                                />
+                            )}
                             {!isClosedPost && (
                                 <Button
                                     onClick={handleClosePost}

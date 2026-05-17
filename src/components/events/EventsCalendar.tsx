@@ -169,13 +169,16 @@ export default function Events({ events }: Props) {
     const filteredDateEvents = useMemo(() => {
         if (!selectedDateEvents) return null;
 
-        if (eventFilter === 'all') return selectedDateEvents;
         if (eventFilter === 'global')
             return selectedDateEvents.filter((e) => e.isGlobal);
         if (eventFilter === 'local')
-            return selectedDateEvents.filter((e) => !e.isGlobal);
-
-        return selectedDateEvents;
+            return selectedDateEvents.filter(
+                (e) => !e.isGlobal && (e.location?.regionID || e.locationID)
+            );
+        // 'all': show global events + local events that have an actual location
+        return selectedDateEvents.filter(
+            (e) => e.isGlobal || e.location?.regionID || e.locationID
+        );
     }, [selectedDateEvents, eventFilter]);
 
     /* ---------- render ---------- */

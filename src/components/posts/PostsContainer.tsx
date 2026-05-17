@@ -18,7 +18,7 @@ export default function PostsContainer({
     return (
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
             {posts.map((post, index) => (
-                <SlideInOnScroll key={post.id} delayStep={index * 0.05}>
+                <SlideInOnScroll key={post.id} delayStep={index * 0.05} rootMargin='0px 0px 200px 0px'>
                     <PostCard
                         {...post}
                         showHandshakeShortcut={showHandshakeShortcut}

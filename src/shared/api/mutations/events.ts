@@ -18,7 +18,8 @@ export function useCreateEvent(p0: { onSuccess: () => void }) {
             return apiMutate<EventDTO, CreateEventDTO>(
                 '/events',
                 'post',
-                payload
+                payload,
+                { as: 'form' }
             );
         },
         onSuccess: (created) => {

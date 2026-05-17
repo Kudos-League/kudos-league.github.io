@@ -105,9 +105,12 @@ export default function PostCard(props: Props) {
                 </div>
             ) : (
                 <div className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden h-60 bg-gray-100 dark:bg-gray-700 flex items-center justify-center px-4'>
-                    <span className='text-gray-400 dark:text-gray-500 text-lg font-semibold text-center line-clamp-3'>
-                        {title}
-                    </span>
+                    <img
+                        src='/logo.webp'
+                        alt=''
+                        aria-hidden='true'
+                        className='max-h-32 max-w-[60%] object-contain grayscale opacity-20 dark:opacity-10 select-none pointer-events-none'
+                    />
                 </div>
             )}
 

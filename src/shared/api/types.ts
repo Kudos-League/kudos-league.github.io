@@ -140,10 +140,12 @@ export type CreateRewardOfferDTO = {
 
 export type RewardOfferDTO = {
     id: number;
-    postId: number;
-    senderId: number;
-    amount: number;
-    kudosFinal: number;
+    postID: number;
+    senderID: number;
+    receiverID: number;
+    kudos: number;
+    kudosFinal?: number | null;
+    status?: string;
     createdAt: Date;
     updatedAt: Date;
 };
@@ -157,13 +159,14 @@ export type CreateHandshakeDTO = {
 };
 
 export type HandshakeDTO = {
-    receiverID: any;
     id: number;
     postID: number;
-    offerID: number;
+    offerID?: number;
     senderID: number;
-    recipientID: number;
+    receiverID: any;
+    recipientID?: number;
     sender?: UserDTO;
+    receiver?: UserDTO;
     status: string;
     createdAt: Date;
     updatedAt: Date;
@@ -202,6 +205,7 @@ export type EventDTO = {
     location?: LocationDTO | null;
     participantCount?: number;
     messages?: MessageDTO[];
+    images?: string[];
 };
 
 export type EventRecurrenceDTO = {
@@ -219,6 +223,7 @@ export type CreateEventDTO = {
     content?: string;
     location: LocationDTO | null;
     recurrence?: EventRecurrenceDTO;
+    files?: File[];
 };
 
 export interface UpdateEventDTO {
@@ -231,6 +236,8 @@ export interface UpdateEventDTO {
         name?: string;
         global?: boolean;
     } | null;
+    files?: File[];
+    images?: string[];
 }
 
 export type CategoryDTO = {

@@ -569,6 +569,8 @@ const MapDisplay: React.FC<MapComponentProps> = ({
     useEffect(() => {
         if (edit) return;
         if (coordinates) return;
+        if (!shouldGetYourLocation) return;
+        if (regionID) return;
         if (!user?.location) return;
 
         const savedLocation = user.location as any;
