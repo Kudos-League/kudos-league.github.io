@@ -29,6 +29,7 @@ import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import UserCard from '@/components/users/UserCard';
+import { PROFILE_DESCRIPTION_MAX_LENGTH } from '@/shared/constants';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -140,6 +141,10 @@ const EditProfile: React.FC<Props> = ({
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
+    const about = useWatch({ control, name: 'about' });
+    const aboutLength = typeof about === 'string' ? about.length : 0;
+    const aboutLimitLabel = PROFILE_DESCRIPTION_MAX_LENGTH.toLocaleString();
+    const isAboutOverLimit = aboutLength > PROFILE_DESCRIPTION_MAX_LENGTH;
 
     const resetFromUser = (u: UserDTO) => {
         // Normalize location to match defaults
@@ -194,6 +199,7 @@ const EditProfile: React.FC<Props> = ({
 
     const canSave =
         Object.keys(effectiveChanges).length > 0 &&
+        !isAboutOverLimit &&
         !updateUserMutation.isPending;
 
     useEffect(() => {
@@ -408,6 +414,14 @@ const EditProfile: React.FC<Props> = ({
     }, [form, setLocation, setTargetUser, targetUser]);
 
     const handleFormSubmit = async () => {
+        if (isAboutOverLimit) {
+            const message = `Description must be ${aboutLimitLabel} characters or fewer.`;
+            form.setError('about', { type: 'maxLength', message });
+            setToastType('error');
+            setToastMessage(message);
+            return;
+        }
+
         if (!(Object.keys(effectiveChanges).length > 0)) {
             setToastType('error');
             setToastMessage('No changes to save.');
@@ -872,7 +886,7 @@ const EditProfile: React.FC<Props> = ({
 
                         <FormField
                             label='Description'
-                            help='This will appear on your public profile.'
+                            help={`This will appear on your public profile. Max ${aboutLimitLabel} characters.`}
                         >
                             <div className='w-full overflow-hidden'>
                                 <Input
@@ -884,7 +898,27 @@ const EditProfile: React.FC<Props> = ({
                                     multiline
                                     disabled={!canEditProfile}
                                     className='w-full'
+                                    maxLength={PROFILE_DESCRIPTION_MAX_LENGTH}
+                                    registerOptions={{
+                                        maxLength: {
+                                            value: PROFILE_DESCRIPTION_MAX_LENGTH,
+                                            message: `Description must be ${aboutLimitLabel} characters or fewer.`
+                                        }
+                                    }}
                                 />
+                                <div className='mt-1 flex justify-end'>
+                                    <span
+                                        data-testid='about-counter'
+                                        className={
+                                            'text-xs ' +
+                                            (isAboutOverLimit
+                                                ? 'text-red-600 dark:text-red-400'
+                                                : 'text-gray-500 dark:text-gray-400')
+                                        }
+                                    >
+                                        {aboutLength.toLocaleString()} / {aboutLimitLabel}
+                                    </span>
+                                </div>
                             </div>
                         </FormField>
 

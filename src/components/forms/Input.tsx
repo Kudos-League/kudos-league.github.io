@@ -28,6 +28,7 @@ type Props<T extends FieldValues> = {
     noMargin?: boolean;
     showLabel?: boolean;
     className?: string;
+    maxLength?: number;
 };
 
 export default function Input<T extends FieldValues>({

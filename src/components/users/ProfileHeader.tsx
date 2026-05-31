@@ -123,7 +123,7 @@ const ProfileHeader: React.FC<Props> = ({
                 </div>
             )}
 
-            <p className='mt-6 text-gray-700 dark:text-gray-300 text-sm italic'>
+            <p className='mt-6 max-w-3xl mx-auto text-gray-700 dark:text-gray-300 text-sm italic whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
                 {userSettings?.about || 'No bio available'}
             </p>
 

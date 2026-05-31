@@ -15,9 +15,19 @@ test.describe('Edit Profile', () => {
 
         const save = getSaveButton(page);
         await expect(save).toBeDisabled();
+        await expect(page.getByTestId('about')).toHaveAttribute(
+            'maxlength',
+            '5000'
+        );
+        await expect(page.getByTestId('about-counter')).toContainText(
+            '/ 5,000'
+        );
 
         const aboutVal = `Playwright about ${Date.now()}`;
         await page.getByTestId('about').fill(aboutVal);
+        await expect(page.getByTestId('about-counter')).toHaveText(
+            `${aboutVal.length} / 5,000`
+        );
         await expect(save).toBeEnabled();
 
         const patch = waitForUserPatch(page, ({ headers, bodyText }) => {

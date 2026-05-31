@@ -13,7 +13,9 @@ const FormField: React.FC<{
         ) : null}
         {children}
         {help ? (
-            <p className='text-xs text-gray-500 italic mt-2'>{help}</p>
+            <p className='text-xs text-gray-500 italic mt-2 break-words [overflow-wrap:anywhere]'>
+                {help}
+            </p>
         ) : null}
     </div>
 );
