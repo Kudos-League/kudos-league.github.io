@@ -77,12 +77,12 @@ export default function Dashboard({ reports, setReports }: Props) {
         <>
             <div
                 className='max-w-4xl mx-auto p-6
-                       light:text-gray-900 dark:text-neutral-100'
+                       text-gray-900 dark:text-neutral-100'
             >
                 <h1 className='text-2xl font-bold mb-4'>Reported Posts</h1>
 
                 {reports.length === 0 ? (
-                    <p className='light:text-gray-600 dark:text-neutral-400'>
+                    <p className='text-gray-600 dark:text-neutral-400'>
                         No reports found.
                     </p>
                 ) : (

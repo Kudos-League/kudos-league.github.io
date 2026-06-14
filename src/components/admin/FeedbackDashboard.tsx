@@ -90,12 +90,12 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
     return (
         <div
             className='max-w-4xl mx-auto p-6
-                       light:text-gray-900 dark:text-neutral-100'
+                       text-gray-900 dark:text-neutral-100'
         >
             <h1 className='text-2xl font-bold mb-4'>User Feedback</h1>
 
             {feedbacks.length === 0 ? (
-                <p className='light:text-gray-600 dark:text-neutral-400'>
+                <p className='text-gray-600 dark:text-neutral-400'>
                     No feedback found.
                 </p>
             ) : (
@@ -119,7 +119,7 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                             <div
                                 key={fb.id}
                                 className={`p-4 rounded shadow-sm border-l-4
-                                       light:bg-gray-50 light:border light:border-gray-200
+                                       bg-gray-50 border border-gray-200
                                        dark:bg-neutral-800/60 dark:border dark:border-neutral-700
                                        ${
                             fb.status === 'resolved'
@@ -139,7 +139,7 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                             >
                                                 {statusLabel}
                                             </span>
-                                            <p className='text-sm light:text-gray-600 dark:text-neutral-300'>
+                                            <p className='text-sm text-gray-600 dark:text-neutral-300'>
                                                 Submitted by{' '}
                                                 <span className='font-medium'>
                                                     <span
@@ -184,10 +184,10 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                                 {typeLabel} • Category:{' '}
                                                 {categoryLabel}
                                             </div>
-                                            <h3 className='text-lg font-semibold light:text-gray-900 dark:text-neutral-100'>
+                                            <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-100'>
                                                 {fb.title}
                                             </h3>
-                                            <p className='whitespace-pre-wrap light:text-gray-700 dark:text-neutral-200'>
+                                            <p className='whitespace-pre-wrap text-gray-700 dark:text-neutral-200'>
                                                 {fb.description}
                                             </p>
                                         </div>
@@ -236,13 +236,13 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                         )}
 
                                         <div className='mt-3 text-sm flex flex-wrap gap-4'>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Status: {statusLabel}
                                             </span>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Base kudos: {fb.baseRewardKudos}
                                             </span>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Additional kudos:{' '}
                                                 {typeof fb.rewardKudos ===
                                                 'number'

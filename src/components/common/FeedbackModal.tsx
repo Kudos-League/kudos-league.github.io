@@ -7,6 +7,7 @@ import DropdownPicker from '@/components/forms/DropdownPicker';
 import TagInput from '@/components/TagInput';
 import Button from './Button';
 import Alert from './Alert';
+import { pushAlert } from './alertBus';
 import {
     BUG_REPORT_CATEGORIES,
     FEEDBACK_BASE_REWARD,
@@ -207,6 +208,10 @@ export default function FeedbackModal({
 
             setSubmittedAt(new Date());
             setSuccess(true);
+            pushAlert({
+                type: 'success',
+                message: 'Your feedback was submitted successfully.'
+            });
             resetForm();
 
             // Close modal after successful submission (only in modal mode)
@@ -263,7 +268,7 @@ export default function FeedbackModal({
         : null;
     const successMessage = `We received your submission${
         submittedTime ? ` at ${submittedTime}` : ''
-    }. If it's resolved, you'll be awarded kudos as a thank-you.${
+    }. If it's accepted, you'll be awarded kudos as a thank-you.${
         onSubmitted ? ' Taking you back…' : ''
     }`;
 
@@ -276,7 +281,7 @@ export default function FeedbackModal({
                         Share Feedback
                     </h1>
                     <p className='text-sm text-gray-600 dark:text-gray-300'>
-                        If your feedback is resolved, you&apos;ll be awarded{' '}
+                        If your feedback is accepted, you&apos;ll be awarded{' '}
                         {FEEDBACK_BASE_REWARD} kudos as a thank-you. KLF may
                         award additional kudos for especially helpful reports.
                     </p>

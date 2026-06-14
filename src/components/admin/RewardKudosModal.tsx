@@ -65,42 +65,52 @@ export default function RewardKudosModal({
         >
             <div
                 className='w-full max-w-md rounded-2xl p-5 shadow-xl
-                           light:bg-white light:text-gray-900
+                           bg-white text-gray-900
                            dark:bg-neutral-900 dark:text-neutral-100
-                           light:border light:border-gray-200
+                           border border-gray-200
                            dark:border dark:border-neutral-800'
             >
                 <h2 className='text-lg font-semibold'>Resolve Help</h2>
                 <p
                     className='mt-1 text-sm
-                               light:text-gray-600
+                               text-gray-600
                                dark:text-neutral-300'
                 >
-                    How many <span className='font-semibold'>additional</span>{' '}
-                    kudos should be granted when resolving this?
-                    <br />
-                    <span className='text-xs text-gray-500 dark:text-gray-400'>
-                        Base reward: {baseReward}
+                    Every accepted submission already includes a{' '}
+                    <span className='font-semibold'>
+                        base reward of {baseReward} kudos
                     </span>
+                    . Enter any{' '}
+                    <span className='font-semibold'>additional</span> kudos to
+                    grant on top of that.
                 </p>
 
                 <div className='mt-4'>
-                    <label className='text-sm font-medium'>Kudos</label>
+                    <label className='text-sm font-medium'>
+                        Additional kudos
+                    </label>
                     <input
                         type='number'
                         min={0}
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                         className='mt-1 w-full rounded-lg px-3 py-2
-                                   light:border light:border-gray-300 light:bg-white light:text-gray-900
+                                   border border-gray-300 bg-white text-gray-900
                                    dark:border dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100
                                    focus:outline-none focus:ring-2
-                                   light:focus:ring-indigo-500
+                                   focus:ring-indigo-500
                                    dark:focus:ring-indigo-400'
                         placeholder='e.g. 10'
                     />
+                    <p className='mt-2 text-sm text-gray-600 dark:text-neutral-300'>
+                        Total the user receives:{' '}
+                        <span className='font-semibold text-teal-600 dark:text-teal-300'>
+                            {baseReward} + {disabled ? 0 : parsed} ={' '}
+                            {baseReward + (disabled ? 0 : parsed)} kudos
+                        </span>
+                    </p>
                     {error && (
-                        <p className='mt-2 text-sm light:text-red-600 dark:text-red-400'>
+                        <p className='mt-2 text-sm text-red-600 dark:text-red-400'>
                             {error}
                         </p>
                     )}
