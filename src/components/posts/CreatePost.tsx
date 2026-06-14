@@ -1,7 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
-import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import {
+    InformationCircleIcon,
+    ChevronDownIcon,
+    ChevronUpIcon
+} from '@heroicons/react/24/outline';
 import type {
     CategoryDTO,
     CreatePostDTO,
@@ -73,6 +77,7 @@ export default function CreatePost({ setShowLoginForm }: Props) {
     const [postType, setPostType] = React.useState<'gift' | 'request'>('gift');
     const [giftType, setGiftType] = React.useState<GiftType>('physical');
     const [showGiftTypeInfo, setShowGiftTypeInfo] = React.useState(false);
+    const [showLocation, setShowLocation] = React.useState(false);
     const [location, setLocation] = React.useState<LocationDTO | null>(null);
     const [serverError, setServerError] = React.useState<string | null>(null);
     const [imageError, setImageError] = React.useState<string | null>(null);
@@ -123,7 +128,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
         return null;
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const rawFiles = takeFilesFromInput(e.target);
         if (rawFiles.length === 0) return;
         const newFiles = await ensureJpegAll(rawFiles);
@@ -131,12 +138,16 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             (f) => f.size > MAX_FILE_SIZE_MB * 1024 * 1024
         );
         if (tooLarge) {
-            setImageError(`"${tooLarge.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+            setImageError(
+                `"${tooLarge.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`
+            );
             return;
         }
         const updated = [...selectedImages, ...newFiles];
         if (updated.length > MAX_FILE_COUNT) {
-            setImageError(`You can only attach up to ${MAX_FILE_COUNT} images.`);
+            setImageError(
+                `You can only attach up to ${MAX_FILE_COUNT} images.`
+            );
             return;
         }
         setSelectedImages(updated);
@@ -166,9 +177,10 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             tags: data.tags.map((tag) => String(tag).trim()),
             categoryID: data.categoryID ? Number(data.categoryID) : null,
             files: selectedImages,
-            location: (postType === 'gift' && giftType === 'digital')
-                ? { regionID: null, global: true }
-                : location
+            location:
+                postType === 'gift' && giftType === 'digital'
+                    ? { regionID: null, global: true }
+                    : location
         } as CreatePostDTO;
 
         setServerError(null);
@@ -189,7 +201,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             const errorMessage =
                 first || errs?.message || 'Failed to create post.';
 
-            if (errorMessage.toLowerCase().includes('unsupported image format')) {
+            if (
+                errorMessage.toLowerCase().includes('unsupported image format')
+            ) {
                 setServerError(
                     'One or more images have an unsupported format. Please use JPEG, PNG, or WebP.'
                 );
@@ -293,7 +307,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     <div className='relative'>
                         <button
                             type='button'
-                            onClick={() => setShowGiftTypeInfo(!showGiftTypeInfo)}
+                            onClick={() =>
+                                setShowGiftTypeInfo(!showGiftTypeInfo)
+                            }
                             onMouseEnter={() => setShowGiftTypeInfo(true)}
                             onMouseLeave={() => setShowGiftTypeInfo(false)}
                             className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
@@ -303,9 +319,19 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                         </button>
                         {showGiftTypeInfo && (
                             <div className='absolute top-full right-0 mt-1 z-50 w-48 sm:w-64 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg'>
-                                <p className='font-semibold mb-1'>Physical vs Digital</p>
-                                <p className='mb-1'><strong>Physical:</strong> A tangible item that requires coordination to hand off (e.g. clothes, books, furniture).</p>
-                                <p><strong>Digital:</strong> An online resource anyone can access (e.g. a PDF, template, guide). Users just give kudos.</p>
+                                <p className='font-semibold mb-1'>
+                                    Physical vs Digital
+                                </p>
+                                <p className='mb-1'>
+                                    <strong>Physical:</strong> A tangible item
+                                    that requires coordination to hand off (e.g.
+                                    clothes, books, furniture).
+                                </p>
+                                <p>
+                                    <strong>Digital:</strong> An online resource
+                                    anyone can access (e.g. a PDF, template,
+                                    guide). Users just give kudos.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -347,7 +373,8 @@ export default function CreatePost({ setShowLoginForm }: Props) {
             <FormField name='body' label='Description *'>
                 {giftType === 'digital' && postType === 'gift' && (
                     <p className='text-xs text-blue-600 dark:text-blue-400 mb-1'>
-                        Please include a link to the digital resource in your description.
+                        Please include a link to the digital resource in your
+                        description.
                     </p>
                 )}
                 <Input
@@ -430,7 +457,9 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                     Each image must be under {MAX_FILE_SIZE_MB}MB.
                 </p>
                 {imageError && (
-                    <p className='text-sm text-red-600 dark:text-red-400 mb-3'>{imageError}</p>
+                    <p className='text-sm text-red-600 dark:text-red-400 mb-3'>
+                        {imageError}
+                    </p>
                 )}
                 {selectedImages.length > 0 && (
                     <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pr-2'>
@@ -460,7 +489,13 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                 )}
             </div>
 
-            <div className={postType === 'gift' && giftType === 'digital' ? 'relative' : ''}>
+            <div
+                className={
+                    postType === 'gift' && giftType === 'digital'
+                        ? 'relative'
+                        : ''
+                }
+            >
                 {postType === 'gift' && giftType === 'digital' && (
                     <div className='absolute inset-0 z-10 bg-gray-200/60 dark:bg-gray-900/60 rounded-lg flex items-center justify-center pointer-events-auto cursor-not-allowed'>
                         <span className='bg-white dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-full shadow font-medium'>
@@ -468,26 +503,51 @@ export default function CreatePost({ setShowLoginForm }: Props) {
                         </span>
                     </div>
                 )}
-                <div className={postType === 'gift' && giftType === 'digital' ? 'opacity-40 pointer-events-none' : ''}>
-                    <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
-                        Location
-                    </label>
+                <div
+                    className={
+                        postType === 'gift' && giftType === 'digital'
+                            ? 'opacity-40 pointer-events-none'
+                            : ''
+                    }
+                >
+                    <button
+                        type='button'
+                        onClick={() => setShowLocation((prev) => !prev)}
+                        aria-expanded={showLocation}
+                        className='flex w-full items-center justify-between text-left text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'
+                    >
+                        <span>
+                            Location
+                            {!showLocation && location?.name && (
+                                <span className='ml-2 font-normal text-gray-500 dark:text-gray-400'>
+                                    · {location.name}
+                                </span>
+                            )}
+                        </span>
+                        {showLocation ? (
+                            <ChevronUpIcon className='h-5 w-5' />
+                        ) : (
+                            <ChevronDownIcon className='h-5 w-5' />
+                        )}
+                    </button>
 
-                    <MapDisplay
-                        edit
-                        height={300}
-                        shouldGetYourLocation={true}
-                        regionID={location?.regionID}
-                        onLocationChange={(data) => {
-                            if (data)
-                                setLocation({
-                                    regionID: data.placeID,
-                                    name: data.name
-                                });
-                        }}
-                        shouldSavedLocationButton
-                        exactLocation
-                    />
+                    {showLocation && (
+                        <MapDisplay
+                            edit
+                            height={300}
+                            shouldGetYourLocation={true}
+                            regionID={location?.regionID}
+                            onLocationChange={(data) => {
+                                if (data)
+                                    setLocation({
+                                        regionID: data.placeID,
+                                        name: data.name
+                                    });
+                            }}
+                            shouldSavedLocationButton
+                            exactLocation
+                        />
+                    )}
                 </div>
             </div>
 

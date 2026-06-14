@@ -9,12 +9,14 @@ import Input from '@/components/forms/Input';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
 import OAuthGroup from './OAuthGroup';
+import { routes } from '@/routes';
 
 type SignUpFormValues = {
     username: string;
     email: string;
     password?: string;
     confirmPassword?: string;
+    agreedToTerms?: boolean;
 };
 
 type SignUpFormProps = {
@@ -187,6 +189,30 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         />
                     </FormField>
                 </div>
+
+                <FormField name='agreedToTerms' noMargin>
+                    <label className='flex items-start gap-2 text-sm text-gray-200 dark:text-gray-300'>
+                        <input
+                            type='checkbox'
+                            className='mt-1 h-4 w-4 shrink-0'
+                            {...form.register('agreedToTerms', {
+                                required:
+                                    'You must agree to the Terms & Conditions'
+                            })}
+                        />
+                        <span>
+                            I agree to the{' '}
+                            <a
+                                href={routes.terms}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='underline hover:text-white'
+                            >
+                                Terms &amp; Conditions
+                            </a>
+                        </span>
+                    </label>
+                </FormField>
 
                 <Button type='submit' disabled={isVerifying} className='w-full'>
                     {isVerifying ? 'Loading...' : 'Sign Up'}

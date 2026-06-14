@@ -41,6 +41,7 @@ export function withQuery(
 export const routes = {
     home: '/' as const,
     about: '/about' as const,
+    terms: '/terms' as const,
     donate: '/donate' as const,
     result: '/donate/result' as const,
     events: '/events' as const,

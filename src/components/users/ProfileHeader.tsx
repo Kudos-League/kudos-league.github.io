@@ -9,6 +9,7 @@ import { getImagePath } from '@/shared/api/config';
 import Pill from '../common/Pill';
 import Button from '../common/Button';
 import UserCard from './UserCard';
+import ExpandableText from '../common/ExpandableText';
 
 interface Props {
     user: UserDTO;
@@ -123,9 +124,17 @@ const ProfileHeader: React.FC<Props> = ({
                 </div>
             )}
 
-            <p className='mt-6 max-w-3xl mx-auto text-gray-700 dark:text-gray-300 text-sm italic whitespace-pre-wrap break-words [overflow-wrap:anywhere]'>
-                {userSettings?.about || 'No bio available'}
-            </p>
+            {userSettings?.about ? (
+                <ExpandableText
+                    text={userSettings.about}
+                    maxLines={4}
+                    className='mt-6 max-w-3xl mx-auto text-gray-700 dark:text-gray-300 text-sm italic break-words [overflow-wrap:anywhere]'
+                />
+            ) : (
+                <p className='mt-6 max-w-3xl mx-auto text-gray-700 dark:text-gray-300 text-sm italic'>
+                    No bio available
+                </p>
+            )}
 
             <hr className='mt-6 border-gray-200 dark:border-white/10' />
 

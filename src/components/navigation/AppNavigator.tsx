@@ -29,6 +29,7 @@ const FeedbackPage = lazy(() => import('@/pages/feedback'));
 const NotificationsPage = lazy(() => import('@/pages/notifications'));
 const SearchPage = lazy(() => import('@/pages/search'));
 const ComponentPreviewPage = lazy(() => import('@/pages/dev/components'));
+const Terms = lazy(() => import('@/pages/terms'));
 
 const CreateEvent = lazy(() => import('@/components/events/CreateEvent'));
 const Leaderboard = lazy(() => import('@/components/Leaderboard'));
@@ -58,7 +59,11 @@ function AppNavigator() {
             <Routes>
                 <Route path='' element={<Layout />}>
                     <Route path={routes.about} element={<About />} />
-                    <Route path='/dev/components' element={<ComponentPreviewPage />} />
+                    <Route path={routes.terms} element={<Terms />} />
+                    <Route
+                        path='/dev/components'
+                        element={<ComponentPreviewPage />}
+                    />
                     <Route path={routes.home} element={<HomeOrAbout />} />
                     <Route path={routes.result} element={<Result />} />
                     <Route path={routes.donate} element={<DonatePage />} />
@@ -71,10 +76,7 @@ function AppNavigator() {
                         }
                     />
 
-                    <Route
-                        path='/post/:id'
-                        element={<Post />}
-                    />
+                    <Route path='/post/:id' element={<Post />} />
 
                     <Route
                         path='/post/:id/edit'
@@ -101,10 +103,7 @@ function AppNavigator() {
                             </RequireAuth>
                         }
                     />
-                    <Route
-                        path='/event/:id'
-                        element={<EventDetails />}
-                    />
+                    <Route path='/event/:id' element={<EventDetails />} />
                     <Route
                         path={routes.events}
                         element={
