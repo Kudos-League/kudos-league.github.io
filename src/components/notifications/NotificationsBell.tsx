@@ -15,7 +15,6 @@ import {
     useCachedUser
 } from '@/contexts/DataCacheContext';
 
-
 // Compact handshake preview for dropdown notifications
 function HandshakeNotificationPreview({
     handshakeID,
@@ -801,7 +800,10 @@ export default function NotificationsBell() {
                                                         <div>
                                                             <div className='flex items-start justify-between gap-2 mb-1'>
                                                                 <div className='text-sm md:text-sm font-medium text-emerald-700 dark:text-emerald-300'>
-                                                        Someone gave you kudos
+                                                                    {'feedbackID' in n &&
+                                                        (n as any).feedbackID
+                                                                        ? 'Your feedback was resolved'
+                                                                        : 'Someone gave you kudos'}
                                                                 </div>
                                                                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                                     {formatTimeAgo(n)}
@@ -811,7 +813,8 @@ export default function NotificationsBell() {
                                                                 {(() => {
                                                                     const amount =
                                                             'kudos' in n
-                                                                ? (n as any).kudos
+                                                                ? (n as any)
+                                                                    .kudos
                                                                 : undefined;
                                                                     return typeof amount ===
                                                             'number' &&

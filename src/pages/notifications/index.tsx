@@ -671,12 +671,17 @@ function describeNotification(
                 'kudos' in notification
                     ? (notification as any).kudos
                     : undefined;
+        const fromFeedback =
+                'feedbackID' in notification &&
+                !!(notification as any).feedbackID;
+        const hasAmount = typeof amount === 'number' && amount > 0;
         return {
-            title: 'Someone gave you kudos',
-            description:
-                    typeof amount === 'number' && amount > 0
-                        ? `You received ${amount} kudos!`
-                        : 'You received kudos!'
+            title: fromFeedback
+                ? 'Your feedback was resolved'
+                : 'Someone gave you kudos',
+            description: hasAmount
+                ? `You received ${amount} kudos!`
+                : 'You received kudos!'
         };
     }
     case NotificationType.HANDSHAKE_UNDO_ACCEPTED: {

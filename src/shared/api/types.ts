@@ -503,6 +503,7 @@ export type NotificationPayload =
     | {
           type: typeof NotificationType.KUDOS_RECEIVED;
           postID?: number;
+          feedbackID?: number;
           kudos?: number;
       };
 
