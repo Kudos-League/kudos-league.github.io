@@ -82,6 +82,11 @@ const EditProfile: React.FC<Props> = ({
         targetUser?.location?.name || ''
 
     );
+    // Location is optional — keep the map collapsed unless the user already
+    // set one, so a blank profile isn't dominated by a 300px map.
+    const [showLocationEditor, setShowLocationEditor] = useState<boolean>(
+        !!targetUser?.location?.name
+    );
     const deleteAccountMutation = useDeleteAccountMutation();
     const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
 
@@ -951,13 +956,42 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {/* Location */}
+                        {/* Location (optional) */}
                         {canEditProfile && (
                             <FormField
-                                label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'
                             >
-                                {locationLabel && (
+                                <button
+                                    type='button'
+                                    onClick={() =>
+                                        setShowLocationEditor((v) => !v)
+                                    }
+                                    aria-expanded={showLocationEditor}
+                                    className='flex w-full items-center justify-between gap-2 text-left font-semibold text-gray-900 dark:text-white'
+                                >
+                                    <span>
+                                        Location{' '}
+                                        <span className='font-normal text-gray-500 dark:text-gray-400'>
+                                            (optional)
+                                        </span>
+                                    </span>
+                                    <span
+                                        aria-hidden='true'
+                                        className={`text-gray-500 transition-transform ${showLocationEditor ? 'rotate-180' : ''}`}
+                                    >
+                                        ▾
+                                    </span>
+                                </button>
+
+                                {!showLocationEditor && (
+                                    <p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+                                        {locationLabel
+                                            ? locationLabel
+                                            : 'No location set. Tap to add one (helps neighbors find your posts).'}
+                                    </p>
+                                )}
+
+                                {showLocationEditor && locationLabel && (
                                     <div className='mb-2 flex items-center justify-between gap-2'>
                                         <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
                                             {locationLabel}
@@ -973,66 +1007,68 @@ const EditProfile: React.FC<Props> = ({
                                     </div>
                                 )}
 
-                                <div className='w-full overflow-hidden'>
-                                    <MapDisplay
-                                        regionID={targetUser.location?.regionID}
-                                        width='100%'
-                                        height={300}
-                                        edit
-                                        exactLocation
-                                        shouldGetYourLocation
-                                        inlineBanner={false}
-                                        onLabelChange={(label) =>
-                                            setLocationLabel(label)
-                                        }
-                                        onLocationChange={(data) => {
-                                            if (!data) {
-                                                setLocation(null);
-                                                form.setValue(
-                                                    'location',
-                                                    null as any,
-                                                    {
-                                                        shouldDirty: true,
-                                                        shouldValidate: true
-                                                    }
-                                                );
+                                {showLocationEditor && (
+                                    <div className='w-full overflow-hidden'>
+                                        <MapDisplay
+                                            regionID={targetUser.location?.regionID}
+                                            width='100%'
+                                            height={300}
+                                            edit
+                                            exactLocation
+                                            shouldGetYourLocation
+                                            inlineBanner={false}
+                                            onLabelChange={(label) =>
+                                                setLocationLabel(label)
                                             }
-                                            else {
-                                                const locationValue = {
-                                                    latitude:
-                                                        data.coordinates
-                                                            .latitude,
-                                                    longitude:
-                                                        data.coordinates
-                                                            .longitude,
-                                                    name:
-                                                        data.name ||
-                                                        data.businessName ||
-                                                        '',
-                                                    regionID: data.placeID
-                                                };
-
-                                                setLocation(data.coordinates);
-                                                // Only mark as dirty if this is a user change, not initial load
-                                                const isUserChange = data.changed !== false;
-
-                                                // If this is the initial load, store the name for baseline comparison
-                                                if (!isUserChange && initialLocationNameRef.current === null) {
-                                                    initialLocationNameRef.current = locationValue.name;
+                                            onLocationChange={(data) => {
+                                                if (!data) {
+                                                    setLocation(null);
+                                                    form.setValue(
+                                                        'location',
+                                                        null as any,
+                                                        {
+                                                            shouldDirty: true,
+                                                            shouldValidate: true
+                                                        }
+                                                    );
                                                 }
-
-                                                form.setValue(
-                                                    'location',
-                                                    locationValue,
-                                                    {
-                                                        shouldDirty: isUserChange,
-                                                        shouldValidate: true
+                                                else {
+                                                    const locationValue = {
+                                                        latitude:
+                                                            data.coordinates
+                                                                .latitude,
+                                                        longitude:
+                                                            data.coordinates
+                                                                .longitude,
+                                                        name:
+                                                            data.name ||
+                                                            data.businessName ||
+                                                            '',
+                                                        regionID: data.placeID
+                                                    };
+    
+                                                    setLocation(data.coordinates);
+                                                    // Only mark as dirty if this is a user change, not initial load
+                                                    const isUserChange = data.changed !== false;
+    
+                                                    // If this is the initial load, store the name for baseline comparison
+                                                    if (!isUserChange && initialLocationNameRef.current === null) {
+                                                        initialLocationNameRef.current = locationValue.name;
                                                     }
-                                                );
-                                            }
-                                        }}
-                                    />
-                                </div>
+    
+                                                    form.setValue(
+                                                        'location',
+                                                        locationValue,
+                                                        {
+                                                            shouldDirty: isUserChange,
+                                                            shouldValidate: true
+                                                        }
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </FormField>
                         )}
 
