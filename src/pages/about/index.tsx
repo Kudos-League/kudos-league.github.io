@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { routes } from '@/routes';
 
 const aboutStyles = `
@@ -14,6 +14,7 @@ const aboutStyles = `
   --green: #34A853;
   --green-light: #EAF5ED;
   --bg: #F8F8FA;
+  --surface: #FFFFFF;
   --white: #FFFFFF;
   --charcoal: #2C2C2A;
   --text: #3D3D3A;
@@ -22,15 +23,69 @@ const aboutStyles = `
 
   font-family: 'DM Sans', sans-serif;
   color: var(--text);
-  background: var(--white);
+  background: var(--surface);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
 .kl-about, .kl-about *, .kl-about *::before, .kl-about *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* DARK MODE — follows the app's .dark class on <html> */
+.dark .kl-about {
+  --indigo-light: #232645;
+  --indigo-dark: #aab4ef;
+  --coral-light: #3a2222;
+  --green-light: #1b2a20;
+  --bg: #131316;
+  --surface: #1c1c20;
+  --charcoal: #f3f3f1;
+  --text: #d6d6d2;
+  --text-muted: #9a9a93;
+  --border: #303036;
+}
+
+/* CTA stays a dark band in both themes, so its --charcoal background
+   must not flip to the light heading color in dark mode. */
+.dark .kl-about .cta {
+  background: #0f0f12;
+  border-top: 1px solid var(--border);
+}
+
+/* BACK BUTTON */
+.kl-about .back-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--indigo);
+  border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 16px 8px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.kl-about .back-btn:hover {
+  background: var(--indigo-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(91, 106, 191, 0.15);
+}
+
+.kl-about .back-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* HERO */
@@ -146,7 +201,7 @@ const aboutStyles = `
 }
 
 .kl-about .how-card {
-  background: var(--white);
+  background: var(--surface);
   border-radius: 12px;
   padding: 36px 28px;
   border: 1px solid var(--border);
@@ -184,19 +239,19 @@ const aboutStyles = `
 }
 
 .kl-about .tag-request {
-  background: var(--white);
+  background: var(--surface);
   color: var(--coral);
   border: 1.5px solid var(--coral);
 }
 
 .kl-about .tag-gift {
-  background: var(--white);
+  background: var(--surface);
   color: var(--indigo);
   border: 1.5px solid var(--indigo);
 }
 
 /* STEPS */
-.kl-about .steps {
+.kl-about .kl-steps {
   margin: 48px 0;
   display: flex;
   flex-direction: column;
@@ -204,25 +259,26 @@ const aboutStyles = `
   position: relative;
 }
 
-.kl-about .steps::before {
+.kl-about .kl-steps::before {
   content: '';
   position: absolute;
-  left: 20px;
+  left: 19px;
   top: 40px;
   bottom: 40px;
   width: 2px;
   background: var(--border);
 }
 
-.kl-about .step {
+.kl-about .kl-step {
   display: flex;
   align-items: flex-start;
   gap: 24px;
   padding: 20px 0;
   position: relative;
+  text-align: left;
 }
 
-.kl-about .step-num {
+.kl-about .kl-step-num {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -238,14 +294,14 @@ const aboutStyles = `
   z-index: 1;
 }
 
-.kl-about .step-content h4 {
+.kl-about .kl-step-content h4 {
   font-size: 17px;
   font-weight: 700;
   color: var(--charcoal);
   margin-bottom: 4px;
 }
 
-.kl-about .step-content p {
+.kl-about .kl-step-content p {
   font-size: 15px;
   color: var(--text-muted);
   margin: 0;
@@ -269,7 +325,7 @@ const aboutStyles = `
   display: flex;
   gap: 20px;
   align-items: flex-start;
-  background: var(--white);
+  background: var(--surface);
   border-radius: 12px;
   padding: 24px;
   border: 1px solid var(--border);
@@ -320,7 +376,7 @@ const aboutStyles = `
   padding: 32px 20px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
 }
 
 .kl-about .value-card .v-icon {
@@ -499,9 +555,41 @@ const aboutStyles = `
 `;
 
 const About: React.FC = () => {
+    const navigate = useNavigate();
+
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1);
+        }
+        else {
+            navigate(routes.home);
+        }
+    };
+
     return (
         <div className='kl-about'>
             <style dangerouslySetInnerHTML={{ __html: aboutStyles }} />
+
+            <button
+                type='button'
+                className='back-btn'
+                onClick={handleBack}
+                aria-label='Go back'
+            >
+                <svg
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='2.5'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    aria-hidden='true'
+                >
+                    <path d='M19 12H5' />
+                    <path d='M12 19l-7-7 7-7' />
+                </svg>
+                Back
+            </button>
 
             {/* HERO */}
             <section className='hero'>
@@ -556,10 +644,10 @@ const About: React.FC = () => {
                     </div>
                 </div>
 
-                <div className='steps'>
-                    <div className='step'>
-                        <div className='step-num'>1</div>
-                        <div className='step-content'>
+                <div className='kl-steps'>
+                    <div className='kl-step'>
+                        <div className='kl-step-num'>1</div>
+                        <div className='kl-step-content'>
                             <h4>Create your post</h4>
                             <p>
                                 Choose Request or Gift, add details, set your
@@ -567,9 +655,9 @@ const About: React.FC = () => {
                             </p>
                         </div>
                     </div>
-                    <div className='step'>
-                        <div className='step-num'>2</div>
-                        <div className='step-content'>
+                    <div className='kl-step'>
+                        <div className='kl-step-num'>2</div>
+                        <div className='kl-step-content'>
                             <h4>Get matched</h4>
                             <p>
                                 Receive notifications from interested neighbors.
@@ -577,9 +665,9 @@ const About: React.FC = () => {
                             </p>
                         </div>
                     </div>
-                    <div className='step'>
-                        <div className='step-num'>3</div>
-                        <div className='step-content'>
+                    <div className='kl-step'>
+                        <div className='kl-step-num'>3</div>
+                        <div className='kl-step-content'>
                             <h4>Connect</h4>
                             <p>
                                 Accept a handshake to share details and make it
@@ -587,9 +675,9 @@ const About: React.FC = () => {
                             </p>
                         </div>
                     </div>
-                    <div className='step'>
-                        <div className='step-num'>4</div>
-                        <div className='step-content'>
+                    <div className='kl-step'>
+                        <div className='kl-step-num'>4</div>
+                        <div className='kl-step-content'>
                             <h4>Say thanks with Kudos</h4>
                             <p>
                                 After receiving help, award Kudos points to
