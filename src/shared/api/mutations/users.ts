@@ -62,8 +62,12 @@ export function useReportUser() {
 }
 
 export function useDeleteAccountMutation() {
-    return useMutation<void, Error, void>({
-        mutationFn: () => apiMutate<void, void>('/users/me', 'delete')
+    return useMutation<{ success: true; requestID: number; alreadyErased?: boolean }, Error, void>({
+        mutationFn: () =>
+            apiMutate<{ success: true; requestID: number; alreadyErased?: boolean }, void>(
+                '/users/me/privacy-erasure',
+                'post'
+            )
     });
 }
 

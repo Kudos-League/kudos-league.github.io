@@ -342,6 +342,7 @@ export interface UserDTO {
     createdAt: Date;
     updatedAt: Date;
     deactivatedAt?: Date | null;
+    privacyErasedAt?: Date | null;
 }
 
 export interface UserInviteDTO {

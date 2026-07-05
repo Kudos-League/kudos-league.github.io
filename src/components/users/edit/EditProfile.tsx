@@ -590,7 +590,7 @@ const EditProfile: React.FC<Props> = ({
     const handleDeleteAccount = async (e: React.FormEvent) => {
         e.preventDefault();
         const confirmed = window.confirm(
-            'Are you sure you want to deactivate your account? You can contact support to reactivate later.'
+            'Are you sure you want to erase your account data? This cannot be reversed.'
         );
         if (!confirmed) return;
 
@@ -598,9 +598,9 @@ const EditProfile: React.FC<Props> = ({
             await deleteAccountMutation.mutateAsync();
         }
         catch (err) {
-            console.error('Failed to deactivate account:', err);
+            console.error('Failed to erase account data:', err);
             setToastType('error');
-            setToastMessage('Failed to deactivate account. Please try again.');
+            setToastMessage('Failed to erase account data. Please try again.');
             return;
         }
 
@@ -1340,8 +1340,8 @@ const EditProfile: React.FC<Props> = ({
 
                 {!isAdminEditingOther && (
                     <SettingsSection
-                        title='Deactivate account'
-                        description='This deactivates your account. You may request reactivation later.'
+                        title='Erase account data'
+                        description='This anonymizes your account and cannot be reversed.'
                         noBorder
                     >
                         <form
@@ -1349,7 +1349,7 @@ const EditProfile: React.FC<Props> = ({
                             onSubmit={handleDeleteAccount}
                         >
                             <Button type='submit' variant='danger'>
-                                Deactivate my account
+                                Erase my account data
                             </Button>
                         </form>
                     </SettingsSection>
