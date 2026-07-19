@@ -675,10 +675,13 @@ function describeNotification(
                 'feedbackID' in notification &&
                 !!(notification as any).feedbackID;
         const hasAmount = typeof amount === 'number' && amount > 0;
+        const giverName = (notification as any).user?.username;
         return {
             title: fromFeedback
                 ? 'Your feedback was resolved'
-                : 'Someone gave you kudos',
+                : giverName
+                    ? `${giverName} awarded you kudos`
+                    : 'Someone gave you kudos',
             description: hasAmount
                 ? `You received ${amount} kudos!`
                 : 'You received kudos!'
