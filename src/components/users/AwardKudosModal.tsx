@@ -8,7 +8,6 @@ import Button from '@/components/common/Button';
 import Input from '@/components/forms/Input';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
-import { useAuth } from '@/contexts/useAuth';
 import { useAwardKudos } from '@/shared/api/mutations/kudos';
 import { UserDTO } from '@/shared/api/types';
 import { ensureJpegAll } from '@/shared/convertHeic';
@@ -41,9 +40,10 @@ export function KudosInfoTooltip({
                     Awarding kudos is for thanking someone for{' '}
                     <span className='font-semibold'>past gifts</span> or help
                     that happened <span className='font-semibold'>outside
-                    the website</span> — no post or handshake needed. The
-                    kudos come out of your own balance, and photo evidence
-                    helps our admins verify the award.
+                    the website</span> — no post or handshake needed. Kudos
+                    are freely given — awarding doesn&apos;t reduce your own
+                    kudos — and photo evidence helps our admins verify the
+                    award.
                 </div>
             )}
         >
@@ -61,8 +61,6 @@ export default function AwardKudosModal({
     onClose: () => void;
     recipient: UserDTO;
 }) {
-    const { user: currentUser } = useAuth();
-    const balance = currentUser?.kudos ?? 0;
     const awardMutation = useAwardKudos();
 
     const form = useForm<FormValues>({
@@ -127,11 +125,11 @@ export default function AwardKudosModal({
         >
             <div className='flex items-center gap-1.5 mb-3 text-sm text-gray-600 dark:text-gray-300'>
                 <span data-testid='award-kudos-balance'>
-                    You have{' '}
+                    Kudos are{' '}
                     <span className='font-semibold text-teal-600 dark:text-teal-300'>
-                        {balance} kudos
+                        freely given
                     </span>{' '}
-                    to give.
+                    — awarding doesn&apos;t cost you anything.
                 </span>
                 <KudosInfoTooltip>
                     <button
@@ -201,8 +199,12 @@ export default function AwardKudosModal({
                                 const n = Number(value);
                                 if (!Number.isInteger(n) || n <= 0)
                                     return 'Kudos must be a positive whole number';
-                                if (n > balance)
-                                    return `You only have ${balance} kudos`;
+                                // Kudos are freely given, not spent from a balance.
+                                // Re-enable to cap awards by the giver's kudos
+                                // (pair with the commented debit in the backend):
+                                // const balance = useAuth().user?.kudos ?? 0;
+                                // if (n > balance)
+                                //     return `You only have ${balance} kudos`;
                                 return true;
                             }
                         }}

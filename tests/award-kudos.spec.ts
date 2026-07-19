@@ -80,6 +80,7 @@ test.describe('Award kudos — entry points and tooltip', () => {
         await expect(tooltip).toBeVisible();
         await expect(tooltip).toContainText(/past gifts/i);
         await expect(tooltip).toContainText(/outside\s+the website/i);
+        await expect(tooltip).toContainText(/freely given/i);
     });
 
     test('own profile does not offer awarding kudos to yourself', async ({
@@ -91,14 +92,14 @@ test.describe('Award kudos — entry points and tooltip', () => {
         await expect(page.getByTestId('award-kudos')).toHaveCount(0);
     });
 
-    test('modal shows the giver balance and the tooltip on the info icon', async ({
+    test('modal explains kudos are freely given and shows the tooltip on the info icon', async ({
         page
     }) => {
         await setupAwardPage(page);
         await openAwardModal(page);
 
         await expect(page.getByTestId('award-kudos-balance')).toContainText(
-            'You have 100 kudos'
+            /freely given/i
         );
 
         await page.getByTestId('kudos-info-trigger').hover();
@@ -109,10 +110,30 @@ test.describe('Award kudos — entry points and tooltip', () => {
 });
 
 test.describe('Award kudos — form validation', () => {
-    test('rejects empty title, non-positive and over-balance amounts', async ({
+    test('rejects empty title and non-positive amounts (no balance cap — kudos are freely given)', async ({
         page
     }) => {
         await setupAwardPage(page);
+
+        let awardCalled = false;
+        await page.route('**/kudos/award', (route) => {
+            awardCalled = true;
+            return route.fulfill(
+                json({
+                    giftID: 'g-x',
+                    amount: 500,
+                    title: 'Helped me fix my bike',
+                    description: null,
+                    attachments: [],
+                    verificationStatus: 'pending',
+                    recipientID: 2,
+                    giverID: 1,
+                    giverTotal: 100,
+                    recipientTotal: 505
+                })
+            );
+        });
+
         await openAwardModal(page);
 
         // Empty form
@@ -131,13 +152,6 @@ test.describe('Award kudos — form validation', () => {
             page.getByText(/kudos must be a positive whole number/i)
         ).toBeVisible();
 
-        // More than the giver's balance
-        await page.locator('#amount').fill('500');
-        await page.getByTestId('award-kudos-submit').click();
-        await expect(
-            page.getByText(/you only have 100 kudos/i)
-        ).toBeVisible();
-
         // Too-short title
         await page.locator('#title').fill('ab');
         await page.locator('#amount').fill('10');
@@ -145,6 +159,13 @@ test.describe('Award kudos — form validation', () => {
         await expect(
             page.getByText(/title must be at least 3 characters/i)
         ).toBeVisible();
+
+        // Amounts above the giver's own kudos are allowed — freely given
+        await page.locator('#title').fill('Helped me fix my bike');
+        await page.locator('#amount').fill('500');
+        await page.getByTestId('award-kudos-submit').click();
+        await expect(page.getByText(/awarded 500 kudos!/i)).toBeVisible();
+        expect(awardCalled).toBe(true);
     });
 
     test('photo evidence can be attached, previewed and removed', async ({
@@ -242,19 +263,13 @@ test.describe('Award kudos — submission', () => {
         ).toHaveCount(0);
     });
 
-    test('surfaces a server rejection (e.g. insufficient balance) as an error toast and keeps the modal open', async ({
+    test('surfaces a server rejection as an error toast and keeps the modal open', async ({
         page
     }) => {
         await setupAwardPage(page);
         await page.route('**/kudos/award', (route) =>
             route.fulfill(
-                json(
-                    {
-                        message:
-                            'Not enough kudos: you have 100, tried to award 100000.'
-                    },
-                    400
-                )
+                json({ message: 'You cannot award kudos to yourself.' }, 400)
             )
         );
 
@@ -263,7 +278,9 @@ test.describe('Award kudos — submission', () => {
         await page.locator('#amount').fill('100');
         await page.getByTestId('award-kudos-submit').click();
 
-        await expect(page.getByText(/not enough kudos/i)).toBeVisible();
+        await expect(
+            page.getByText(/cannot award kudos to yourself/i)
+        ).toBeVisible();
         await expect(
             page.getByRole('heading', { name: /award kudos to bob/i })
         ).toBeVisible();
@@ -477,9 +494,9 @@ test.describe('Award kudos — admin proof verifier', () => {
 
         const body = await rejectRequest;
         expect(body).toContain('"action":"reject"');
-        expect(confirmMessage).toMatch(/25 kudos will be returned/i);
+        expect(confirmMessage).toMatch(/25 kudos will be removed/i);
         await expect(
-            page.getByText(/award rejected — kudos returned\./i)
+            page.getByText(/award rejected — kudos revoked\./i)
         ).toBeVisible();
     });
 
