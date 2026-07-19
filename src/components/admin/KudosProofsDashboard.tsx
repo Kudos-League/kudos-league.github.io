@@ -37,7 +37,7 @@ function AwardCard({ award }: { award: KudosAwardDTO }) {
         if (
             action === 'reject' &&
             !window.confirm(
-                `Reject this award? ${award.amount} kudos will be returned to the giver.`
+                `Reject this award? ${award.amount} kudos will be removed from the recipient.`
             )
         ) {
             return;
@@ -147,7 +147,7 @@ function AwardCard({ award }: { award: KudosAwardDTO }) {
                         disabled={verifyMutation.isPending}
                         onClick={() => resolve('reject')}
                     >
-                        Reject & refund
+                        Reject & revoke
                     </Button>
                 </div>
             )}
@@ -183,7 +183,7 @@ export default function KudosProofsDashboard() {
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
                         Peer awards document past gifts or help that happened
                         off the website. Review the evidence; rejecting an
-                        award returns the kudos to the giver.
+                        award removes the kudos from the recipient.
                     </p>
                 </div>
                 <label className='text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2'>

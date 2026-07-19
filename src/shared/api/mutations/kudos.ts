@@ -90,7 +90,7 @@ export function useVerifyKudosAward() {
                 message:
                     result.verificationStatus === 'verified'
                         ? 'Award verified.'
-                        : 'Award rejected — kudos returned.'
+                        : 'Award rejected — kudos revoked.'
             });
         },
         onError: (err) => {
