@@ -21,6 +21,9 @@ import UserCard from '@/components/users/UserCard';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import Button from '../common/Button';
 import ReportPastGiftModal from '@/components/users/ReportPastGiftModal';
+import AwardKudosModal, {
+    KudosInfoTooltip
+} from '@/components/users/AwardKudosModal';
 import InviteManager from './InviteManager';
 import {
     resetFileInputBeforeOpen,
@@ -44,6 +47,7 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
     const [showBlockedUsers, setShowBlockedUsers] = useState(false);
 
     const [showPastGiftModal, setShowPastGiftModal] = useState(false);
+    const [showAwardKudosModal, setShowAwardKudosModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [showBanModal, setShowBanModal] = useState(false);
     const [masqueradeLoading, setMasqueradeLoading] = useState(false);
@@ -201,6 +205,19 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
             {!isSelf && (
                 <div className='flex justify-center'>
                     <div className='flex gap-3'>
+                        {currentUser && (
+                            <KudosInfoTooltip>
+                                <Button
+                                    onClick={() =>
+                                        setShowAwardKudosModal(true)
+                                    }
+                                    variant='primary'
+                                    data-testid='award-kudos'
+                                >
+                                    Award Kudos
+                                </Button>
+                            </KudosInfoTooltip>
+                        )}
                         <Button
                             onClick={() => setShowReportModal(true)}
                             className='!bg-red-600 !text-white'
@@ -424,6 +441,14 @@ const Profile: React.FC<Props> = ({ user, setUser, hideBackButton = false, hideW
                 onClose={() => setShowPastGiftModal(false)}
                 receiverID={user.id}
             />
+
+            {!isSelf && (
+                <AwardKudosModal
+                    open={showAwardKudosModal}
+                    onClose={() => setShowAwardKudosModal(false)}
+                    recipient={user}
+                />
+            )}
 
             {showReportModal && (
                 <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center'>

@@ -803,7 +803,10 @@ export default function NotificationsBell() {
                                                                     {'feedbackID' in n &&
                                                         (n as any).feedbackID
                                                                         ? 'Your feedback was resolved'
-                                                                        : 'Someone gave you kudos'}
+                                                                        : (n as any).user
+                                                                            ?.username
+                                                                            ? `${(n as any).user.username} awarded you kudos`
+                                                                            : 'Someone gave you kudos'}
                                                                 </div>
                                                                 <div className='text-xs text-zinc-500 dark:text-zinc-500 whitespace-nowrap mt-0.5'>
                                                                     {formatTimeAgo(n)}

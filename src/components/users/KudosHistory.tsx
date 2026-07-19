@@ -8,6 +8,7 @@ import {
     type KudosHistorySourceFilter
 } from '@/shared/api/queries/kudosHistory';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
+import { getImagePath } from '@/shared/api/config';
 import UserCard from './UserCard';
 
 const FILTER_OPTIONS: Array<{
@@ -18,7 +19,8 @@ const FILTER_OPTIONS: Array<{
     { value: 'donation', label: 'Donations' },
     { value: 'feedback', label: 'Feedback' },
     { value: 'report', label: 'Bug reports' },
-    { value: 'reward-offer', label: 'Reward offers' }
+    { value: 'reward-offer', label: 'Reward offers' },
+    { value: 'gift', label: 'Kudos awards' }
 ];
 
 const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
@@ -26,7 +28,29 @@ const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
     feedback: 'Feedback',
     report: 'Bug report',
     'reward-offer': 'Reward offer',
+    gift: 'Kudos award',
     other: 'Kudos update'
+};
+
+const VERIFICATION_BADGES: Record<
+    string,
+    { label: string; className: string }
+> = {
+    pending: {
+        label: 'Pending verification',
+        className:
+            'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+    },
+    verified: {
+        label: 'Verified',
+        className:
+            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+    },
+    rejected: {
+        label: 'Rejected',
+        className:
+            'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+    }
 };
 
 function formatCurrencyFromCents(value?: unknown) {
@@ -41,6 +65,72 @@ function formatCurrencyFromCents(value?: unknown) {
 
 function renderDetail(item: KudosHistoryDTO): React.ReactNode {
     const metadata = (item.metadata ?? {}) as Record<string, unknown>;
+
+    if (item.source === 'gift') {
+        const title = metadata.title ? String(metadata.title) : null;
+        const description = metadata.description
+            ? String(metadata.description)
+            : null;
+        const attachments = Array.isArray(metadata.attachments)
+            ? (metadata.attachments as string[])
+            : [];
+        const status = metadata.verificationStatus
+            ? String(metadata.verificationStatus)
+            : null;
+        const badge = status ? VERIFICATION_BADGES[status] : null;
+        const isReceived = item.delta > 0;
+
+        return (
+            <div className='space-y-1' data-testid='kudos-gift-detail'>
+                <p className='text-sm text-gray-700 dark:text-gray-300'>
+                    {isReceived
+                        ? 'Kudos awarded to you for a past gift'
+                        : 'You awarded kudos for a past gift'}
+                </p>
+                {title ? (
+                    <p className='text-sm font-semibold text-gray-900 dark:text-gray-100 break-words'>
+                        “{title}”
+                    </p>
+                ) : null}
+                {description ? (
+                    <p className='text-xs text-gray-500 dark:text-gray-400 italic break-words'>
+                        “{description}”
+                    </p>
+                ) : null}
+                {attachments.length ? (
+                    <div className='flex flex-wrap gap-1.5 pt-1'>
+                        {attachments.map((url, idx) => {
+                            const src = getImagePath(url);
+                            if (!src) return null;
+                            return (
+                                <a
+                                    key={`${url}-${idx}`}
+                                    href={src}
+                                    target='_blank'
+                                    rel='noreferrer'
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <img
+                                        src={src}
+                                        alt={`Evidence ${idx + 1}`}
+                                        className='w-12 h-12 object-cover rounded border border-gray-200 dark:border-zinc-700'
+                                    />
+                                </a>
+                            );
+                        })}
+                    </div>
+                ) : null}
+                {badge ? (
+                    <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+                        data-testid='kudos-gift-verification'
+                    >
+                        {badge.label}
+                    </span>
+                ) : null}
+            </div>
+        );
+    }
 
     if (item.source === 'donation') {
         const amountLabel = formatCurrencyFromCents(metadata.amount);
@@ -255,7 +345,12 @@ export default React.memo(function KudosHistoryList({
                                         className='mt-2 flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400'
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <span>from</span>
+                                        <span>
+                                            {item.source === 'gift' &&
+                                            item.delta < 0
+                                                ? 'to'
+                                                : 'from'}
+                                        </span>
                                         <UserCard
                                             user={item.actor}
                                             triggerVariant='name'
