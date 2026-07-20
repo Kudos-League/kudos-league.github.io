@@ -124,21 +124,15 @@ export default function AwardKudosModal({
             title={`Award kudos to ${recipient.username ?? 'this user'}`}
         >
             <div className='flex items-center gap-1.5 mb-3 text-sm text-gray-600 dark:text-gray-300'>
-                <span data-testid='award-kudos-balance'>
-                    Kudos are{' '}
-                    <span className='font-semibold text-teal-600 dark:text-teal-300'>
-                        freely given
-                    </span>{' '}
-                    — awarding doesn&apos;t cost you anything.
-                </span>
                 <KudosInfoTooltip>
                     <button
                         type='button'
                         aria-label='What is awarding kudos?'
                         data-testid='kudos-info-trigger'
-                        className='p-0.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                        className='inline-flex items-center gap-1 p-0.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                     >
                         <QuestionMarkCircleIcon className='w-4 h-4' />
+                        <span>What is this?</span>
                     </button>
                 </KudosInfoTooltip>
             </div>
