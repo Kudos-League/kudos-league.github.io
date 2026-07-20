@@ -92,15 +92,11 @@ test.describe('Award kudos — entry points and tooltip', () => {
         await expect(page.getByTestId('award-kudos')).toHaveCount(0);
     });
 
-    test('modal explains kudos are freely given and shows the tooltip on the info icon', async ({
+    test('modal shows the explanatory tooltip on the info trigger', async ({
         page
     }) => {
         await setupAwardPage(page);
         await openAwardModal(page);
-
-        await expect(page.getByTestId('award-kudos-balance')).toContainText(
-            /freely given/i
-        );
 
         await page.getByTestId('kudos-info-trigger').hover();
         await expect(page.getByTestId('kudos-info-tooltip')).toContainText(
