@@ -85,10 +85,11 @@ test('demo: full award-kudos flow with screenshots', async ({ page }) => {
     await page.waitForTimeout(300);
     await shot(page, '02-modal-filled');
 
-    // 3 — validation: over-balance amount
-    await page.locator('#amount').fill('500');
+    // 3 — validation: amount above the 1000 kudos cap
+    await page.locator('#amount').fill('1001');
     await page.getByTestId('award-kudos-submit').click();
-    await shot(page, '03-validation-over-balance');
+    await page.getByText(/at most 1000 kudos at a time/i).waitFor();
+    await shot(page, '03-validation-over-cap');
 
     // 4 — submit → success toast
     await page.locator('#amount').fill('25');
