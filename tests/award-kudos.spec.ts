@@ -164,6 +164,46 @@ test.describe('Award kudos — form validation', () => {
         expect(awardCalled).toBe(true);
     });
 
+    test('rejects amounts above the 1000 kudos cap', async ({ page }) => {
+        await setupAwardPage(page);
+
+        let awardCalled = false;
+        await page.route('**/kudos/award', (route) => {
+            awardCalled = true;
+            return route.fulfill(
+                json({
+                    giftID: 'g-cap',
+                    amount: 1000,
+                    title: 'Helped me fix my bike',
+                    description: null,
+                    attachments: [],
+                    verificationStatus: 'pending',
+                    recipientID: 2,
+                    giverID: 1,
+                    giverTotal: 100,
+                    recipientTotal: 1005
+                })
+            );
+        });
+
+        await openAwardModal(page);
+        await page.locator('#title').fill('Helped me fix my bike');
+
+        // Over the cap — blocked client-side, never reaches the server
+        await page.locator('#amount').fill('1001');
+        await page.getByTestId('award-kudos-submit').click();
+        await expect(
+            page.getByText(/at most 1000 kudos at a time/i)
+        ).toBeVisible();
+        expect(awardCalled).toBe(false);
+
+        // Exactly at the cap — allowed
+        await page.locator('#amount').fill('1000');
+        await page.getByTestId('award-kudos-submit').click();
+        await expect(page.getByText(/awarded 1000 kudos!/i)).toBeVisible();
+        expect(awardCalled).toBe(true);
+    });
+
     test('photo evidence can be attached, previewed and removed', async ({
         page
     }) => {

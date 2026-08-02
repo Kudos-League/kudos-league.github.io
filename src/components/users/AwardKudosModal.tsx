@@ -13,6 +13,8 @@ import { UserDTO } from '@/shared/api/types';
 import { ensureJpegAll } from '@/shared/convertHeic';
 import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
 
+/** Keep in sync with MAX_KUDOS_PER_AWARD on the server. */
+const MAX_KUDOS_PER_AWARD = 1000;
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_MB = 10;
 
@@ -179,7 +181,11 @@ export default function AwardKudosModal({
                         placeholder='What did they do for you?'
                     />
                 </FormField>
-                <FormField name='amount' label='Kudos to award *' noMargin>
+                <FormField
+                    name='amount'
+                    label={`Kudos to award * (max ${MAX_KUDOS_PER_AWARD})`}
+                    noMargin
+                >
                     <Input
                         name='amount'
                         label=''
@@ -187,12 +193,16 @@ export default function AwardKudosModal({
                         noMargin
                         form={form}
                         htmlInputType='number'
+                        min={1}
+                        max={MAX_KUDOS_PER_AWARD}
                         registerOptions={{
                             required: 'Enter how many kudos to award',
                             validate: (value: unknown) => {
                                 const n = Number(value);
                                 if (!Number.isInteger(n) || n <= 0)
                                     return 'Kudos must be a positive whole number';
+                                if (n > MAX_KUDOS_PER_AWARD)
+                                    return `You can award at most ${MAX_KUDOS_PER_AWARD} kudos at a time`;
                                 // Kudos are freely given, not spent from a balance.
                                 // Re-enable to cap awards by the giver's kudos
                                 // (pair with the commented debit in the backend):
