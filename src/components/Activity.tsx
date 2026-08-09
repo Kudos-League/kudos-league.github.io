@@ -977,7 +977,10 @@ export default function Activity({user, hideWrapper = false}: Props) {
                     fallback={<Spinner text='Loading kudos history...' />}
                 >
                     <div key='kudos-history-wrapper'>
-                        <KudosHistory userID={user?.id} />
+                        <KudosHistory
+                            userID={user?.id}
+                            ownerName={user?.username}
+                        />
                     </div>
                 </React.Suspense>
             );

@@ -393,11 +393,12 @@ test.describe('Award kudos — transactions history', () => {
         await expect(page.getByTestId('kudos-gift-detail')).toHaveCount(2);
         await expect(page.getByText('+25 Kudos')).toBeVisible();
         await expect(page.getByText('-10 Kudos')).toBeVisible();
+        // Viewing bob's profile (not our own), so entries name bob — not "you"
         await expect(
-            page.getByText(/kudos awarded to you for a past gift/i)
+            page.getByText(/kudos awarded to bob for a past gift/i)
         ).toBeVisible();
         await expect(
-            page.getByText(/you awarded kudos for a past gift/i)
+            page.getByText(/bob awarded kudos for a past gift/i)
         ).toBeVisible();
         await expect(
             page.getByTestId('kudos-gift-verification').filter({
@@ -414,6 +415,68 @@ test.describe('Award kudos — transactions history', () => {
         await expect(
             page.locator('select option[value="gift"]')
         ).toHaveCount(1);
+    });
+
+    test('on your own profile the gift entries address you as "you"', async ({
+        page
+    }) => {
+        await bootstrapAuth(page, 1);
+        await page.route(/\/users\/me(\?|$)/, (route) =>
+            route.fulfill(json(GIVER))
+        );
+        await page.route(/\/users\/1(\?|$)/, (route) =>
+            route.fulfill(json(GIVER))
+        );
+        await page.route('**/kudos/history*', (route) =>
+            route.fulfill(
+                json({
+                    data: [
+                        {
+                            id: 2,
+                            delta: 25,
+                            total: 30,
+                            createdAt: new Date().toISOString(),
+                            source: 'gift',
+                            metadata: {
+                                giftID: 'g-1',
+                                title: 'Helped me move houses',
+                                verificationStatus: 'pending',
+                                direction: 'received'
+                            },
+                            actor: RECIPIENT
+                        },
+                        {
+                            id: 1,
+                            delta: -10,
+                            total: 5,
+                            createdAt: new Date().toISOString(),
+                            source: 'gift',
+                            metadata: {
+                                giftID: 'g-0',
+                                title: 'Thanks for the plants',
+                                verificationStatus: 'verified',
+                                direction: 'given'
+                            },
+                            actor: RECIPIENT
+                        }
+                    ],
+                    limit: 10
+                })
+            )
+        );
+
+        // Own kudos history lives on the /activity route (own profile has no tabs)
+        await page.goto('/activity');
+        await page
+            .getByRole('button', { name: /view kudos reward history/i })
+            .click();
+
+        await expect(
+            page.getByText(/kudos awarded to you for a past gift/i)
+        ).toBeVisible();
+        await expect(
+            page.getByText(/you awarded kudos for a past gift/i)
+        ).toBeVisible();
     });
 });
 

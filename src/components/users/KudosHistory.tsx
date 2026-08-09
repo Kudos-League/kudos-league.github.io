@@ -63,8 +63,17 @@ function formatCurrencyFromCents(value?: unknown) {
     });
 }
 
-function renderDetail(item: KudosHistoryDTO): React.ReactNode {
+function renderDetail(
+    item: KudosHistoryDTO,
+    isOwnHistory: boolean,
+    ownerLabel: string
+): React.ReactNode {
     const metadata = (item.metadata ?? {}) as Record<string, unknown>;
+    // Whose history this is, from the reader's point of view. The list is shown
+    // both on your own profile ("you") and on other members' profiles, where
+    // the entries must name the profile owner rather than address the reader.
+    const subject = isOwnHistory ? 'you' : ownerLabel;
+    const Subject = isOwnHistory ? 'You' : ownerLabel;
 
     if (item.source === 'gift') {
         const title = metadata.title ? String(metadata.title) : null;
@@ -84,8 +93,8 @@ function renderDetail(item: KudosHistoryDTO): React.ReactNode {
             <div className='space-y-1' data-testid='kudos-gift-detail'>
                 <p className='text-sm text-gray-700 dark:text-gray-300'>
                     {isReceived
-                        ? 'Kudos awarded to you for a past gift'
-                        : 'You awarded kudos for a past gift'}
+                        ? `Kudos awarded to ${subject} for a past gift`
+                        : `${Subject} awarded kudos for a past gift`}
                 </p>
                 {title ? (
                     <p className='text-sm font-semibold text-gray-900 dark:text-gray-100 break-words'>
@@ -184,13 +193,13 @@ function renderDetail(item: KudosHistoryDTO): React.ReactNode {
         if (giftType === 'digital') {
             phrase = isReceived
                 ? 'for sharing a digital gift'
-                : 'You gave kudos for a digital gift';
+                : `${Subject} gave kudos for a digital gift`;
         }
         else if (postType === 'request') {
-            phrase = isReceived ? 'for helping with a request' : 'You gave kudos for help received';
+            phrase = isReceived ? 'for helping with a request' : `${Subject} gave kudos for help received`;
         }
         else if (postType === 'gift') {
-            phrase = isReceived ? 'for receiving a gift' : 'You gave kudos for a gift';
+            phrase = isReceived ? 'for receiving a gift' : `${Subject} gave kudos for a gift`;
         }
         else {
             phrase = isReceived ? 'Kudos received' : 'Kudos given';
@@ -226,13 +235,19 @@ function getMetaPostID(item: KudosHistoryDTO): number | undefined {
 
 type KudosHistoryListProps = {
     userID?: number;
+    /** Username of the profile owner, used to phrase entries when the reader is
+     * viewing someone else's history (falls back to a neutral label). */
+    ownerName?: string;
 };
 
 export default React.memo(function KudosHistoryList({
-    userID: userIDProp
+    userID: userIDProp,
+    ownerName
 }: KudosHistoryListProps = {}) {
     const { user } = useAuth();
     const userID = userIDProp ?? user?.id;
+    const isOwnHistory = !!user?.id && userID === user.id;
+    const ownerLabel = ownerName?.trim() || 'this member';
     const navigate = useNavigate();
     const pageSize = 10;
     const [source, setSource] = React.useState<KudosHistorySourceFilter>('all');
@@ -302,7 +317,11 @@ export default React.memo(function KudosHistoryList({
                             SOURCE_LABELS[item.source] ?? 'Kudos update';
                         const postID = getMetaPostID(item);
                         const navigable = !!postID;
-                        const detail = renderDetail(item);
+                        const detail = renderDetail(
+                            item,
+                            isOwnHistory,
+                            ownerLabel
+                        );
 
                         return (
                             <div
