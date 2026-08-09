@@ -1197,6 +1197,7 @@ const EditProfile: React.FC<Props> = ({
                         <FormField label='Current password'>
                             <input
                                 type='password'
+                                autoComplete='current-password'
                                 value={pwForm.current}
                                 onChange={(e) =>
                                     setPwForm((s) => ({
@@ -1212,11 +1213,12 @@ const EditProfile: React.FC<Props> = ({
                             <FormField label='New password'>
                                 <input
                                     type='password'
-                                    value={pwForm.current}
+                                    autoComplete='new-password'
+                                    value={pwForm.next}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
                                             ...s,
-                                            current: e.target.value
+                                            next: e.target.value
                                         }))
                                     }
                                     className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
@@ -1225,6 +1227,7 @@ const EditProfile: React.FC<Props> = ({
                             <FormField label='Confirm password'>
                                 <input
                                     type='password'
+                                    autoComplete='new-password'
                                     value={pwForm.confirm}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
