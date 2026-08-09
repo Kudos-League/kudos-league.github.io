@@ -12,7 +12,7 @@ import { useAwardKudos } from '@/shared/api/mutations/kudos';
 import { UserDTO } from '@/shared/api/types';
 import { ensureJpegAll } from '@/shared/convertHeic';
 import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
-import { MAX_KUDOS_PER_AWARD } from '@/shared/kudos';
+import { MAX_KUDOS_PER_DIRECT_AWARD } from '@/shared/kudos';
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_MB = 10;
@@ -186,7 +186,7 @@ export default function AwardKudosModal({
                 </FormField>
                 <FormField
                     name='amount'
-                    label={`Kudos to award * (max ${MAX_KUDOS_PER_AWARD})`}
+                    label={`Kudos to award * (max ${MAX_KUDOS_PER_DIRECT_AWARD})`}
                     noMargin
                 >
                     <Input
@@ -197,15 +197,15 @@ export default function AwardKudosModal({
                         form={form}
                         htmlInputType='number'
                         min={1}
-                        max={MAX_KUDOS_PER_AWARD}
+                        max={MAX_KUDOS_PER_DIRECT_AWARD}
                         registerOptions={{
                             required: 'Enter how many kudos to award',
                             validate: (value: unknown) => {
                                 const n = Number(value);
                                 if (!Number.isInteger(n) || n <= 0)
                                     return 'Kudos must be a positive whole number';
-                                if (n > MAX_KUDOS_PER_AWARD)
-                                    return `You can award at most ${MAX_KUDOS_PER_AWARD} kudos at a time`;
+                                if (n > MAX_KUDOS_PER_DIRECT_AWARD)
+                                    return `You can award at most ${MAX_KUDOS_PER_DIRECT_AWARD} kudos at a time`;
                                 // Kudos are freely given, not spent from a balance.
                                 // Re-enable to cap awards by the giver's kudos
                                 // (pair with the commented debit in the backend):

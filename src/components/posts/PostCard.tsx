@@ -5,6 +5,7 @@ import { PostDTO } from '@/shared/api/types';
 import { useAuth } from '@/contexts/useAuth';
 import HandshakeCard from '@/components/handshakes/HandshakeCard';
 import Pill from '@/components/common/Pill';
+import ImagePlaceholder from '@/components/common/ImagePlaceholder';
 import TextWithLinks from '../common/TextWithLinks';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
 import ImageCarousel from '@/components/Carousel';
@@ -104,11 +105,7 @@ export default function PostCard(props: Props) {
                     <ImageCarousel images={images} variant='postCard' />
                 </div>
             ) : (
-                <div className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden h-60 bg-gray-100 dark:bg-gray-700 flex items-center justify-center px-4'>
-                    <span className='text-gray-400 dark:text-gray-500 text-lg font-semibold text-center line-clamp-3'>
-                        {title}
-                    </span>
-                </div>
+                <ImagePlaceholder className='mb-3 -mx-3 -mt-3 rounded-t-lg overflow-hidden h-60' />
             )}
 
             {/* UserCard - always visible but compact on desktop */}

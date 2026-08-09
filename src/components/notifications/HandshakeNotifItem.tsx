@@ -6,7 +6,8 @@ import {
     useCachedUser
 } from '@/contexts/DataCacheContext';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
-import { MAX_KUDOS_PER_AWARD } from '@/shared/kudos';
+import { MAX_KUDOS_PER_OFFER } from '@/shared/kudos';
+import { toErrorMessage } from '@/shared/errorMessage';
 import { apiMutate } from '@/shared/api/apiClient';
 import { getEndpointUrl } from '@/shared/api/config';
 import {
@@ -304,8 +305,8 @@ export default function HandshakeNotifItem({
             setLocalError('Enter a valid kudos amount.');
             return;
         }
-        if (Number(kudosValue) > MAX_KUDOS_PER_AWARD) {
-            setLocalError(`You can give at most ${MAX_KUDOS_PER_AWARD} kudos at a time.`);
+        if (Number(kudosValue) > MAX_KUDOS_PER_OFFER) {
+            setLocalError(`You can give at most ${MAX_KUDOS_PER_OFFER} kudos at a time.`);
             return;
         }
         setSubmitting(true);
@@ -326,9 +327,10 @@ export default function HandshakeNotifItem({
             pushAlert({ type: 'success', message: `${kudosValue} kudos sent!` });
             onInteraction?.();
         }
-        catch {
-            setLocalError('Failed to submit kudos.');
-            pushAlert({ type: 'danger', message: 'Failed to submit kudos. Please try again.' });
+        catch (err) {
+            const message = toErrorMessage(err, 'Failed to submit kudos.');
+            setLocalError(message);
+            pushAlert({ type: 'danger', message });
         }
         finally {
             setSubmitting(false);
@@ -425,16 +427,14 @@ export default function HandshakeNotifItem({
                         {/* Thumbnail / placeholder */}
                         <div className='w-14 h-14 flex-shrink-0 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700'>
                             {showImagePlaceholder ? (
-                                <div
-                                    className={`w-full h-full flex items-center justify-center text-center p-1.5 leading-tight ${
-                                        postType === 'gift'
-                                            ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
-                                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                    }`}
-                                >
-                                    <span className='text-[10px] font-semibold line-clamp-3'>
-                                        {handshake.post.title ?? 'Post'}
-                                    </span>
+                                <div className='w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800'>
+                                    <img
+                                        src={`${process.env.PUBLIC_URL}/logo.webp`}
+                                        alt=''
+                                        aria-hidden='true'
+                                        draggable={false}
+                                        className='w-3/4 h-3/4 object-contain opacity-20 grayscale select-none pointer-events-none'
+                                    />
                                 </div>
                             ) : (
                                 <img

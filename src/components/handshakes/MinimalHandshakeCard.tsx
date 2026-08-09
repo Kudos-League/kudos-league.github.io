@@ -10,7 +10,8 @@ import { apiMutate } from '@/shared/api/apiClient';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
 import { pushAlert } from '@/components/common/alertBus';
 import { useCompleteHandshake, useCreateOffer } from '@/shared/api/mutations/handshakes';
-import { MAX_KUDOS_PER_AWARD } from '@/shared/kudos';
+import { MAX_KUDOS_PER_OFFER } from '@/shared/kudos';
+import { toErrorMessage } from '@/shared/errorMessage';
 
 interface MinimalHandshakeCardProps {
     handshake: HandshakeDTO;
@@ -120,10 +121,10 @@ export default function MinimalHandshakeCard({
             pushAlert({ type: 'danger', message: 'Enter valid kudos amount' });
             return;
         }
-        if (Number(kudosValue) > MAX_KUDOS_PER_AWARD) {
+        if (Number(kudosValue) > MAX_KUDOS_PER_OFFER) {
             pushAlert({
                 type: 'danger',
-                message: `You can give at most ${MAX_KUDOS_PER_AWARD} kudos at a time.`
+                message: `You can give at most ${MAX_KUDOS_PER_OFFER} kudos at a time.`
             });
             return;
         }
@@ -147,7 +148,10 @@ export default function MinimalHandshakeCard({
         }
         catch (err) {
             console.error(err);
-            pushAlert({ type: 'danger', message: 'Failed to complete' });
+            pushAlert({
+                type: 'danger',
+                message: toErrorMessage(err, 'Failed to complete')
+            });
         }
         finally {
             setProcessing(false);
@@ -255,7 +259,7 @@ export default function MinimalHandshakeCard({
                     <input
                         type='number'
                         min='1'
-                        max={MAX_KUDOS_PER_AWARD}
+                        max={MAX_KUDOS_PER_OFFER}
                         value={kudosValue}
                         onChange={(e) => setKudosValue(e.target.value)}
                         onClick={(e) => e.stopPropagation()}

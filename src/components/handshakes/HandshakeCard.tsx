@@ -497,10 +497,14 @@ const HandshakeCard: React.FC<Props> = ({
                             {/* Post Image/Preview - Larger on mobile */}
                             <div className='w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0'>
                                 {showBodyInImageBox ? (
-                                    <div className='w-full h-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded-lg flex items-center justify-center text-center p-2 overflow-hidden border border-gray-200 dark:border-gray-600'>
-                                        {handshake.post?.body?.slice(0, 60) ||
-                                            'No description'}
-                                        …
+                                    <div className='w-full h-full bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-600'>
+                                        <img
+                                            src={`${process.env.PUBLIC_URL}/logo.webp`}
+                                            alt=''
+                                            aria-hidden='true'
+                                            draggable={false}
+                                            className='w-3/4 h-3/4 object-contain opacity-20 grayscale select-none pointer-events-none'
+                                        />
                                     </div>
                                 ) : (
                                     <img

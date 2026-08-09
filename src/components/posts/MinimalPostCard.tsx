@@ -41,9 +41,13 @@ export default function MinimalPostCard({
                         className='w-full h-full object-cover'
                     />
                 ) : (
-                    <span className='text-gray-400 dark:text-gray-500 text-xs text-center px-1'>
-                        No img
-                    </span>
+                    <img
+                        src={`${process.env.PUBLIC_URL}/logo.webp`}
+                        alt=''
+                        aria-hidden='true'
+                        draggable={false}
+                        className='w-3/4 h-3/4 object-contain opacity-20 grayscale select-none pointer-events-none'
+                    />
                 )}
             </div>
 

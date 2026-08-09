@@ -117,7 +117,7 @@ test.describe('Award kudos — form validation', () => {
             return route.fulfill(
                 json({
                     giftID: 'g-x',
-                    amount: 500,
+                    amount: 50,
                     title: 'Helped me fix my bike',
                     description: null,
                     attachments: [],
@@ -125,7 +125,7 @@ test.describe('Award kudos — form validation', () => {
                     recipientID: 2,
                     giverID: 1,
                     giverTotal: 100,
-                    recipientTotal: 505
+                    recipientTotal: 55
                 })
             );
         });
@@ -158,23 +158,23 @@ test.describe('Award kudos — form validation', () => {
 
         // Photo evidence is mandatory — submitting without one is blocked
         await page.locator('#title').fill('Helped me fix my bike');
-        await page.locator('#amount').fill('500');
+        await page.locator('#amount').fill('50');
         await page.getByTestId('award-kudos-submit').click();
         await expect(
             page.getByTestId('award-kudos-file-error')
         ).toContainText(/at least one photo is required/i);
         expect(awardCalled).toBe(false);
 
-        // Amounts above the giver's own kudos are allowed — freely given
+        // A valid amount goes through once evidence is attached
         await page
             .getByTestId('award-kudos-files')
             .setInputFiles([evidenceFile()]);
         await page.getByTestId('award-kudos-submit').click();
-        await expect(page.getByText(/awarded 500 kudos!/i)).toBeVisible();
+        await expect(page.getByText(/awarded 50 kudos!/i)).toBeVisible();
         expect(awardCalled).toBe(true);
     });
 
-    test('rejects amounts above the 1000 kudos cap', async ({ page }) => {
+    test('rejects amounts above the 100 kudos cap', async ({ page }) => {
         await setupAwardPage(page);
 
         let awardCalled = false;
@@ -183,7 +183,7 @@ test.describe('Award kudos — form validation', () => {
             return route.fulfill(
                 json({
                     giftID: 'g-cap',
-                    amount: 1000,
+                    amount: 100,
                     title: 'Helped me fix my bike',
                     description: null,
                     attachments: [],
@@ -191,7 +191,7 @@ test.describe('Award kudos — form validation', () => {
                     recipientID: 2,
                     giverID: 1,
                     giverTotal: 100,
-                    recipientTotal: 1005
+                    recipientTotal: 105
                 })
             );
         });
@@ -200,20 +200,20 @@ test.describe('Award kudos — form validation', () => {
         await page.locator('#title').fill('Helped me fix my bike');
 
         // Over the cap — blocked client-side, never reaches the server
-        await page.locator('#amount').fill('1001');
+        await page.locator('#amount').fill('101');
         await page.getByTestId('award-kudos-submit').click();
         await expect(
-            page.getByText(/at most 1000 kudos at a time/i)
+            page.getByText(/at most 100 kudos at a time/i)
         ).toBeVisible();
         expect(awardCalled).toBe(false);
 
         // Exactly at the cap — allowed (with mandatory photo evidence attached)
-        await page.locator('#amount').fill('1000');
+        await page.locator('#amount').fill('100');
         await page
             .getByTestId('award-kudos-files')
             .setInputFiles([evidenceFile()]);
         await page.getByTestId('award-kudos-submit').click();
-        await expect(page.getByText(/awarded 1000 kudos!/i)).toBeVisible();
+        await expect(page.getByText(/awarded 100 kudos!/i)).toBeVisible();
         expect(awardCalled).toBe(true);
     });
 

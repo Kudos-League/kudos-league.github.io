@@ -10,6 +10,7 @@ import {
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
 import { getImagePath } from '@/shared/api/config';
 import UserCard from './UserCard';
+import ImageModalCarousel from '@/components/ImageModalCarousel';
 
 const FILTER_OPTIONS: Array<{
     value: KudosHistorySourceFilter;
@@ -66,7 +67,8 @@ function formatCurrencyFromCents(value?: unknown) {
 function renderDetail(
     item: KudosHistoryDTO,
     isOwnHistory: boolean,
-    ownerLabel: string
+    ownerLabel: string,
+    onOpenImages: (images: string[], index: number) => void
 ): React.ReactNode {
     const metadata = (item.metadata ?? {}) as Record<string, unknown>;
     // Whose history this is, from the reader's point of view. The list is shown
@@ -112,19 +114,22 @@ function renderDetail(
                             const src = getImagePath(url);
                             if (!src) return null;
                             return (
-                                <a
+                                <button
                                     key={`${url}-${idx}`}
-                                    href={src}
-                                    target='_blank'
-                                    rel='noreferrer'
-                                    onClick={(e) => e.stopPropagation()}
+                                    type='button'
+                                    aria-label={`View evidence ${idx + 1}`}
+                                    className='p-0 border-0 bg-transparent cursor-zoom-in'
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenImages(attachments, idx);
+                                    }}
                                 >
                                     <img
                                         src={src}
                                         alt={`Evidence ${idx + 1}`}
                                         className='w-12 h-12 object-cover rounded border border-gray-200 dark:border-zinc-700'
                                     />
-                                </a>
+                                </button>
                             );
                         })}
                     </div>
@@ -248,6 +253,14 @@ export default React.memo(function KudosHistoryList({
     const userID = userIDProp ?? user?.id;
     const isOwnHistory = !!user?.id && userID === user.id;
     const ownerLabel = ownerName?.trim() || 'this member';
+    const [lightbox, setLightbox] = React.useState<{
+        images: string[];
+        index: number;
+    } | null>(null);
+    const openImages = React.useCallback(
+        (images: string[], index: number) => setLightbox({ images, index }),
+        []
+    );
     const navigate = useNavigate();
     const pageSize = 10;
     const [source, setSource] = React.useState<KudosHistorySourceFilter>('all');
@@ -320,7 +333,8 @@ export default React.memo(function KudosHistoryList({
                         const detail = renderDetail(
                             item,
                             isOwnHistory,
-                            ownerLabel
+                            ownerLabel,
+                            openImages
                         );
 
                         return (
@@ -409,6 +423,14 @@ export default React.memo(function KudosHistoryList({
                     </div>
                 </div>
             )}
+
+            {lightbox ? (
+                <ImageModalCarousel
+                    images={lightbox.images}
+                    initialIndex={lightbox.index}
+                    onClose={() => setLightbox(null)}
+                />
+            ) : null}
         </div>
     );
 });

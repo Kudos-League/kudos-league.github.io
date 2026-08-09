@@ -825,26 +825,8 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        <FormField label='Email'>
-                            <div className='w-full overflow-hidden'>
-                                <Input
-                                    disabled={wasInvited}
-                                    name='email'
-                                    form={form}
-                                    label=''
-                                    placeholder={
-                                        targetUser.email ||
-                                        'Enter email address'
-                                    }
-                                    className='w-full'
-                                />
-                            </div>
-                            {wasInvited && (
-                                <p className='text-xs text-gray-500 italic mt-2'>
-                                    Email cannot be changed for invited users
-                                </p>
-                            )}
-                        </FormField>
+                        {/* Email is intentionally not shown or editable for now:
+                            changing your email is disabled. */}
 
                         <FormField label='Username'>
                             <div className='w-full overflow-hidden'>
