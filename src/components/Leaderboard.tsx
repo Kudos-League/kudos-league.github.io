@@ -66,8 +66,12 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
     const hasSavedLocation = !!user?.location?.regionID;
     const hasLocation = hasSavedLocation || !!browserLocation;
 
-    // Enhanced Confetti Logic with "Fire Once" Guard
+    // Enhanced Confetti Logic with "Fire Once" Guard.
+    // Only the full leaderboard celebrates — the compact embed (e.g. the home
+    // page, which is what shows on mobile) must not fire confetti, as it reads
+    // as a random, confusing burst away from the leaderboard itself.
     useEffect(() => {
+        if (compact) return;
         if (!loading && leaderboard.length > 0 && user && !hasAnimatedRef.current) {
             const userRankIndex = leaderboard.findIndex(u => u.id === user.id);
             
@@ -107,7 +111,7 @@ export default function Leaderboard({ compact = false }: LeaderboardProps) {
                 }());
             }
         }
-    }, [leaderboard, loading, user]);
+    }, [leaderboard, loading, user, compact]);
 
     const loadLeaderboard = useCallback(async (reset = true) => {
         if (!user) {
