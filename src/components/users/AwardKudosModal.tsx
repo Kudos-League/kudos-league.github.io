@@ -44,8 +44,8 @@ export function KudosInfoTooltip({
                     that happened <span className='font-semibold'>outside
                     the website</span> — no post or handshake needed. Kudos
                     are freely given — awarding doesn&apos;t reduce your own
-                    kudos — and photo evidence helps our admins verify the
-                    award.
+                    kudos — and a photo is required as evidence so our
+                    admins can verify the award.
                 </div>
             )}
         >
@@ -107,6 +107,10 @@ export default function AwardKudosModal({
         setSelectedImages((prev) => prev.filter((_, i) => i !== idx));
 
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
+        if (selectedImages.length === 0) {
+            setFileError('At least one photo is required as evidence.');
+            return;
+        }
         await awardMutation.mutateAsync({
             recipientID: recipient.id,
             title: data.title,
@@ -218,7 +222,7 @@ export default function AwardKudosModal({
 
                 <div>
                     <label className='block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200'>
-                        Photographic evidence (optional)
+                        Photographic evidence *
                     </label>
                     <input
                         type='file'

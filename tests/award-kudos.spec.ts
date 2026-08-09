@@ -156,9 +156,19 @@ test.describe('Award kudos — form validation', () => {
             page.getByText(/title must be at least 3 characters/i)
         ).toBeVisible();
 
-        // Amounts above the giver's own kudos are allowed — freely given
+        // Photo evidence is mandatory — submitting without one is blocked
         await page.locator('#title').fill('Helped me fix my bike');
         await page.locator('#amount').fill('500');
+        await page.getByTestId('award-kudos-submit').click();
+        await expect(
+            page.getByTestId('award-kudos-file-error')
+        ).toContainText(/at least one photo is required/i);
+        expect(awardCalled).toBe(false);
+
+        // Amounts above the giver's own kudos are allowed — freely given
+        await page
+            .getByTestId('award-kudos-files')
+            .setInputFiles([evidenceFile()]);
         await page.getByTestId('award-kudos-submit').click();
         await expect(page.getByText(/awarded 500 kudos!/i)).toBeVisible();
         expect(awardCalled).toBe(true);
@@ -197,8 +207,11 @@ test.describe('Award kudos — form validation', () => {
         ).toBeVisible();
         expect(awardCalled).toBe(false);
 
-        // Exactly at the cap — allowed
+        // Exactly at the cap — allowed (with mandatory photo evidence attached)
         await page.locator('#amount').fill('1000');
+        await page
+            .getByTestId('award-kudos-files')
+            .setInputFiles([evidenceFile()]);
         await page.getByTestId('award-kudos-submit').click();
         await expect(page.getByText(/awarded 1000 kudos!/i)).toBeVisible();
         expect(awardCalled).toBe(true);
@@ -312,6 +325,9 @@ test.describe('Award kudos — submission', () => {
         await openAwardModal(page);
         await page.locator('#title').fill('Nice try');
         await page.locator('#amount').fill('100');
+        await page
+            .getByTestId('award-kudos-files')
+            .setInputFiles([evidenceFile()]);
         await page.getByTestId('award-kudos-submit').click();
 
         await expect(
