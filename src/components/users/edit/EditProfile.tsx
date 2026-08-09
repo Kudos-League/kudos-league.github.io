@@ -47,12 +47,13 @@ const EditProfile: React.FC<Props> = ({
     setTargetUser
 }) => {
     const auth = useAuth();
-    const { user, updateUser: updateUserCache } = auth;
+    const { user: currentUser, updateUser: updateUserCache } = auth;
     const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const wasInvited = !!targetUser.invitedByUserID;
     const isAdminEditingOther =
-        !!auth.user?.admin && auth.user.id !== targetUser.id;
-    const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
+        !!currentUser?.admin && currentUser.id !== targetUser.id;
+    const canEditProfile =
+        !!currentUser?.admin || currentUser?.id === targetUser.id;
 
     const {
         setLocation,
@@ -96,7 +97,7 @@ const EditProfile: React.FC<Props> = ({
     const defaults = React.useMemo(() => {
         // Normalize location to only include expected fields
         // Use targetUser.location as the source of truth since that's what MapDisplay uses
-        const sourceLocation = targetUser?.location || user.location;
+        const sourceLocation = targetUser?.location;
         let normalizedLocation = undefined;
         if (sourceLocation) {
             const { latitude, longitude, name, regionID } = sourceLocation;
@@ -112,27 +113,26 @@ const EditProfile: React.FC<Props> = ({
         }
 
         return {
-            email: user.email,
-            username: user.username,
-            displayName: user.displayName,
+            email: targetUser.email,
+            username: targetUser.username,
+            displayName: targetUser.displayName,
             avatar: [],
             location: normalizedLocation,
-            tags: user.tags.map((t) => t.name) || [],
-            about: user.settings?.about || '',
-            profession: user.settings?.profession || '',
+            tags: (targetUser.tags || []).map((t) => t.name),
+            about: targetUser.settings?.about || '',
+            profession: targetUser.settings?.profession || '',
             avatarURL: '',
             admin: targetUser?.admin ?? false,
             kudos: targetUser?.kudos ?? 0
         };
     }, [
-        user.email,
-        user.username,
-        user.displayName,
+        targetUser.email,
+        targetUser.username,
+        targetUser.displayName,
         JSON.stringify(targetUser?.location),
-        JSON.stringify(user.location),
-        JSON.stringify(user.tags),
-        user.settings?.about,
-        user.settings?.profession,
+        JSON.stringify(targetUser.tags),
+        targetUser.settings?.about,
+        targetUser.settings?.profession,
         targetUser?.admin,
         targetUser?.kudos
     ]);
@@ -212,7 +212,7 @@ const EditProfile: React.FC<Props> = ({
         baselineRef.current = defaults as any;
         // Then reset form to match
         form.reset(defaults, { keepDirty: false, keepTouched: false });
-    }, [user?.id, defaults, form]);
+    }, [targetUser?.id, defaults, form]);
 
     useEffect(() => {
         baselineRef.current = defaults as any;
@@ -490,7 +490,7 @@ const EditProfile: React.FC<Props> = ({
 
             console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
-            if (updatedUser?.id && updatedUser.id === auth.user?.id) {
+            if (updatedUser?.id && updatedUser.id === currentUser?.id) {
                 // Apply cache busting to avatar URL so the navbar shows the updated image
                 const userToCache = {
                     ...updatedUser,
@@ -767,7 +767,7 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={form.handleSubmit(handleFormSubmit)}
                         className='space-y-6'
                     >
-                        {auth.user?.admin && (
+                        {currentUser?.admin && (
                             <FormField label='Admin'>
                                 <label className='inline-flex items-center gap-2'>
                                     <input
@@ -791,7 +791,7 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {auth.user?.admin && (
+                        {currentUser?.admin && (
                             <FormField
                                 label='Kudos'
                                 help={
@@ -852,7 +852,7 @@ const EditProfile: React.FC<Props> = ({
                                     name='username'
                                     form={form}
                                     label=''
-                                    placeholder={user.username}
+                                    placeholder={targetUser.username}
                                     disabled={!canEditProfile}
                                     className='w-full'
                                 />
@@ -865,7 +865,7 @@ const EditProfile: React.FC<Props> = ({
                                     name='displayName'
                                     form={form}
                                     label=''
-                                    placeholder={user.displayName}
+                                    placeholder={targetUser.displayName}
                                     disabled={!canEditProfile}
                                     className='w-full'
                                 />
@@ -1097,12 +1097,12 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Discord</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.discordID
+                                        {currentUser?.discordID
                                             ? 'Connected'
                                             : 'Not connected'}
                                     </div>
                                 </div>
-                                {user.discordID ? (
+                                {currentUser?.discordID ? (
                                     <OAuthDisconnectButton
                                         provider='discord'
                                         onSuccess={() => {
@@ -1130,12 +1130,12 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Google</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.googleID
+                                        {currentUser?.googleID
                                             ? 'Connected'
                                             : 'Not connected'}
                                     </div>
                                 </div>
-                                {user.googleID ? (
+                                {currentUser?.googleID ? (
                                     <OAuthDisconnectButton
                                         provider='google'
                                         onSuccess={() => {
