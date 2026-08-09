@@ -988,7 +988,7 @@ export default function Activity({user, hideWrapper = false}: Props) {
                     <div key='kudos-history-wrapper'>
                         <KudosHistory
                             userID={user?.id}
-                            ownerName={user?.displayName || user?.username}
+                            ownerName={user?.displayName}
                         />
                     </div>
                 </React.Suspense>

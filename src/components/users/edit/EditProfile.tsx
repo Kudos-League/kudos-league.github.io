@@ -20,7 +20,8 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { useDeleteAccountMutation } from '@/shared/api/mutations/users';
+import { useDeleteAccountMutation, useChangePasswordMutation } from '@/shared/api/mutations/users';
+import { toErrorMessage } from '@/shared/errorMessage';
 import { useBlockedUsersQuery } from '@/shared/api/queries/users';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
@@ -89,6 +90,7 @@ const EditProfile: React.FC<Props> = ({
         !!targetUser?.location?.name
     );
     const deleteAccountMutation = useDeleteAccountMutation();
+    const changePasswordMutation = useChangePasswordMutation();
     const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
 
     const targetUserID = targetUser?.id;
@@ -566,17 +568,38 @@ const EditProfile: React.FC<Props> = ({
         }
     };
 
-    const handleChangePassword = (e: React.FormEvent) => {
+    const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!pwForm.current) {
+            setToastType('error');
+            setToastMessage('Enter your current password.');
+            return;
+        }
         if (!pwForm.next || pwForm.next !== pwForm.confirm) {
             setToastType('error');
             setToastMessage('Passwords do not match.');
             return;
         }
-        // TODO: integrate real API
-        setToastType('success');
-        setToastMessage('Password change requested (stub).');
-        setPwForm({ current: '', next: '', confirm: '' });
+        if (pwForm.next.length < 8) {
+            setToastType('error');
+            setToastMessage('New password must be at least 8 characters.');
+            return;
+        }
+        try {
+            await changePasswordMutation.mutateAsync({
+                currentPassword: pwForm.current,
+                newPassword: pwForm.next
+            });
+            setToastType('success');
+            setToastMessage('Password changed.');
+            setPwForm({ current: '', next: '', confirm: '' });
+        }
+        catch (err) {
+            setToastType('error');
+            setToastMessage(
+                toErrorMessage(err, 'Failed to change password.')
+            );
+        }
     };
 
     const handleLogoutOtherSessions = (e: React.FormEvent) => {

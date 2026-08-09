@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../common/Spinner';
 import { useAuth } from '@/contexts/useAuth';
@@ -424,13 +425,16 @@ export default React.memo(function KudosHistoryList({
                 </div>
             )}
 
-            {lightbox ? (
-                <ImageModalCarousel
-                    images={lightbox.images}
-                    initialIndex={lightbox.index}
-                    onClose={() => setLightbox(null)}
-                />
-            ) : null}
+            {lightbox
+                ? createPortal(
+                    <ImageModalCarousel
+                        images={lightbox.images}
+                        initialIndex={lightbox.index}
+                        onClose={() => setLightbox(null)}
+                    />,
+                    document.body
+                )
+                : null}
         </div>
     );
 });

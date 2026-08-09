@@ -36,6 +36,7 @@ const RECIPIENT = {
     id: 2,
     email: 'bob@example.com',
     username: 'bob',
+    displayName: 'Bob Builder',
     kudos: 5,
     settings: {},
     tags: [],
@@ -60,7 +61,7 @@ async function openAwardModal(page: Page) {
     await page.goto('/user/2');
     await page.getByTestId('award-kudos').click();
     await expect(
-        page.getByRole('heading', { name: /award kudos to bob/i })
+        page.getByRole('heading', { name: /award kudos to Bob Builder/i })
     ).toBeVisible();
 }
 
@@ -308,7 +309,7 @@ test.describe('Award kudos — submission', () => {
 
         await expect(page.getByText(/awarded 25 kudos!/i)).toBeVisible();
         await expect(
-            page.getByRole('heading', { name: /award kudos to bob/i })
+            page.getByRole('heading', { name: /award kudos to Bob Builder/i })
         ).toHaveCount(0);
     });
 
@@ -334,7 +335,7 @@ test.describe('Award kudos — submission', () => {
             page.getByText(/cannot award kudos to yourself/i)
         ).toBeVisible();
         await expect(
-            page.getByRole('heading', { name: /award kudos to bob/i })
+            page.getByRole('heading', { name: /award kudos to Bob Builder/i })
         ).toBeVisible();
     });
 });
@@ -395,10 +396,10 @@ test.describe('Award kudos — transactions history', () => {
         await expect(page.getByText('-10 Kudos')).toBeVisible();
         // Viewing bob's profile (not our own), so entries name bob — not "you"
         await expect(
-            page.getByText(/kudos awarded to bob for a past gift/i)
+            page.getByText(/kudos awarded to Bob Builder for a past gift/i)
         ).toBeVisible();
         await expect(
-            page.getByText(/bob awarded kudos for a past gift/i)
+            page.getByText(/Bob Builder awarded kudos for a past gift/i)
         ).toBeVisible();
         await expect(
             page.getByTestId('kudos-gift-verification').filter({

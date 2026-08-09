@@ -71,6 +71,20 @@ export function useDeleteAccountMutation() {
     });
 }
 
+export function useChangePasswordMutation() {
+    return useMutation<
+        { success: boolean },
+        string[],
+        { currentPassword: string; newPassword: string }
+    >({
+        mutationFn: (payload) =>
+            apiMutate<
+                { success: boolean },
+                { currentPassword: string; newPassword: string }
+            >('/users/me/change-password', 'post', payload)
+    });
+}
+
 export function useReactivateUserMutation() {
     const qc = useQueryClient();
     return useMutation<UserDTO, Error, { userId: number | string }>({

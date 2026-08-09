@@ -126,7 +126,7 @@ export default function AwardKudosModal({
         <Modal
             open={open}
             onClose={onClose}
-            title={`Award kudos to ${recipient.username ?? 'this user'}`}
+            title={`Award kudos to ${recipient.displayName || 'this user'}`}
         >
             <div className='flex items-center gap-1.5 mb-3 text-sm text-gray-600 dark:text-gray-300'>
                 <KudosInfoTooltip>
