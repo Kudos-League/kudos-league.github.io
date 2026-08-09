@@ -1155,6 +1155,11 @@ export default function NotificationsPage() {
                 if (postID) {
                     navigate(`/post/${postID}`);
                 }
+                else {
+                    // Peer award (no post): open the activity kudos history,
+                    // where the award and its photo proof are shown.
+                    navigate(withQuery(routes.activity, { filter: 'kudos' }));
+                }
             }
 
             // Mark all notifications in group as acted

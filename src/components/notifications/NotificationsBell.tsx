@@ -520,7 +520,9 @@ export default function NotificationsBell() {
                 navigate(`/post/${postID}`);
             }
             else {
-                navigate(routes.notifications);
+                // A peer award has no post — open the recipient's activity on
+                // the kudos history, where the award and its photo proof show.
+                navigate(withQuery(routes.activity, { filter: 'kudos' }));
             }
         }
         else if (n.type === 'event-user-joined') {

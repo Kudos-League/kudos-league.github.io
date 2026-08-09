@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Filter,
     FileText,
@@ -87,7 +87,16 @@ export default function Activity({user, hideWrapper = false}: Props) {
             ? 'Failed to load activity.'
             : null;
 
-    const [filter, setFilter] = useState<FilterType>('all');
+    const [searchParams] = useSearchParams();
+    // Allow deep-linking to a tab, e.g. an award notification opens ?filter=kudos.
+    const initialFilter = ((): FilterType => {
+        const requested = searchParams.get('filter');
+        const valid: FilterType[] = ['all', 'posts', 'events', 'handshakes', 'kudos'];
+        return requested && valid.includes(requested as FilterType)
+            ? (requested as FilterType)
+            : 'all';
+    })();
+    const [filter, setFilter] = useState<FilterType>(initialFilter);
     const [eventFilter, setEventFilter] =
         useState<EventFilterType>('all-events');
     const [postFilter, setPostFilter] = useState<PostFilterType>('all-posts');

@@ -6,6 +6,7 @@ import {
     useCachedUser
 } from '@/contexts/DataCacheContext';
 import { getHandshakeStage } from '@/shared/handshakeUtils';
+import { MAX_KUDOS_PER_AWARD } from '@/shared/kudos';
 import { apiMutate } from '@/shared/api/apiClient';
 import { getEndpointUrl } from '@/shared/api/config';
 import {
@@ -301,6 +302,10 @@ export default function HandshakeNotifItem({
         if (status === 'completed' || submitting) return;
         if (!kudosValue || isNaN(Number(kudosValue))) {
             setLocalError('Enter a valid kudos amount.');
+            return;
+        }
+        if (Number(kudosValue) > MAX_KUDOS_PER_AWARD) {
+            setLocalError(`You can give at most ${MAX_KUDOS_PER_AWARD} kudos at a time.`);
             return;
         }
         setSubmitting(true);

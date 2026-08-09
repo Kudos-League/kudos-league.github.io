@@ -12,9 +12,8 @@ import { useAwardKudos } from '@/shared/api/mutations/kudos';
 import { UserDTO } from '@/shared/api/types';
 import { ensureJpegAll } from '@/shared/convertHeic';
 import { takeFilesFromInput } from '@/shared/takeFilesFromInput';
+import { MAX_KUDOS_PER_AWARD } from '@/shared/kudos';
 
-/** Keep in sync with MAX_KUDOS_PER_AWARD on the server. */
-const MAX_KUDOS_PER_AWARD = 1000;
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_MB = 10;
 
