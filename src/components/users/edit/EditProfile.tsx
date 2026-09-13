@@ -31,6 +31,10 @@ import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import UserCard from '@/components/users/UserCard';
 import { PROFILE_DESCRIPTION_MAX_LENGTH } from '@/shared/constants';
+import {
+    useMyUserSettingsQuery,
+    useUpdateMyUserSettings
+} from '@/shared/api/mutations/usersettings';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -91,7 +95,40 @@ const EditProfile: React.FC<Props> = ({
     );
     const deleteAccountMutation = useDeleteAccountMutation();
     const changePasswordMutation = useChangePasswordMutation();
+    const userSettingsQuery = useMyUserSettingsQuery(!isAdminEditingOther);
+    const updateUserSettingsMutation = useUpdateMyUserSettings();
     const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
+
+    const emailNotificationsEnabled =
+        userSettingsQuery.data?.emailNotificationsEnabled ?? true;
+
+    const handleEmailNotificationsToggle = async () => {
+        const nextValue = !emailNotificationsEnabled;
+
+        try {
+            const settings = await updateUserSettingsMutation.mutateAsync({
+                emailNotificationsEnabled: nextValue
+            });
+            updateUserCache({
+                settings: {
+                    ...(currentUser?.settings ?? settings),
+                    ...settings
+                }
+            });
+            setToastType('success');
+            setToastMessage(
+                nextValue
+                    ? 'Email notifications enabled'
+                    : 'Email notifications disabled'
+            );
+        }
+        catch (err) {
+            setToastType('error');
+            setToastMessage(
+                toErrorMessage(err, 'Failed to update email notifications.')
+            );
+        }
+    };
 
     const targetUserID = targetUser?.id;
 
@@ -1163,6 +1200,59 @@ const EditProfile: React.FC<Props> = ({
                                     </OAuthConnectButton>
                                 )}
                             </div>
+                        </div>
+                    </SettingsSection>
+                )}
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Notification settings'
+                        description='Choose which optional emails you receive.'
+                    >
+                        <div className='flex items-center justify-between gap-4'>
+                            <div className='flex-1'>
+                                <label
+                                    htmlFor='email-notifications-toggle'
+                                    className='text-sm font-medium text-gray-700 dark:text-gray-200'
+                                >
+                                    Email notifications
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Receive optional emails about account activity
+                                    and security. Verification and password reset
+                                    emails are always sent.
+                                </p>
+                            </div>
+                            <button
+                                id='email-notifications-toggle'
+                                type='button'
+                                role='switch'
+                                aria-checked={emailNotificationsEnabled}
+                                aria-busy={
+                                    userSettingsQuery.isLoading ||
+                                    updateUserSettingsMutation.isPending
+                                }
+                                disabled={
+                                    userSettingsQuery.isLoading ||
+                                    updateUserSettingsMutation.isPending
+                                }
+                                onClick={handleEmailNotificationsToggle}
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+                                    emailNotificationsEnabled
+                                        ? 'bg-blue-600'
+                                        : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        emailNotificationsEnabled
+                                            ? 'translate-x-5'
+                                            : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
                         </div>
                     </SettingsSection>
                 )}

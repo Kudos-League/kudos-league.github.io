@@ -259,6 +259,7 @@ export interface UserSettingsDTO {
     skills: string[];
     about: string;
     profession?: string | null;
+    emailNotificationsEnabled: boolean;
     tags: string[];
     blockedUsers: number[];
     invitationToken: string;
