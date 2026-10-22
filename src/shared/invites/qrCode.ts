@@ -25,13 +25,25 @@ export function buildQrImageUrl(data: string, size = DEFAULT_QR_SIZE): string {
     return `${QR_API_BASE}?${params.toString()}`;
 }
 
-/** Downloads the QR PNG for `data` using the browser's save dialog. */
-export async function downloadQrPng(data: string, filename: string): Promise<void> {
+async function fetchQrBlob(data: string): Promise<Blob> {
     const response = await fetch(buildQrImageUrl(data, PRINT_QR_SIZE));
     if (!response.ok) {
         throw new Error('Could not fetch the QR code image.');
     }
-    const blob = await response.blob();
+    return response.blob();
+}
+
+const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the QR image.'));
+        reader.readAsDataURL(blob);
+    });
+
+/** Downloads the QR PNG for `data` using the browser's save dialog. */
+export async function downloadQrPng(data: string, filename: string): Promise<void> {
+    const blob = await fetchQrBlob(data);
     const objectUrl = URL.createObjectURL(blob);
     try {
         const anchor = document.createElement('a');
@@ -55,13 +67,23 @@ const escapeHtml = (value: string) =>
 
 /**
  * Opens a minimal print-ready page (QR + caption + link) and triggers the
- * print dialog once the image has loaded.
+ * print dialog. The QR is embedded as a data URL so the popup needs no
+ * network access of its own. Returns false if the popup was blocked.
  */
-export function printQr(data: string, caption: string): boolean {
+export async function printQr(data: string, caption: string): Promise<boolean> {
+    // Must open synchronously inside the click handler to dodge popup blockers.
     const popup = window.open('', '_blank', 'width=520,height=640');
     if (!popup) return false;
 
-    const imageUrl = buildQrImageUrl(data, PRINT_QR_SIZE);
+    let imageSrc: string;
+    try {
+        imageSrc = await blobToDataUrl(await fetchQrBlob(data));
+    }
+    catch (err) {
+        popup.close();
+        throw err;
+    }
+
     popup.document.write(`<!doctype html>
 <html>
 <head>
@@ -79,7 +101,7 @@ export function printQr(data: string, caption: string): boolean {
 <body>
 <main>
   <h1>${escapeHtml(caption)}</h1>
-  <img id="qr" src="${escapeHtml(imageUrl)}" alt="Invite QR code" />
+  <img id="qr" src="${imageSrc}" alt="Invite QR code" />
   <p>${escapeHtml(data)}</p>
 </main>
 <script>

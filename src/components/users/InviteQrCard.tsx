@@ -58,10 +58,15 @@ export default function InviteQrCard({
         }
     };
 
-    const print = () => {
+    const print = async () => {
         setActionError(null);
-        if (!printQr(inviteUrl, caption)) {
-            setActionError('Popup blocked. Allow popups for this site to print.');
+        try {
+            if (!(await printQr(inviteUrl, caption))) {
+                setActionError('Popup blocked. Allow popups for this site to print.');
+            }
+        }
+        catch (err: any) {
+            setActionError(err?.message || 'Could not prepare the print sheet.');
         }
     };
 
