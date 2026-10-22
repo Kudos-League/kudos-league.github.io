@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
@@ -10,6 +10,11 @@ import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
 import OAuthGroup from './OAuthGroup';
 import { routes } from '@/routes';
+import {
+    clearPendingInvite,
+    readPendingInvite,
+    savePendingInvite
+} from '@/shared/invites/inviteCookie';
 
 type SignUpFormValues = {
     username: string;
@@ -29,8 +34,28 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const form = useForm<SignUpFormValues>({ mode: 'onBlur' });
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const inviteToken = (searchParams.get('invite') || '').trim();
-    const emailToken = (searchParams.get('emailToken') || '').trim();
+    const urlInviteToken = (searchParams.get('invite') || '').trim();
+    const urlEmailToken = (searchParams.get('emailToken') || '').trim();
+
+    // Fall back to the invite cookie when the URL has no token, so leaving
+    // the signup page to browse the site doesn't lose the invite.
+    const pendingInvite = useMemo(
+        () => (urlInviteToken ? null : readPendingInvite()),
+        [urlInviteToken]
+    );
+    const inviteToken = urlInviteToken || pendingInvite?.inviteToken || '';
+    const emailToken = urlInviteToken
+        ? urlEmailToken
+        : pendingInvite?.emailToken || '';
+
+    useEffect(() => {
+        if (urlInviteToken) {
+            savePendingInvite({
+                inviteToken: urlInviteToken,
+                emailToken: urlEmailToken || undefined
+            });
+        }
+    }, [urlInviteToken, urlEmailToken]);
 
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
@@ -113,6 +138,9 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                 emailToken || undefined
             );
             setIsVerifying(false);
+
+            // The invite has been consumed either way; drop the cookie.
+            clearPendingInvite();
 
             if (typeof result === 'string') {
                 setSuccess(result);

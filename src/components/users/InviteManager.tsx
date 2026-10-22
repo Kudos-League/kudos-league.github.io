@@ -8,6 +8,8 @@ import { Alert } from '@/components/login/fields';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
 import { UserInviteDTO, UserInviteListResponse } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
+import InviteQrCard from '@/components/users/InviteQrCard';
+import { useAuth } from '@/contexts/useAuth';
 
 const PAGE_SIZE = 5;
 
@@ -29,6 +31,8 @@ const formatDateTime = (value?: string | null) => {
 };
 
 export default function InviteManager() {
+    const { user: currentUser } = useAuth();
+    const isAdmin = !!currentUser?.admin;
     const form = useForm<InviteFormValues>({
         mode: 'onBlur',
         defaultValues: { email: '' }
@@ -221,24 +225,31 @@ export default function InviteManager() {
                 </h3>
                 <p className='text-sm text-slate-500 dark:text-zinc-400'>
                     Generate invite links for new members and track their
-                    status.
+                    status. Each link also comes with a QR code you can print
+                    on business cards or flyers.
                 </p>
+                {isAdmin && (
+                    <p className='text-xs text-slate-500 dark:text-zinc-400 mt-1'>
+                        As an admin you can create unlimited invites; every
+                        invite stays tied back to you.
+                    </p>
+                )}
             </div>
 
             {success && (
                 <Alert tone='success'>
-                    <div className='space-y-1'>
-                        <p className='font-medium'>An invite has been sent with the following link: </p>
-                        {success.inviteUrl ? (
-                            <p className='break-all text-xs'>
-                                {success.inviteUrl}
+                    {success.inviteUrl ? (
+                        <InviteQrCard inviteUrl={success.inviteUrl} />
+                    ) : (
+                        <div className='space-y-1'>
+                            <p className='font-medium'>
+                                An invite was created. Share this token:
                             </p>
-                        ) : (
                             <p className='break-all text-xs'>
                                 Token: {success.token}
                             </p>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </Alert>
             )}
 

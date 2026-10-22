@@ -15,6 +15,7 @@ import Input from '@/components/forms/Input';
 import OAuthGroup from './OAuthGroup';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
+import { readPendingInvite } from '@/shared/invites/inviteCookie';
 
 type LoginFormProps = {
     onSuccess?: () => void;
@@ -92,6 +93,7 @@ export default function LoginForm({
         initialError ?? null
     );
     const navigate = useNavigate();
+    const [hasPendingInvite] = useState(() => !!readPendingInvite());
     const handleBack = () => {
         if (window.history.length > 1) {
             navigate(-1);
@@ -324,9 +326,11 @@ export default function LoginForm({
                 <OAuthGroup />
 
                 <p className='text-center text-sm/6 text-gray-200 dark:text-gray-300'>
-                    Don&apos;t have an account?{' '}
+                    {hasPendingInvite
+                        ? 'You have a pending invite. '
+                        : "Don't have an account? "}
                     <TinyHelpLink onClick={() => navigate(routes.signUp)}>
-                        Sign Up
+                        {hasPendingInvite ? 'Finish signing up' : 'Sign Up'}
                     </TinyHelpLink>
                 </p>
             </Form>

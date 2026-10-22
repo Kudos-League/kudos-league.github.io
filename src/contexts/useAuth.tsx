@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { clearPendingInvite } from '@/shared/invites/inviteCookie';
 import { AuthState, updateAuth } from '@/redux_store/slices/auth-slice';
 import { useAppDispatch } from 'redux_store/hooks';
 import { UserDTO } from '@/shared/api/types';
@@ -231,6 +232,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     console.log('[AUTH DEBUG] Found token in query params');
                     try {
                         await loginHandler({ token: tokenFromQuery });
+                        // Logged in (incl. OAuth signup via invite): the
+                        // pending-invite cookie is no longer needed.
+                        clearPendingInvite();
                         url.searchParams.delete('token');
                         const remainingSearch = url.searchParams.toString();
                         const nextUrl = remainingSearch
