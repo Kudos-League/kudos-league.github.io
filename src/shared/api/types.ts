@@ -259,6 +259,7 @@ export interface UserSettingsDTO {
     skills: string[];
     about: string;
     profession?: string | null;
+    emailNotificationsEnabled: boolean;
     tags: string[];
     blockedUsers: number[];
     invitationToken: string;
@@ -342,6 +343,7 @@ export interface UserDTO {
     createdAt: Date;
     updatedAt: Date;
     deactivatedAt?: Date | null;
+    privacyErasedAt?: Date | null;
 }
 
 export interface UserInviteDTO {
@@ -503,6 +505,7 @@ export type NotificationPayload =
     | {
           type: typeof NotificationType.KUDOS_RECEIVED;
           postID?: number;
+          feedbackID?: number;
           kudos?: number;
       };
 

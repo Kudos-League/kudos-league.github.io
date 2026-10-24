@@ -13,15 +13,38 @@ export const CORS = {
     vary: 'Origin'
 };
 
+type MockUser = {
+    id: number;
+    email: string;
+    username: string;
+    displayName?: string;
+    admin?: boolean;
+    kudos: number;
+    settings: Record<string, unknown>;
+    tags: { name: string }[];
+    location: null;
+    avatar: null;
+    badges: unknown[];
+};
+
+type BootstrapAuthOptions = {
+    user?: Partial<MockUser>;
+    usersById?: Record<number, Partial<MockUser>>;
+};
+
 const E2E_JWT =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
     'eyJpZCI6MSwidXNlcm5hbWUiOiJlMmUtdXNlciJ9.' +
     'sig';
 
-export async function bootstrapAuth(page: Page, userId = 1) {
+export async function bootstrapAuth(
+    page: Page,
+    userId = 1,
+    options: BootstrapAuthOptions = {}
+) {
     const ctx = page.context();
 
-    const user = {
+    const baseUser: MockUser = {
         id: userId,
         email: 'e2e@example.com',
         username: 'e2e-user',
@@ -31,6 +54,16 @@ export async function bootstrapAuth(page: Page, userId = 1) {
         location: null,
         avatar: null,
         badges: []
+    };
+    const user: MockUser = { ...baseUser, ...options.user };
+    const usersById: Record<number, MockUser> = {
+        [user.id]: user,
+        ...Object.fromEntries(
+            Object.entries(options.usersById ?? {}).map(([id, override]) => [
+                Number(id),
+                { ...baseUser, id: Number(id), ...override }
+            ])
+        )
     };
 
     await page.addInitScript(
@@ -72,9 +105,11 @@ export async function bootstrapAuth(page: Page, userId = 1) {
         }
 
         if (/\/users\/me(\?|$)/.test(url)) return route.fulfill(json(user));
-        if (new RegExp(`/users/${userId}(\\?|$)`).test(url))
-            return route.fulfill(json(user));
-        if (/\/users\/\d+(\?|$)/.test(url)) return route.fulfill(json(user));
+        const userMatch = url.match(/\/users\/(\d+)(?:\?|$)/);
+        if (userMatch) {
+            const requestedUser = usersById[Number(userMatch[1])] ?? user;
+            return route.fulfill(json(requestedUser));
+        }
 
         if (/\/notifications(\?|$)/.test(url)) return route.fulfill(json([]));
         if (/\/handshakes/.test(url)) return route.fulfill(json([]));

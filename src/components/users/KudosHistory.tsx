@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../common/Spinner';
 import { useAuth } from '@/contexts/useAuth';
@@ -8,7 +9,9 @@ import {
     type KudosHistorySourceFilter
 } from '@/shared/api/queries/kudosHistory';
 import { timeAgoLabel } from '@/shared/timeAgoLabel';
+import { getImagePath } from '@/shared/api/config';
 import UserCard from './UserCard';
+import ImageModalCarousel from '@/components/ImageModalCarousel';
 
 const FILTER_OPTIONS: Array<{
     value: KudosHistorySourceFilter;
@@ -18,7 +21,8 @@ const FILTER_OPTIONS: Array<{
     { value: 'donation', label: 'Donations' },
     { value: 'feedback', label: 'Feedback' },
     { value: 'report', label: 'Bug reports' },
-    { value: 'reward-offer', label: 'Reward offers' }
+    { value: 'reward-offer', label: 'Reward offers' },
+    { value: 'gift', label: 'Kudos awards' }
 ];
 
 const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
@@ -26,7 +30,29 @@ const SOURCE_LABELS: Record<KudosHistoryDTO['source'], string> = {
     feedback: 'Feedback',
     report: 'Bug report',
     'reward-offer': 'Reward offer',
+    gift: 'Kudos award',
     other: 'Kudos update'
+};
+
+const VERIFICATION_BADGES: Record<
+    string,
+    { label: string; className: string }
+> = {
+    pending: {
+        label: 'Pending verification',
+        className:
+            'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+    },
+    verified: {
+        label: 'Verified',
+        className:
+            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+    },
+    rejected: {
+        label: 'Rejected',
+        className:
+            'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+    }
 };
 
 function formatCurrencyFromCents(value?: unknown) {
@@ -39,8 +65,87 @@ function formatCurrencyFromCents(value?: unknown) {
     });
 }
 
-function renderDetail(item: KudosHistoryDTO): React.ReactNode {
+function renderDetail(
+    item: KudosHistoryDTO,
+    isOwnHistory: boolean,
+    ownerLabel: string,
+    onOpenImages: (images: string[], index: number) => void
+): React.ReactNode {
     const metadata = (item.metadata ?? {}) as Record<string, unknown>;
+    // Whose history this is, from the reader's point of view. The list is shown
+    // both on your own profile ("you") and on other members' profiles, where
+    // the entries must name the profile owner rather than address the reader.
+    const subject = isOwnHistory ? 'you' : ownerLabel;
+    const Subject = isOwnHistory ? 'You' : ownerLabel;
+
+    if (item.source === 'gift') {
+        const title = metadata.title ? String(metadata.title) : null;
+        const description = metadata.description
+            ? String(metadata.description)
+            : null;
+        const attachments = Array.isArray(metadata.attachments)
+            ? (metadata.attachments as string[])
+            : [];
+        const status = metadata.verificationStatus
+            ? String(metadata.verificationStatus)
+            : null;
+        const badge = status ? VERIFICATION_BADGES[status] : null;
+        const isReceived = item.delta > 0;
+
+        return (
+            <div className='space-y-1' data-testid='kudos-gift-detail'>
+                <p className='text-sm text-gray-700 dark:text-gray-300'>
+                    {isReceived
+                        ? `Kudos awarded to ${subject} for a past gift`
+                        : `${Subject} awarded kudos for a past gift`}
+                </p>
+                {title ? (
+                    <p className='text-sm font-semibold text-gray-900 dark:text-gray-100 break-words'>
+                        “{title}”
+                    </p>
+                ) : null}
+                {description ? (
+                    <p className='text-xs text-gray-500 dark:text-gray-400 italic break-words'>
+                        “{description}”
+                    </p>
+                ) : null}
+                {attachments.length ? (
+                    <div className='flex flex-wrap gap-1.5 pt-1'>
+                        {attachments.map((url, idx) => {
+                            const src = getImagePath(url);
+                            if (!src) return null;
+                            return (
+                                <button
+                                    key={`${url}-${idx}`}
+                                    type='button'
+                                    aria-label={`View evidence ${idx + 1}`}
+                                    className='p-0 border-0 bg-transparent cursor-zoom-in'
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenImages(attachments, idx);
+                                    }}
+                                >
+                                    <img
+                                        src={src}
+                                        alt={`Evidence ${idx + 1}`}
+                                        className='w-12 h-12 object-cover rounded border border-gray-200 dark:border-zinc-700'
+                                    />
+                                </button>
+                            );
+                        })}
+                    </div>
+                ) : null}
+                {badge ? (
+                    <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+                        data-testid='kudos-gift-verification'
+                    >
+                        {badge.label}
+                    </span>
+                ) : null}
+            </div>
+        );
+    }
 
     if (item.source === 'donation') {
         const amountLabel = formatCurrencyFromCents(metadata.amount);
@@ -94,13 +199,13 @@ function renderDetail(item: KudosHistoryDTO): React.ReactNode {
         if (giftType === 'digital') {
             phrase = isReceived
                 ? 'for sharing a digital gift'
-                : 'You gave kudos for a digital gift';
+                : `${Subject} gave kudos for a digital gift`;
         }
         else if (postType === 'request') {
-            phrase = isReceived ? 'for helping with a request' : 'You gave kudos for help received';
+            phrase = isReceived ? 'for helping with a request' : `${Subject} gave kudos for help received`;
         }
         else if (postType === 'gift') {
-            phrase = isReceived ? 'for receiving a gift' : 'You gave kudos for a gift';
+            phrase = isReceived ? 'for receiving a gift' : `${Subject} gave kudos for a gift`;
         }
         else {
             phrase = isReceived ? 'Kudos received' : 'Kudos given';
@@ -136,13 +241,27 @@ function getMetaPostID(item: KudosHistoryDTO): number | undefined {
 
 type KudosHistoryListProps = {
     userID?: number;
+    /** Username of the profile owner, used to phrase entries when the reader is
+     * viewing someone else's history (falls back to a neutral label). */
+    ownerName?: string;
 };
 
 export default React.memo(function KudosHistoryList({
-    userID: userIDProp
+    userID: userIDProp,
+    ownerName
 }: KudosHistoryListProps = {}) {
     const { user } = useAuth();
     const userID = userIDProp ?? user?.id;
+    const isOwnHistory = !!user?.id && userID === user.id;
+    const ownerLabel = ownerName?.trim() || 'this member';
+    const [lightbox, setLightbox] = React.useState<{
+        images: string[];
+        index: number;
+    } | null>(null);
+    const openImages = React.useCallback(
+        (images: string[], index: number) => setLightbox({ images, index }),
+        []
+    );
     const navigate = useNavigate();
     const pageSize = 10;
     const [source, setSource] = React.useState<KudosHistorySourceFilter>('all');
@@ -212,7 +331,12 @@ export default React.memo(function KudosHistoryList({
                             SOURCE_LABELS[item.source] ?? 'Kudos update';
                         const postID = getMetaPostID(item);
                         const navigable = !!postID;
-                        const detail = renderDetail(item);
+                        const detail = renderDetail(
+                            item,
+                            isOwnHistory,
+                            ownerLabel,
+                            openImages
+                        );
 
                         return (
                             <div
@@ -255,7 +379,12 @@ export default React.memo(function KudosHistoryList({
                                         className='mt-2 flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400'
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <span>from</span>
+                                        <span>
+                                            {item.source === 'gift' &&
+                                            item.delta < 0
+                                                ? 'to'
+                                                : 'from'}
+                                        </span>
                                         <UserCard
                                             user={item.actor}
                                             triggerVariant='name'
@@ -295,6 +424,17 @@ export default React.memo(function KudosHistoryList({
                     </div>
                 </div>
             )}
+
+            {lightbox
+                ? createPortal(
+                    <ImageModalCarousel
+                        images={lightbox.images}
+                        initialIndex={lightbox.index}
+                        onClose={() => setLightbox(null)}
+                    />,
+                    document.body
+                )
+                : null}
         </div>
     );
 });

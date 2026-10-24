@@ -15,9 +15,19 @@ test.describe('Edit Profile', () => {
 
         const save = getSaveButton(page);
         await expect(save).toBeDisabled();
+        await expect(page.getByTestId('about')).toHaveAttribute(
+            'maxlength',
+            '5000'
+        );
+        await expect(page.getByTestId('about-counter')).toContainText(
+            '/ 5,000'
+        );
 
         const aboutVal = `Playwright about ${Date.now()}`;
         await page.getByTestId('about').fill(aboutVal);
+        await expect(page.getByTestId('about-counter')).toHaveText(
+            `${aboutVal.length} / 5,000`
+        );
         await expect(save).toBeEnabled();
 
         const patch = waitForUserPatch(page, ({ headers, bodyText }) => {
@@ -96,6 +106,63 @@ test.describe('Edit Profile', () => {
         await navigateToEdit(page);
         await page.getByRole('button', { name: /cancel/i }).click();
         await expect(getEditButton(page)).toBeVisible();
+    });
+
+    test('admin editing another profile sees target user defaults', async ({
+        page
+    }) => {
+        await bootstrapAuth(page, 1, {
+            user: {
+                admin: true,
+                email: 'admin@example.com',
+                username: 'admin-user',
+                displayName: 'Admin User',
+                settings: {
+                    about: 'Admin profile bio',
+                    profession: 'Admin Profession'
+                }
+            },
+            usersById: {
+                2: {
+                    email: 'target@example.com',
+                    username: 'target-user',
+                    displayName: 'Target User',
+                    settings: {
+                        about: 'Target profile bio',
+                        profession: 'Target Profession'
+                    },
+                    tags: [{ name: 'target-tag' }],
+                    kudos: 27
+                }
+            }
+        });
+        await page.goto('/user/2');
+
+        const edit = getEditButton(page);
+        await expect(edit).toBeVisible({ timeout: 10_000 });
+        await edit.click();
+
+        await expect(getAccountSettingsHeading(page)).toBeVisible({
+            timeout: 10_000
+        });
+        await expect(page.locator('#email')).toHaveValue(
+            'target@example.com'
+        );
+        await expect(page.locator('#username')).toHaveValue(
+            'target-user'
+        );
+        await expect(page.locator('#displayName')).toHaveValue(
+            'Target User'
+        );
+        await expect(page.getByTestId('profession')).toHaveValue(
+            'Target Profession'
+        );
+        await expect(page.getByTestId('about')).toHaveValue(
+            'Target profile bio'
+        );
+        await expect(page.getByTestId('about')).not.toHaveValue(
+            'Admin profile bio'
+        );
     });
 });
 

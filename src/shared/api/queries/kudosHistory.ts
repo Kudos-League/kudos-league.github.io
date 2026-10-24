@@ -7,14 +7,15 @@ export type KudosHistorySourceFilter =
     | 'donation'
     | 'feedback'
     | 'report'
-    | 'reward-offer';
+    | 'reward-offer'
+    | 'gift';
 
 export type KudosHistoryDTO = {
     id: number;
     delta: number;
     total?: number | null;
     createdAt: string;
-    source: 'donation' | 'feedback' | 'report' | 'reward-offer' | 'other';
+    source: 'donation' | 'feedback' | 'report' | 'reward-offer' | 'gift' | 'other';
     metadata?: Record<string, unknown> | null;
     actor?: UserDTO | null;
 };

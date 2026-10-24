@@ -28,6 +28,17 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
             []
         );
 
+    const statusBadgeClass = (status: FeedbackStatus) => {
+        switch (status) {
+        case 'resolved':
+            return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+        case 'archived':
+            return 'bg-gray-200 text-gray-600 dark:bg-neutral-700 dark:text-neutral-300';
+        default:
+            return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+        }
+    };
+
     const handleDelete = async (id: number) => {
         try {
             await apiMutate<void, void>(`/feedback/${id}`, 'delete');
@@ -79,12 +90,12 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
     return (
         <div
             className='max-w-4xl mx-auto p-6
-                       light:text-gray-900 dark:text-neutral-100'
+                       text-gray-900 dark:text-neutral-100'
         >
             <h1 className='text-2xl font-bold mb-4'>User Feedback</h1>
 
             {feedbacks.length === 0 ? (
-                <p className='light:text-gray-600 dark:text-neutral-400'>
+                <p className='text-gray-600 dark:text-neutral-400'>
                     No feedback found.
                 </p>
             ) : (
@@ -107,14 +118,28 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                         return (
                             <div
                                 key={fb.id}
-                                className='p-4 rounded shadow-sm
-                                       light:bg-gray-50 light:border light:border-gray-200
-                                       dark:bg-neutral-800/60 dark:border dark:border-neutral-700'
+                                className={`p-4 rounded shadow-sm border-l-4
+                                       bg-gray-50 border border-gray-200
+                                       dark:bg-neutral-800/60 dark:border dark:border-neutral-700
+                                       ${
+                            fb.status === 'resolved'
+                                ? 'border-l-green-500 opacity-80'
+                                : fb.status === 'archived'
+                                    ? 'border-l-gray-400 opacity-70'
+                                    : 'border-l-blue-500'
+                            }`}
                             >
                                 <div className='flex justify-between items-start gap-4'>
                                     <div>
                                         <div className='flex flex-col gap-1'>
-                                            <p className='text-sm light:text-gray-600 dark:text-neutral-300'>
+                                            <span
+                                                className={`mb-1 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${statusBadgeClass(
+                                                    fb.status
+                                                )}`}
+                                            >
+                                                {statusLabel}
+                                            </span>
+                                            <p className='text-sm text-gray-600 dark:text-neutral-300'>
                                                 Submitted by{' '}
                                                 <span className='font-medium'>
                                                     <span
@@ -159,10 +184,10 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                                 {typeLabel} • Category:{' '}
                                                 {categoryLabel}
                                             </div>
-                                            <h3 className='text-lg font-semibold light:text-gray-900 dark:text-neutral-100'>
+                                            <h3 className='text-lg font-semibold text-gray-900 dark:text-neutral-100'>
                                                 {fb.title}
                                             </h3>
-                                            <p className='whitespace-pre-wrap light:text-gray-700 dark:text-neutral-200'>
+                                            <p className='whitespace-pre-wrap text-gray-700 dark:text-neutral-200'>
                                                 {fb.description}
                                             </p>
                                         </div>
@@ -211,13 +236,13 @@ export default function FeedbackDashboard({ feedbacks, setFeedbacks }: Props) {
                                         )}
 
                                         <div className='mt-3 text-sm flex flex-wrap gap-4'>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Status: {statusLabel}
                                             </span>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Base kudos: {fb.baseRewardKudos}
                                             </span>
-                                            <span className='light:text-gray-600 dark:text-neutral-300'>
+                                            <span className='text-gray-600 dark:text-neutral-300'>
                                                 Additional kudos:{' '}
                                                 {typeof fb.rewardKudos ===
                                                 'number'

@@ -15,6 +15,8 @@ import MessageList from '@/components/posts/MessageList';
 import ImageCarousel from '@/components/Carousel';
 import ImageModalCarousel from '@/components/ImageModalCarousel';
 import Handshakes from '@/components/handshakes/Handshakes';
+import { MAX_KUDOS_PER_OFFER } from '@/shared/kudos';
+import { toErrorMessage } from '@/shared/errorMessage';
 import UserCard from '@/components/users/UserCard';
 import TagInput from '@/components/TagInput';
 import DropdownPicker from '@/components/forms/DropdownPicker';
@@ -372,6 +374,13 @@ export default function PostDetails(props: Props) {
             pushAlert({ type: 'danger', message: 'Please enter a valid kudos amount.' });
             return;
         }
+        if (kudos > MAX_KUDOS_PER_OFFER) {
+            pushAlert({
+                type: 'danger',
+                message: `You can give at most ${MAX_KUDOS_PER_OFFER} kudos at a time.`
+            });
+            return;
+        }
 
         setSubmittingDigitalKudos(true);
 
@@ -416,7 +425,10 @@ export default function PostDetails(props: Props) {
             console.error('Error giving kudos for digital gift:', error);
             pushAlert({
                 type: 'danger',
-                message: 'Failed to give kudos. Please try again.'
+                message: toErrorMessage(
+                    error,
+                    'Failed to give kudos. Please try again.'
+                )
             });
         }
         finally {
@@ -1982,9 +1994,10 @@ export default function PostDetails(props: Props) {
                         <input
                             type='number'
                             min='1'
+                            max={MAX_KUDOS_PER_OFFER}
                             value={digitalKudosValue}
                             onChange={(e) => setDigitalKudosValue(e.target.value)}
-                            placeholder='Enter kudos amount'
+                            placeholder={`Enter kudos amount (max ${MAX_KUDOS_PER_OFFER})`}
                             className='w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700'
                             autoFocus
                         />
@@ -2003,7 +2016,7 @@ export default function PostDetails(props: Props) {
                             <Button
                                 variant='success'
                                 onClick={handleSubmitDigitalKudos}
-                                disabled={submittingDigitalKudos || !digitalKudosValue || isNaN(Number(digitalKudosValue)) || Number(digitalKudosValue) <= 0}
+                                disabled={submittingDigitalKudos || !digitalKudosValue || isNaN(Number(digitalKudosValue)) || Number(digitalKudosValue) <= 0 || Number(digitalKudosValue) > MAX_KUDOS_PER_OFFER}
                                 className='flex-1 justify-center'
                             >
                                 {submittingDigitalKudos ? 'Sending...' : 'Send Kudos'}

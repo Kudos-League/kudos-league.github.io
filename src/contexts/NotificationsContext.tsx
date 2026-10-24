@@ -376,13 +376,22 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                             'A post you initiated a handshake on has been reopened!'
                     });
                 }
-                else if (normalized.type === NotificationType.KUDOS_RECEIVED) {
+                else if (
+                    normalized.type === NotificationType.KUDOS_RECEIVED
+                ) {
                     const amount =
                         'kudos' in normalized
                             ? (normalized as any).kudos
                             : undefined;
-                    const msg =
-                        typeof amount === 'number' && amount > 0
+                    const fromFeedback =
+                        'feedbackID' in normalized &&
+                        !!(normalized as any).feedbackID;
+                    const hasAmount = typeof amount === 'number' && amount > 0;
+                    const msg = fromFeedback
+                        ? hasAmount
+                            ? `Your feedback was resolved — you earned ${amount} kudos!`
+                            : 'Your feedback was resolved — you earned kudos!'
+                        : hasAmount
                             ? `You received ${amount} kudos from your digital gift!`
                             : 'You received kudos from your digital gift!';
                     pushAlert({ type: 'success', message: msg });

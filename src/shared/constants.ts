@@ -39,6 +39,7 @@ export const getFilters = (isSelf: boolean) => {
 
 export const MAX_FILE_SIZE_MB = 5;
 export const MAX_FILE_COUNT = 5;
+export const PROFILE_DESCRIPTION_MAX_LENGTH = 5000;
 
 export const SITE_FEEDBACK_CATEGORIES = [
     'general',

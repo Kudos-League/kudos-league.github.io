@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { apiGet } from '@/shared/api/apiClient';
 import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
+import KudosProofsDashboard from '@/components/admin/KudosProofsDashboard';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import UserCard from '@/components/users/UserCard';
 import Tippy from '@tippyjs/react/headless';
@@ -15,7 +16,7 @@ export default function AdminDashboard() {
     const { user } = useAuth();
 
     const [tab, setTab] = useState<
-        'reports' | 'feedback' | 'analytics' | 'suspicious'
+        'reports' | 'feedback' | 'kudos-proofs' | 'analytics' | 'suspicious'
     >('reports');
 
     const [reports, setReports] = useState<any[]>([]);
@@ -82,6 +83,13 @@ export default function AdminDashboard() {
                         Feedback
                     </Button>
                     <Button
+                        variant={tab === 'kudos-proofs' ? 'primary' : 'ghost'}
+                        onClick={() => setTab('kudos-proofs')}
+                        data-testid='admin-tab-kudos-proofs'
+                    >
+                        Kudos Proofs
+                    </Button>
+                    <Button
                         variant={tab === 'analytics' ? 'primary' : 'ghost'}
                         onClick={() => setTab('analytics')}
                     >
@@ -105,6 +113,7 @@ export default function AdminDashboard() {
                     setFeedbacks={setFeedbacks}
                 />
             )}
+            {tab === 'kudos-proofs' && <KudosProofsDashboard />}
             {tab === 'analytics' && <AdminAnalytics />}
             {tab === 'suspicious' && (
                 <div>

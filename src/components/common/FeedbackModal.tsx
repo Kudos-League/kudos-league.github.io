@@ -7,6 +7,7 @@ import DropdownPicker from '@/components/forms/DropdownPicker';
 import TagInput from '@/components/TagInput';
 import Button from './Button';
 import Alert from './Alert';
+import { pushAlert } from './alertBus';
 import {
     BUG_REPORT_CATEGORIES,
     FEEDBACK_BASE_REWARD,
@@ -32,6 +33,7 @@ type Props = {
     defaultType?: FeedbackKind;
     onSubmit?: (content: string) => Promise<void>;
     onClose?: () => void;
+    onSubmitted?: () => void;
     open?: boolean;
 };
 
@@ -48,6 +50,7 @@ export default function FeedbackModal({
     defaultType = 'site-feedback',
     onSubmit,
     onClose,
+    onSubmitted,
     open
 }: Props) {
     const [activeType, setActiveType] = useState<FeedbackKind>(defaultType);
@@ -55,6 +58,7 @@ export default function FeedbackModal({
     const [submitting, setSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
 
     const form = useForm<FeedbackFormValues>({
@@ -150,7 +154,9 @@ export default function FeedbackModal({
         return null;
     };
 
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const raw = Array.from(event.target.files ?? []);
         if (raw.length === 0) return;
         const converted = await ensureJpegAll(raw);
@@ -200,7 +206,12 @@ export default function FeedbackModal({
                 );
             }
 
+            setSubmittedAt(new Date());
             setSuccess(true);
+            pushAlert({
+                type: 'success',
+                message: 'Your feedback was submitted successfully.'
+            });
             resetForm();
 
             // Close modal after successful submission (only in modal mode)
@@ -209,6 +220,13 @@ export default function FeedbackModal({
                     onClose();
                     setSuccess(false);
                 }, 2000);
+            }
+
+            // Navigate the user away from the standalone feedback page
+            if (onSubmitted) {
+                setTimeout(() => {
+                    onSubmitted();
+                }, 2500);
             }
         }
         catch (err: any) {
@@ -242,6 +260,18 @@ export default function FeedbackModal({
         }
     };
 
+    const submittedTime = submittedAt
+        ? submittedAt.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : null;
+    const successMessage = `We received your submission${
+        submittedTime ? ` at ${submittedTime}` : ''
+    }. If it's accepted, you'll be awarded kudos as a thank-you.${
+        onSubmitted ? ' Taking you back…' : ''
+    }`;
+
     // Render as inline form if no onClose provided
     if (!onClose) {
         return (
@@ -251,9 +281,9 @@ export default function FeedbackModal({
                         Share Feedback
                     </h1>
                     <p className='text-sm text-gray-600 dark:text-gray-300'>
-                        Submitting feedback grants you {FEEDBACK_BASE_REWARD}{' '}
-                        kudos automatically. Kudos league may award additional
-                        kudos for especially helpful reports.
+                        If your feedback is accepted, you&apos;ll be awarded{' '}
+                        {FEEDBACK_BASE_REWARD} kudos as a thank-you. KLF may
+                        award additional kudos for especially helpful reports.
                     </p>
                 </header>
 
@@ -306,7 +336,7 @@ export default function FeedbackModal({
                     <Alert
                         type='success'
                         title='Thank you!'
-                        message='We received your submission and the team will review it soon.'
+                        message={successMessage}
                     />
                 )}
                 {serverError && (
@@ -464,9 +494,9 @@ export default function FeedbackModal({
                                 Share Feedback
                             </h1>
                             <p className='text-sm text-gray-600 dark:text-gray-300'>
-                                Submitting feedback grants you{' '}
-                                {FEEDBACK_BASE_REWARD} kudos automatically.
-                                Kudos league may award additional kudos for
+                                If your feedback is resolved, you&apos;ll be
+                                awarded {FEEDBACK_BASE_REWARD} kudos as a
+                                thank-you. KLF may award additional kudos for
                                 especially helpful reports.
                             </p>
                         </header>
@@ -500,7 +530,7 @@ export default function FeedbackModal({
                             <Alert
                                 type='success'
                                 title='Thank you!'
-                                message='We received your submission and the team will review it soon.'
+                                message={successMessage}
                             />
                         )}
                         {serverError && (
@@ -578,7 +608,9 @@ export default function FeedbackModal({
                                     accept='image/*'
                                     multiple
                                     onClick={(e) =>
-                                        resetFileInputBeforeOpen(e.currentTarget)
+                                        resetFileInputBeforeOpen(
+                                            e.currentTarget
+                                        )
                                     }
                                     onChange={handleImageUpload}
                                     disabled={

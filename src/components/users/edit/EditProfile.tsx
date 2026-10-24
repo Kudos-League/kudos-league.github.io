@@ -20,7 +20,8 @@ import ActionsBar from './ActionsBar';
 import ErrorList from './ErrorList';
 
 import type { ProfileFormValues, UserDTO } from '@/shared/api/types';
-import { useDeleteAccountMutation } from '@/shared/api/mutations/users';
+import { useDeleteAccountMutation, useChangePasswordMutation } from '@/shared/api/mutations/users';
+import { toErrorMessage } from '@/shared/errorMessage';
 import { useBlockedUsersQuery } from '@/shared/api/queries/users';
 import OAuthConnectButton from '@/components/login/OAuthConnectButton';
 import OAuthDisconnectButton from '@/components/login/OAuthDisconnectButton';
@@ -29,6 +30,11 @@ import useLocation, { MapCoordinates } from '@/hooks/useLocation';
 import { useBlockedUsers } from '@/contexts/useBlockedUsers';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import UserCard from '@/components/users/UserCard';
+import { PROFILE_DESCRIPTION_MAX_LENGTH } from '@/shared/constants';
+import {
+    useMyUserSettingsQuery,
+    useUpdateMyUserSettings
+} from '@/shared/api/mutations/usersettings';
 
 const bustCache = (u: string) =>
     `${u}${u.includes('?') ? '&' : '?'}t=${Date.now()}`;
@@ -46,12 +52,13 @@ const EditProfile: React.FC<Props> = ({
     setTargetUser
 }) => {
     const auth = useAuth();
-    const { user, updateUser: updateUserCache } = auth;
+    const { user: currentUser, updateUser: updateUserCache } = auth;
     const { useDyslexicFont, setUseDyslexicFont } = useAccessibility();
     const wasInvited = !!targetUser.invitedByUserID;
     const isAdminEditingOther =
-        !!auth.user?.admin && auth.user.id !== targetUser.id;
-    const canEditProfile = !!auth.user?.admin || auth.user.id === targetUser.id;
+        !!currentUser?.admin && currentUser.id !== targetUser.id;
+    const canEditProfile =
+        !!currentUser?.admin || currentUser?.id === targetUser.id;
 
     const {
         setLocation,
@@ -81,8 +88,47 @@ const EditProfile: React.FC<Props> = ({
         targetUser?.location?.name || ''
 
     );
+    // Location is optional — keep the map collapsed unless the user already
+    // set one, so a blank profile isn't dominated by a 300px map.
+    const [showLocationEditor, setShowLocationEditor] = useState<boolean>(
+        !!targetUser?.location?.name
+    );
     const deleteAccountMutation = useDeleteAccountMutation();
+    const changePasswordMutation = useChangePasswordMutation();
+    const userSettingsQuery = useMyUserSettingsQuery(!isAdminEditingOther);
+    const updateUserSettingsMutation = useUpdateMyUserSettings();
     const { data: blockedUsersDetails, isLoading: blockedUsersLoading } = useBlockedUsersQuery(blockedUsers);
+
+    const emailNotificationsEnabled =
+        userSettingsQuery.data?.emailNotificationsEnabled ?? true;
+
+    const handleEmailNotificationsToggle = async () => {
+        const nextValue = !emailNotificationsEnabled;
+
+        try {
+            const settings = await updateUserSettingsMutation.mutateAsync({
+                emailNotificationsEnabled: nextValue
+            });
+            updateUserCache({
+                settings: {
+                    ...(currentUser?.settings ?? settings),
+                    ...settings
+                }
+            });
+            setToastType('success');
+            setToastMessage(
+                nextValue
+                    ? 'Email notifications enabled'
+                    : 'Email notifications disabled'
+            );
+        }
+        catch (err) {
+            setToastType('error');
+            setToastMessage(
+                toErrorMessage(err, 'Failed to update email notifications.')
+            );
+        }
+    };
 
     const targetUserID = targetUser?.id;
 
@@ -90,7 +136,7 @@ const EditProfile: React.FC<Props> = ({
     const defaults = React.useMemo(() => {
         // Normalize location to only include expected fields
         // Use targetUser.location as the source of truth since that's what MapDisplay uses
-        const sourceLocation = targetUser?.location || user.location;
+        const sourceLocation = targetUser?.location;
         let normalizedLocation = undefined;
         if (sourceLocation) {
             const { latitude, longitude, name, regionID } = sourceLocation;
@@ -106,27 +152,26 @@ const EditProfile: React.FC<Props> = ({
         }
 
         return {
-            email: user.email,
-            username: user.username,
-            displayName: user.displayName,
+            email: targetUser.email,
+            username: targetUser.username,
+            displayName: targetUser.displayName,
             avatar: [],
             location: normalizedLocation,
-            tags: user.tags.map((t) => t.name) || [],
-            about: user.settings?.about || '',
-            profession: user.settings?.profession || '',
+            tags: (targetUser.tags || []).map((t) => t.name),
+            about: targetUser.settings?.about || '',
+            profession: targetUser.settings?.profession || '',
             avatarURL: '',
             admin: targetUser?.admin ?? false,
             kudos: targetUser?.kudos ?? 0
         };
     }, [
-        user.email,
-        user.username,
-        user.displayName,
+        targetUser.email,
+        targetUser.username,
+        targetUser.displayName,
         JSON.stringify(targetUser?.location),
-        JSON.stringify(user.location),
-        JSON.stringify(user.tags),
-        user.settings?.about,
-        user.settings?.profession,
+        JSON.stringify(targetUser.tags),
+        targetUser.settings?.about,
+        targetUser.settings?.profession,
         targetUser?.admin,
         targetUser?.kudos
     ]);
@@ -140,6 +185,10 @@ const EditProfile: React.FC<Props> = ({
     const avatar = useWatch({ control, name: 'avatar' });
     const avatarURL = useWatch({ control, name: 'avatarURL' });
     const tags = useWatch({ control, name: 'tags' });
+    const about = useWatch({ control, name: 'about' });
+    const aboutLength = typeof about === 'string' ? about.length : 0;
+    const aboutLimitLabel = PROFILE_DESCRIPTION_MAX_LENGTH.toLocaleString();
+    const isAboutOverLimit = aboutLength > PROFILE_DESCRIPTION_MAX_LENGTH;
 
     const resetFromUser = (u: UserDTO) => {
         // Normalize location to match defaults
@@ -194,6 +243,7 @@ const EditProfile: React.FC<Props> = ({
 
     const canSave =
         Object.keys(effectiveChanges).length > 0 &&
+        !isAboutOverLimit &&
         !updateUserMutation.isPending;
 
     useEffect(() => {
@@ -201,7 +251,7 @@ const EditProfile: React.FC<Props> = ({
         baselineRef.current = defaults as any;
         // Then reset form to match
         form.reset(defaults, { keepDirty: false, keepTouched: false });
-    }, [user?.id, defaults, form]);
+    }, [targetUser?.id, defaults, form]);
 
     useEffect(() => {
         baselineRef.current = defaults as any;
@@ -408,6 +458,14 @@ const EditProfile: React.FC<Props> = ({
     }, [form, setLocation, setTargetUser, targetUser]);
 
     const handleFormSubmit = async () => {
+        if (isAboutOverLimit) {
+            const message = `Description must be ${aboutLimitLabel} characters or fewer.`;
+            form.setError('about', { type: 'maxLength', message });
+            setToastType('error');
+            setToastMessage(message);
+            return;
+        }
+
         if (!(Object.keys(effectiveChanges).length > 0)) {
             setToastType('error');
             setToastMessage('No changes to save.');
@@ -471,7 +529,7 @@ const EditProfile: React.FC<Props> = ({
 
             console.log('Updated user:', updatedUser); // DEBUG: See what came back
 
-            if (updatedUser?.id && updatedUser.id === auth.user?.id) {
+            if (updatedUser?.id && updatedUser.id === currentUser?.id) {
                 // Apply cache busting to avatar URL so the navbar shows the updated image
                 const userToCache = {
                     ...updatedUser,
@@ -547,17 +605,38 @@ const EditProfile: React.FC<Props> = ({
         }
     };
 
-    const handleChangePassword = (e: React.FormEvent) => {
+    const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!pwForm.current) {
+            setToastType('error');
+            setToastMessage('Enter your current password.');
+            return;
+        }
         if (!pwForm.next || pwForm.next !== pwForm.confirm) {
             setToastType('error');
             setToastMessage('Passwords do not match.');
             return;
         }
-        // TODO: integrate real API
-        setToastType('success');
-        setToastMessage('Password change requested (stub).');
-        setPwForm({ current: '', next: '', confirm: '' });
+        if (pwForm.next.length < 8) {
+            setToastType('error');
+            setToastMessage('New password must be at least 8 characters.');
+            return;
+        }
+        try {
+            await changePasswordMutation.mutateAsync({
+                currentPassword: pwForm.current,
+                newPassword: pwForm.next
+            });
+            setToastType('success');
+            setToastMessage('Password changed.');
+            setPwForm({ current: '', next: '', confirm: '' });
+        }
+        catch (err) {
+            setToastType('error');
+            setToastMessage(
+                toErrorMessage(err, 'Failed to change password.')
+            );
+        }
     };
 
     const handleLogoutOtherSessions = (e: React.FormEvent) => {
@@ -571,7 +650,7 @@ const EditProfile: React.FC<Props> = ({
     const handleDeleteAccount = async (e: React.FormEvent) => {
         e.preventDefault();
         const confirmed = window.confirm(
-            'Are you sure you want to deactivate your account? You can contact support to reactivate later.'
+            'Are you sure you want to erase your account data? This cannot be reversed.'
         );
         if (!confirmed) return;
 
@@ -579,9 +658,9 @@ const EditProfile: React.FC<Props> = ({
             await deleteAccountMutation.mutateAsync();
         }
         catch (err) {
-            console.error('Failed to deactivate account:', err);
+            console.error('Failed to erase account data:', err);
             setToastType('error');
-            setToastMessage('Failed to deactivate account. Please try again.');
+            setToastMessage('Failed to erase account data. Please try again.');
             return;
         }
 
@@ -748,7 +827,7 @@ const EditProfile: React.FC<Props> = ({
                         onSubmit={form.handleSubmit(handleFormSubmit)}
                         className='space-y-6'
                     >
-                        {auth.user?.admin && (
+                        {currentUser?.admin && (
                             <FormField label='Admin'>
                                 <label className='inline-flex items-center gap-2'>
                                     <input
@@ -772,7 +851,7 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {auth.user?.admin && (
+                        {currentUser?.admin && (
                             <FormField
                                 label='Kudos'
                                 help={
@@ -806,26 +885,8 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        <FormField label='Email'>
-                            <div className='w-full overflow-hidden'>
-                                <Input
-                                    disabled={wasInvited}
-                                    name='email'
-                                    form={form}
-                                    label=''
-                                    placeholder={
-                                        targetUser.email ||
-                                        'Enter email address'
-                                    }
-                                    className='w-full'
-                                />
-                            </div>
-                            {wasInvited && (
-                                <p className='text-xs text-gray-500 italic mt-2'>
-                                    Email cannot be changed for invited users
-                                </p>
-                            )}
-                        </FormField>
+                        {/* Email is intentionally not shown or editable for now:
+                            changing your email is disabled. */}
 
                         <FormField label='Username'>
                             <div className='w-full overflow-hidden'>
@@ -833,7 +894,7 @@ const EditProfile: React.FC<Props> = ({
                                     name='username'
                                     form={form}
                                     label=''
-                                    placeholder={user.username}
+                                    placeholder={targetUser.username}
                                     disabled={!canEditProfile}
                                     className='w-full'
                                 />
@@ -846,7 +907,7 @@ const EditProfile: React.FC<Props> = ({
                                     name='displayName'
                                     form={form}
                                     label=''
-                                    placeholder={user.displayName}
+                                    placeholder={targetUser.displayName}
                                     disabled={!canEditProfile}
                                     className='w-full'
                                 />
@@ -872,7 +933,7 @@ const EditProfile: React.FC<Props> = ({
 
                         <FormField
                             label='Description'
-                            help='This will appear on your public profile.'
+                            help={`This will appear on your public profile. Max ${aboutLimitLabel} characters.`}
                         >
                             <div className='w-full overflow-hidden'>
                                 <Input
@@ -884,7 +945,27 @@ const EditProfile: React.FC<Props> = ({
                                     multiline
                                     disabled={!canEditProfile}
                                     className='w-full'
+                                    maxLength={PROFILE_DESCRIPTION_MAX_LENGTH}
+                                    registerOptions={{
+                                        maxLength: {
+                                            value: PROFILE_DESCRIPTION_MAX_LENGTH,
+                                            message: `Description must be ${aboutLimitLabel} characters or fewer.`
+                                        }
+                                    }}
                                 />
+                                <div className='mt-1 flex justify-end'>
+                                    <span
+                                        data-testid='about-counter'
+                                        className={
+                                            'text-xs ' +
+                                            (isAboutOverLimit
+                                                ? 'text-red-600 dark:text-red-400'
+                                                : 'text-gray-500 dark:text-gray-400')
+                                        }
+                                    >
+                                        {aboutLength.toLocaleString()} / {aboutLimitLabel}
+                                    </span>
+                                </div>
                             </div>
                         </FormField>
 
@@ -917,13 +998,42 @@ const EditProfile: React.FC<Props> = ({
                             </FormField>
                         )}
 
-                        {/* Location */}
+                        {/* Location (optional) */}
                         {canEditProfile && (
                             <FormField
-                                label='Location'
                                 help='Only you can see your exact address or place name. Others see an approximate area.'
                             >
-                                {locationLabel && (
+                                <button
+                                    type='button'
+                                    onClick={() =>
+                                        setShowLocationEditor((v) => !v)
+                                    }
+                                    aria-expanded={showLocationEditor}
+                                    className='flex w-full items-center justify-between gap-2 text-left font-semibold text-gray-900 dark:text-white'
+                                >
+                                    <span>
+                                        Location{' '}
+                                        <span className='font-normal text-gray-500 dark:text-gray-400'>
+                                            (optional)
+                                        </span>
+                                    </span>
+                                    <span
+                                        aria-hidden='true'
+                                        className={`text-gray-500 transition-transform ${showLocationEditor ? 'rotate-180' : ''}`}
+                                    >
+                                        ▾
+                                    </span>
+                                </button>
+
+                                {!showLocationEditor && (
+                                    <p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+                                        {locationLabel
+                                            ? locationLabel
+                                            : 'No location set. Tap to add one (helps neighbors find your posts).'}
+                                    </p>
+                                )}
+
+                                {showLocationEditor && locationLabel && (
                                     <div className='mb-2 flex items-center justify-between gap-2'>
                                         <div className='text-sm text-gray-700 dark:text-gray-300 truncate'>
                                             {locationLabel}
@@ -939,66 +1049,68 @@ const EditProfile: React.FC<Props> = ({
                                     </div>
                                 )}
 
-                                <div className='w-full overflow-hidden'>
-                                    <MapDisplay
-                                        regionID={targetUser.location?.regionID}
-                                        width='100%'
-                                        height={300}
-                                        edit
-                                        exactLocation
-                                        shouldGetYourLocation
-                                        inlineBanner={false}
-                                        onLabelChange={(label) =>
-                                            setLocationLabel(label)
-                                        }
-                                        onLocationChange={(data) => {
-                                            if (!data) {
-                                                setLocation(null);
-                                                form.setValue(
-                                                    'location',
-                                                    null as any,
-                                                    {
-                                                        shouldDirty: true,
-                                                        shouldValidate: true
-                                                    }
-                                                );
+                                {showLocationEditor && (
+                                    <div className='w-full overflow-hidden'>
+                                        <MapDisplay
+                                            regionID={targetUser.location?.regionID}
+                                            width='100%'
+                                            height={300}
+                                            edit
+                                            exactLocation
+                                            shouldGetYourLocation
+                                            inlineBanner={false}
+                                            onLabelChange={(label) =>
+                                                setLocationLabel(label)
                                             }
-                                            else {
-                                                const locationValue = {
-                                                    latitude:
-                                                        data.coordinates
-                                                            .latitude,
-                                                    longitude:
-                                                        data.coordinates
-                                                            .longitude,
-                                                    name:
-                                                        data.name ||
-                                                        data.businessName ||
-                                                        '',
-                                                    regionID: data.placeID
-                                                };
-
-                                                setLocation(data.coordinates);
-                                                // Only mark as dirty if this is a user change, not initial load
-                                                const isUserChange = data.changed !== false;
-
-                                                // If this is the initial load, store the name for baseline comparison
-                                                if (!isUserChange && initialLocationNameRef.current === null) {
-                                                    initialLocationNameRef.current = locationValue.name;
+                                            onLocationChange={(data) => {
+                                                if (!data) {
+                                                    setLocation(null);
+                                                    form.setValue(
+                                                        'location',
+                                                        null as any,
+                                                        {
+                                                            shouldDirty: true,
+                                                            shouldValidate: true
+                                                        }
+                                                    );
                                                 }
-
-                                                form.setValue(
-                                                    'location',
-                                                    locationValue,
-                                                    {
-                                                        shouldDirty: isUserChange,
-                                                        shouldValidate: true
+                                                else {
+                                                    const locationValue = {
+                                                        latitude:
+                                                            data.coordinates
+                                                                .latitude,
+                                                        longitude:
+                                                            data.coordinates
+                                                                .longitude,
+                                                        name:
+                                                            data.name ||
+                                                            data.businessName ||
+                                                            '',
+                                                        regionID: data.placeID
+                                                    };
+    
+                                                    setLocation(data.coordinates);
+                                                    // Only mark as dirty if this is a user change, not initial load
+                                                    const isUserChange = data.changed !== false;
+    
+                                                    // If this is the initial load, store the name for baseline comparison
+                                                    if (!isUserChange && initialLocationNameRef.current === null) {
+                                                        initialLocationNameRef.current = locationValue.name;
                                                     }
-                                                );
-                                            }
-                                        }}
-                                    />
-                                </div>
+    
+                                                    form.setValue(
+                                                        'location',
+                                                        locationValue,
+                                                        {
+                                                            shouldDirty: isUserChange,
+                                                            shouldValidate: true
+                                                        }
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </FormField>
                         )}
 
@@ -1027,12 +1139,12 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Discord</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.discordID
+                                        {currentUser?.discordID
                                             ? 'Connected'
                                             : 'Not connected'}
                                     </div>
                                 </div>
-                                {user.discordID ? (
+                                {currentUser?.discordID ? (
                                     <OAuthDisconnectButton
                                         provider='discord'
                                         onSuccess={() => {
@@ -1060,12 +1172,12 @@ const EditProfile: React.FC<Props> = ({
                                 <div>
                                     <div className='font-medium'>Google</div>
                                     <div className='text-sm text-gray-600 dark:text-gray-300'>
-                                        {user.googleID
+                                        {currentUser?.googleID
                                             ? 'Connected'
                                             : 'Not connected'}
                                     </div>
                                 </div>
-                                {user.googleID ? (
+                                {currentUser?.googleID ? (
                                     <OAuthDisconnectButton
                                         provider='google'
                                         onSuccess={() => {
@@ -1088,6 +1200,59 @@ const EditProfile: React.FC<Props> = ({
                                     </OAuthConnectButton>
                                 )}
                             </div>
+                        </div>
+                    </SettingsSection>
+                )}
+
+                {!isAdminEditingOther && (
+                    <SettingsSection
+                        title='Notification settings'
+                        description='Choose which optional emails you receive.'
+                    >
+                        <div className='flex items-center justify-between gap-4'>
+                            <div className='flex-1'>
+                                <label
+                                    htmlFor='email-notifications-toggle'
+                                    className='text-sm font-medium text-gray-700 dark:text-gray-200'
+                                >
+                                    Email notifications
+                                </label>
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                                    Receive optional emails about account activity
+                                    and security. Verification and password reset
+                                    emails are always sent.
+                                </p>
+                            </div>
+                            <button
+                                id='email-notifications-toggle'
+                                type='button'
+                                role='switch'
+                                aria-checked={emailNotificationsEnabled}
+                                aria-busy={
+                                    userSettingsQuery.isLoading ||
+                                    updateUserSettingsMutation.isPending
+                                }
+                                disabled={
+                                    userSettingsQuery.isLoading ||
+                                    updateUserSettingsMutation.isPending
+                                }
+                                onClick={handleEmailNotificationsToggle}
+                                className={[
+                                    'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+                                    emailNotificationsEnabled
+                                        ? 'bg-blue-600'
+                                        : 'bg-gray-200 dark:bg-gray-700'
+                                ].join(' ')}
+                            >
+                                <span
+                                    className={[
+                                        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                        emailNotificationsEnabled
+                                            ? 'translate-x-5'
+                                            : 'translate-x-0'
+                                    ].join(' ')}
+                                />
+                            </button>
                         </div>
                     </SettingsSection>
                 )}
@@ -1145,6 +1310,7 @@ const EditProfile: React.FC<Props> = ({
                         <FormField label='Current password'>
                             <input
                                 type='password'
+                                autoComplete='current-password'
                                 value={pwForm.current}
                                 onChange={(e) =>
                                     setPwForm((s) => ({
@@ -1160,11 +1326,12 @@ const EditProfile: React.FC<Props> = ({
                             <FormField label='New password'>
                                 <input
                                     type='password'
-                                    value={pwForm.current}
+                                    autoComplete='new-password'
+                                    value={pwForm.next}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
                                             ...s,
-                                            current: e.target.value
+                                            next: e.target.value
                                         }))
                                     }
                                     className='mt-2 block w-full max-w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600 dark:focus:border-indigo-500 dark:focus:ring-indigo-500'
@@ -1173,6 +1340,7 @@ const EditProfile: React.FC<Props> = ({
                             <FormField label='Confirm password'>
                                 <input
                                     type='password'
+                                    autoComplete='new-password'
                                     value={pwForm.confirm}
                                     onChange={(e) =>
                                         setPwForm((s) => ({
@@ -1270,8 +1438,8 @@ const EditProfile: React.FC<Props> = ({
 
                 {!isAdminEditingOther && (
                     <SettingsSection
-                        title='Deactivate account'
-                        description='This deactivates your account. You may request reactivation later.'
+                        title='Erase account data'
+                        description='This anonymizes your account and cannot be reversed.'
                         noBorder
                     >
                         <form
@@ -1279,7 +1447,7 @@ const EditProfile: React.FC<Props> = ({
                             onSubmit={handleDeleteAccount}
                         >
                             <Button type='submit' variant='danger'>
-                                Deactivate my account
+                                Erase my account data
                             </Button>
                         </form>
                     </SettingsSection>

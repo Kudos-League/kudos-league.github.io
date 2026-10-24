@@ -9,12 +9,14 @@ import Input from '@/components/forms/Input';
 import Form from '@/components/forms/Form';
 import FormField from '@/components/forms/FormField';
 import OAuthGroup from './OAuthGroup';
+import { routes } from '@/routes';
 
 type SignUpFormValues = {
     username: string;
     email: string;
     password?: string;
     confirmPassword?: string;
+    agreedToTerms?: boolean;
 };
 
 type SignUpFormProps = {
@@ -33,6 +35,20 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
     const [isVerifying, setIsVerifying] = useState(false);
     const [errorMessage, setError] = useState<string | null>(null);
     const [successMessage, setSuccess] = useState<string | null>(null);
+    const alertRef = React.useRef<HTMLDivElement>(null);
+
+    const scrollToAlert = () => {
+        // Wait for the alert to render before scrolling it into view so the
+        // user always gets feedback, even when the submit button is below the
+        // fold on mobile.
+        requestAnimationFrame(() => {
+            alertRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        });
+    };
+
     const handleBack = () => {
         if (window.history.length > 1) {
             navigate(-1);
@@ -70,18 +86,23 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         const { username, email, password, confirmPassword } = values as any;
 
         if (password !== confirmPassword) {
+            setSuccess(null);
             setError('Passwords do not match.');
+            scrollToAlert();
             return;
         }
 
         if (!inviteToken) {
+            setSuccess(null);
             setError(
                 'Invite token missing. Please open the invite link again.'
             );
+            scrollToAlert();
             return;
         }
 
         setError(null);
+        setSuccess(null);
         try {
             setIsVerifying(true);
             const result = await registerUser(
@@ -95,6 +116,7 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
 
             if (typeof result === 'string') {
                 setSuccess(result);
+                scrollToAlert();
             }
             else {
                 onSuccess?.();
@@ -103,9 +125,30 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
         }
         catch (err: any) {
             setIsVerifying(false);
-            setError(err.toString());
-            onError?.(err.toString());
+            const message = (
+                err?.message ||
+                (typeof err === 'string' ? err : '') ||
+                'Sign-up failed. Please try again.'
+            ).replace(/^Error:\s*/, '');
+            setError(message);
+            onError?.(message);
+            scrollToAlert();
         }
+    };
+
+    const onInvalid = (errors: Record<string, any>) => {
+        // react-hook-form blocks submission silently when fields are invalid.
+        // Surface the first specific message at the top so the user knows why
+        // "nothing happened" after tapping Sign Up.
+        const firstMessage = Object.values(errors)
+            .map((e) => e?.message)
+            .find((m): m is string => typeof m === 'string' && m.length > 0);
+        setSuccess(null);
+        setError(
+            firstMessage ||
+                'Please fill in all required fields correctly before signing up.'
+        );
+        scrollToAlert();
     };
 
     return (
@@ -113,8 +156,8 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
             <Form
                 methods={form}
                 onSubmit={onSubmit}
+                onInvalid={onInvalid}
                 className='space-y-6'
-                serverError={errorMessage}
             >
                 <input
                     type='hidden'
@@ -122,6 +165,13 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     value={inviteToken}
                     readOnly
                 />
+
+                <div ref={alertRef} className='scroll-mt-4'>
+                    {errorMessage && <Alert tone='error'>{errorMessage}</Alert>}
+                    {successMessage && (
+                        <Alert tone='success'>{successMessage}</Alert>
+                    )}
+                </div>
                 <div>
                     <div className='col-span-2'>
                         <FormField name='username'>
@@ -188,6 +238,30 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                     </FormField>
                 </div>
 
+                <FormField name='agreedToTerms' noMargin>
+                    <label className='flex items-start gap-2 text-sm text-gray-200 dark:text-gray-300'>
+                        <input
+                            type='checkbox'
+                            className='mt-1 h-4 w-4 shrink-0'
+                            {...form.register('agreedToTerms', {
+                                required:
+                                    'You must agree to the Terms & Conditions'
+                            })}
+                        />
+                        <span>
+                            I agree to the{' '}
+                            <a
+                                href={routes.terms}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='underline hover:text-white'
+                            >
+                                Terms &amp; Conditions
+                            </a>
+                        </span>
+                    </label>
+                </FormField>
+
                 <Button type='submit' disabled={isVerifying} className='w-full'>
                     {isVerifying ? 'Loading...' : 'Sign Up'}
                 </Button>
@@ -203,10 +277,6 @@ export default function SignUpForm({ onSuccess, onError }: SignUpFormProps) {
                         Log In
                     </TinyHelpLink>
                 </p>
-
-                {successMessage && (
-                    <Alert tone='success'>{successMessage}</Alert>
-                )}
             </Form>
         </Auth>
     );

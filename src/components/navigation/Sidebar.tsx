@@ -22,8 +22,7 @@ import {
     FlagIcon,
     ShieldCheckIcon,
     ChatBubbleLeftRightIcon,
-    PlusCircleIcon,
-    UserGroupIcon
+    PlusCircleIcon
 } from '@heroicons/react/24/outline';
 
 type NavItem = {
@@ -49,8 +48,7 @@ function classNames(...classes: Array<string | false | null | undefined>) {
 function useDesktopSidebarItems(): NavItem[] {
     return [
         { name: 'Main', to: routes.home, icon: HomeIcon },
-        { name: 'Events', to: routes.events, icon: CalendarIcon },
-        { name: 'Groups', to: routes.communities, icon: UserGroupIcon }
+        { name: 'Events', to: routes.events, icon: CalendarIcon }
     ];
 }
 
@@ -59,8 +57,7 @@ function useMobileNav(isLoggedIn: boolean, isAdmin?: boolean): NavItem[] {
     if (isLoggedIn) {
         const items: NavItem[] = [
             { name: 'Main', to: routes.home, icon: HomeIcon },
-            { name: 'Events', to: routes.events, icon: CalendarIcon },
-            { name: 'Groups', to: routes.communities, icon: UserGroupIcon }
+            { name: 'Events', to: routes.events, icon: CalendarIcon }
             // { name: 'Leaderboard', to: routes.leaderboard, icon: TrophyIcon },
             // { name: 'Give Feedback', to: routes.feedback, icon: FlagIcon },
         ];
