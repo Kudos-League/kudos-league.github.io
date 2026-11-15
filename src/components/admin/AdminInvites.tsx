@@ -1,11 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import UserCard from '@/components/users/UserCard';
 import Button from '@/components/common/Button';
 import InviteQrCard from '@/components/users/InviteQrCard';
 import { apiGet, apiMutate } from '@/shared/api/apiClient';
-import { UserInviteDTO, UserInviteListResponse } from '@/shared/api/types';
+import {
+    UserDTO,
+    UserInviteDTO,
+    UserInviteListResponse
+} from '@/shared/api/types';
 import {
     inviteErrorMessage,
     inviteStatusLabel,
+    inviteUseCount,
     isInviteExhausted
 } from '@/shared/invites/inviteStatus';
 
@@ -25,6 +31,14 @@ type BulkInviteResult = {
     error?: string;
     inviteUrl?: string | null;
     invite?: UserInviteDTO;
+};
+
+type InviteMember = { user: UserDTO; joinedAt: string };
+
+type MembersState = {
+    loading: boolean;
+    error?: string;
+    members?: InviteMember[];
 };
 
 const inputClass =
@@ -79,6 +93,53 @@ export default function AdminInvites() {
     const [listError, setListError] = useState<string | null>(null);
     const [revoking, setRevoking] = useState<number | null>(null);
 
+    // People who joined through each invite, loaded when a row is opened.
+    const [openInviteID, setOpenInviteID] = useState<number | null>(null);
+    const [membersByInvite, setMembersByInvite] = useState<
+        Record<number, MembersState>
+    >({});
+
+    const toggleMembers = async (inviteID: number) => {
+        if (openInviteID === inviteID) {
+            setOpenInviteID(null);
+            return;
+        }
+        setOpenInviteID(inviteID);
+        // Always refetch so newly joined people show up.
+        setMembersByInvite((prev) => ({
+            ...prev,
+            [inviteID]: { ...prev[inviteID], loading: true, error: undefined }
+        }));
+        try {
+            const data = await apiGet<{
+                invite: UserInviteDTO;
+                members: InviteMember[];
+            }>(`/users/invites/${inviteID}/members`);
+            setMembersByInvite((prev) => ({
+                ...prev,
+                [inviteID]: { loading: false, members: data?.members ?? [] }
+            }));
+            if (data?.invite) {
+                setInvites((prev) =>
+                    prev.map((invite) =>
+                        invite.id === inviteID
+                            ? { ...invite, ...data.invite }
+                            : invite
+                    )
+                );
+            }
+        }
+        catch (err) {
+            setMembersByInvite((prev) => ({
+                ...prev,
+                [inviteID]: {
+                    loading: false,
+                    error: inviteErrorMessage(err, 'Failed to load who joined.')
+                }
+            }));
+        }
+    };
+
     const loadInvites = useCallback(async (cursor?: number) => {
         setLoading(true);
         setListError(null);
@@ -126,10 +187,11 @@ export default function AdminInvites() {
                 maxUses: parsedMaxUses,
                 ...(label.trim() ? { label: label.trim() } : {})
             };
-            const response = await apiMutate<
-                CreateInviteResponse,
-                typeof body
-            >('/users/invites', 'post', body);
+            const response = await apiMutate<CreateInviteResponse, typeof body>(
+                '/users/invites',
+                'post',
+                body
+            );
             const inviteUrl =
                 response.inviteUrl ?? response.invite.inviteUrl ?? null;
             if (!inviteUrl) {
@@ -223,8 +285,8 @@ export default function AdminInvites() {
                     <h2 className='text-lg font-semibold'>Shareable QR code</h2>
                     <p className='text-sm text-slate-500 dark:text-zinc-400'>
                         One link and QR code that several people can sign up
-                        with, for flyers, posters or an event. Leave it at 1
-                        for a single-use invite.
+                        with, for flyers, posters or an event. Leave it at 1 for
+                        a single-use invite.
                     </p>
                 </div>
                 <form
@@ -294,8 +356,8 @@ export default function AdminInvites() {
                     </h2>
                     <p className='text-sm text-slate-500 dark:text-zinc-400'>
                         Paste email addresses, one per line or separated by
-                        commas. Each person gets their own single-use invite
-                        by email.
+                        commas. Each person gets their own single-use invite by
+                        email.
                     </p>
                 </div>
                 <form onSubmit={sendBulkInvites} className='space-y-3'>
@@ -415,50 +477,89 @@ export default function AdminInvites() {
                                     const canRevoke =
                                         !invite.revoked &&
                                         !isInviteExhausted(invite);
+                                    const joinedCount = inviteUseCount(invite);
+                                    const isOpen = openInviteID === invite.id;
                                     return (
-                                        <tr
-                                            key={invite.id}
-                                            className='border-t border-slate-200 dark:border-zinc-700'
-                                        >
-                                            <td className='py-2 pr-3'>
-                                                <div className='font-medium'>
-                                                    {name}
-                                                </div>
-                                                {sub && (
-                                                    <div className='text-xs text-slate-500'>
-                                                        {sub}
+                                        <React.Fragment key={invite.id}>
+                                            <tr className='border-t border-slate-200 dark:border-zinc-700'>
+                                                <td className='py-2 pr-3'>
+                                                    <div className='font-medium'>
+                                                        {name}
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className='py-2 pr-3 whitespace-nowrap text-slate-500'>
-                                                {formatDate(invite.createdAt)}
-                                            </td>
-                                            <td className='py-2 pr-3 whitespace-nowrap'>
-                                                {inviteStatusLabel(invite)}
-                                            </td>
-                                            <td className='py-2 text-right'>
-                                                {canRevoke && (
-                                                    <Button
-                                                        type='button'
-                                                        variant='secondary'
-                                                        className='text-xs px-2 py-1 rounded-md'
-                                                        disabled={
-                                                            revoking ===
-                                                            invite.id
-                                                        }
-                                                        onClick={() =>
-                                                            revokeInvite(
+                                                    {sub && (
+                                                        <div className='text-xs text-slate-500'>
+                                                            {sub}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className='py-2 pr-3 whitespace-nowrap text-slate-500'>
+                                                    {formatDate(
+                                                        invite.createdAt
+                                                    )}
+                                                </td>
+                                                <td className='py-2 pr-3 whitespace-nowrap'>
+                                                    {inviteStatusLabel(invite)}
+                                                </td>
+                                                <td className='py-2 text-right whitespace-nowrap space-x-2'>
+                                                    {joinedCount > 0 && (
+                                                        <Button
+                                                            type='button'
+                                                            variant='secondary'
+                                                            className='text-xs px-2 py-1 rounded-md'
+                                                            aria-expanded={
+                                                                isOpen
+                                                            }
+                                                            onClick={() =>
+                                                                toggleMembers(
+                                                                    invite.id
+                                                                )
+                                                            }
+                                                        >
+                                                            {isOpen
+                                                                ? 'Hide people'
+                                                                : `People (${joinedCount})`}
+                                                        </Button>
+                                                    )}
+                                                    {canRevoke && (
+                                                        <Button
+                                                            type='button'
+                                                            variant='secondary'
+                                                            className='text-xs px-2 py-1 rounded-md'
+                                                            disabled={
+                                                                revoking ===
                                                                 invite.id
-                                                            )
-                                                        }
+                                                            }
+                                                            onClick={() =>
+                                                                revokeInvite(
+                                                                    invite.id
+                                                                )
+                                                            }
+                                                        >
+                                                            {revoking ===
+                                                            invite.id
+                                                                ? 'Revoking…'
+                                                                : 'Revoke'}
+                                                        </Button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                            {isOpen && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={4}
+                                                        className='pb-3'
                                                     >
-                                                        {revoking === invite.id
-                                                            ? 'Revoking…'
-                                                            : 'Revoke'}
-                                                    </Button>
-                                                )}
-                                            </td>
-                                        </tr>
+                                                        <InviteMembers
+                                                            state={
+                                                                membersByInvite[
+                                                                    invite.id
+                                                                ]
+                                                            }
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
                                     );
                                 })}
                             </tbody>
@@ -480,5 +581,39 @@ export default function AdminInvites() {
                 )}
             </section>
         </div>
+    );
+}
+
+function InviteMembers({ state }: { state?: MembersState }) {
+    if (!state || state.loading) {
+        return <p className='text-sm text-slate-500 px-1'>Loading…</p>;
+    }
+    if (state.error) {
+        return (
+            <p className='text-sm text-red-600 dark:text-red-400 px-1'>
+                {state.error}
+            </p>
+        );
+    }
+    const members = state.members ?? [];
+    if (members.length === 0) {
+        return (
+            <p className='text-sm text-slate-500 px-1'>
+                Nobody has joined with this invite yet.
+            </p>
+        );
+    }
+    return (
+        <ul className='grid gap-2 sm:grid-cols-2 rounded-md bg-slate-50 p-3 dark:bg-zinc-800/60'>
+            {members.map((member) => (
+                <li key={member.user.id}>
+                    <UserCard
+                        user={member.user}
+                        triggerVariant='avatar-name'
+                        subtitle={`Joined ${new Date(member.joinedAt).toLocaleString()}`}
+                    />
+                </li>
+            ))}
+        </ul>
     );
 }
