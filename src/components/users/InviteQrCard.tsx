@@ -11,6 +11,8 @@ type InviteQrCardProps = {
     inviteUrl: string;
     /** Shown on the printed sheet and used in the download filename. */
     caption?: string;
+    /** How many people can register with this link. */
+    maxUses?: number;
 };
 
 /**
@@ -20,7 +22,8 @@ type InviteQrCardProps = {
  */
 export default function InviteQrCard({
     inviteUrl,
-    caption = 'Join Kudos'
+    caption = 'Join Kudos',
+    maxUses = 1
 }: InviteQrCardProps) {
     const [copied, setCopied] = useState(false);
     const [downloading, setDownloading] = useState(false);
@@ -124,9 +127,12 @@ export default function InviteQrCard({
                     </Button>
                 </div>
                 <p className='text-xs text-slate-500 dark:text-zinc-400'>
-                    Scanning the QR opens this invite link. The link is single-use:
-                    the first person to register with it claims it. The image is
-                    rendered by api.qrserver.com (free third-party service).
+                    Scanning the QR opens this invite link.{' '}
+                    {maxUses > 1
+                        ? `Up to ${maxUses} people can sign up with it.`
+                        : 'The link is single-use: the first person to register with it claims it.'}{' '}
+                    The image is rendered by api.qrserver.com (free third-party
+                    service).
                 </p>
                 {actionError && (
                     <p className='text-xs text-red-600 dark:text-red-400'>

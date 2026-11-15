@@ -7,6 +7,7 @@ import AppSidebar from './Sidebar';
 import DMsModal from '../messages/DMsModal';
 import SearchModal from './SearchModal';
 import MobileTabBar from './MobileTabBar';
+import InviteWelcome from '@/components/invites/InviteWelcome';
 import { useAuth } from '@/contexts/useAuth';
 import { useDMs } from '@/contexts/DMsContext';
 
@@ -150,6 +151,7 @@ const Layout: React.FC = () => {
                         </button>
                     </div>
                 )}
+                <InviteWelcome />
                 <Navbar
                     onOpenSidebar={() => setSidebarOpen(true)}
                     onOpenDMs={() => openDMs()}

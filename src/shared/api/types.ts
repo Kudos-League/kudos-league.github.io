@@ -353,6 +353,11 @@ export interface UserInviteDTO {
     usedByUserID?: number | null;
     usedAt?: string | null;
     revoked: boolean;
+    /** How many people can register with it (1 = single-use). */
+    maxUses?: number;
+    /** How many have registered with it so far. */
+    useCount?: number;
+    label?: string | null;
     inviteUrl?: string | null;
     usedBy?: UserDTO | null;
     createdAt: string;

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { routes } from '@/routes';
 import { useForm } from 'react-hook-form';
 import Button from '@/components/common/Button';
 import Form from '@/components/forms/Form';
@@ -10,6 +12,10 @@ import { UserInviteDTO, UserInviteListResponse } from '@/shared/api/types';
 import UserCard from '@/components/users/UserCard';
 import InviteQrCard from '@/components/users/InviteQrCard';
 import { useAuth } from '@/contexts/useAuth';
+import {
+    inviteStatusLabel,
+    isInviteExhausted
+} from '@/shared/invites/inviteStatus';
 
 const PAGE_SIZE = 5;
 
@@ -206,11 +212,7 @@ export default function InviteManager() {
         }
     };
 
-    const renderInviteStatus = (invite: UserInviteDTO) => {
-        if (invite.revoked) return 'Revoked';
-        if (invite.usedAt || invite.usedByUserID) return 'Used';
-        return 'Unused';
-    };
+    const renderInviteStatus = inviteStatusLabel;
 
     const handleLoadMore = async () => {
         if (!nextCursor) return;
@@ -231,7 +233,15 @@ export default function InviteManager() {
                 {isAdmin && (
                     <p className='text-xs text-slate-500 dark:text-zinc-400 mt-1'>
                         As an admin you can create unlimited invites; every
-                        invite stays tied back to you.
+                        invite stays tied back to you. For links several people
+                        can use, or to email a list, use the{' '}
+                        <Link
+                            to={`${routes.admin}?tab=invites`}
+                            className='underline'
+                        >
+                            Invites tab in Admin
+                        </Link>
+                        .
                     </p>
                 )}
             </div>
@@ -298,12 +308,13 @@ export default function InviteManager() {
                 ) : (
                     <div className='space-y-2'>
                         {invites.map((invite) => {
-                            const usedBy = invite.usedBy ?? null;
-                            const isDisabled = !!(
-                                invite.revoked ||
-                                invite.usedAt ||
-                                invite.usedByUserID
-                            );
+                            const isShared = (invite.maxUses ?? 1) > 1;
+                            // Shared links show their label + counter, not the latest joiner.
+                            const usedBy = isShared
+                                ? null
+                                : (invite.usedBy ?? null);
+                            const isDisabled =
+                                invite.revoked || isInviteExhausted(invite);
 
                             return (
                                 <div
@@ -331,8 +342,11 @@ export default function InviteManager() {
                                         ) : (
                                             <>
                                                 <p className='font-medium text-slate-700 dark:text-zinc-100'>
-                                                    {invite.targetEmail ||
-                                                        'Shareable link'}
+                                                    {invite.label ||
+                                                        invite.targetEmail ||
+                                                        (isShared
+                                                            ? 'Shared link'
+                                                            : 'Shareable link')}
                                                 </p>
                                                 <p className='text-xs text-slate-500 dark:text-zinc-400'>
                                                     Created{' '}

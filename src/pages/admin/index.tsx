@@ -5,6 +5,8 @@ import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import FeedbackDashboard from '@/components/admin/FeedbackDashboard';
 import KudosProofsDashboard from '@/components/admin/KudosProofsDashboard';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import AdminInvites from '@/components/admin/AdminInvites';
+import { useSearchParams } from 'react-router-dom';
 import UserCard from '@/components/users/UserCard';
 import Tippy from '@tippyjs/react/headless';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
@@ -12,12 +14,23 @@ import AdminReportModal from '@/components/admin/AdminReportModal';
 import Button from '@/components/common/Button';
 import { FeedbackDTO } from '@/shared/api/types';
 
+const ADMIN_TABS = [
+    'reports',
+    'feedback',
+    'kudos-proofs',
+    'analytics',
+    'suspicious',
+    'invites'
+] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
 export default function AdminDashboard() {
     const { user } = useAuth();
 
-    const [tab, setTab] = useState<
-        'reports' | 'feedback' | 'kudos-proofs' | 'analytics' | 'suspicious'
-    >('reports');
+    // ?tab=invites deep-links to a tab (used from the profile invite manager).
+    const [searchParams] = useSearchParams();
+    const initialTab = ADMIN_TABS.find((t) => t === searchParams.get('tab'));
+    const [tab, setTab] = useState<AdminTab>(initialTab ?? 'reports');
 
     const [reports, setReports] = useState<any[]>([]);
     const [feedbacks, setFeedbacks] = useState<FeedbackDTO[]>([]);
@@ -67,9 +80,9 @@ export default function AdminDashboard() {
 
     return (
         <div className='max-w-5xl mx-auto p-6'>
-            <div className='flex items-center justify-between mb-5'>
+            <div className='flex flex-wrap items-center justify-between gap-3 mb-5'>
                 <h1 className='text-2xl font-bold'>Admin</h1>
-                <div className='inline-flex gap-2'>
+                <div className='flex flex-wrap gap-2'>
                     <Button
                         variant={tab === 'reports' ? 'primary' : 'ghost'}
                         onClick={() => setTab('reports')}
@@ -101,6 +114,13 @@ export default function AdminDashboard() {
                     >
                         Suspicious
                     </Button>
+                    <Button
+                        variant={tab === 'invites' ? 'primary' : 'ghost'}
+                        onClick={() => setTab('invites')}
+                        data-testid='admin-tab-invites'
+                    >
+                        Invites
+                    </Button>
                 </div>
             </div>
 
@@ -115,6 +135,7 @@ export default function AdminDashboard() {
             )}
             {tab === 'kudos-proofs' && <KudosProofsDashboard />}
             {tab === 'analytics' && <AdminAnalytics />}
+            {tab === 'invites' && <AdminInvites />}
             {tab === 'suspicious' && (
                 <div>
                     <h2 className='text-xl font-semibold mb-3'>
