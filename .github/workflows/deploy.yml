@@ -56,11 +56,10 @@ jobs:
                   fi
 
             - name: Deploy to Cloudflare Pages
-              uses: cloudflare/pages-action@v1
+              # cloudflare/pages-action was removed from GitHub; wrangler-action is its replacement.
+              uses: cloudflare/wrangler-action@v3
               with:
                   apiToken: ${{ secrets.CF_API_TOKEN }}
                   accountId: ${{ secrets.CF_ACCOUNT_ID }}
-                  projectName: ${{ secrets.CF_PROJECT_NAME }}
-                  directory: build
-                  branch: ${{ github.ref_name }}
                   wranglerVersion: '4'
+                  command: pages deploy build --project-name=${{ secrets.CF_PROJECT_NAME }} --branch=${{ github.ref_name }}
