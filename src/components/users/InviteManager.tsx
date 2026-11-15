@@ -51,6 +51,7 @@ export default function InviteManager() {
     const [success, setSuccess] = useState<{
         inviteUrl?: string | null;
         token: string;
+        emailedTo?: string | null;
     } | null>(null);
     const [isRevoking, setRevoking] = useState<number | null>(null);
     const [nextCursor, setNextCursor] = useState<number | null>(null);
@@ -171,7 +172,11 @@ export default function InviteManager() {
                 return [response.invite, ...prev];
             });
 
-            setSuccess({ inviteUrl, token: response.token });
+            setSuccess({
+                inviteUrl,
+                token: response.token,
+                emailedTo: response.invite.targetEmail ?? null
+            });
             form.reset({ email: '' });
         }
         catch (err: any) {
@@ -249,11 +254,16 @@ export default function InviteManager() {
             {success && (
                 <Alert tone='success'>
                     {success.inviteUrl ? (
-                        <InviteQrCard inviteUrl={success.inviteUrl} />
+                        <InviteQrCard
+                            inviteUrl={success.inviteUrl}
+                            emailedTo={success.emailedTo}
+                        />
                     ) : (
                         <div className='space-y-1'>
                             <p className='font-medium'>
-                                An invite was created. Share this token:
+                                {success.emailedTo
+                                    ? `An invite email is on its way to ${success.emailedTo}. You can also share this token:`
+                                    : 'An invite was created. Share this token:'}
                             </p>
                             <p className='break-all text-xs'>
                                 Token: {success.token}

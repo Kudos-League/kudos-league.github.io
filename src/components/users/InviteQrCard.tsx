@@ -13,6 +13,8 @@ type InviteQrCardProps = {
     caption?: string;
     /** How many people can register with this link. */
     maxUses?: number;
+    /** Set when the invite was also emailed to this address. */
+    emailedTo?: string | null;
 };
 
 /**
@@ -23,7 +25,8 @@ type InviteQrCardProps = {
 export default function InviteQrCard({
     inviteUrl,
     caption = 'Join Kudos',
-    maxUses = 1
+    maxUses = 1,
+    emailedTo = null
 }: InviteQrCardProps) {
     const [copied, setCopied] = useState(false);
     const [downloading, setDownloading] = useState(false);
@@ -95,6 +98,16 @@ export default function InviteQrCard({
             </div>
             <div className='flex-1 min-w-0 space-y-2'>
                 <p className='font-medium'>Your invite link is ready.</p>
+                {emailedTo && (
+                    <p className='text-sm'>
+                        We&apos;re emailing this invite to{' '}
+                        <span className='font-semibold break-all'>
+                            {emailedTo}
+                        </span>
+                        . This QR code and link are the same invite, in case
+                        you want to hand it over in person too.
+                    </p>
+                )}
                 <p className='break-all text-xs font-mono select-all'>
                     {inviteUrl}
                 </p>
