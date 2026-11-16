@@ -285,7 +285,9 @@ export default function AdminInvites() {
                     <h2 className='text-lg font-semibold'>Shareable QR code</h2>
                     <p className='text-sm text-slate-500 dark:text-zinc-400'>
                         One link and QR code that several people can sign up
-                        with, for flyers, posters or an event. Leave it at 1 for
+                        with, for flyers, posters or an event. It isn&apos;t
+                        tied to any email address and nobody gets an email;
+                        each person signs up with their own. Leave it at 1 for
                         a single-use invite.
                     </p>
                 </div>

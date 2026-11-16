@@ -98,6 +98,13 @@ export default function InviteQrCard({
             </div>
             <div className='flex-1 min-w-0 space-y-2'>
                 <p className='font-medium'>Your invite link is ready.</p>
+                {maxUses > 1 && !emailedTo && (
+                    <p className='text-sm'>
+                        This link isn&apos;t tied to any email address and no
+                        email is sent. Anyone who scans it can sign up with
+                        their own email, up to {maxUses} people.
+                    </p>
+                )}
                 {emailedTo && (
                     <p className='text-sm'>
                         We&apos;re emailing this invite to{' '}
